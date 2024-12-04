@@ -1,42 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-/// @dev Struct that contains all core immutable strategy parameters
-struct StrategyCore {
-    /// @dev Collateral asset on the lending pool
-    address collateral;
-    /// @dev Debt asset on the lending pool
-    address debt;
-    /// @dev Lending pool that strategy is deployed on top of
-    address lendingPool;
-}
-
-/// @dev Struct that contains all strategy config related with leverage/rebalance
-struct LeverageConfig {
-    /// @dev Minimum leverage allowed for strategy before triggering rebalance on 8 decimals
-    uint256 minForRebalance;
-    /// @dev Maximum leverage allowed for strategy before triggering rebalance on 8 decimals
-    uint256 maxForRebalance;
-    /// @dev Target leverage of the strategy on 8 decimals
-    uint256 target;
-}
-
-/// @dev Struct that contains entire strategy config
-struct StrategyConfig {
-    /// @dev Struct that contains core config of the strategy
-    /// @dev This is configured when strategy is created and can not be changed after
-    StrategyCore core;
-    /// @dev Cap of the strategy, leveraged amount that can be changed
-    uint256 cap;
-    /// @dev Leverage config of the strategy that can be changed in order to make strategy more efficient
-    LeverageConfig leverageConfig;
-}
+import {LeverageManagerStorage as Storage} from "../storage/LeverageManagerStorage.sol";
 
 interface ILeverageManager {
     /// @notice Returns core of the strategy which is collateral asset, debt asset and lending pool
     /// @param strategy Strategy to get assets for
     /// @return core Core config of the strategy
-    function getStrategyCore(address strategy) external returns (StrategyCore memory core);
+    function getStrategyCore(address strategy) external returns (Storage.StrategyCore memory core);
 
     /// @notice Returns strategy cap in collateral asset
     /// @param strategy Strategy to get cap for
@@ -47,12 +18,12 @@ interface ILeverageManager {
     /// @notice Returns leverage config for a strategy including min, max and target
     /// @param strategy Strategy to get leverage config for
     /// @return config Leverage config
-    function getStrategyLeverageConfig(address strategy) external returns (LeverageConfig memory config);
+    function getStrategyLeverageConfig(address strategy) external returns (Storage.LeverageConfig memory config);
 
     /// @notice Returns entire configuration for given strategy
     /// @param strategy Address of the strategy to get config for
     /// @return config Strategy configuration
-    function getStrategyConfig(address strategy) external returns (StrategyConfig memory config);
+    function getStrategyConfig(address strategy) external returns (Storage.StrategyConfig memory config);
 
     /// @notice Returns the total amount of shares in circulation for a given strategy
     /// @param strategy The strategy to query shares for
@@ -129,7 +100,7 @@ interface ILeverageManager {
     /// @dev Must emit CreateStrategy event with core strategy data
     /// @dev Must emit SetStrategyCap event
     /// @dev Must emit SetLeverageConfig event
-    function createNewStrategy(address strategy, StrategyConfig calldata config) external;
+    function createNewStrategy(address strategy, Storage.StrategyConfig calldata config) external;
 
     /// @notice Mints shares of a strategy and deposits assets into it, recipient receives shares and debt
     /// @param strategy The strategy to deposit into
