@@ -4,6 +4,22 @@ pragma solidity ^0.8.13;
 import {LeverageManagerStorage as Storage} from "../storage/LeverageManagerStorage.sol";
 
 interface ILeverageManager {
+    /// @notice Error thrown when user receives less shares than requested
+    error InsufficientShares();
+
+    /// @notice Error thrown when user receives less collateral assets than requested
+    error InsufficientAssets();
+
+    /// @notice Event emitted when user deposits assets into strategy
+    event Deposit(
+        address indexed strategy, address indexed from, address indexed to, uint256 assets, uint256 sharesMinted
+    );
+
+    /// @notice Event emitted when user redeems shares
+    event Redeem(
+        address indexed strategy, address indexed from, address indexed to, uint256 shares, uint256 collateral
+    );
+
     /// @notice Returns core of the strategy which is collateral asset, debt asset and lending pool
     /// @param strategy Strategy to get assets for
     /// @return core Core config of the strategy
@@ -13,7 +29,7 @@ interface ILeverageManager {
     /// @param strategy Strategy to get cap for
     /// @return cap Strategy cap
     /// @dev Strategy cap is leveraged amount in collateral asset
-    function getStrategyCap(uint256 strategy) external view returns (uint256 cap);
+    function getStrategyCap(address strategy) external view returns (uint256 cap);
 
     /// @notice Returns leverage config for a strategy including min, max and target
     /// @param strategy Strategy to get leverage config for
@@ -107,31 +123,22 @@ interface ILeverageManager {
     /// @param assets The leveraged amount of assets to deposit
     /// @param recipient The address to receive the shares and debt
     /// @param minShares The minimum amount of shares to receive
+    /// @return shares Actual amount of shares given to the user
     /// @dev Must emit the Deposit event
-    function deposit(address strategy, uint256 assets, uint256 recipient, uint256 minShares) external;
+    function deposit(address strategy, uint256 assets, address recipient, uint256 minShares)
+        external
+        returns (uint256 shares);
 
-    /// @notice Mints shares of a strategy and deposits assets into it, recipient receives shares and debt
-    /// @param strategy The strategy to deposit into
-    /// @param shares The exact amount of shares to mint
-    /// @param recipient The address to receive the shares and debt
-    /// @param maxAssets The maximum amount of assets to take from caller
-    /// @dev Must emit the Deposit event
-    function mint(address strategy, uint256 shares, uint256 recipient, uint256 maxAssets) external;
-
-    /// @notice Burns shares of a strategy and withdraws assets from it, recipient receives assets and debt
-    /// @param strategy The strategy to withdraw from
-    /// @param assets The exact amount of assets to withdraw
-    /// @param recipient The address to receive the assets and debt
-    /// @param maxShares The minimum amount of assets to receive
-    /// @dev Must emit the Withdraw event
-    function withdraw(address strategy, uint256 assets, uint256 recipient, uint256 maxShares) external;
-
-    /// @notice Burns shares of a strategy and withdraws assets from it, recipient receives assets and debt
-    /// @param strategy The strategy to withdraw from
-    /// @param shares The exact amount of shares to burn
-    /// @param recipient The address to receive the assets and debt
+    /// @notice Redeems shares of a strategy and withdraws assets from it, recipient receives assets but repays the debt
+    /// @param strategy The strategy to redeem from
+    /// @param shares Amount of shares to burn
+    /// @param recipient The address to receive the collateral asset
     /// @param minAssets The minimum amount of assets to receive
-    function redeem(address strategy, uint256 shares, uint256 recipient, uint256 minAssets) external;
+    /// @return assets Actual amount of assets given to the user
+    /// @dev Must emit the Redeem event
+    function redeem(address strategy, uint256 shares, address recipient, uint256 minAssets)
+        external
+        returns (uint256 assets);
 
     // TODO: interface for rebalance functions
 }

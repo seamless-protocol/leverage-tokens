@@ -27,10 +27,10 @@ library LeverageManagerStorage {
         /// @dev Struct that contains core config of the strategy
         /// @dev This is configured when strategy is created and can not be changed after
         StrategyCore core;
-        /// @dev Cap of the strategy, leveraged amount that can be changed
-        uint256 cap;
         /// @dev Leverage config of the strategy that can be changed in order to make strategy more efficient
         LeverageConfig leverageConfig;
+        /// @dev Cap of the strategy, leveraged amount that can be changed
+        uint256 cap;
     }
 
     /// @dev Struct containing all state for the LeverageManager contract
@@ -38,6 +38,10 @@ library LeverageManagerStorage {
     struct Layout {
         /// @dev Strategy address => Config for strategy
         mapping(address strategy => StrategyConfig) config;
+        /// @dev Strategy address => Total shares in circulation
+        mapping(address strategy => uint256) totalShares;
+        /// @dev Strategy address => User address => Shares that user owns
+        mapping(address strategy => mapping(address user => uint256)) userStrategyShares;
     }
 
     // keccak256(abi.encode(uint256(keccak256("seamless.contracts.storage.LeverageManager")) - 1)) & ~bytes32(uint256(0xff));
