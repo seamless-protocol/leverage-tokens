@@ -21,7 +21,7 @@ abstract contract LeverageManager is ILeverageManager, FeeManager, UUPSUpgradeab
 
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}
 
-    /// @inheritdoc  ILeverageManager
+    /// @inheritdoc ILeverageManager
     function getStrategyConfig(address strategy) external view returns (Storage.StrategyConfig memory config) {
         return Storage.layout().config[strategy];
     }
