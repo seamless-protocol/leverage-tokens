@@ -47,6 +47,21 @@ abstract contract LeverageManager is ILeverageManager, FeeManager, UUPSUpgradeab
     }
 
     /// @inheritdoc ILeverageManager
+    function getStrategyCollateralAsset(address strategy) public view returns (address collateral) {
+        return Storage.layout().config[strategy].core.collateral;
+    }
+
+    /// @inheritdoc ILeverageManager
+    function getStrategyDebtAsset(address strategy) public view returns (address debt) {
+        return Storage.layout().config[strategy].core.debt;
+    }
+
+    /// @inheritdoc ILeverageManager
+    function getStrategyTargetLeverage(address strategy) public view returns (uint256 targetLeverage) {
+        return Storage.layout().config[strategy].leverageConfig.target;
+    }
+
+    /// @inheritdoc ILeverageManager
     function deposit(address strategy, uint256 assets, address recipient, uint256 minShares)
         external
         returns (uint256 shares)
@@ -64,7 +79,7 @@ abstract contract LeverageManager is ILeverageManager, FeeManager, UUPSUpgradeab
 
         // Calculate corresponding amount of debt tokens that should be borrowed and sent to the caller based on target leverage
         uint256 assetsUSD = LendingLib.convertCollateralToUSD(strategyConfig, amountAfterFee);
-        uint256 targetLeverage = strategyConfig.leverageConfig.target;
+        uint256 targetLeverage = getStrategyTargetLeverage(strategy);
         // Debt is rounded down to user will always receive some wei of debt asset less
         uint256 debtUSD = Math.mulDiv(assetsUSD, targetLeverage - BASE_LEVERAGE, targetLeverage, Math.Rounding.Floor);
         uint256 debtAssets = LendingLib.convertUSDToDebt(strategyConfig, debtUSD);
@@ -104,34 +119,53 @@ abstract contract LeverageManager is ILeverageManager, FeeManager, UUPSUpgradeab
         Storage.StrategyConfig storage strategyConfig = $.config[strategy];
 
         // Cache
-        address collateralAsset = $.config[strategy].core.collateral;
-        address debtAsset = $.config[strategy].core.debt;
+        address collateralAsset = getStrategyCollateralAsset(strategy);
+        address debtAsset = getStrategyDebtAsset(strategy);
+        uint256 strategyCollateralUSD = LendingLib.getStrategyCollateralUSD(strategy);
+        uint256 strategyDebtUSD = LendingLib.getStrategyDebtUSD(strategy);
         uint256 totalStrategyShares = getTotalStrategyShares(strategy);
 
-        // Calculate how much collateral assets user should receive, collateral is rounded down
-        uint256 totalCollateral = LendingLib.getStrategyCollateral(strategy);
-        uint256 userCollateral = Math.mulDiv(totalCollateral, shares, totalStrategyShares, Math.Rounding.Floor);
+        // Calculate how much collateral in assets and USD user should receive, collateral is rounded down
+        uint256 userCollateralUSD = Math.mulDiv(strategyCollateralUSD, shares, totalStrategyShares, Math.Rounding.Floor);
+        uint256 userCollateralAssets = LendingLib.convertUSDToCollateral(strategyConfig, userCollateralUSD);
 
-        // Calculate how much debt assets user should give for debt repay, debt is rounded up
-        uint256 totalDebt = LendingLib.getStrategyDebt(strategy);
-        uint256 userDebt = Math.mulDiv(totalDebt, shares, totalStrategyShares, Math.Rounding.Ceil);
+        // Get excess excess collateral in USD
+        // Excess of collateral can be redeemed without repaying the debt because strategy is leveraged up
+        uint256 excessCollateralUSD =
+            _calculateExcessOfCollateralUSD(strategyCollateralUSD, strategyDebtUSD, getStrategyTargetLeverage(strategy));
 
-        // Burn shares from the user and decrease total shares in circulation
+        // If strategy does not have enough excess of collateral, user should repay some debt
+        if (excessCollateralUSD < userCollateralUSD) {
+            // Calculated how much debt in USD should be repaid by user
+            // Calculation is done by calculating entire debt that user should repay for this collateral
+            // and then discounting it by the debt that covers excess of collateral
+            uint256 debtDiscountUSD =
+                Math.mulDiv(excessCollateralUSD, strategyDebtUSD, strategyCollateralUSD, Math.Rounding.Floor);
+
+            // Entire debt without discount
+            uint256 userEntireDebtUSD = Math.mulDiv(strategyDebtUSD, shares, totalStrategyShares, Math.Rounding.Ceil);
+
+            // Calculate how much debt assets user should give for debt repay, debt is rounded up because discount is rounded down
+            uint256 userDebtAssets = LendingLib.convertUSDToDebt(strategyConfig, userEntireDebtUSD - debtDiscountUSD); // This assets should be rounded up in LendingLib
+
+            // Takes assets from caller and repays the debt
+            SafeERC20.safeTransferFrom(IERC20(debtAsset), msg.sender, address(this), userDebtAssets);
+            LendingLib.repay(strategyConfig, userDebtAssets);
+        }
+
+        // Burn shares from the user and decrease total shares in circulation. Burn them before sending tokens to user
         $.userStrategyShares[strategy][msg.sender] -= shares;
         $.totalShares[strategy] -= shares;
 
-        // Takes assets from caller and repays the debt
-        SafeERC20.safeTransferFrom(IERC20(debtAsset), msg.sender, address(this), userDebt);
-        LendingLib.repay(strategyConfig, userDebt);
-
         // Withdraw collateral from lending pool, charge withdraw fees on collateral tokens and send assets to recipient
-        LendingLib.withdraw(strategyConfig, userCollateral);
+        LendingLib.withdraw(strategyConfig, userCollateralAssets);
 
-        uint256 feeAmount = _chargeStrategyFee(strategy, collateralAsset, userCollateral, IFeeManager.Action.Withdraw);
-        uint256 collateralAfterFee = userCollateral - feeAmount;
+        uint256 feeAmount =
+            _chargeStrategyFee(strategy, collateralAsset, userCollateralAssets, IFeeManager.Action.Withdraw);
+        uint256 collateralAfterFee = userCollateralAssets - feeAmount;
 
         // Revert if user does not receive enough assets
-        if (userCollateral < minAssets) {
+        if (userCollateralAssets < minAssets) {
             revert InsufficientAssets();
         }
 
@@ -140,6 +174,17 @@ abstract contract LeverageManager is ILeverageManager, FeeManager, UUPSUpgradeab
         // Emit event and explicit return statement
         emit Redeem(strategy, msg.sender, recipient, shares, collateralAfterFee);
         return collateralAfterFee;
+    }
+
+    // This function calculates how much excess of collateral strategy has denominated in both collateral asset and USD
+    function _calculateExcessOfCollateralUSD(uint256 collateralUSD, uint256 debtUSD, uint256 targetLeverage)
+        private
+        pure
+        returns (uint256 excessCollateralUSD)
+    {
+        // Calculate how much collateral should be in the strategy for current debt so strategy is perfectly balanced
+        uint256 targetCollateralUSD = Math.mulDiv(debtUSD, targetLeverage, targetLeverage - BASE_LEVERAGE);
+        return collateralUSD > targetCollateralUSD ? collateralUSD - targetCollateralUSD : 0;
     }
 
     /// @notice Function that converts user's equity in USD to strategy shares

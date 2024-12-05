@@ -36,6 +36,23 @@ interface ILeverageManager {
     /// @return config Leverage config
     function getStrategyLeverageConfig(address strategy) external returns (Storage.LeverageConfig memory config);
 
+    /// @notice Returns target leverage for a strategy
+    /// @param strategy Strategy to get target leverage for
+    /// @return target Target leverage
+    function getStrategyTargetLeverage(address strategy) external view returns (uint256 target);
+
+    /// @notice Returns collateral asset of the strategy
+    /// @notice Collateral asset is the asset that is deposited into lending pool
+    /// @param strategy Strategy to get collateral asset for
+    /// @return collateral Collateral asset
+    function getStrategyCollateralAsset(address strategy) external view returns (address collateral);
+
+    /// @notice Returns debt asset of the strategy
+    /// @notice Debt asset is the asset that is borrowed from lending pool
+    /// @param strategy Strategy to get debt asset for
+    /// @return debt Debt asset
+    function getStrategyDebtAsset(address strategy) external view returns (address debt);
+
     /// @notice Returns entire configuration for given strategy
     /// @param strategy Address of the strategy to get config for
     /// @return config Strategy configuration

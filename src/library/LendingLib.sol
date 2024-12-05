@@ -7,28 +7,28 @@ library LendingLib {
     /// @notice Returns the total collateral of strategy denominated in collateral asset
     /// @param strategy The strategy to query collateral for
     /// @return collateral The total collateral of the strategy
-    function getStrategyCollateral(address strategy) internal view returns (uint256 collateral) {
+    function getStrategyCollateral(address strategy) internal pure returns (uint256 collateral) {
         return 0;
     }
 
     /// @notice Returns total debt of the strategy denominated in debt asset
     /// @param strategy Strategy to get debt for
     /// @return debt Total debt of the strategy
-    function getStrategyDebt(address strategy) internal view returns (uint256 debt) {
+    function getStrategyDebt(address strategy) internal pure returns (uint256 debt) {
         return 0;
     }
 
     /// @notice Returns the total collateral of the strategy denominated in USD
     /// @param strategy The strategy to query collateral for
     /// @return collateralUSD The total collateral of the strategy
-    function getStrategyCollateralUSD(address strategy) internal view returns (uint256 collateralUSD) {
+    function getStrategyCollateralUSD(address strategy) internal pure returns (uint256 collateralUSD) {
         return 0;
     }
 
     /// @notice Returns total strategy debt denominated in USD
     /// @param strategy The strategy to query debt for
     /// @return debtUSD The total debt of the strategy
-    function getStrategyDebtUSD(address strategy) internal view returns (uint256 debtUSD) {
+    function getStrategyDebtUSD(address strategy) internal pure returns (uint256 debtUSD) {
         return 0;
     }
 
@@ -36,7 +36,7 @@ library LendingLib {
     /// @param strategy Strategy to query equity for
     /// @return equityUSD Equity of the strategy
     /// @dev Equity is calculated as collateral - debt
-    function getStrategyEquityUSD(address strategy) internal view returns (uint256 equityUSD) {
+    function getStrategyEquityUSD(address strategy) internal pure returns (uint256 equityUSD) {
         return getStrategyCollateralUSD(strategy) - getStrategyDebtUSD(strategy);
     }
 
@@ -46,7 +46,7 @@ library LendingLib {
     /// @return collateralUSD USD value of collateral
     function convertCollateralToUSD(Storage.StrategyConfig storage strategyConfig, uint256 collateral)
         internal
-        view
+        pure
         returns (uint256 collateralUSD)
     {
         // Fetches oracle and price of collateral asset from underlying lending pool
@@ -60,7 +60,20 @@ library LendingLib {
     /// @return debt Amount of debt tokens
     function convertUSDToDebt(Storage.StrategyConfig storage strategyConfig, uint256 debtUSD)
         internal
+        pure
         returns (uint256 debt)
+    {
+        return 0;
+    }
+
+    /// @notice Converts USD amount to collateral tokens
+    /// @param strategyConfig Strategy configuration
+    /// @param collateralUSD USD value to convert to collateral tokens
+    /// @return collateral Amount of collateral tokens
+    function convertUSDToCollateral(Storage.StrategyConfig storage strategyConfig, uint256 collateralUSD)
+        internal
+        pure
+        returns (uint256 collateral)
     {
         return 0;
     }
