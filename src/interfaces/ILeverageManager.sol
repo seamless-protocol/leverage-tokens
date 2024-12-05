@@ -4,6 +4,9 @@ pragma solidity ^0.8.13;
 import {LeverageManagerStorage as Storage} from "../storage/LeverageManagerStorage.sol";
 
 interface ILeverageManager {
+    /// @notice Error thrown when user wants to deposit more assets than he has or when tries to burn more shares than he has
+    error InsufficientBalance();
+
     /// @notice Error thrown when user receives less shares than requested
     error InsufficientShares();
 

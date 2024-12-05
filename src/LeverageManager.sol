@@ -37,7 +37,7 @@ abstract contract LeverageManager is ILeverageManager, FeeManager, UUPSUpgradeab
     }
 
     /// @inheritdoc ILeverageManager
-    function getUserStrategyShares(address strategy, address user) external view returns (uint256 shares) {
+    function getUserStrategyShares(address strategy, address user) public view returns (uint256 shares) {
         return Storage.layout().userStrategyShares[strategy][user];
     }
 
@@ -115,6 +115,10 @@ abstract contract LeverageManager is ILeverageManager, FeeManager, UUPSUpgradeab
         external
         returns (uint256 assets)
     {
+        if (getUserStrategyShares(strategy, msg.sender) < shares) {
+            revert InsufficientBalance();
+        }
+
         Storage.Layout storage $ = Storage.layout();
         Storage.StrategyConfig storage strategyConfig = $.config[strategy];
 
