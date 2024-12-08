@@ -5,7 +5,6 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
 import {FeeManagerStorage as Storage} from "./storage/FeeManagerStorage.sol";
 import {IFeeManager} from "./interfaces/IFeeManager.sol";
 
@@ -13,6 +12,8 @@ contract FeeManager is IFeeManager, AccessControlUpgradeable {
     // Max fee that can be ste, 100_00 is 100%
     uint256 public constant MAX_FEE = 100_00;
     bytes32 public constant FEE_MANAGER_ROLE = keccak256("FEE_MANAGER_ROLE");
+
+    function __FeeManager_init_unchained() internal onlyInitializing {}
 
     /// @inheritdoc IFeeManager
     function getTreasury() public view returns (address treasury) {
@@ -45,14 +46,13 @@ contract FeeManager is IFeeManager, AccessControlUpgradeable {
     }
 
     // Calculates and charges fee based on action type. Fee is sent to treasury
-    function _chargeStrategyFee(address strategy, address asset, uint256 amount, IFeeManager.Action action)
+    function _chargeStrategyFee(address strategy, uint256 amount, IFeeManager.Action action)
         internal
         returns (uint256 feeAmount)
     {
-        // Calculate deposit fee (always round down) and send it to treasury
+        // Calculate deposit fee (always round down up) and send it to treasury
         // This contract should be inherited by LeverageManager so we charge fees from this address
-        feeAmount = Math.mulDiv(amount, _getFeeBasedOnAction(strategy, action), MAX_FEE);
-        SafeERC20.safeTransfer(IERC20(asset), getTreasury(), feeAmount);
+        feeAmount = Math.mulDiv(amount, _getFeeBasedOnAction(strategy, action), MAX_FEE, Math.Rounding.Ceil);
 
         // Emit event and explicit return statement
         emit FeeCharged(strategy, action, amount, feeAmount);

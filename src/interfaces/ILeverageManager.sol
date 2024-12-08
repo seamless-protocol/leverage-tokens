@@ -4,6 +4,15 @@ pragma solidity ^0.8.13;
 import {LeverageManagerStorage as Storage} from "../storage/LeverageManagerStorage.sol";
 
 interface ILeverageManager {
+    /// @notice Error thrown when someone tries to set core of the strategy that is already set
+    error CoreAlreadySet();
+
+    /// @notice Error thrown when someone tries to set core that is invalid (contains zero addresses)
+    error InvalidStrategyCore();
+
+    /// @notice Error thrown when collateral ratios are invalid
+    error InvalidCollateralRatios();
+
     /// @notice Error thrown when user wants to deposit more assets than he has or when tries to burn more shares than he has
     error InsufficientBalance();
 
@@ -12,6 +21,15 @@ interface ILeverageManager {
 
     /// @notice Error thrown when user receives less collateral assets than requested
     error InsufficientAssets();
+
+    /// @notice Event emitted when core config of the strategy is set
+    event StrategyCoreSet(address indexed strategy, Storage.StrategyCore core);
+
+    /// @notice Event emitted when collateral ratios are set for a strategy
+    event StrategyCollateralRatiosSet(address indexed strategy, Storage.CollateralRatios ratios);
+
+    /// @notice Event emitted when caps are set/changed for a strategy
+    event StrategyCapSet(address indexed strategy, uint256 cap);
 
     /// @notice Event emitted when user deposits assets into strategy
     event Deposit(
@@ -36,13 +54,13 @@ interface ILeverageManager {
 
     /// @notice Returns leverage config for a strategy including min, max and target
     /// @param strategy Strategy to get leverage config for
-    /// @return config Leverage config
-    function getStrategyLeverageConfig(address strategy) external returns (Storage.LeverageConfig memory config);
+    /// @return ratios Collateral ratios for the strategy
+    function getStrategyCollateralRatios(address strategy) external returns (Storage.CollateralRatios memory ratios);
 
-    /// @notice Returns target leverage for a strategy
-    /// @param strategy Strategy to get target leverage for
-    /// @return target Target leverage
-    function getStrategyTargetLeverage(address strategy) external view returns (uint256 target);
+    /// @notice Returns target ratio for a strategy
+    /// @param strategy Strategy to get target ratio for
+    /// @return targetRatio Target ratio
+    function getStrategyTargetCollateralRatio(address strategy) external view returns (uint256 targetRatio);
 
     /// @notice Returns collateral asset of the strategy
     /// @notice Collateral asset is the asset that is deposited into lending pool
@@ -98,6 +116,12 @@ interface ILeverageManager {
     /// @return assets The amount of assets the user has in the strategy
     function getUserStrategyAssets(address strategy, address user) external view returns (uint256 assets);
 
+    /// @notice Returns equity of the strategy denominated in base asset of the strategy
+    /// @param strategy Strategy to query equity for
+    /// @return equity Equity of the strategy
+    /// @dev Equity is calculated as collateral - debt
+    function getStrategyEquityInBaseAsset(address strategy) external view returns (uint256 equity);
+
     /// @notice Pauses entire contract
     /// @dev Only address with role GUARDIAN can call this function
     /// @dev Must emit PAUSE event
@@ -121,22 +145,24 @@ interface ILeverageManager {
     /// @dev Only GUARDIAN role can call this function
     function unpauseStrategy(address strategy) external;
 
+    /// @notice Sets core of the strategy which is collateral asset and debt asset
+    /// @param strategy Strategy to set core for
+    /// @param core Core config to set
+    /// @dev Only MANAGER role can call this function. Core can be set only once and can never be changed
+    function setStrategyCore(address strategy, Storage.StrategyCore calldata core) external;
+
+    /// @notice Sets collateral ratios for a strategy including min/max for rebalance and target
+    /// @param strategy Strategy to set collateral ratios for
+    /// @param ratios Collateral ratios to set
+    /// @dev Only MANAGER role can call this function
+    function setStrategyCollateralRatios(address strategy, Storage.CollateralRatios calldata ratios) external;
+
     /// @notice Sets cap for strategy
     /// @param strategy Strategy to set cap for
     /// @param cap Cap for strategy
     /// @dev Cap for strategy is leveraged amount in collateral asset
     /// @dev Only address with MANAGER role can call this function
     function setStrategyCap(address strategy, uint256 cap) external;
-
-    /// @notice Creates new strategy with provided configuration
-    /// @param strategy Unique identifier for strategy
-    /// @param config Full strategy configuration
-    /// @dev ADMIN role can change configuration after deployment but not collateral asset, debt assets and lending pool
-    /// @dev Reverts if strategy with given identifier already exists
-    /// @dev Must emit CreateStrategy event with core strategy data
-    /// @dev Must emit SetStrategyCap event
-    /// @dev Must emit SetLeverageConfig event
-    function createNewStrategy(address strategy, Storage.StrategyConfig calldata config) external;
 
     /// @notice Mints shares of a strategy and deposits assets into it, recipient receives shares and debt
     /// @param strategy The strategy to deposit into

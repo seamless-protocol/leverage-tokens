@@ -23,7 +23,7 @@ library FeeManagerStorage {
 
     //TODO: Fix this slot
     // keccak256(abi.encode(uint256(keccak256("seamless.contracts.storage.LeverageManager")) - 1)) & ~bytes32(uint256(0xff));
-    bytes32 internal constant STORAGE_SLOT = 0x326e20d598a681eb69bc11b5176604d340fccf9864170f09484f3c317edf3600;
+    bytes32 internal constant STORAGE_SLOT = 0x396e20d598a681eb69bc11b5176604d340fccf9864170f09484f3c317edf3600;
 
     function layout() internal pure returns (Layout storage l) {
         bytes32 slot = STORAGE_SLOT;

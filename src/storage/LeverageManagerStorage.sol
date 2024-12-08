@@ -8,27 +8,26 @@ library LeverageManagerStorage {
         address collateral;
         /// @dev Debt asset on the lending pool
         address debt;
-        /// @dev Lending pool that strategy is deployed on top of
-        address lendingPool;
     }
 
     /// @dev Struct that contains all strategy config related with leverage/rebalance
-    struct LeverageConfig {
-        /// @dev Minimum leverage allowed for strategy before triggering rebalance on 8 decimals
+    struct CollateralRatios {
+        /// @dev Minimum collateral ratio allowed for strategy before triggering rebalance on 8 decimals
+        ///      Collateral ratio is calculated as collateral value / debt value
         uint256 minForRebalance;
-        /// @dev Maximum leverage allowed for strategy before triggering rebalance on 8 decimals
+        /// @dev Maximum collateral ratio allowed for strategy before triggering rebalance on 8 decimals
         uint256 maxForRebalance;
-        /// @dev Target leverage of the strategy on 8 decimals
+        /// @dev Target collateral ratio of the strategy on 8 decimals
         uint256 target;
     }
 
     /// @dev Struct that contains entire strategy config
     struct StrategyConfig {
-        /// @dev Struct that contains core config of the strategy
-        /// @dev This is configured when strategy is created and can not be changed after
+        /// @dev Struct that contains core config of the strategy.
+        ///      This is configured when strategy is created and can not be changed after
         StrategyCore core;
         /// @dev Leverage config of the strategy that can be changed in order to make strategy more efficient
-        LeverageConfig leverageConfig;
+        CollateralRatios collateralRatios;
         /// @dev Cap of the strategy, leveraged amount that can be changed
         uint256 cap;
     }
@@ -36,6 +35,9 @@ library LeverageManagerStorage {
     /// @dev Struct containing all state for the LeverageManager contract
     /// @custom:storage-location erc7201:seamless.contracts.storage.LeverageManager
     struct Layout {
+        // TODO: Figure out should lendingContract be internal lib, external lib or external contract
+        /// @dev Address of the smart contract that contains all lending pool logic
+        address lendingContract;
         /// @dev Strategy address => Config for strategy
         mapping(address strategy => StrategyConfig) config;
         /// @dev Strategy address => Total shares in circulation
