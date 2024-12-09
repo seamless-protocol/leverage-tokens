@@ -45,18 +45,18 @@ contract FeeManager is IFeeManager, AccessControlUpgradeable {
         emit StrategyFeeConfigSet(strategy, config);
     }
 
-    // Calculates and charges fee based on action type. Fee is sent to treasury
+    // Calculates and charges fee based on action type
     function _chargeStrategyFee(address strategy, uint256 amount, IFeeManager.Action action)
         internal
-        returns (uint256 feeAmount)
+        returns (uint256 amountAfterFee)
     {
         // Calculate deposit fee (always round down up) and send it to treasury
         // This contract should be inherited by LeverageManager so we charge fees from this address
-        feeAmount = Math.mulDiv(amount, _getFeeBasedOnAction(strategy, action), MAX_FEE, Math.Rounding.Ceil);
+        uint256 feeAmount = Math.mulDiv(amount, _getFeeBasedOnAction(strategy, action), MAX_FEE, Math.Rounding.Ceil);
 
         // Emit event and explicit return statement
         emit FeeCharged(strategy, action, amount, feeAmount);
-        return feeAmount;
+        return amount - feeAmount;
     }
 
     // Returns fee percentage based on action type on strategy

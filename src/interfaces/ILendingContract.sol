@@ -21,57 +21,49 @@ interface ILendingContract {
     function getStrategyEquityInBaseAsset(address strategy) external pure returns (uint256 equity);
 
     /// @notice Converts amount of collateral asset to debt asset amount based on lending pool oracle
-    /// @param strategyConfig Strategy configuration
+    /// @param strategy Address of the strategy
     /// @param collateral Collateral amount
     /// @return debt Amount of debt asset
-    function convertCollateralToDebtAsset(Storage.StrategyConfig memory strategyConfig, uint256 collateral)
-        external
-        pure
-        returns (uint256 debt);
+    function convertCollateralToDebtAsset(address strategy, uint256 collateral) external pure returns (uint256 debt);
 
     /// @notice Returns collateral value denominated in base asset, base asset can be USD or any other asset
-    /// @param strategyConfig Strategy configuration
+    /// @param strategy Address of the strategy
     /// @param collateral Collateral amount
     /// @return collateralUSD USD value of collateral
-    function convertCollateralToBaseAsset(Storage.StrategyConfig memory strategyConfig, uint256 collateral)
+    function convertCollateralToBaseAsset(address strategy, uint256 collateral)
         external
         pure
         returns (uint256 collateralUSD);
 
     /// @notice Converts amount of base asset to debt asset amount based on lending pool oracle
-    /// @param strategyConfig Strategy configuration
+    /// @param strategy Address of the strategy
     /// @param base Base asset amount
     /// @return debt Amount of debt asset
-    function convertBaseToDebtAsset(Storage.StrategyConfig memory strategyConfig, uint256 base)
-        external
-        pure
-        returns (uint256 debt);
+    function convertBaseToDebtAsset(address strategy, uint256 base) external pure returns (uint256 debt);
 
     /// @notice Converts amount of base asset to collateral asset amount based on lending pool oracle
-    /// @param strategyConfig Strategy configuration
+    /// @param strategy Address of the strategy
     /// @param base Base asset amount
     /// @return collateral Amount of collateral asset
-    function convertBaseToCollateralAsset(Storage.StrategyConfig memory strategyConfig, uint256 base)
-        external
-        returns (uint256 collateral);
+    function convertBaseToCollateralAsset(address strategy, uint256 base) external returns (uint256 collateral);
 
     /// @notice Supplies assets to the lending pool
-    /// @param strategyConfig Strategy configuration
+    /// @param strategy Address of the strategy
     /// @param amount Amount of assets to supply
-    function supply(Storage.StrategyConfig memory strategyConfig, uint256 amount) external;
+    function supply(address strategy, uint256 amount) external;
 
     /// @notice Withdraws collateral asset from lending pool
-    /// @param strategyConfig Strategy configuration
+    /// @param strategy Address of the strategy
     /// @param amount Amount of collateral to withdraw
-    function withdraw(Storage.StrategyConfig memory strategyConfig, uint256 amount) external;
+    function withdraw(address strategy, uint256 amount) external;
 
     /// @notice Borrows assets from the lending pool
-    /// @param strategyConfig Strategy configuration
+    /// @param strategy Address of the strategy
     /// @param amount Amount of assets to borrow
-    function borrow(Storage.StrategyConfig memory strategyConfig, uint256 amount) external;
+    function borrow(address strategy, uint256 amount) external;
 
     /// @notice Repays the debt on the lending pool
-    /// @param strategyConfig Strategy configuration
+    /// @param strategy Address of the strategy
     /// @param amount Debt to cover
-    function repay(Storage.StrategyConfig memory strategyConfig, uint256 amount) external;
+    function repay(address strategy, uint256 amount) external;
 }

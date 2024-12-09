@@ -134,29 +134,16 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         external
         returns (uint256 shares)
     {
-        Storage.Layout storage $ = Storage.layout();
-        Storage.StrategyConfig storage strategyConfig = $.config[strategy];
-
         // Cache
         ILendingContract lendingContract = getLendingContract();
 
-        // Calculate how much of debt asset to borrow and give to user based on target collateral ratio
-        // It is important to round down debt assets
-        uint256 debtInCollateralAsset =
-            Math.mulDiv(assets, BASE_RATIO, getStrategyTargetCollateralRatio(strategy), Math.Rounding.Floor);
-        uint256 debtAssets = lendingContract.convertCollateralToDebtAsset(strategyConfig, debtInCollateralAsset);
-
-        // Calculate how much shares user should receive for their equity
-        // It is important to calculate shares before supplying and borrowing
-        uint256 equityInBaseAsset =
-            lendingContract.convertCollateralToBaseAsset(strategyConfig, assets - debtInCollateralAsset);
-        uint256 sharesToMint = _convertToShares(strategy, equityInBaseAsset);
+        // Calculate how much to borrow and how much shares to mint for user
+        (uint256 debtToBorrow, uint256 sharesToMint) = _calculateDebtAndShares(strategy, lendingContract, assets);
 
         // Calculate fee amount and deduct it from user's shares
         // Fee shares are not sent to the treasury they are not minted which means they are burned
         // This is done to prevent gaming. Share burning will increase overall share value of all users
-        uint256 sharesFee = _chargeStrategyFee(strategy, sharesToMint, IFeeManager.Action.Deposit);
-        sharesToMint -= sharesFee;
+        sharesToMint = _chargeStrategyFee(strategy, sharesToMint, IFeeManager.Action.Deposit);
 
         // Revert if user does not receive enough shares
         if (sharesToMint < minShares) {
@@ -165,19 +152,49 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
         // Take collateral tokens from caller and supply them as collateral on lending pool
         SafeERC20.safeTransferFrom(IERC20(getStrategyCollateralAsset(strategy)), msg.sender, address(this), assets);
-        lendingContract.supply(strategyConfig, assets);
+        lendingContract.supply(strategy, assets);
 
-        // Borrow debt tokens and send them to recipient
-        lendingContract.borrow(strategyConfig, debtAssets);
-        SafeERC20.safeTransfer(IERC20(getStrategyDebtAsset(strategy)), recipient, debtAssets);
+        // Borrow and send debt assets to user
+        lendingContract.borrow(strategy, debtToBorrow);
+        SafeERC20.safeTransfer(IERC20(getStrategyDebtAsset(strategy)), recipient, debtToBorrow);
 
         // Give shares to the user and increase total shares in circulation
-        $.userStrategyShares[strategy][recipient] += sharesToMint;
-        $.totalShares[strategy] += sharesToMint;
+        _mintStrategyShares(strategy, recipient, sharesToMint);
 
         // Emit event and explicit return statement
         emit Deposit(strategy, msg.sender, recipient, assets, sharesToMint);
         return sharesToMint;
+    }
+
+    // Calculate how much of a debt asset to borrow and how much shares should be minted for user for given collateral
+    function _calculateDebtAndShares(address strategy, ILendingContract lendingContract, uint256 collateral)
+        private
+        view
+        returns (uint256 debt, uint256 shares)
+    {
+        // Calculate how much of a debt corresponds to deposited collateral asset based on target ratio
+        // It is important to round down debt, debt = collateral / target ratio
+        uint256 debtInCollateralAsset =
+            Math.mulDiv(collateral, BASE_RATIO, getStrategyTargetCollateralRatio(strategy), Math.Rounding.Floor);
+        uint256 debtToBorrow = lendingContract.convertCollateralToDebtAsset(strategy, debtInCollateralAsset);
+
+        // Calculate how much shares user should receive for their equity
+        // It is important to calculate shares prior to supplying and borrowing
+        uint256 equityInBaseAsset =
+            lendingContract.convertCollateralToBaseAsset(strategy, collateral - debtInCollateralAsset);
+        uint256 sharesToMint = _convertToShares(strategy, equityInBaseAsset);
+
+        return (debtToBorrow, sharesToMint);
+    }
+
+    // This function mints shares for user and increases total shares in circulation
+    function _mintStrategyShares(address strategy, address recipient, uint256 shares) private {
+        Storage.Layout storage $ = Storage.layout();
+
+        $.userStrategyShares[strategy][recipient] += shares;
+        $.totalShares[strategy] += shares;
+
+        // TODO: Should we emit event here?
     }
 
     /// @inheritdoc ILeverageManager
@@ -190,7 +207,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         }
 
         Storage.Layout storage $ = Storage.layout();
-        Storage.StrategyConfig storage strategyConfig = $.config[strategy];
         ILendingContract lendingContract = getLendingContract();
 
         shares -= _chargeStrategyFee(strategy, shares, IFeeManager.Action.Withdraw);
@@ -222,13 +238,13 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
             // Calculate how much debt assets user should give for debt repay, debt is rounded up because discount is rounded down
             uint256 userDebtAssets =
-                lendingContract.convertBaseToDebtAsset(strategyConfig, userEntireDebtBase - debtDiscountBase); // This assets should be rounded up in LendingLib
+                lendingContract.convertBaseToDebtAsset(strategy, userEntireDebtBase - debtDiscountBase); // This assets should be rounded up in LendingLib
 
             // Takes assets from caller and repays the debt
             SafeERC20.safeTransferFrom(
                 IERC20(getStrategyDebtAsset(strategy)), msg.sender, address(this), userDebtAssets
             );
-            lendingContract.repay(strategyConfig, userDebtAssets);
+            lendingContract.repay(strategy, userDebtAssets);
         }
 
         // Burn shares from the user and decrease total shares in circulation. Burn them before sending tokens to user
@@ -236,8 +252,8 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         $.totalShares[strategy] -= shares;
 
         // Withdraw collateral from lending pool, charge withdraw fees on collateral tokens and send assets to recipient
-        uint256 userCollateralAssets = lendingContract.convertBaseToCollateralAsset(strategyConfig, userCollateralBase);
-        lendingContract.withdraw(strategyConfig, userCollateralAssets);
+        uint256 userCollateralAssets = lendingContract.convertBaseToCollateralAsset(strategy, userCollateralBase);
+        lendingContract.withdraw(strategy, userCollateralAssets);
 
         // Revert if user does not receive enough assets
         if (userCollateralAssets < minAssets) {
