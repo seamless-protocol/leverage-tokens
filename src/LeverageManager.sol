@@ -137,18 +137,11 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         // Cache
         ILendingContract lendingContract = getLendingContract();
 
-        // Calculate how much to borrow and how much shares to mint for user
+        // Calculate how much to borrow and how much shares to mint for user. It must be done before supplying and borrowing
         (uint256 debtToBorrow, uint256 sharesToMint) = _calculateDebtAndShares(strategy, lendingContract, assets);
 
-        // Calculate fee amount and deduct it from user's shares
-        // Fee shares are not sent to the treasury they are not minted which means they are burned
-        // This is done to prevent gaming. Share burning will increase overall share value of all users
-        sharesToMint = _chargeStrategyFee(strategy, sharesToMint, IFeeManager.Action.Deposit);
-
-        // Revert if user does not receive enough shares
-        if (sharesToMint < minShares) {
-            revert InsufficientShares();
-        }
+        // Charge strategy fee and mint shares for user. Revert if user does not receive enough shares
+        _chargeStrategyFeeAndMintShares(strategy, recipient, sharesToMint, minShares);
 
         // Take collateral tokens from caller and supply them as collateral on lending pool
         SafeERC20.safeTransferFrom(IERC20(getStrategyCollateralAsset(strategy)), msg.sender, address(this), assets);
@@ -157,9 +150,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         // Borrow and send debt assets to user
         lendingContract.borrow(strategy, debtToBorrow);
         SafeERC20.safeTransfer(IERC20(getStrategyDebtAsset(strategy)), recipient, debtToBorrow);
-
-        // Give shares to the user and increase total shares in circulation
-        _mintStrategyShares(strategy, recipient, sharesToMint);
 
         // Emit event and explicit return statement
         emit Deposit(strategy, msg.sender, recipient, assets, sharesToMint);
@@ -172,14 +162,12 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         view
         returns (uint256 debt, uint256 shares)
     {
-        // Calculate how much of a debt corresponds to deposited collateral asset based on target ratio
-        // It is important to round down debt, debt = collateral / target ratio
+        // Calculate how much of a debt corresponds to collateral. Debt is rounded down, debt = collateral / target ratio
         uint256 debtInCollateralAsset =
             Math.mulDiv(collateral, BASE_RATIO, getStrategyTargetCollateralRatio(strategy), Math.Rounding.Floor);
         uint256 debtToBorrow = lendingContract.convertCollateralToDebtAsset(strategy, debtInCollateralAsset);
 
         // Calculate how much shares user should receive for their equity
-        // It is important to calculate shares prior to supplying and borrowing
         uint256 equityInBaseAsset =
             lendingContract.convertCollateralToBaseAsset(strategy, collateral - debtInCollateralAsset);
         uint256 sharesToMint = _convertToShares(strategy, equityInBaseAsset);
@@ -187,14 +175,22 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         return (debtToBorrow, sharesToMint);
     }
 
-    // This function mints shares for user and increases total shares in circulation
-    function _mintStrategyShares(address strategy, address recipient, uint256 shares) private {
+    function _chargeStrategyFeeAndMintShares(address strategy, address recipient, uint256 shares, uint256 minShares)
+        private
+    {
+        // Calculate fee amount and deduct it from user's shares. Share fees are burned which increases overall share value
+        uint256 sharesToMint = _chargeStrategyFee(strategy, shares, IFeeManager.Action.Deposit);
+
+        // Revert if user does not receive enough shares
+        if (sharesToMint < minShares) {
+            revert InsufficientShares();
+        }
+
         Storage.Layout storage $ = Storage.layout();
 
+        // Give shares to the user and increase total shares in circulation
         $.userStrategyShares[strategy][recipient] += shares;
         $.totalShares[strategy] += shares;
-
-        // TODO: Should we emit event here?
     }
 
     /// @inheritdoc ILeverageManager
