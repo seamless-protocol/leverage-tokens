@@ -13,6 +13,8 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {ILendingContract} from "src/interfaces/ILendingContract.sol";
 
+import {console} from "forge-std/console.sol";
+
 contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManager, UUPSUpgradeable {
     // Base collateral ratio constant, 1e8 = 1x
     uint256 public constant BASE_RATIO = 1e8;
@@ -80,6 +82,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
     /// @inheritdoc ILeverageManager
     function getStrategyTargetCollateralRatio(address strategy) public view returns (uint256 targetRatio) {
+        console.log("12");
         return Storage.layout().config[strategy].collateralRatios.target;
     }
 
@@ -159,9 +162,12 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     {
         // Calculate how much of a debt corresponds to collateral. Debt is rounded down, debt = collateral / target ratio
         uint256 collateralInDebtAsset = lendingContract.convertCollateralToDebtAsset(strategy, collateral);
+        console.log("collateralInDebtAsset", collateralInDebtAsset);
+
         uint256 debtToBorrow = Math.mulDiv(
-            collateralInDebtAsset, BASE_RATIO, getStrategyTargetCollateralRatio(strategy), Math.Rounding.Floor
+            collateralInDebtAsset, BASE_RATIO, getStrategyTargetCollateralRatio(strategy), Math.Rounding.Ceil
         );
+        console.log("2");
 
         // Calculate how much shares user should receive for their equity
         uint256 equityInDebtAsset = collateralInDebtAsset - debtToBorrow;

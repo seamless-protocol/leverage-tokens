@@ -11,9 +11,9 @@ import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol"
 import {ILendingContract} from "src/interfaces/ILendingContract.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
-import {BaseTest} from "./Base.t.sol";
+import {LeverageManagerBaseTest} from "./LeverageManagerBase.t.sol";
 
-contract ConvertToShares is BaseTest {
+contract ConvertToShares is LeverageManagerBaseTest {
     function setUp() public override {
         super.setUp();
     }
@@ -21,12 +21,8 @@ contract ConvertToShares is BaseTest {
     function testFuzz_convertToShares(address strategy, uint128 equity, uint128 totalEquity, uint128 sharesTotalSupply)
         public
     {
-        vm.mockCall(
-            lendingContract,
-            abi.encodeWithSelector(ILendingContract.getStrategyEquityInDebtAsset.selector, strategy),
-            abi.encode(uint256(totalEquity))
-        );
-        leverageManager.mintShares(strategy, address(0), sharesTotalSupply);
+        _mockStrategyTotalSupply(strategy, sharesTotalSupply);
+        _mockStrategyTotalEquity(strategy, totalEquity);
 
         uint256 shares = leverageManager.convertToShares(strategy, equity);
         uint256 expectedShares = equity * (uint256(sharesTotalSupply) + 1) / (uint256(totalEquity) + 1);
