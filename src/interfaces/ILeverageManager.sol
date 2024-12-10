@@ -116,11 +116,11 @@ interface ILeverageManager {
     /// @return assets The amount of assets the user has in the strategy
     function getUserStrategyAssets(address strategy, address user) external view returns (uint256 assets);
 
-    /// @notice Returns equity of the strategy denominated in base asset of the strategy
+    /// @notice Returns equity of the strategy denominated in debt asset of the strategy
     /// @param strategy Strategy to query equity for
     /// @return equity Equity of the strategy
     /// @dev Equity is calculated as collateral - debt
-    function getStrategyEquityInBaseAsset(address strategy) external view returns (uint256 equity);
+    function getStrategyEquityInDebtAsset(address strategy) external view returns (uint256 equity);
 
     /// @notice Pauses entire contract
     /// @dev Only address with role GUARDIAN can call this function

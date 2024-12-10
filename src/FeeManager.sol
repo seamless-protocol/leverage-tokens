@@ -13,6 +13,13 @@ contract FeeManager is IFeeManager, AccessControlUpgradeable {
     uint256 public constant MAX_FEE = 100_00;
     bytes32 public constant FEE_MANAGER_ROLE = keccak256("FEE_MANAGER_ROLE");
 
+    function __FeeManager_init(address defaultAdmin) public initializer {
+        __AccessControl_init_unchained();
+        __FeeManager_init_unchained();
+
+        _grantRole(DEFAULT_ADMIN_ROLE, defaultAdmin);
+    }
+
     function __FeeManager_init_unchained() internal onlyInitializing {}
 
     /// @inheritdoc IFeeManager
@@ -21,8 +28,8 @@ contract FeeManager is IFeeManager, AccessControlUpgradeable {
     }
 
     /// @inheritdoc IFeeManager
-    function getStrategyFeeConfig(address strategy) external view returns (Storage.StrategyFeeConfig memory config) {
-        return Storage.layout().strategyFeeConfig[strategy];
+    function getStrategyActionFee(address strategy, IFeeManager.Action action) public view returns (uint256 fee) {
+        return Storage.layout().strategyActionFee[strategy][action];
     }
 
     /// @inheritdoc IFeeManager
@@ -32,17 +39,17 @@ contract FeeManager is IFeeManager, AccessControlUpgradeable {
     }
 
     /// @inheritdoc IFeeManager
-    function setStrategyFeeConfig(address strategy, Storage.StrategyFeeConfig memory config)
+    function setStrategyActionFee(address strategy, IFeeManager.Action action, uint256 fee)
         external
         onlyRole(FEE_MANAGER_ROLE)
     {
         // Check if fees are not higher than 100%
-        if (config.depositFee > MAX_FEE || config.withdrawFee > MAX_FEE || config.compoundFee > MAX_FEE) {
+        if (fee > MAX_FEE) {
             revert FeeTooHigh();
         }
 
-        Storage.layout().strategyFeeConfig[strategy] = config;
-        emit StrategyFeeConfigSet(strategy, config);
+        Storage.layout().strategyActionFee[strategy][action] = fee;
+        emit StrategyActionFeeSet(strategy, action, fee);
     }
 
     // Calculates and charges fee based on action type
@@ -52,24 +59,10 @@ contract FeeManager is IFeeManager, AccessControlUpgradeable {
     {
         // Calculate deposit fee (always round down up) and send it to treasury
         // This contract should be inherited by LeverageManager so we charge fees from this address
-        uint256 feeAmount = Math.mulDiv(amount, _getFeeBasedOnAction(strategy, action), MAX_FEE, Math.Rounding.Ceil);
+        uint256 feeAmount = Math.mulDiv(amount, getStrategyActionFee(strategy, action), MAX_FEE, Math.Rounding.Ceil);
 
         // Emit event and explicit return statement
         emit FeeCharged(strategy, action, amount, feeAmount);
         return amount - feeAmount;
-    }
-
-    // Returns fee percentage based on action type on strategy
-    function _getFeeBasedOnAction(address strategy, IFeeManager.Action action) private view returns (uint8 fee) {
-        // Get fee configuration for strategy in storage not memory to avoid copying entire struct to memory, only reference/storage slot
-        Storage.StrategyFeeConfig storage feeConfig = Storage.layout().strategyFeeConfig[strategy];
-
-        if (action == IFeeManager.Action.Deposit) {
-            return feeConfig.depositFee;
-        } else if (action == IFeeManager.Action.Withdraw) {
-            return feeConfig.withdrawFee;
-        } else if (action == IFeeManager.Action.Compound) {
-            return feeConfig.compoundFee;
-        }
     }
 }

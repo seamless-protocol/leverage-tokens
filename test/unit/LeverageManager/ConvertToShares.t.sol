@@ -1,0 +1,36 @@
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.13;
+
+// Forge imports
+import {Test, console} from "forge-std/Test.sol";
+
+// Dependency imports
+import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
+
+// Internal imports
+import {ILendingContract} from "src/interfaces/ILendingContract.sol";
+import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
+import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
+import {BaseTest} from "./Base.t.sol";
+
+contract ConvertToShares is BaseTest {
+    function setUp() public override {
+        super.setUp();
+    }
+
+    function testFuzz_convertToShares(address strategy, uint128 equity, uint128 totalEquity, uint128 sharesTotalSupply)
+        public
+    {
+        vm.mockCall(
+            lendingContract,
+            abi.encodeWithSelector(ILendingContract.getStrategyEquityInDebtAsset.selector, strategy),
+            abi.encode(uint256(totalEquity))
+        );
+        leverageManager.mintShares(strategy, address(0), sharesTotalSupply);
+
+        uint256 shares = leverageManager.convertToShares(strategy, equity);
+        uint256 expectedShares = equity * (uint256(sharesTotalSupply) + 1) / (uint256(totalEquity) + 1);
+
+        assertEq(shares, expectedShares);
+    }
+}

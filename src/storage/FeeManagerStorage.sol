@@ -1,24 +1,16 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-library FeeManagerStorage {
-    /// @dev Struct that contains fee configuration for one strategy
-    struct StrategyFeeConfig {
-        /// @dev Fee on leveraged amount on deposit action
-        uint8 depositFee;
-        /// @dev Fee on leveraged amount on withdraw action
-        uint8 withdrawFee;
-        /// @dev Fee on leveraged amount on compound action
-        uint8 compoundFee;
-    }
+import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 
+library FeeManagerStorage {
     /// @dev Struct containing all state for the FeeManager contract
     /// @custom:storage-location erc7201:seamless.contracts.storage.FeeManager
     struct Layout {
         /// @dev Treasury address that receives all the fees
         address treasury;
-        /// @dev Strategy address => Config for strategy
-        mapping(address strategy => StrategyFeeConfig) strategyFeeConfig;
+        /// @dev Strategy address => Action => Fee
+        mapping(address strategy => mapping(IFeeManager.Action => uint256)) strategyActionFee;
     }
 
     //TODO: Fix this slot
