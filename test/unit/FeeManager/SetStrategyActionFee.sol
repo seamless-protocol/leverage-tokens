@@ -3,16 +3,12 @@ pragma solidity ^0.8.13;
 
 // Dependency imports
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 // Internal imports
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
-import {FeeManagerStorage as Storage} from "src/storage/FeeManagerStorage.sol";
 import {FeeManagerBaseTest} from "test/unit/FeeManager/FeeManagerBase.t.sol";
 
 contract SetStrategyActionFeeTest is FeeManagerBaseTest {
-    using SafeCast for uint256;
-
     function setUp() public override {
         super.setUp();
     }
@@ -20,6 +16,9 @@ contract SetStrategyActionFeeTest is FeeManagerBaseTest {
     function testFuzz_setStrategyActionFee(address strategy, uint256 actionNum, uint256 fee) public {
         IFeeManager.Action action = IFeeManager.Action(bound(actionNum, 0, 2));
         fee = bound(fee, 0, feeManager.MAX_FEE());
+
+        vm.expectEmit(true, true, true, true);
+        emit IFeeManager.StrategyActionFeeSet(strategy, action, fee);
 
         _setStrategyActionFee(feeManagerRole, strategy, action, fee);
 

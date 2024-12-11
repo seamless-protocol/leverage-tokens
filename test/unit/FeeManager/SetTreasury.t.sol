@@ -5,6 +5,7 @@ pragma solidity ^0.8.13;
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
 
 // Internal imports
+import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {FeeManagerBaseTest} from "test/unit/FeeManager/FeeManagerBase.t.sol";
 
 contract SetTreasuryTest is FeeManagerBaseTest {
@@ -14,8 +15,12 @@ contract SetTreasuryTest is FeeManagerBaseTest {
 
     function testFuzz_setTreasury(address treasury) public {
         vm.startPrank(feeManagerRole);
+
+        vm.expectEmit(true, true, true, true);
+        emit IFeeManager.TreasurySet(treasury);
+
         feeManager.setTreasury(treasury);
-        assertTrue(feeManager.getTreasury() == treasury);
+        assertEq(feeManager.getTreasury(), treasury);
     }
 
     function testFuzz_setTreasury_CallerIsNotFeeManagerRole(address caller, address treasury) public {

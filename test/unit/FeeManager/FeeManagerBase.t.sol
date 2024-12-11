@@ -1,27 +1,28 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+// Forge imports
 import {Test, console} from "forge-std/Test.sol";
 
+// Dependency imports
+import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
+
+// Local imports
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {FeeManager} from "src/FeeManager.sol";
-import {FeeManagerWrapper} from "test/unit/FeeManager/wrappers/FeeManagerWrapper.sol";
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {FeeManagerHarness} from "test/unit/FeeManager/wrappers/FeeManagerHarness.sol";
 
 contract FeeManagerBaseTest is Test {
     address public feeManagerRole = makeAddr("feeManagerRole");
-
-    FeeManagerWrapper public feeManager;
+    FeeManagerHarness public feeManager;
 
     function setUp() public virtual {
-        address feeManagerImplementation = address(new FeeManagerWrapper());
-        address feeManagerProxy = address(
-            new ERC1967Proxy(
-                feeManagerImplementation, abi.encodeWithSelector(FeeManager.__FeeManager_init.selector, address(this))
-            )
+        address feeManagerImplementation = address(new FeeManagerHarness());
+        address feeManagerProxy = UnsafeUpgrades.deployUUPSProxy(
+            feeManagerImplementation, abi.encodeWithSelector(FeeManager.__FeeManager_init.selector, address(this))
         );
 
-        feeManager = FeeManagerWrapper(feeManagerProxy);
+        feeManager = FeeManagerHarness(feeManagerProxy);
         feeManager.grantRole(feeManager.FEE_MANAGER_ROLE(), feeManagerRole);
     }
 
