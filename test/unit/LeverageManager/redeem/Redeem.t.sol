@@ -63,8 +63,8 @@ contract RedeemTest is LeverageManagerBaseTest {
         _mockConvertDebtToCollateralAsset(strategy, expectedDebtToRepay + expectedEquity, 900 ether);
         collateralToken.mint(address(leverageManager), 900 ether);
 
-        // vm.expectEmit(true, true, true, true);
-        // emit ILeverageManager.Redeem(strategy, address(this), recipient, amount, 900 ether);
+        vm.expectEmit(true, true, true, true);
+        emit ILeverageManager.Redeem(strategy, address(this), recipient, amount, 900 ether);
         leverageManager.redeem(strategy, amount, recipient, 0);
 
         // Debt tokens are taken from user to cover the debt
