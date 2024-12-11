@@ -22,7 +22,7 @@ contract CalculateExcessOfCollateralTest is LeverageManagerBaseTest {
         address strategy = makeAddr("strategy");
         uint128 collateralInDebt = 3000 ether;
         uint128 debt = 1000 ether;
-        uint256 targetRatio = 2 * BASE_RATIO; // 2x leverage
+        uint256 targetRatio = 2 * _BASE_RATIO(); // 2x leverage
 
         _mockState_CalculateExcessOfCollateral(
             CalculateExcessOfCollateralState({
@@ -33,7 +33,7 @@ contract CalculateExcessOfCollateralTest is LeverageManagerBaseTest {
             })
         );
 
-        uint256 excess = leverageManager.calculateExcessOfCollateral(strategy, leverageManager.getLendingContract());
+        uint256 excess = leverageManager.calculateExcessOfCollateral(strategy, _LENDING_CONTRACT());
         assertEq(excess, 1000 ether);
     }
 
@@ -41,7 +41,7 @@ contract CalculateExcessOfCollateralTest is LeverageManagerBaseTest {
         address strategy = makeAddr("strategy");
         uint128 collateralInDebt = 1999 ether;
         uint128 debt = 1000 ether;
-        uint256 targetRatio = 2 * BASE_RATIO; // 2x leverage
+        uint256 targetRatio = 2 * _BASE_RATIO(); // 2x leverage
 
         _mockState_CalculateExcessOfCollateral(
             CalculateExcessOfCollateralState({
@@ -52,38 +52,36 @@ contract CalculateExcessOfCollateralTest is LeverageManagerBaseTest {
             })
         );
 
-        uint256 excess = leverageManager.calculateExcessOfCollateral(strategy, leverageManager.getLendingContract());
+        uint256 excess = leverageManager.calculateExcessOfCollateral(strategy, _LENDING_CONTRACT());
         assertEq(excess, 0);
     }
 
     function testFuzz_calculateExcessOfCollateral_ExcessExists(CalculateExcessOfCollateralState memory state) public {
-        state.targetRatio = bound(state.targetRatio, BASE_RATIO, 200 * BASE_RATIO);
+        state.targetRatio = bound(state.targetRatio, _BASE_RATIO(), 200 * _BASE_RATIO());
 
         uint128 collateralInDebt = state.collateralInDebt;
         uint128 debt = state.debt;
         uint256 targetRatio = state.targetRatio;
 
-        vm.assume(collateralInDebt > debt * targetRatio / BASE_RATIO + 1);
+        vm.assume(collateralInDebt > debt * targetRatio / _BASE_RATIO() + 1);
 
         _mockState_CalculateExcessOfCollateral(state);
 
-        uint256 excess =
-            leverageManager.calculateExcessOfCollateral(state.strategy, leverageManager.getLendingContract());
+        uint256 excess = leverageManager.calculateExcessOfCollateral(state.strategy, _LENDING_CONTRACT());
 
-        uint256 expectedExcess = collateralInDebt - Math.mulDiv(debt, targetRatio, BASE_RATIO, Math.Rounding.Ceil);
+        uint256 expectedExcess = collateralInDebt - Math.mulDiv(debt, targetRatio, _BASE_RATIO(), Math.Rounding.Ceil);
         assertEq(excess, expectedExcess);
     }
 
     function testFuzz_calculateExcessOfCollateral_ExcessDoesNotExist(CalculateExcessOfCollateralState memory state)
         public
     {
-        state.targetRatio = bound(state.targetRatio, BASE_RATIO, 200 * BASE_RATIO);
-        vm.assume(state.collateralInDebt < state.debt * state.targetRatio / BASE_RATIO + 1);
+        state.targetRatio = bound(state.targetRatio, _BASE_RATIO(), 200 * _BASE_RATIO());
+        vm.assume(state.collateralInDebt < state.debt * state.targetRatio / _BASE_RATIO() + 1);
 
         _mockState_CalculateExcessOfCollateral(state);
 
-        uint256 excess =
-            leverageManager.calculateExcessOfCollateral(state.strategy, leverageManager.getLendingContract());
+        uint256 excess = leverageManager.calculateExcessOfCollateral(state.strategy, _LENDING_CONTRACT());
         assertEq(excess, 0);
     }
 }

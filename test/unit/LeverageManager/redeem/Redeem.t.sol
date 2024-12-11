@@ -39,7 +39,7 @@ contract RedeemTest is LeverageManagerBaseTest {
             // 1000 USDC debt
             debt: 1000 ether,
             // 2x leverage
-            targetRatio: 2 * BASE_RATIO,
+            targetRatio: 2 * _BASE_RATIO(),
             // 300 total shares supply
             totalShares: 300 ether,
             // User poses 1/3 of a shares
@@ -54,7 +54,7 @@ contract RedeemTest is LeverageManagerBaseTest {
         uint256 amountAfterFee = leverageManager.chargeStrategyFee(strategy, amount, IFeeManager.Action.Withdraw);
         uint256 expectedEquity = leverageManager.convertToEquity(strategy, amountAfterFee);
         uint256 expectedDebtToRepay =
-            leverageManager.calculateDebtToCoverEquity(strategy, leverageManager.getLendingContract(), expectedEquity);
+            leverageManager.calculateDebtToCoverEquity(strategy, _LENDING_CONTRACT(), expectedEquity);
 
         // Simulate withdraw from lending contract
         debtToken.mint(address(this), expectedDebtToRepay);
@@ -78,6 +78,16 @@ contract RedeemTest is LeverageManagerBaseTest {
         // Shares are burned
         assertEq(leverageManager.getTotalStrategyShares(strategy), state.totalShares - amount);
         assertEq(leverageManager.getUserStrategyShares(strategy, address(this)), state.userShares - amount);
+    }
+
+    function testFuzz_redeem_RevertIf_InsufficientBalance(uint256 userShares, uint256 amountToBurn) public {
+        userShares = bound(userShares, 1, type(uint256).max - 1);
+        amountToBurn = bound(amountToBurn, userShares + 1, type(uint256).max);
+
+        _mintShares(strategy, address(this), userShares);
+
+        vm.expectRevert(ILeverageManager.InsufficientBalance.selector);
+        leverageManager.redeem(strategy, amountToBurn, recipient, 0);
     }
 
     struct RedeemState {
