@@ -10,7 +10,7 @@ import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol"
 // Internal imports
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
-import {LeverageManagerBaseTest} from "./LeverageManagerBase.t.sol";
+import {LeverageManagerBaseTest} from "../LeverageManagerBase.t.sol";
 
 contract SetStrategyCapTest is LeverageManagerBaseTest {
     function setUp() public override {
@@ -18,10 +18,7 @@ contract SetStrategyCapTest is LeverageManagerBaseTest {
     }
 
     function testFuzz_setStrategyCap(address strategy, uint256 cap) public {
-        vm.prank(manager);
-        leverageManager.setStrategyCap(strategy, cap);
-
-        // Check if the strategy cap is set correctly
+        _setStrategyCap(manager, strategy, cap);
         assertEq(leverageManager.getStrategyCap(strategy), cap);
     }
 
@@ -31,15 +28,11 @@ contract SetStrategyCapTest is LeverageManagerBaseTest {
     {
         vm.assume(caller != manager);
 
-        vm.startPrank(caller);
-
         vm.expectRevert(
             abi.encodeWithSelector(
                 IAccessControl.AccessControlUnauthorizedAccount.selector, caller, leverageManager.MANAGER_ROLE()
             )
         );
-        leverageManager.setStrategyCap(strategy, cap);
-
-        vm.stopPrank();
+        _setStrategyCap(caller, strategy, cap);
     }
 }

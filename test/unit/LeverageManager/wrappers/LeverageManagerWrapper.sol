@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+import {FeeManagerHarness} from "test/unit/FeeManager/wrappers/FeeManagerHarness.sol";
 import {LeverageManager} from "src/LeverageManager.sol";
 import {ILendingContract} from "src/interfaces/ILendingContract.sol";
 
 /// @notice Wrapper contract that exposes all internal functions of LeverageManager
-contract LeverageManagerWrapper is LeverageManager {
+contract LeverageManagerWrapper is LeverageManager, FeeManagerHarness {
     function calculateDebtAndShares(address strategy, ILendingContract lendingContract, uint256 collateral)
         external
         view
@@ -16,15 +17,36 @@ contract LeverageManagerWrapper is LeverageManager {
 
     function chargeStrategyFeeAndMintShares(address strategy, address recipient, uint256 debt, uint256 collateral)
         external
+        returns (uint256)
     {
-        _chargeStrategyFeeAndMintShares(strategy, recipient, debt, collateral);
+        return _chargeStrategyFeeAndMintShares(strategy, recipient, debt, collateral);
     }
 
     function convertToShares(address strategy, uint256 equity) external view returns (uint256 shares) {
         return _convertToShares(strategy, equity);
     }
 
+    function convertToEquity(address strategy, uint256 shares) external view returns (uint256 equity) {
+        return _convertToEquity(strategy, shares);
+    }
+
     function mintShares(address strategy, address recipient, uint256 shares) external {
         _mintShares(strategy, recipient, shares);
+    }
+
+    function calculateExcessOfCollateral(address strategy, ILendingContract lendingContract)
+        external
+        view
+        returns (uint256 excessCollateral)
+    {
+        return _calculateExcessOfCollateral(strategy, lendingContract);
+    }
+
+    function calculateDebtToCoverEquity(address strategy, ILendingContract lendingContract, uint256 equity)
+        external
+        view
+        returns (uint256 debt)
+    {
+        return _calculateDebtToCoverEquity(strategy, lendingContract, equity);
     }
 }

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+import {console} from "forge-std/console.sol";
+
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
@@ -136,7 +138,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         (uint256 debtToBorrow, uint256 sharesToMint) = _calculateDebtAndShares(strategy, lendingContract, assets);
 
         // Charge strategy fee and mint shares for user. Revert if user does not receive enough shares
-        _chargeStrategyFeeAndMintShares(strategy, recipient, sharesToMint, minShares);
+        uint256 mintedShares = _chargeStrategyFeeAndMintShares(strategy, recipient, sharesToMint, minShares);
 
         // Take collateral tokens from caller and supply them as collateral on lending pool
         SafeERC20.safeTransferFrom(IERC20(getStrategyCollateralAsset(strategy)), msg.sender, address(this), assets);
@@ -144,11 +146,11 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
         // Borrow and send debt assets to user
         lendingContract.borrow(strategy, debtToBorrow);
-        SafeERC20.safeTransfer(IERC20(getStrategyDebtAsset(strategy)), recipient, debtToBorrow);
+        SafeERC20.safeTransfer(IERC20(getStrategyDebtAsset(strategy)), msg.sender, debtToBorrow);
 
         // Emit event and explicit return statement
-        emit Deposit(strategy, msg.sender, recipient, assets, sharesToMint);
-        return sharesToMint;
+        emit Deposit(strategy, msg.sender, recipient, assets, mintedShares);
+        return mintedShares;
     }
 
     // Calculate how much of a debt asset to borrow and how much shares should be minted for user for given collateral
@@ -173,6 +175,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
     function _chargeStrategyFeeAndMintShares(address strategy, address recipient, uint256 shares, uint256 minShares)
         internal
+        returns (uint256 sharesMinted)
     {
         // Calculate fee amount and deduct it from user's shares. Share fees are burned which increases overall share value
         uint256 sharesToMint = _chargeStrategyFee(strategy, shares, IFeeManager.Action.Deposit);
@@ -182,13 +185,16 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             revert InsufficientShares();
         }
 
-        _mintShares(strategy, recipient, shares);
+        _mintShares(strategy, recipient, sharesToMint);
+        return sharesToMint;
     }
 
     function _mintShares(address strategy, address recipient, uint256 shares) internal {
         Storage.Layout storage $ = Storage.layout();
         $.userStrategyShares[strategy][recipient] += shares;
         $.totalShares[strategy] += shares;
+
+        emit Mint(strategy, recipient, shares);
     }
 
     /// @inheritdoc ILeverageManager
@@ -203,27 +209,27 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         Storage.Layout storage $ = Storage.layout();
         ILendingContract lendingContract = getLendingContract();
 
-        // Burn shares from the user and decrease total shares in circulation. Burn them before sending tokens to user
-        $.userStrategyShares[strategy][msg.sender] -= shares;
-        $.totalShares[strategy] -= shares;
-
         // Charge strategy fee. Fee is not sent to treasury but burned which increases overall share value
-        shares = _chargeStrategyFee(strategy, shares, IFeeManager.Action.Withdraw);
+        uint256 sharesAfterFee = _chargeStrategyFee(strategy, shares, IFeeManager.Action.Withdraw);
 
-        uint256 equity = _convertToEquity(strategy, shares);
+        uint256 equity = _convertToEquity(strategy, sharesAfterFee);
         uint256 debtToRepay = _calculateDebtToCoverEquity(strategy, lendingContract, equity);
 
-        // Take assets from user and repay the debt
-        SafeERC20.safeTransferFrom(IERC20(getStrategyDebtAsset(strategy)), msg.sender, address(this), debtToRepay);
-        lendingContract.repay(strategy, debtToRepay);
-
-        // Calculate how much collateral assets user will receive for their equity and debt repaid
+        // Calculate how much collateral we need to give to user for their debt repaid. Important to calculate before repaying the debt
         uint256 userCollateralAssets = lendingContract.convertBaseToCollateralAsset(strategy, equity + debtToRepay);
 
         // Revert if user does not receive enough assets
         if (userCollateralAssets < minAssets) {
             revert InsufficientAssets();
         }
+
+        // Burn shares from user and total supply
+        $.userStrategyShares[strategy][msg.sender] -= shares;
+        $.totalShares[strategy] -= shares;
+
+        // Take assets from user and repay the debt
+        SafeERC20.safeTransferFrom(IERC20(getStrategyDebtAsset(strategy)), msg.sender, address(this), debtToRepay);
+        lendingContract.repay(strategy, debtToRepay);
 
         // Withdraw from lending pool and send assets to user
         lendingContract.withdraw(strategy, userCollateralAssets);
@@ -298,7 +304,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             shares,
             getStrategyEquityInDebtAsset(strategy) + 1,
             getTotalStrategyShares(strategy) + 10 ** _decimalsOffset(),
-            Math.Rounding.Ceil
+            Math.Rounding.Floor
         );
     }
 

@@ -26,7 +26,7 @@ contract FeeManagerBaseTest is Test {
         feeManager.grantRole(feeManager.FEE_MANAGER_ROLE(), feeManagerRole);
     }
 
-    function test_setUp() public view {
+    function test_setUp() public view virtual {
         assertTrue(feeManager.hasRole(feeManager.FEE_MANAGER_ROLE(), feeManagerRole));
     }
 

@@ -12,8 +12,10 @@ import {ILendingContract} from "src/interfaces/ILendingContract.sol";
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 import {LeverageManager} from "src/LeverageManager.sol";
 import {LeverageManagerWrapper} from "test/unit/LeverageManager/wrappers/LeverageManagerWrapper.sol";
+import {FeeManagerBaseTest} from "test/unit/FeeManager/FeeManagerBase.t.sol";
+import {FeeManagerHarness} from "test/unit/FeeManager/wrappers/FeeManagerHarness.sol";
 
-contract LeverageManagerBaseTest is Test {
+contract LeverageManagerBaseTest is FeeManagerBaseTest {
     address public lendingContract = makeAddr("lendingContract");
     address public defaultAdmin = makeAddr("defaultAdmin");
     address public manager = makeAddr("manager");
@@ -21,7 +23,7 @@ contract LeverageManagerBaseTest is Test {
     uint256 public BASE_RATIO;
     LeverageManagerWrapper public leverageManager;
 
-    function setUp() public virtual {
+    function setUp() public virtual override {
         address leverageManagerImplementation = address(new LeverageManagerWrapper());
         address leverageManagerProxy = address(
             new ERC1967Proxy(
@@ -34,6 +36,8 @@ contract LeverageManagerBaseTest is Test {
 
         vm.startPrank(defaultAdmin);
         leverageManager.grantRole(leverageManager.MANAGER_ROLE(), manager);
+        leverageManager.grantRole(leverageManager.FEE_MANAGER_ROLE(), feeManagerRole);
+        feeManager = FeeManagerHarness(address(leverageManager));
         vm.stopPrank();
 
         // TODO: Update this when external contract is figured out
@@ -42,8 +46,29 @@ contract LeverageManagerBaseTest is Test {
         vm.stopPrank();
     }
 
-    function test_setUp() public view {
+    function test_setUp() public view virtual override {
         assertTrue(leverageManager.hasRole(leverageManager.DEFAULT_ADMIN_ROLE(), defaultAdmin));
+    }
+
+    function _setStrategyCore(address caller, address strategy, Storage.StrategyCore memory core) internal {
+        vm.prank(caller);
+        leverageManager.setStrategyCore(strategy, core);
+    }
+
+    function _setStrategyCollateralRatios(address caller, address strategy, Storage.CollateralRatios memory ratios)
+        internal
+    {
+        vm.prank(caller);
+        leverageManager.setStrategyCollateralRatios(strategy, ratios);
+    }
+
+    function _setStrategyCap(address caller, address strategy, uint256 cap) internal {
+        vm.prank(caller);
+        leverageManager.setStrategyCap(strategy, cap);
+    }
+
+    function _mintShares(address strategy, address recipient, uint256 amount) internal {
+        leverageManager.mintShares(strategy, recipient, amount);
     }
 
     struct CalculateDebtAndSharesState {
@@ -56,9 +81,39 @@ contract LeverageManagerBaseTest is Test {
     }
 
     function _mockState_CalculateDebtAndShares(CalculateDebtAndSharesState memory state) internal {
-        _mockStrategyTotalSupply(state.strategy, state.strategyTotalShares);
-        _mockStrategyTotalEquity(state.strategy, state.totalEquity);
+        _mockState_ConvertToShareOrEquity(
+            ConvertToSharesState({
+                strategy: state.strategy,
+                totalEquity: state.totalEquity,
+                sharesTotalSupply: state.strategyTotalShares
+            })
+        );
+
         _mockConvertCollateral(state.strategy, state.collateral, state.convertedCollateral);
+        _mockStrategyTargetRatio(state.strategy, state.targetRatio);
+    }
+
+    struct ConvertToSharesState {
+        address strategy;
+        uint256 totalEquity;
+        uint256 sharesTotalSupply;
+    }
+
+    function _mockState_ConvertToShareOrEquity(ConvertToSharesState memory state) internal {
+        _mockStrategyTotalSupply(state.strategy, state.sharesTotalSupply);
+        _mockStrategyTotalEquity(state.strategy, state.totalEquity);
+    }
+
+    struct CalculateExcessOfCollateralState {
+        address strategy;
+        uint128 collateralInDebt;
+        uint128 debt;
+        uint256 targetRatio;
+    }
+
+    function _mockState_CalculateExcessOfCollateral(CalculateExcessOfCollateralState memory state) internal {
+        _mockStrategyCollateralInDebtAsset(state.strategy, state.collateralInDebt);
+        _mockStrategyDebt(state.strategy, state.debt);
         _mockStrategyTargetRatio(state.strategy, state.targetRatio);
     }
 
@@ -66,6 +121,30 @@ contract LeverageManagerBaseTest is Test {
         vm.mockCall(
             address(leverageManager.getLendingContract()),
             abi.encodeWithSelector(ILendingContract.convertCollateralToDebtAsset.selector, strategy, collateral),
+            abi.encode(debt)
+        );
+    }
+
+    function _mockStrategyCollateralInDebtAsset(address strategy, uint256 collateral) internal {
+        vm.mockCall(
+            address(leverageManager.getLendingContract()),
+            abi.encodeWithSelector(ILendingContract.getStrategyCollateralInDebtAsset.selector, strategy),
+            abi.encode(collateral)
+        );
+    }
+
+    function _mockConvertDebtToCollateralAsset(address strategy, uint256 debt, uint256 collateral) internal {
+        vm.mockCall(
+            address(leverageManager.getLendingContract()),
+            abi.encodeWithSelector(ILendingContract.convertBaseToCollateralAsset.selector, strategy, debt),
+            abi.encode(collateral)
+        );
+    }
+
+    function _mockStrategyDebt(address strategy, uint256 debt) internal {
+        vm.mockCall(
+            address(leverageManager.getLendingContract()),
+            abi.encodeWithSelector(ILendingContract.getStrategyDebt.selector, strategy),
             abi.encode(debt)
         );
     }

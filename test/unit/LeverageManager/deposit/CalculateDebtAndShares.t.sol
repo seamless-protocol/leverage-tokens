@@ -12,7 +12,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ILendingContract} from "src/interfaces/ILendingContract.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
-import {LeverageManagerBaseTest} from "./LeverageManagerBase.t.sol";
+import {LeverageManagerBaseTest} from "../LeverageManagerBase.t.sol";
 
 contract CalculateDebtAndSharesTest is LeverageManagerBaseTest {
     function setUp() public override {

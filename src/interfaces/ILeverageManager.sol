@@ -31,6 +31,9 @@ interface ILeverageManager {
     /// @notice Event emitted when caps are set/changed for a strategy
     event StrategyCapSet(address indexed strategy, uint256 cap);
 
+    /// @notice Event emitted when shares are minted to the user
+    event Mint(address indexed strategy, address recipient, uint256 sharers);
+
     /// @notice Event emitted when user deposits assets into strategy
     event Deposit(
         address indexed strategy, address indexed from, address indexed to, uint256 assets, uint256 sharesMinted
