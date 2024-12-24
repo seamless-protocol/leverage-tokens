@@ -13,7 +13,7 @@ contract SetStrategyActionFeeTest is FeeManagerBaseTest {
         super.setUp();
     }
 
-    function testFuzz_chargeStrategyFee(address strategy, uint256 amount, uint256 actionNum, uint256 fee) public {
+    function testFuzz_chargeStrategyFee(uint256 strategy, uint256 amount, uint256 actionNum, uint256 fee) public {
         IFeeManager.Action action = IFeeManager.Action(bound(actionNum, 0, 2));
         fee = bound(fee, 0, feeManager.MAX_FEE());
 

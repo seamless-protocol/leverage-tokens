@@ -10,7 +10,7 @@ library FeeManagerStorage {
         /// @dev Treasury address that receives all the fees
         address treasury;
         /// @dev Strategy address => Action => Fee
-        mapping(address strategy => mapping(IFeeManager.Action => uint256)) strategyActionFee;
+        mapping(uint256 strategy => mapping(IFeeManager.Action => uint256)) strategyActionFee;
     }
 
     bytes32 internal constant STORAGE_SLOT =

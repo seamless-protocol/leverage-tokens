@@ -6,7 +6,7 @@ import {FeeManager} from "src/FeeManager.sol";
 
 /// @notice Wrapper contract that exposes all internal functions ofFeeManager
 contract FeeManagerHarness is FeeManager {
-    function chargeStrategyFee(address strategy, uint256 amount, IFeeManager.Action action)
+    function chargeStrategyFee(uint256 strategy, uint256 amount, IFeeManager.Action action)
         external
         returns (uint256 amountAfterFee)
     {

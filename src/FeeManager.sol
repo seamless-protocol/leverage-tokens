@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+// Dependency imports
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+// Internal imports
 import {FeeManagerStorage as Storage} from "./storage/FeeManagerStorage.sol";
 import {IFeeManager} from "./interfaces/IFeeManager.sol";
 
@@ -28,8 +31,8 @@ contract FeeManager is IFeeManager, AccessControlUpgradeable {
     }
 
     /// @inheritdoc IFeeManager
-    function getStrategyActionFee(address strategy, IFeeManager.Action action) public view returns (uint256 fee) {
-        return Storage.layout().strategyActionFee[strategy][action];
+    function getStrategyActionFee(uint256 strategyId, IFeeManager.Action action) public view returns (uint256 fee) {
+        return Storage.layout().strategyActionFee[strategyId][action];
     }
 
     /// @inheritdoc IFeeManager
@@ -39,7 +42,7 @@ contract FeeManager is IFeeManager, AccessControlUpgradeable {
     }
 
     /// @inheritdoc IFeeManager
-    function setStrategyActionFee(address strategy, IFeeManager.Action action, uint256 fee)
+    function setStrategyActionFee(uint256 strategyId, IFeeManager.Action action, uint256 fee)
         external
         onlyRole(FEE_MANAGER_ROLE)
     {
@@ -48,21 +51,21 @@ contract FeeManager is IFeeManager, AccessControlUpgradeable {
             revert FeeTooHigh();
         }
 
-        Storage.layout().strategyActionFee[strategy][action] = fee;
-        emit StrategyActionFeeSet(strategy, action, fee);
+        Storage.layout().strategyActionFee[strategyId][action] = fee;
+        emit StrategyActionFeeSet(strategyId, action, fee);
     }
 
     // Calculates and charges fee based on action type
-    function _chargeStrategyFee(address strategy, uint256 amount, IFeeManager.Action action)
+    function _chargeStrategyFee(uint256 strategyId, uint256 amount, IFeeManager.Action action)
         internal
         returns (uint256 amountAfterFee)
     {
         // Calculate deposit fee (always round down up) and send it to treasury
         // This contract should be inherited by LeverageManager so we charge fees from this address
-        uint256 feeAmount = Math.mulDiv(amount, getStrategyActionFee(strategy, action), MAX_FEE, Math.Rounding.Ceil);
+        uint256 feeAmount = Math.mulDiv(amount, getStrategyActionFee(strategyId, action), MAX_FEE, Math.Rounding.Ceil);
 
         // Emit event and explicit return statement
-        emit FeeCharged(strategy, action, amount, feeAmount);
+        emit FeeCharged(strategyId, action, amount, feeAmount);
         return amount - feeAmount;
     }
 }

@@ -21,7 +21,7 @@ contract CalculateDebtAndSharesTest is LeverageManagerBaseTest {
 
     function test_calculateDebtAndShares() public {
         CalculateDebtAndSharesState memory state = CalculateDebtAndSharesState({
-            strategy: makeAddr("strategy"),
+            strategy: 1,
             targetRatio: 2 * _BASE_RATIO(), // 2x leverage also
             collateral: 1 ether,
             convertedCollateral: 3000 ether,
@@ -46,7 +46,7 @@ contract CalculateDebtAndSharesTest is LeverageManagerBaseTest {
         state.targetRatio = bound(state.targetRatio, _BASE_RATIO(), 200 * _BASE_RATIO());
         _mockState_CalculateDebtAndShares(state);
 
-        address strategy = state.strategy;
+        uint256 strategy = state.strategy;
         uint256 collateral = state.collateral;
         uint256 convertedCollateral = state.convertedCollateral;
         uint256 targetRatio = state.targetRatio;

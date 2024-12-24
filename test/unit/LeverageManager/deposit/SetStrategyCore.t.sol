@@ -17,7 +17,7 @@ contract SetStrategyCoreTest is LeverageManagerBaseTest {
         super.setUp();
     }
 
-    function testFuzz_SetStrategyCore(address strategy, Storage.StrategyCore calldata core) public {
+    function testFuzz_SetStrategyCore(uint256 strategy, Storage.StrategyCore calldata core) public {
         vm.assume(core.collateral != address(0) && core.debt != address(0));
 
         // Check if event is emitted properly
@@ -38,7 +38,7 @@ contract SetStrategyCoreTest is LeverageManagerBaseTest {
 
     // Core configuration of the strategy can be set only once
     function testFuzz_SetStrategyCore_RevertIf_CoreIsAlreadySet(
-        address strategy,
+        uint256 strategy,
         Storage.StrategyCore calldata core1,
         Storage.StrategyCore calldata core2
     ) public {
@@ -52,7 +52,7 @@ contract SetStrategyCoreTest is LeverageManagerBaseTest {
     }
 
     // Neither collateral nor debt asset can be zero address
-    function testFuzz_SetStrategyCore_RevertIf_CoreConfigIsInvalid(address strategy, address nonZeroAddress) public {
+    function testFuzz_SetStrategyCore_RevertIf_CoreConfigIsInvalid(uint256 strategy, address nonZeroAddress) public {
         vm.assume(nonZeroAddress != address(0));
 
         // Revert if collateral is zero address
@@ -71,7 +71,7 @@ contract SetStrategyCoreTest is LeverageManagerBaseTest {
     // Only manager can set core configuration of the strategy
     function testFuzz_SetStrategyCore_RevertIf_CallerIsNotManager(
         address caller,
-        address strategy,
+        uint256 strategy,
         Storage.StrategyCore calldata core
     ) public {
         vm.assume(caller != manager);

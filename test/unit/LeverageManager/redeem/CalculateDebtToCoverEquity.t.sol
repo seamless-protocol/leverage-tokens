@@ -19,7 +19,7 @@ contract CalculateDebtToCoverEquityTest is LeverageManagerBaseTest {
     }
 
     function test_calculateDebtToCoverEquity_EquityLowerThanExcess() public {
-        address strategy = makeAddr("strategy");
+        uint256 strategy = 1;
         uint128 collateralInDebt = 3000 ether;
         uint128 debt = 1000 ether;
         uint256 targetRatio = 2 * _BASE_RATIO(); // 2x leverage
@@ -40,7 +40,7 @@ contract CalculateDebtToCoverEquityTest is LeverageManagerBaseTest {
     }
 
     function test_calculateDebtToCoverEquity_EquityBiggerThanExcess() public {
-        address strategy = makeAddr("strategy");
+        uint256 strategy = 1;
         uint128 collateralInDebt = 3000 ether;
         uint128 debt = 1000 ether;
         uint256 targetRatio = 2 * _BASE_RATIO(); // 2x leverage
@@ -65,8 +65,6 @@ contract CalculateDebtToCoverEquityTest is LeverageManagerBaseTest {
     {
         state.targetRatio = bound(state.targetRatio, _BASE_RATIO() + 1, 200 * _BASE_RATIO());
 
-        uint128 collateralInDebt = state.collateralInDebt;
-        uint128 debt = state.debt;
         uint256 targetRatio = state.targetRatio;
 
         _mockState_CalculateExcessOfCollateral(state);

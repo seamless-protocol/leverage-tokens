@@ -19,7 +19,7 @@ contract CalculateExcessOfCollateralTest is LeverageManagerBaseTest {
     }
 
     function test_calculateExcessOfCollateral_ExcessExists() public {
-        address strategy = makeAddr("strategy");
+        uint256 strategy = 1;
         uint128 collateralInDebt = 3000 ether;
         uint128 debt = 1000 ether;
         uint256 targetRatio = 2 * _BASE_RATIO(); // 2x leverage
@@ -38,7 +38,7 @@ contract CalculateExcessOfCollateralTest is LeverageManagerBaseTest {
     }
 
     function test_calculateExcessOfCollateral_ExcessDoesNotExist() public {
-        address strategy = makeAddr("strategy");
+        uint256 strategy = 1;
         uint128 collateralInDebt = 1999 ether;
         uint128 debt = 1000 ether;
         uint256 targetRatio = 2 * _BASE_RATIO(); // 2x leverage

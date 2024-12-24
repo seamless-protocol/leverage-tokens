@@ -39,11 +39,11 @@ library LeverageManagerStorage {
         /// @dev Address of the smart contract that contains all lending pool logic
         address lendingContract;
         /// @dev Strategy address => Config for strategy
-        mapping(address strategy => StrategyConfig) config;
+        mapping(uint256 strategy => StrategyConfig) config;
         /// @dev Strategy address => Total shares in circulation
-        mapping(address strategy => uint256) totalShares;
+        mapping(uint256 strategy => uint256) totalShares;
         /// @dev Strategy address => User address => Shares that user owns
-        mapping(address strategy => mapping(address user => uint256)) userStrategyShares;
+        mapping(uint256 strategy => mapping(address user => uint256)) userStrategyShares;
     }
 
     bytes32 internal constant STORAGE_SLOT = keccak256(

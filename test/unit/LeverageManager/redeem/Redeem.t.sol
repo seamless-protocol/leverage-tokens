@@ -16,8 +16,8 @@ import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStor
 import {LeverageManagerBaseTest} from "../LeverageManagerBase.t.sol";
 
 contract RedeemTest is LeverageManagerBaseTest {
+    uint256 public strategy = 1;
     address recipient = makeAddr("recipient");
-    address public strategy = makeAddr("strategy");
     ERC20Mock public collateralToken = new ERC20Mock();
     ERC20Mock public debtToken = new ERC20Mock();
 
@@ -76,22 +76,12 @@ contract RedeemTest is LeverageManagerBaseTest {
         assertEq(collateralToken.balanceOf(address(leverageManager)), 0);
 
         // Shares are burned
-        assertEq(leverageManager.getTotalStrategyShares(strategy), state.totalShares - amount);
-        assertEq(leverageManager.getUserStrategyShares(strategy, address(this)), state.userShares - amount);
-    }
-
-    function testFuzz_redeem_RevertIf_InsufficientBalance(uint256 userShares, uint256 amountToBurn) public {
-        userShares = bound(userShares, 1, type(uint256).max - 1);
-        amountToBurn = bound(amountToBurn, userShares + 1, type(uint256).max);
-
-        _mintShares(strategy, address(this), userShares);
-
-        vm.expectRevert(ILeverageManager.InsufficientBalance.selector);
-        leverageManager.redeem(strategy, amountToBurn, recipient, 0);
+        assertEq(leverageManager.totalSupply(strategy), state.totalShares - amount);
+        assertEq(leverageManager.balanceOf(address(this), strategy), state.userShares - amount);
     }
 
     struct RedeemState {
-        address strategy;
+        uint256 strategy;
         uint128 fee;
         uint128 collateralInDebt;
         uint128 debt;

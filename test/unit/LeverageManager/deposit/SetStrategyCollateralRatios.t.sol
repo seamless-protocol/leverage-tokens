@@ -17,7 +17,7 @@ contract SetStrategyCollateralRatiosTest is LeverageManagerBaseTest {
         super.setUp();
     }
 
-    function testFuzz_setStrategyCollateralRatios(address strategy, Storage.CollateralRatios memory ratios) public {
+    function testFuzz_setStrategyCollateralRatios(uint256 strategy, Storage.CollateralRatios memory ratios) public {
         vm.assume(ratios.minForRebalance <= ratios.target && ratios.target <= ratios.maxForRebalance);
 
         vm.expectEmit(true, true, true, true);
@@ -37,7 +37,7 @@ contract SetStrategyCollateralRatiosTest is LeverageManagerBaseTest {
 
     // If target ratio is not in between min and max ratios, then the transaction should revert
     function testFuzz_setStrategyCollateralRatios_RevertIf_InvalidCollateralRatios(
-        address strategy,
+        uint256 strategy,
         Storage.CollateralRatios memory ratios
     ) public {
         vm.assume(ratios.minForRebalance > ratios.target || ratios.maxForRebalance < ratios.target);
@@ -48,7 +48,7 @@ contract SetStrategyCollateralRatiosTest is LeverageManagerBaseTest {
     // If caller is not the manager, then the transaction should revert
     function testFuzz_setStrategyCollateralRatios_RevertIf_CallerIsNotManager(
         address caller,
-        address strategy,
+        uint256 strategy,
         Storage.CollateralRatios memory ratios
     ) public {
         vm.assume(caller != manager);

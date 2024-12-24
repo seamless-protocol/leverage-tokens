@@ -17,13 +17,13 @@ contract SetStrategyCapTest is LeverageManagerBaseTest {
         super.setUp();
     }
 
-    function testFuzz_setStrategyCap(address strategy, uint256 cap) public {
+    function testFuzz_setStrategyCap(uint256 strategy, uint256 cap) public {
         _setStrategyCap(manager, strategy, cap);
         assertEq(leverageManager.getStrategyCap(strategy), cap);
     }
 
     // If caller is not the manager, then the transaction should revert
-    function testFuzz_setStrategyCap_RevertIf_CallerIsNotManager(address caller, address strategy, uint256 cap)
+    function testFuzz_setStrategyCap_RevertIf_CallerIsNotManager(address caller, uint256 strategy, uint256 cap)
         public
     {
         vm.assume(caller != manager);

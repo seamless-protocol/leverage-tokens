@@ -13,7 +13,7 @@ contract SetStrategyActionFeeTest is FeeManagerBaseTest {
         super.setUp();
     }
 
-    function testFuzz_setStrategyActionFee(address strategy, uint256 actionNum, uint256 fee) public {
+    function testFuzz_setStrategyActionFee(uint256 strategy, uint256 actionNum, uint256 fee) public {
         IFeeManager.Action action = IFeeManager.Action(bound(actionNum, 0, 2));
         fee = bound(fee, 0, feeManager.MAX_FEE());
 
@@ -27,7 +27,7 @@ contract SetStrategyActionFeeTest is FeeManagerBaseTest {
 
     function testFuzz_setStrategyActionFee_CallerIsNotFeeManagerRole(
         address caller,
-        address strategy,
+        uint256 strategy,
         uint256 actionNum,
         uint256 fee
     ) public {
@@ -42,7 +42,7 @@ contract SetStrategyActionFeeTest is FeeManagerBaseTest {
         _setStrategyActionFee(caller, strategy, action, fee);
     }
 
-    function testFuzz_setStrategyActionFee_RevertIfFeeTooHigh(address strategy, uint256 actionNum, uint256 fee)
+    function testFuzz_setStrategyActionFee_RevertIfFeeTooHigh(uint256 strategy, uint256 actionNum, uint256 fee)
         public
     {
         IFeeManager.Action action = IFeeManager.Action(bound(actionNum, 0, 2));

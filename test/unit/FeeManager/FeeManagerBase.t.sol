@@ -30,7 +30,7 @@ contract FeeManagerBaseTest is Test {
         assertTrue(feeManager.hasRole(feeManager.FEE_MANAGER_ROLE(), feeManagerRole));
     }
 
-    function _setStrategyActionFee(address caller, address strategy, IFeeManager.Action action, uint256 fee) internal {
+    function _setStrategyActionFee(address caller, uint256 strategy, IFeeManager.Action action, uint256 fee) internal {
         vm.prank(caller);
         feeManager.setStrategyActionFee(strategy, action, fee);
     }
