@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 
-interface ILendingContract {
+interface ILendingAdapter {
     /// @notice Returns total collateral of the strategy denominated in debt asset of the strategy
     /// @param strategy Strategy to query collateral for
     /// @return collateral Total collateral of the strategy

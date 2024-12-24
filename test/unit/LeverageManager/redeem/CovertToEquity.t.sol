@@ -5,7 +5,7 @@ pragma solidity ^0.8.13;
 import {Test, console} from "forge-std/Test.sol";
 
 // Internal imports
-import {ILendingContract} from "src/interfaces/ILendingContract.sol";
+import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 import {LeverageManagerBaseTest} from "../LeverageManagerBase.t.sol";

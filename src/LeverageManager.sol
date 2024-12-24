@@ -11,7 +11,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import {ILendingContract} from "src/interfaces/ILendingContract.sol";
+import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 
 contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManager, UUPSUpgradeable {
     // Base collateral ratio constant, 1e8 = 1x
@@ -36,7 +36,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function getStrategyLendingAdapter(address strategy) public view returns (ILendingContract adapter) {
+    function getStrategyLendingAdapter(address strategy) public view returns (ILendingAdapter adapter) {
         return Storage.layout().lendingAdapter[strategy];
     }
 
@@ -86,7 +86,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
     /// @inheritdoc ILeverageManager
     function setStrategyLendingAdapter(address strategy, address adapter) external onlyRole(MANAGER_ROLE) {
-        Storage.layout().lendingAdapter[strategy] = ILendingContract(adapter);
+        Storage.layout().lendingAdapter[strategy] = ILendingAdapter(adapter);
         emit StrategyLendingAdapterSet(strategy, adapter);
     }
 
@@ -133,7 +133,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         returns (uint256 shares)
     {
         // Cache
-        ILendingContract lendingAdapter = getStrategyLendingAdapter(strategy);
+        ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
 
         // Calculate how much to borrow and how much shares to mint for user. It must be done before supplying and borrowing
         (uint256 debtToBorrow, uint256 sharesToMint) = _calculateDebtAndShares(strategy, lendingAdapter, assets);
@@ -155,13 +155,13 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     // Calculate how much of a debt asset to borrow and how much shares should be minted for user for given collateral
-    function _calculateDebtAndShares(address strategy, ILendingContract lendingContract, uint256 collateral)
+    function _calculateDebtAndShares(address strategy, ILendingAdapter lendingAdapter, uint256 collateral)
         internal
         view
         returns (uint256 debt, uint256 shares)
     {
         // Calculate how much of a debt corresponds to collateral. Debt is rounded down, debt = collateral / target ratio
-        uint256 collateralInDebtAsset = lendingContract.convertCollateralToDebtAsset(strategy, collateral);
+        uint256 collateralInDebtAsset = lendingAdapter.convertCollateralToDebtAsset(strategy, collateral);
 
         uint256 debtToBorrow = Math.mulDiv(
             collateralInDebtAsset, BASE_RATIO, getStrategyTargetCollateralRatio(strategy), Math.Rounding.Ceil
@@ -208,16 +208,16 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         }
 
         Storage.Layout storage $ = Storage.layout();
-        ILendingContract lendingContract = getStrategyLendingAdapter(strategy);
+        ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
 
         // Charge strategy fee. Fee is not sent to treasury but burned which increases overall share value
         uint256 sharesAfterFee = _chargeStrategyFee(strategy, shares, IFeeManager.Action.Withdraw);
 
         uint256 equity = _convertToEquity(strategy, sharesAfterFee);
-        uint256 debtToRepay = _calculateDebtToCoverEquity(strategy, lendingContract, equity);
+        uint256 debtToRepay = _calculateDebtToCoverEquity(strategy, lendingAdapter, equity);
 
         // Calculate how much collateral we need to give to user for their debt repaid. Important to calculate before repaying the debt
-        uint256 userCollateralAssets = lendingContract.convertBaseToCollateralAsset(strategy, equity + debtToRepay);
+        uint256 userCollateralAssets = lendingAdapter.convertBaseToCollateralAsset(strategy, equity + debtToRepay);
 
         // Revert if user does not receive enough assets
         if (userCollateralAssets < minAssets) {
@@ -230,10 +230,10 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
         // Take assets from user and repay the debt
         SafeERC20.safeTransferFrom(IERC20(getStrategyDebtAsset(strategy)), msg.sender, address(this), debtToRepay);
-        lendingContract.repay(strategy, debtToRepay);
+        lendingAdapter.repay(strategy, debtToRepay);
 
         // Withdraw from lending pool and send assets to user
-        lendingContract.withdraw(strategy, userCollateralAssets);
+        lendingAdapter.withdraw(strategy, userCollateralAssets);
         SafeERC20.safeTransfer(IERC20(getStrategyCollateralAsset(strategy)), recipient, userCollateralAssets);
 
         // Emit event and explicit return statement
@@ -242,13 +242,13 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     // Calculates how much debt should user repay to cover equity they want to redeem
-    function _calculateDebtToCoverEquity(address strategy, ILendingContract lendingContract, uint256 equity)
+    function _calculateDebtToCoverEquity(address strategy, ILendingAdapter lendingAdapter, uint256 equity)
         internal
         view
         returns (uint256 requiredDebt)
     {
         // Get excess excess collateral in debt asset. Excess of collateral can be redeemed without repaying the debt
-        uint256 excessCollateral = _calculateExcessOfCollateral(strategy, lendingContract);
+        uint256 excessCollateral = _calculateExcessOfCollateral(strategy, lendingAdapter);
 
         // If strategy has enough excess of collateral, user can redeem their equity without repaying any debt
         if (excessCollateral >= equity) {
@@ -268,14 +268,14 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     // This function calculates how much excess of collateral strategy has denominated in debt asset
-    function _calculateExcessOfCollateral(address strategy, ILendingContract lendingContract)
+    function _calculateExcessOfCollateral(address strategy, ILendingAdapter lendingAdapter)
         internal
         view
         returns (uint256 excessCollateral)
     {
         // Get collateral and debt of the strategy denominated in debt asset
-        uint256 collateral = lendingContract.getStrategyCollateralInDebtAsset(strategy);
-        uint256 debt = lendingContract.getStrategyDebt(strategy);
+        uint256 collateral = lendingAdapter.getStrategyCollateralInDebtAsset(strategy);
+        uint256 debt = lendingAdapter.getStrategyDebt(strategy);
 
         // Calculate how much collateral should be in the strategy to match target ratio
         uint256 targetRatio = getStrategyTargetCollateralRatio(strategy);

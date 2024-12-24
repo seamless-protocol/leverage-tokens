@@ -3,16 +3,16 @@ pragma solidity ^0.8.13;
 
 import {FeeManagerHarness} from "test/unit/FeeManager/wrappers/FeeManagerHarness.sol";
 import {LeverageManager} from "src/LeverageManager.sol";
-import {ILendingContract} from "src/interfaces/ILendingContract.sol";
+import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 
 /// @notice Wrapper contract that exposes all internal functions of LeverageManager
 contract LeverageManagerWrapper is LeverageManager, FeeManagerHarness {
-    function calculateDebtAndShares(address strategy, ILendingContract lendingContract, uint256 collateral)
+    function calculateDebtAndShares(address strategy, ILendingAdapter lendingAdapter, uint256 collateral)
         external
         view
         returns (uint256 debt, uint256 shares)
     {
-        return _calculateDebtAndShares(strategy, lendingContract, collateral);
+        return _calculateDebtAndShares(strategy, lendingAdapter, collateral);
     }
 
     function chargeStrategyFeeAndMintShares(address strategy, address recipient, uint256 debt, uint256 collateral)
@@ -34,19 +34,19 @@ contract LeverageManagerWrapper is LeverageManager, FeeManagerHarness {
         _mintShares(strategy, recipient, shares);
     }
 
-    function calculateExcessOfCollateral(address strategy, ILendingContract lendingContract)
+    function calculateExcessOfCollateral(address strategy, ILendingAdapter lendingAdapter)
         external
         view
         returns (uint256 excessCollateral)
     {
-        return _calculateExcessOfCollateral(strategy, lendingContract);
+        return _calculateExcessOfCollateral(strategy, lendingAdapter);
     }
 
-    function calculateDebtToCoverEquity(address strategy, ILendingContract lendingContract, uint256 equity)
+    function calculateDebtToCoverEquity(address strategy, ILendingAdapter lendingAdapter, uint256 equity)
         external
         view
         returns (uint256 debt)
     {
-        return _calculateDebtToCoverEquity(strategy, lendingContract, equity);
+        return _calculateDebtToCoverEquity(strategy, lendingAdapter, equity);
     }
 }

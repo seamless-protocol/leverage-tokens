@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {ILendingContract} from "./ILendingContract.sol";
+import {ILendingAdapter} from "./ILendingAdapter.sol";
 import {LeverageManagerStorage as Storage} from "../storage/LeverageManagerStorage.sol";
 
 interface ILeverageManager {
@@ -56,7 +56,7 @@ interface ILeverageManager {
     /// @notice Returns lending adapter for the strategy
     /// @param strategy Strategy to get lending adapter for
     /// @return adapter Lending adapter for the strategy
-    function getStrategyLendingAdapter(address strategy) external view returns (ILendingContract adapter);
+    function getStrategyLendingAdapter(address strategy) external view returns (ILendingAdapter adapter);
 
     /// @notice Returns strategy cap in collateral asset
     /// @param strategy Strategy to get cap for

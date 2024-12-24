@@ -8,7 +8,7 @@ import {Test, console} from "forge-std/Test.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 // Internal imports
-import {ILendingContract} from "src/interfaces/ILendingContract.sol";
+import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 import {LeverageManager} from "src/LeverageManager.sol";
 import {LeverageManagerWrapper} from "test/unit/LeverageManager/wrappers/LeverageManagerWrapper.sol";
@@ -16,7 +16,7 @@ import {FeeManagerBaseTest} from "test/unit/FeeManager/FeeManagerBase.t.sol";
 import {FeeManagerHarness} from "test/unit/FeeManager/wrappers/FeeManagerHarness.sol";
 
 contract LeverageManagerBaseTest is FeeManagerBaseTest {
-    address public lendingContract = makeAddr("lendingContract");
+    address public lendingAdapter = makeAddr("lendingAdapter");
     address public defaultAdmin = makeAddr("defaultAdmin");
     address public manager = makeAddr("manager");
 
@@ -47,7 +47,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         return leverageManager.BASE_RATIO();
     }
 
-    function _getLendingAdapter(address strategy) internal view returns (ILendingContract) {
+    function _getLendingAdapter(address strategy) internal view returns (ILendingAdapter) {
         return leverageManager.getStrategyLendingAdapter(strategy);
     }
 
@@ -121,7 +121,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     function _mockConvertCollateral(address strategy, uint256 collateral, uint256 debt) internal {
         vm.mockCall(
             address(leverageManager.getStrategyLendingAdapter(strategy)),
-            abi.encodeWithSelector(ILendingContract.convertCollateralToDebtAsset.selector, strategy, collateral),
+            abi.encodeWithSelector(ILendingAdapter.convertCollateralToDebtAsset.selector, strategy, collateral),
             abi.encode(debt)
         );
     }
@@ -129,7 +129,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     function _mockStrategyCollateralInDebtAsset(address strategy, uint256 collateral) internal {
         vm.mockCall(
             address(leverageManager.getStrategyLendingAdapter(strategy)),
-            abi.encodeWithSelector(ILendingContract.getStrategyCollateralInDebtAsset.selector, strategy),
+            abi.encodeWithSelector(ILendingAdapter.getStrategyCollateralInDebtAsset.selector, strategy),
             abi.encode(collateral)
         );
     }
@@ -137,7 +137,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     function _mockConvertDebtToCollateralAsset(address strategy, uint256 debt, uint256 collateral) internal {
         vm.mockCall(
             address(leverageManager.getStrategyLendingAdapter(strategy)),
-            abi.encodeWithSelector(ILendingContract.convertBaseToCollateralAsset.selector, strategy, debt),
+            abi.encodeWithSelector(ILendingAdapter.convertBaseToCollateralAsset.selector, strategy, debt),
             abi.encode(collateral)
         );
     }
@@ -145,7 +145,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     function _mockStrategyDebt(address strategy, uint256 debt) internal {
         vm.mockCall(
             address(leverageManager.getStrategyLendingAdapter(strategy)),
-            abi.encodeWithSelector(ILendingContract.getStrategyDebt.selector, strategy),
+            abi.encodeWithSelector(ILendingAdapter.getStrategyDebt.selector, strategy),
             abi.encode(debt)
         );
     }
@@ -153,7 +153,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     function _mockStrategyTotalEquity(address strategy, uint256 totalEquity) internal {
         vm.mockCall(
             address(leverageManager.getStrategyLendingAdapter(strategy)),
-            abi.encodeWithSelector(ILendingContract.getStrategyEquityInDebtAsset.selector, strategy),
+            abi.encodeWithSelector(ILendingAdapter.getStrategyEquityInDebtAsset.selector, strategy),
             abi.encode(totalEquity)
         );
     }
