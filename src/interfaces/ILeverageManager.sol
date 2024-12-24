@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+import {ILendingContract} from "./ILendingContract.sol";
 import {LeverageManagerStorage as Storage} from "../storage/LeverageManagerStorage.sol";
 
 interface ILeverageManager {
@@ -24,6 +25,9 @@ interface ILeverageManager {
 
     /// @notice Event emitted when core config of the strategy is set
     event StrategyCoreSet(address indexed strategy, Storage.StrategyCore core);
+
+    /// @notice Event emitted when lending adapter is set for the strategy
+    event StrategyLendingAdapterSet(address indexed strategy, address adapter);
 
     /// @notice Event emitted when collateral ratios are set for a strategy
     event StrategyCollateralRatiosSet(address indexed strategy, Storage.CollateralRatios ratios);
@@ -49,11 +53,16 @@ interface ILeverageManager {
     /// @return core Core config of the strategy
     function getStrategyCore(address strategy) external returns (Storage.StrategyCore memory core);
 
+    /// @notice Returns lending adapter for the strategy
+    /// @param strategy Strategy to get lending adapter for
+    /// @return adapter Lending adapter for the strategy
+    function getStrategyLendingAdapter(address strategy) external view returns (ILendingContract adapter);
+
     /// @notice Returns strategy cap in collateral asset
     /// @param strategy Strategy to get cap for
     /// @return cap Strategy cap
     /// @dev Strategy cap is leveraged amount in collateral asset
-    function getStrategyCap(address strategy) external view returns (uint256 cap);
+    function getStrategyCollateralCap(address strategy) external view returns (uint256 cap);
 
     /// @notice Returns leverage config for a strategy including min, max and target
     /// @param strategy Strategy to get leverage config for
@@ -154,6 +163,12 @@ interface ILeverageManager {
     /// @dev Only MANAGER role can call this function. Core can be set only once and can never be changed
     function setStrategyCore(address strategy, Storage.StrategyCore calldata core) external;
 
+    /// @notice Sets lending adapter for the strategy
+    /// @param strategy Strategy to set lending adapter for
+    /// @param adapter Adapter to set
+    /// @dev Only MANAGER role can call this function
+    function setStrategyLendingAdapter(address strategy, address adapter) external;
+
     /// @notice Sets collateral ratios for a strategy including min/max for rebalance and target
     /// @param strategy Strategy to set collateral ratios for
     /// @param ratios Collateral ratios to set
@@ -165,7 +180,7 @@ interface ILeverageManager {
     /// @param cap Cap for strategy
     /// @dev Cap for strategy is leveraged amount in collateral asset
     /// @dev Only address with MANAGER role can call this function
-    function setStrategyCap(address strategy, uint256 cap) external;
+    function setStrategyCollateralCap(address strategy, uint256 cap) external;
 
     /// @notice Mints shares of a strategy and deposits assets into it, recipient receives shares and debt
     /// @param strategy The strategy to deposit into

@@ -33,7 +33,7 @@ contract CalculateExcessOfCollateralTest is LeverageManagerBaseTest {
             })
         );
 
-        uint256 excess = leverageManager.calculateExcessOfCollateral(strategy, _LENDING_CONTRACT());
+        uint256 excess = leverageManager.calculateExcessOfCollateral(strategy, _getLendingAdapter(strategy));
         assertEq(excess, 1000 ether);
     }
 
@@ -52,7 +52,7 @@ contract CalculateExcessOfCollateralTest is LeverageManagerBaseTest {
             })
         );
 
-        uint256 excess = leverageManager.calculateExcessOfCollateral(strategy, _LENDING_CONTRACT());
+        uint256 excess = leverageManager.calculateExcessOfCollateral(strategy, _getLendingAdapter(strategy));
         assertEq(excess, 0);
     }
 
@@ -67,7 +67,7 @@ contract CalculateExcessOfCollateralTest is LeverageManagerBaseTest {
 
         _mockState_CalculateExcessOfCollateral(state);
 
-        uint256 excess = leverageManager.calculateExcessOfCollateral(state.strategy, _LENDING_CONTRACT());
+        uint256 excess = leverageManager.calculateExcessOfCollateral(state.strategy, _getLendingAdapter(state.strategy));
 
         uint256 expectedExcess = collateralInDebt - Math.mulDiv(debt, targetRatio, _BASE_RATIO(), Math.Rounding.Ceil);
         assertEq(excess, expectedExcess);
@@ -81,7 +81,7 @@ contract CalculateExcessOfCollateralTest is LeverageManagerBaseTest {
 
         _mockState_CalculateExcessOfCollateral(state);
 
-        uint256 excess = leverageManager.calculateExcessOfCollateral(state.strategy, _LENDING_CONTRACT());
+        uint256 excess = leverageManager.calculateExcessOfCollateral(state.strategy, _getLendingAdapter(state.strategy));
         assertEq(excess, 0);
     }
 }

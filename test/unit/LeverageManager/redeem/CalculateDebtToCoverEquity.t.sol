@@ -34,7 +34,8 @@ contract CalculateDebtToCoverEquityTest is LeverageManagerBaseTest {
         );
 
         uint256 equity = 1000 ether;
-        uint256 debtToCoverEquity = leverageManager.calculateDebtToCoverEquity(strategy, _LENDING_CONTRACT(), equity);
+        uint256 debtToCoverEquity =
+            leverageManager.calculateDebtToCoverEquity(strategy, _getLendingAdapter(strategy), equity);
 
         assertEq(debtToCoverEquity, 0);
     }
@@ -55,7 +56,8 @@ contract CalculateDebtToCoverEquityTest is LeverageManagerBaseTest {
         );
 
         uint256 equity = 1500 ether;
-        uint256 debtToCoverEquity = leverageManager.calculateDebtToCoverEquity(strategy, _LENDING_CONTRACT(), equity);
+        uint256 debtToCoverEquity =
+            leverageManager.calculateDebtToCoverEquity(strategy, _getLendingAdapter(strategy), equity);
 
         assertEq(debtToCoverEquity, 500 ether);
     }
@@ -64,17 +66,14 @@ contract CalculateDebtToCoverEquityTest is LeverageManagerBaseTest {
         public
     {
         state.targetRatio = bound(state.targetRatio, _BASE_RATIO() + 1, 200 * _BASE_RATIO());
-
-        uint128 collateralInDebt = state.collateralInDebt;
-        uint128 debt = state.debt;
         uint256 targetRatio = state.targetRatio;
 
         _mockState_CalculateExcessOfCollateral(state);
 
-        uint256 excess = leverageManager.calculateExcessOfCollateral(state.strategy, _LENDING_CONTRACT());
+        uint256 excess = leverageManager.calculateExcessOfCollateral(state.strategy, _getLendingAdapter(state.strategy));
 
         uint256 debtToCoverEquity =
-            leverageManager.calculateDebtToCoverEquity(state.strategy, _LENDING_CONTRACT(), equity);
+            leverageManager.calculateDebtToCoverEquity(state.strategy, _getLendingAdapter(state.strategy), equity);
 
         if (excess >= equity) {
             assertEq(debtToCoverEquity, 0);

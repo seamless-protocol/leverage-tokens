@@ -74,7 +74,7 @@ contract LeverageManagerDepositTest is LeverageManagerBaseTest {
         _mockState_CalculateDebtAndShares(state);
 
         (uint256 expectedDebtToReceive, uint256 sharesBeforeFee) =
-            leverageManager.calculateDebtAndShares(state.strategy, _LENDING_CONTRACT(), state.collateral);
+            leverageManager.calculateDebtAndShares(state.strategy, _getLendingAdapter(state.strategy), state.collateral);
         uint256 expectedSharesToReceive =
             leverageManager.chargeStrategyFee(strategy, sharesBeforeFee, IFeeManager.Action.Deposit);
 

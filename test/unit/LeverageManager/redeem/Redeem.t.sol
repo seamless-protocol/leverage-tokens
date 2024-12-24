@@ -54,7 +54,7 @@ contract RedeemTest is LeverageManagerBaseTest {
         uint256 amountAfterFee = leverageManager.chargeStrategyFee(strategy, amount, IFeeManager.Action.Withdraw);
         uint256 expectedEquity = leverageManager.convertToEquity(strategy, amountAfterFee);
         uint256 expectedDebtToRepay =
-            leverageManager.calculateDebtToCoverEquity(strategy, _LENDING_CONTRACT(), expectedEquity);
+            leverageManager.calculateDebtToCoverEquity(strategy, _getLendingAdapter(state.strategy), expectedEquity);
 
         // Simulate withdraw from lending contract
         debtToken.mint(address(this), expectedDebtToRepay);

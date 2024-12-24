@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {console} from "forge-std/console.sol";
-
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
@@ -27,10 +25,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}
 
-    function getLendingContract() public view returns (ILendingContract lendingContract) {
-        return ILendingContract(Storage.layout().lendingContract);
-    }
-
     /// @inheritdoc ILeverageManager
     function getStrategyConfig(address strategy) external view returns (Storage.StrategyConfig memory config) {
         return Storage.layout().config[strategy];
@@ -39,6 +33,11 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     /// @inheritdoc ILeverageManager
     function getStrategyCore(address strategy) external view returns (Storage.StrategyCore memory core) {
         return Storage.layout().config[strategy].core;
+    }
+
+    /// @inheritdoc ILeverageManager
+    function getStrategyLendingAdapter(address strategy) public view returns (ILendingContract adapter) {
+        return Storage.layout().lendingAdapter[strategy];
     }
 
     /// @inheritdoc ILeverageManager
@@ -51,7 +50,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function getStrategyCap(address strategy) external view returns (uint256 cap) {
+    function getStrategyCollateralCap(address strategy) external view returns (uint256 cap) {
         return Storage.layout().config[strategy].cap;
     }
 
@@ -67,7 +66,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
     /// @inheritdoc ILeverageManager
     function getStrategyEquityInDebtAsset(address strategy) public view returns (uint256 equity) {
-        return getLendingContract().getStrategyEquityInDebtAsset(strategy);
+        return getStrategyLendingAdapter(strategy).getStrategyEquityInDebtAsset(strategy);
     }
 
     /// @inheritdoc ILeverageManager
@@ -85,8 +84,10 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         return Storage.layout().config[strategy].collateralRatios.target;
     }
 
-    function setLendingContract(address lendingContract) external onlyRole(MANAGER_ROLE) {
-        Storage.layout().lendingContract = lendingContract;
+    /// @inheritdoc ILeverageManager
+    function setStrategyLendingAdapter(address strategy, address adapter) external onlyRole(MANAGER_ROLE) {
+        Storage.layout().lendingAdapter[strategy] = ILendingContract(adapter);
+        emit StrategyLendingAdapterSet(strategy, adapter);
     }
 
     /// @inheritdoc ILeverageManager
@@ -121,7 +122,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function setStrategyCap(address strategy, uint256 cap) external onlyRole(MANAGER_ROLE) {
+    function setStrategyCollateralCap(address strategy, uint256 cap) external onlyRole(MANAGER_ROLE) {
         Storage.layout().config[strategy].cap = cap;
         emit StrategyCapSet(strategy, cap);
     }
@@ -132,20 +133,20 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         returns (uint256 shares)
     {
         // Cache
-        ILendingContract lendingContract = getLendingContract();
+        ILendingContract lendingAdapter = getStrategyLendingAdapter(strategy);
 
         // Calculate how much to borrow and how much shares to mint for user. It must be done before supplying and borrowing
-        (uint256 debtToBorrow, uint256 sharesToMint) = _calculateDebtAndShares(strategy, lendingContract, assets);
+        (uint256 debtToBorrow, uint256 sharesToMint) = _calculateDebtAndShares(strategy, lendingAdapter, assets);
 
         // Charge strategy fee and mint shares for user. Revert if user does not receive enough shares
         uint256 mintedShares = _chargeStrategyFeeAndMintShares(strategy, recipient, sharesToMint, minShares);
 
         // Take collateral tokens from caller and supply them as collateral on lending pool
         SafeERC20.safeTransferFrom(IERC20(getStrategyCollateralAsset(strategy)), msg.sender, address(this), assets);
-        lendingContract.supply(strategy, assets);
+        lendingAdapter.addCollateral(strategy, assets);
 
         // Borrow and send debt assets to user
-        lendingContract.borrow(strategy, debtToBorrow);
+        lendingAdapter.borrow(strategy, debtToBorrow);
         SafeERC20.safeTransfer(IERC20(getStrategyDebtAsset(strategy)), msg.sender, debtToBorrow);
 
         // Emit event and explicit return statement
@@ -207,7 +208,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         }
 
         Storage.Layout storage $ = Storage.layout();
-        ILendingContract lendingContract = getLendingContract();
+        ILendingContract lendingContract = getStrategyLendingAdapter(strategy);
 
         // Charge strategy fee. Fee is not sent to treasury but burned which increases overall share value
         uint256 sharesAfterFee = _chargeStrategyFee(strategy, shares, IFeeManager.Action.Withdraw);

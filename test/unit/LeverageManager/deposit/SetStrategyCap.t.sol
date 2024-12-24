@@ -12,20 +12,22 @@ import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 import {LeverageManagerBaseTest} from "../LeverageManagerBase.t.sol";
 
-contract SetStrategyCapTest is LeverageManagerBaseTest {
+contract setStrategyCollateralCapTest is LeverageManagerBaseTest {
     function setUp() public override {
         super.setUp();
     }
 
-    function testFuzz_setStrategyCap(address strategy, uint256 cap) public {
-        _setStrategyCap(manager, strategy, cap);
-        assertEq(leverageManager.getStrategyCap(strategy), cap);
+    function testFuzz_setStrategyCollateralCap(address strategy, uint256 cap) public {
+        _setStrategyCollateralCap(manager, strategy, cap);
+        assertEq(leverageManager.getStrategyCollateralCap(strategy), cap);
     }
 
     // If caller is not the manager, then the transaction should revert
-    function testFuzz_setStrategyCap_RevertIf_CallerIsNotManager(address caller, address strategy, uint256 cap)
-        public
-    {
+    function testFuzz_setStrategyCollateralCap_RevertIf_CallerIsNotManager(
+        address caller,
+        address strategy,
+        uint256 cap
+    ) public {
         vm.assume(caller != manager);
 
         vm.expectRevert(
@@ -33,6 +35,6 @@ contract SetStrategyCapTest is LeverageManagerBaseTest {
                 IAccessControl.AccessControlUnauthorizedAccount.selector, caller, leverageManager.MANAGER_ROLE()
             )
         );
-        _setStrategyCap(caller, strategy, cap);
+        _setStrategyCollateralCap(caller, strategy, cap);
     }
 }

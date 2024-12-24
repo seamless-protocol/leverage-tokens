@@ -50,7 +50,7 @@ interface ILendingContract {
     /// @notice Supplies assets to the lending pool
     /// @param strategy Address of the strategy
     /// @param amount Amount of assets to supply
-    function supply(address strategy, uint256 amount) external;
+    function addCollateral(address strategy, uint256 amount) external;
 
     /// @notice Withdraws collateral asset from lending pool
     /// @param strategy Address of the strategy

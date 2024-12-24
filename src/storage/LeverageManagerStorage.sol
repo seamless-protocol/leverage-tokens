@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+import {ILendingContract} from "src/interfaces/ILendingContract.sol";
+
 library LeverageManagerStorage {
     /// @dev Struct that contains all core immutable strategy parameters
     struct StrategyCore {
@@ -35,11 +37,10 @@ library LeverageManagerStorage {
     /// @dev Struct containing all state for the LeverageManager contract
     /// @custom:storage-location erc7201:seamless.contracts.storage.LeverageManager
     struct Layout {
-        // TODO: Figure out should lendingContract be internal lib, external lib or external contract
-        /// @dev Address of the smart contract that contains all lending pool logic
-        address lendingContract;
         /// @dev Strategy address => Config for strategy
         mapping(address strategy => StrategyConfig) config;
+        /// @dev Strategy address => Adapter address for lending pool
+        mapping(address strategy => ILendingContract) lendingAdapter;
         /// @dev Strategy address => Total shares in circulation
         mapping(address strategy => uint256) totalShares;
         /// @dev Strategy address => User address => Shares that user owns
