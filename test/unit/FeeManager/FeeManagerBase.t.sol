@@ -10,7 +10,7 @@ import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 // Local imports
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {FeeManager} from "src/FeeManager.sol";
-import {FeeManagerHarness} from "test/unit/FeeManager/wrappers/FeeManagerHarness.sol";
+import {FeeManagerHarness} from "test/unit/FeeManager/harness/FeeManagerHarness.sol";
 
 contract FeeManagerBaseTest is Test {
     address public feeManagerRole = makeAddr("feeManagerRole");
