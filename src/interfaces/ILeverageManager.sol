@@ -43,11 +43,6 @@ interface ILeverageManager {
         address indexed strategy, address indexed from, address indexed to, uint256 assets, uint256 sharesMinted
     );
 
-    /// @notice Event emitted when user redeems shares
-    event Redeem(
-        address indexed strategy, address indexed from, address indexed to, uint256 shares, uint256 collateral
-    );
-
     /// @notice Returns core of the strategy which is collateral asset, debt asset and lending pool
     /// @param strategy Strategy to get assets for
     /// @return core Core config of the strategy
@@ -96,37 +91,11 @@ interface ILeverageManager {
     /// @return shares The total amount of shares in circulation for the strategy
     function getTotalStrategyShares(address strategy) external view returns (uint256 shares);
 
-    /// @notice Returns the total collateral of the strategy denominated in collateral asset
-    /// @param strategy The strategy to query collateral for
-    /// @return collateral The total collateral of the strategy
-    function getStrategyCollateral(address strategy) external view returns (uint256 collateral);
-
-    /// @notice Returns total strategy debt denominated in debt asset
-    /// @param strategy The strategy to query collateral for
-    /// @return debt The total debt of the strategy
-    function getStrategyDebt(address strategy) external view returns (uint256 debt);
-
-    /// @notice Returns total equity of the strategy denominated in collateral asset
-    /// @param strategy Strategy to query equity for
-    /// @return equity Equity of the strategy
-    function getStrategyEquity(address strategy) external view returns (uint256 equity);
-
-    /// @notice Returns total equity of the strategy denominated in USD
-    /// @param strategy Strategy to query equity for
-    /// @return equityUSD Equity of the strategy
-    function getStrategyEquityUSD(address strategy) external view returns (uint256 equityUSD);
-
     /// @notice Returns the amount of shares a user has in a strategy
     /// @param strategy The strategy to query shares for
     /// @param user The user to query shares for
     /// @return shares The amount of shares the user has in the strategy
     function getUserStrategyShares(address strategy, address user) external view returns (uint256 shares);
-
-    /// @notice Returns the amount of assets a user has in a strategy
-    /// @param strategy The strategy to query assets for
-    /// @param user The user to query assets for
-    /// @return assets The amount of assets the user has in the strategy
-    function getUserStrategyAssets(address strategy, address user) external view returns (uint256 assets);
 
     /// @notice Returns equity of the strategy denominated in debt asset of the strategy
     /// @param strategy Strategy to query equity for
@@ -192,17 +161,6 @@ interface ILeverageManager {
     function deposit(address strategy, uint256 assets, address recipient, uint256 minShares)
         external
         returns (uint256 shares);
-
-    /// @notice Redeems shares of a strategy and withdraws assets from it, recipient receives assets but repays the debt
-    /// @param strategy The strategy to redeem from
-    /// @param shares Amount of shares to burn
-    /// @param recipient The address to receive the collateral asset
-    /// @param minAssets The minimum amount of assets to receive
-    /// @return assets Actual amount of assets given to the user
-    /// @dev Must emit the Redeem event
-    function redeem(address strategy, uint256 shares, address recipient, uint256 minAssets)
-        external
-        returns (uint256 assets);
 
     // TODO: interface for rebalance functions
 }

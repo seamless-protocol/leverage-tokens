@@ -11,7 +11,7 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 import {LeverageManager} from "src/LeverageManager.sol";
-import {LeverageManagerWrapper} from "test/unit/LeverageManager/wrappers/LeverageManagerWrapper.sol";
+import {LeverageManagerHarness} from "test/unit/LeverageManager/harness/LeverageManagerHarness.sol";
 import {FeeManagerBaseTest} from "test/unit/FeeManager/FeeManagerBase.t.sol";
 import {FeeManagerHarness} from "test/unit/FeeManager/wrappers/FeeManagerHarness.sol";
 
@@ -20,17 +20,17 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     address public defaultAdmin = makeAddr("defaultAdmin");
     address public manager = makeAddr("manager");
 
-    LeverageManagerWrapper public leverageManager;
+    LeverageManagerHarness public leverageManager;
 
     function setUp() public virtual override {
-        address leverageManagerImplementation = address(new LeverageManagerWrapper());
+        address leverageManagerImplementation = address(new LeverageManagerHarness());
         address leverageManagerProxy = address(
             new ERC1967Proxy(
                 leverageManagerImplementation, abi.encodeWithSelector(LeverageManager.initialize.selector, defaultAdmin)
             )
         );
 
-        leverageManager = LeverageManagerWrapper(leverageManagerProxy);
+        leverageManager = LeverageManagerHarness(leverageManagerProxy);
 
         vm.startPrank(defaultAdmin);
         leverageManager.grantRole(leverageManager.MANAGER_ROLE(), manager);
