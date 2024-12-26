@@ -23,8 +23,9 @@ contract SetTreasuryTest is FeeManagerBaseTest {
         assertEq(feeManager.getTreasury(), treasury);
     }
 
-    function testFuzz_setTreasury_CallerIsNotFeeManagerRole(address treasury) public {
+    function test_setTreasury_CallerIsNotFeeManagerRole() public {
         address caller = makeAddr("caller");
+        address treasury = makeAddr("treasury");
 
         vm.expectRevert(
             abi.encodeWithSelector(
