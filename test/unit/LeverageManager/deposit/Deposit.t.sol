@@ -69,14 +69,14 @@ contract LeverageManagerDepositTest is LeverageManagerBaseTest {
         assertEq(returnValue, expectedSharesToReceive);
     }
 
-    /*
     function testFuzz_deposit(CalculateDebtAndSharesState memory state, address recipient) public {
         state.strategy = strategy;
         state.targetRatio = bound(state.targetRatio, _BASE_RATIO(), 200 * _BASE_RATIO());
         _mockState_CalculateDebtAndShares(state);
 
-        (uint256 expectedDebtToReceive, uint256 sharesBeforeFee) =
-            leverageManager.calculateDebtAndShares(state.strategy, _getLendingAdapter(state.strategy), state.collateral);
+        (uint256 expectedDebtToReceive, uint256 sharesBeforeFee) = leverageManager.exposed_calculateDebtAndShares(
+            state.strategy, _getLendingAdapter(state.strategy), state.collateral
+        );
         uint256 expectedSharesToReceive =
             leverageManager.exposed_chargeStrategyFee(strategy, sharesBeforeFee, IFeeManager.Action.Deposit);
 
@@ -98,7 +98,6 @@ contract LeverageManagerDepositTest is LeverageManagerBaseTest {
 
         assertEq(returnValue, expectedSharesToReceive);
     }
-    */
 
     function testFuzz_deposit_RevertIf_CollateralExceedsCap(uint128 amount, uint128 currentCollateral, uint256 cap)
         public
