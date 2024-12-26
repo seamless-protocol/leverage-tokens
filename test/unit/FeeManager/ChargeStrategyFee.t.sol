@@ -15,16 +15,15 @@ contract SetStrategyActionFeeTest is FeeManagerBaseTest {
 
     function test_chargeStrategyFee_FeeRoundedUp() public {
         address strategy = makeAddr("strategy");
-        uint256 amount = 100 ether + 5 wei;
-        uint256 fee = 25_00; // 30%
-        uint256 expectedFee = 25 ether + 2 wei; // Expect fee to be rounded up
+        uint256 amount = 1;
+        uint256 fee = 1;
 
-        for (uint256 i = 0; i < 3; i++) {
+        for (uint256 i = 0; i < uint256(type(IFeeManager.Action).max) + 1; i++) {
             _setStrategyActionFee(feeManagerRole, strategy, IFeeManager.Action(i), fee);
 
             uint256 amountAfterFee = feeManager.exposed_chargeStrategyFee(strategy, amount, IFeeManager.Action.Deposit);
 
-            assertEq(amountAfterFee, amount - expectedFee);
+            assertEq(amountAfterFee, 0);
         }
     }
 
