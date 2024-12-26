@@ -43,6 +43,11 @@ interface ILeverageManager {
         address indexed strategy, address indexed from, address indexed to, uint256 assets, uint256 sharesMinted
     );
 
+    /// @notice Event emitted when user redeems shares
+    event Redeem(
+        address indexed strategy, address indexed from, address indexed to, uint256 shares, uint256 collateral
+    );
+
     /// @notice Returns core of the strategy which is collateral asset, debt asset and lending pool
     /// @param strategy Strategy to get assets for
     /// @return core Core config of the strategy
@@ -161,6 +166,17 @@ interface ILeverageManager {
     function deposit(address strategy, uint256 assets, address recipient, uint256 minShares)
         external
         returns (uint256 shares);
+
+    /// @notice Redeems shares of a strategy and withdraws assets from it, recipient receives assets but repays the debt
+    /// @param strategy The strategy to redeem from
+    /// @param shares Amount of shares to burn
+    /// @param recipient The address to receive the collateral asset
+    /// @param minAssets The minimum amount of assets to receive
+    /// @return assets Actual amount of assets given to the user
+    /// @dev Must emit the Redeem event
+    function redeem(address strategy, uint256 shares, address recipient, uint256 minAssets)
+        external
+        returns (uint256 assets);
 
     // TODO: interface for rebalance functions
 }

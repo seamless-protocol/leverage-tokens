@@ -26,7 +26,27 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
         return _convertToShares(strategy, equity);
     }
 
+    function convertToEquity(address strategy, uint256 shares) external view returns (uint256 equity) {
+        return _convertToEquity(strategy, shares);
+    }
+
     function mintShares(address strategy, address recipient, uint256 shares) external {
         _mintShares(strategy, recipient, shares);
+    }
+
+    function calculateExcessOfCollateral(address strategy, ILendingAdapter lendingAdapter)
+        external
+        view
+        returns (uint256 excessCollateral)
+    {
+        return _calculateExcessOfCollateral(strategy, lendingAdapter);
+    }
+
+    function calculateDebtToCoverEquity(address strategy, ILendingAdapter lendingAdapter, uint256 equity)
+        external
+        view
+        returns (uint256 debt)
+    {
+        return _calculateDebtToCoverEquity(strategy, lendingAdapter, equity);
     }
 }
