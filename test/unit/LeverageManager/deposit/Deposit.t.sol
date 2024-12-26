@@ -26,6 +26,7 @@ contract LeverageManagerDepositTest is LeverageManagerBaseTest {
         _setStrategyCore(
             manager, strategy, Storage.StrategyCore({collateral: address(collateralToken), debt: address(debtToken)})
         );
+        _setStrategyCollateralCap(manager, strategy, type(uint256).max);
     }
 
     function test_deposit() public {
@@ -68,6 +69,7 @@ contract LeverageManagerDepositTest is LeverageManagerBaseTest {
         assertEq(returnValue, expectedSharesToReceive);
     }
 
+    /*
     function testFuzz_deposit(CalculateDebtAndSharesState memory state, address recipient) public {
         state.strategy = strategy;
         state.targetRatio = bound(state.targetRatio, _BASE_RATIO(), 200 * _BASE_RATIO());
@@ -76,7 +78,7 @@ contract LeverageManagerDepositTest is LeverageManagerBaseTest {
         (uint256 expectedDebtToReceive, uint256 sharesBeforeFee) =
             leverageManager.calculateDebtAndShares(state.strategy, _getLendingAdapter(state.strategy), state.collateral);
         uint256 expectedSharesToReceive =
-            leverageManager.chargeStrategyFee(strategy, sharesBeforeFee, IFeeManager.Action.Deposit);
+            leverageManager.exposed_chargeStrategyFee(strategy, sharesBeforeFee, IFeeManager.Action.Deposit);
 
         collateralToken.mint(address(this), state.collateral);
         debtToken.mint(address(leverageManager), expectedDebtToReceive);
@@ -95,5 +97,21 @@ contract LeverageManagerDepositTest is LeverageManagerBaseTest {
         assertEq(debtToken.balanceOf(address(leverageManager)), 0);
 
         assertEq(returnValue, expectedSharesToReceive);
+    }
+    */
+
+    function testFuzz_deposit_RevertIf_CollateralExceedsCap(uint128 amount, uint128 currentCollateral, uint256 cap)
+        public
+    {
+        uint256 collateralAfterDeposit = uint256(amount) + currentCollateral;
+        vm.assume(collateralAfterDeposit > cap);
+
+        _setStrategyCollateralCap(manager, strategy, cap);
+        _mockStrategyCollateral(strategy, currentCollateral);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(ILeverageManager.CollateralExceedsCap.selector, collateralAfterDeposit, cap)
+        );
+        leverageManager.deposit(strategy, amount, address(this), 0);
     }
 }

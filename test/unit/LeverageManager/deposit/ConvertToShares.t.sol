@@ -25,7 +25,7 @@ contract ConvertToShares is LeverageManagerBaseTest {
             ConvertToSharesState({strategy: strategy, totalEquity: totalEquity, sharesTotalSupply: sharesTotalSupply})
         );
 
-        uint256 shares = leverageManager.convertToShares(strategy, equity);
+        uint256 shares = leverageManager.exposed_convertToShares(strategy, equity);
         uint256 expectedShares = equity * (uint256(sharesTotalSupply) + 1) / (uint256(totalEquity) + 1);
 
         assertEq(shares, expectedShares);

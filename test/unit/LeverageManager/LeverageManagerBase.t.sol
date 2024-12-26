@@ -4,8 +4,8 @@ pragma solidity ^0.8.13;
 // Forge imports
 import {Test, console} from "forge-std/Test.sol";
 
-// Dependencies imports
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+// Dependency imports
+import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
@@ -24,10 +24,8 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
 
     function setUp() public virtual override {
         address leverageManagerImplementation = address(new LeverageManagerHarness());
-        address leverageManagerProxy = address(
-            new ERC1967Proxy(
-                leverageManagerImplementation, abi.encodeWithSelector(LeverageManager.initialize.selector, defaultAdmin)
-            )
+        address leverageManagerProxy = UnsafeUpgrades.deployUUPSProxy(
+            leverageManagerImplementation, abi.encodeWithSelector(LeverageManager.initialize.selector, defaultAdmin)
         );
 
         leverageManager = LeverageManagerHarness(leverageManagerProxy);
@@ -69,7 +67,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     }
 
     function _mintShares(address strategy, address recipient, uint256 amount) internal {
-        leverageManager.mintShares(strategy, recipient, amount);
+        leverageManager.exposed_mintShares(strategy, recipient, amount);
     }
 
     struct CalculateDebtAndSharesState {
@@ -90,8 +88,17 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
             })
         );
 
+        _mockStrategyCollateral(state.strategy, state.collateral);
         _mockConvertCollateral(state.strategy, state.collateral, state.convertedCollateral);
         _mockStrategyTargetRatio(state.strategy, state.targetRatio);
+    }
+
+    function _mockStrategyCollateral(address strategy, uint256 collateral) internal {
+        vm.mockCall(
+            address(_getLendingAdapter(strategy)),
+            abi.encodeWithSelector(ILendingAdapter.getStrategyCollateral.selector, strategy),
+            abi.encode(collateral)
+        );
     }
 
     struct ConvertToSharesState {
@@ -113,8 +120,6 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     }
 
     function _mockState_CalculateExcessOfCollateral(CalculateExcessOfCollateralState memory state) internal {
-        _mockStrategyCollateralInDebtAsset(state.strategy, state.collateralInDebt);
-        _mockStrategyDebt(state.strategy, state.debt);
         _mockStrategyTargetRatio(state.strategy, state.targetRatio);
     }
 
@@ -122,30 +127,6 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         vm.mockCall(
             address(leverageManager.getStrategyLendingAdapter(strategy)),
             abi.encodeWithSelector(ILendingAdapter.convertCollateralToDebtAsset.selector, strategy, collateral),
-            abi.encode(debt)
-        );
-    }
-
-    function _mockStrategyCollateralInDebtAsset(address strategy, uint256 collateral) internal {
-        vm.mockCall(
-            address(leverageManager.getStrategyLendingAdapter(strategy)),
-            abi.encodeWithSelector(ILendingAdapter.getStrategyCollateralInDebtAsset.selector, strategy),
-            abi.encode(collateral)
-        );
-    }
-
-    function _mockConvertDebtToCollateralAsset(address strategy, uint256 debt, uint256 collateral) internal {
-        vm.mockCall(
-            address(leverageManager.getStrategyLendingAdapter(strategy)),
-            abi.encodeWithSelector(ILendingAdapter.convertBaseToCollateralAsset.selector, strategy, debt),
-            abi.encode(collateral)
-        );
-    }
-
-    function _mockStrategyDebt(address strategy, uint256 debt) internal {
-        vm.mockCall(
-            address(leverageManager.getStrategyLendingAdapter(strategy)),
-            abi.encodeWithSelector(ILendingAdapter.getStrategyDebt.selector, strategy),
             abi.encode(debt)
         );
     }
@@ -159,7 +140,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     }
 
     function _mockStrategyTotalSupply(address strategy, uint256 totalSupply) internal {
-        leverageManager.mintShares(strategy, address(0), totalSupply);
+        leverageManager.exposed_mintShares(strategy, address(0), totalSupply);
     }
 
     function _mockStrategyTargetRatio(address strategy, uint256 targetRatio) internal {

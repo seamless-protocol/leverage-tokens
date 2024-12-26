@@ -47,14 +47,10 @@ library LeverageManagerStorage {
         mapping(address strategy => mapping(address user => uint256)) userStrategyShares;
     }
 
-    bytes32 internal constant STORAGE_SLOT = keccak256(
-        abi.encode(uint256(keccak256("seamless.contracts.storage.LeverageManager")) - 1)
-    ) & ~bytes32(uint256(0xff));
-
     function layout() internal pure returns (Layout storage l) {
-        bytes32 slot = STORAGE_SLOT;
         assembly {
-            l.slot := slot
+            // keccak256(abi.encode(uint256(keccak256("seamless.contracts.storage.LeverageManager")) - 1)) & ~bytes32(uint256(0xff));
+            l.slot := 0x6c0d8f7f1305f10aa51c80093531513ff85a99140b414f68890d41ac36949e00
         }
     }
 }

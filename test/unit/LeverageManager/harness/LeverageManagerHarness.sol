@@ -7,7 +7,7 @@ import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 
 /// @notice Wrapper contract that exposes all internal functions of LeverageManager
 contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
-    function calculateDebtAndShares(address strategy, ILendingAdapter lendingAdapter, uint256 collateral)
+    function exposed_calculateDebtAndShares(address strategy, ILendingAdapter lendingAdapter, uint256 collateral)
         external
         view
         returns (uint256 debt, uint256 shares)
@@ -15,18 +15,20 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
         return _calculateDebtAndShares(strategy, lendingAdapter, collateral);
     }
 
-    function chargeStrategyFeeAndMintShares(address strategy, address recipient, uint256 debt, uint256 collateral)
-        external
-        returns (uint256)
-    {
+    function exposed_chargeStrategyFeeAndMintShares(
+        address strategy,
+        address recipient,
+        uint256 debt,
+        uint256 collateral
+    ) external returns (uint256) {
         return _chargeStrategyFeeAndMintShares(strategy, recipient, debt, collateral);
     }
 
-    function convertToShares(address strategy, uint256 equity) external view returns (uint256 shares) {
+    function exposed_convertToShares(address strategy, uint256 equity) external view returns (uint256 shares) {
         return _convertToShares(strategy, equity);
     }
 
-    function mintShares(address strategy, address recipient, uint256 shares) external {
+    function exposed_mintShares(address strategy, address recipient, uint256 shares) external {
         _mintShares(strategy, recipient, shares);
     }
 }

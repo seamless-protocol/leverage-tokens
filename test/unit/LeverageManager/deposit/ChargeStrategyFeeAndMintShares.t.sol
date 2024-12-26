@@ -27,10 +27,12 @@ contract ChargeStrategyFeeAndMintSharesTest is LeverageManagerBaseTest {
         fee = bound(fee, 0, leverageManager.MAX_FEE());
         _setStrategyActionFee(feeManagerRole, strategy, IFeeManager.Action.Deposit, fee);
 
-        uint256 expectedShares =
-            FeeManagerHarness(address(leverageManager)).chargeStrategyFee(strategy, shares, IFeeManager.Action.Deposit);
+        uint256 expectedShares = FeeManagerHarness(address(leverageManager)).exposed_chargeStrategyFee(
+            strategy, shares, IFeeManager.Action.Deposit
+        );
 
-        uint256 returnValue = leverageManager.chargeStrategyFeeAndMintShares(strategy, to, shares, expectedShares);
+        uint256 returnValue =
+            leverageManager.exposed_chargeStrategyFeeAndMintShares(strategy, to, shares, expectedShares);
 
         assertEq(leverageManager.getTotalStrategyShares(strategy), expectedShares);
         assertEq(leverageManager.getUserStrategyShares(strategy, to), expectedShares);
@@ -46,10 +48,13 @@ contract ChargeStrategyFeeAndMintSharesTest is LeverageManagerBaseTest {
         fee = bound(fee, 1, leverageManager.MAX_FEE());
         _setStrategyActionFee(feeManagerRole, strategy, IFeeManager.Action.Deposit, fee);
 
-        uint256 expectedShares =
-            FeeManagerHarness(address(leverageManager)).chargeStrategyFee(strategy, shares, IFeeManager.Action.Deposit);
+        uint256 expectedShares = FeeManagerHarness(address(leverageManager)).exposed_chargeStrategyFee(
+            strategy, shares, IFeeManager.Action.Deposit
+        );
 
-        vm.expectRevert(abi.encodeWithSelector(ILeverageManager.InsufficientShares.selector));
-        leverageManager.chargeStrategyFeeAndMintShares(strategy, to, shares, expectedShares + 1);
+        vm.expectRevert(
+            abi.encodeWithSelector(ILeverageManager.InsufficientShares.selector, expectedShares, expectedShares + 1)
+        );
+        leverageManager.exposed_chargeStrategyFeeAndMintShares(strategy, to, shares, expectedShares + 1);
     }
 }

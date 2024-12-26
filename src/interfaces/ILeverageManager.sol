@@ -14,14 +14,11 @@ interface ILeverageManager {
     /// @notice Error thrown when collateral ratios are invalid
     error InvalidCollateralRatios();
 
-    /// @notice Error thrown when user wants to deposit more assets than he has or when tries to burn more shares than he has
-    error InsufficientBalance();
+    /// @notice Error thrown when user tries to deposit into strategy more than cap
+    error CollateralExceedsCap(uint256 collateral, uint256 cap);
 
     /// @notice Error thrown when user receives less shares than requested
-    error InsufficientShares();
-
-    /// @notice Error thrown when user receives less collateral assets than requested
-    error InsufficientAssets();
+    error InsufficientShares(uint256 received, uint256 expected);
 
     /// @notice Event emitted when core config of the strategy is set
     event StrategyCoreSet(address indexed strategy, Storage.StrategyCore core);
@@ -102,29 +99,6 @@ interface ILeverageManager {
     /// @return equity Equity of the strategy
     /// @dev Equity is calculated as collateral - debt
     function getStrategyEquityInDebtAsset(address strategy) external view returns (uint256 equity);
-
-    /// @notice Pauses entire contract
-    /// @dev Only address with role GUARDIAN can call this function
-    /// @dev Must emit PAUSE event
-    function pause() external;
-
-    /// @notice Unpauses contract
-    /// @dev Only address with role GUARDIAN can call this function
-    /// @dev Must emit UNPAUSE event
-    function unpause() external;
-
-    /// @notice Pauses actions on specific strategy
-    /// @param strategy Strategy to pause
-    /// @dev Must emit PAUSE event
-    /// @dev One specific strategy should be paused only in case that strategy has issues with oracle that can lead to exploit but does not effect other strategies
-    /// @dev Only GUARDIAN role can call this function
-    function pauseStrategy(address strategy) external;
-
-    /// @notice Unpauses actions on specific strategy
-    /// @param strategy Strategy to unpause
-    /// @dev Must emit UNPAUSE event
-    /// @dev Only GUARDIAN role can call this function
-    function unpauseStrategy(address strategy) external;
 
     /// @notice Sets core of the strategy which is collateral asset and debt asset
     /// @param strategy Strategy to set core for

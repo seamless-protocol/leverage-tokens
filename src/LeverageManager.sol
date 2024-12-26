@@ -50,7 +50,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function getStrategyCollateralCap(address strategy) external view returns (uint256 cap) {
+    function getStrategyCollateralCap(address strategy) public view returns (uint256 cap) {
         return Storage.layout().config[strategy].cap;
     }
 
@@ -135,6 +135,13 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         // Cache
         ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
 
+        uint256 currCollateral = lendingAdapter.getStrategyCollateral(strategy);
+        uint256 collateralCap = getStrategyCollateralCap(strategy);
+
+        if (currCollateral + assets > collateralCap) {
+            revert CollateralExceedsCap(currCollateral + assets, collateralCap);
+        }
+
         // Calculate how much to borrow and how much shares to mint for user. It must be done before supplying and borrowing
         (uint256 debtToBorrow, uint256 sharesToMint) = _calculateDebtAndShares(strategy, lendingAdapter, assets);
 
@@ -183,7 +190,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
         // Revert if user does not receive enough shares
         if (sharesToMint < minShares) {
-            revert InsufficientShares();
+            revert InsufficientShares(sharesToMint, minShares);
         }
 
         _mintShares(strategy, recipient, sharesToMint);
@@ -216,16 +223,4 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     function _decimalsOffset() private pure returns (uint256 shares) {
         return 0;
     }
-
-    /// @inheritdoc ILeverageManager
-    function pause() external {}
-
-    /// @inheritdoc ILeverageManager
-    function unpause() external {}
-
-    /// @inheritdoc ILeverageManager
-    function pauseStrategy(address strategy) external {}
-
-    /// @inheritdoc ILeverageManager
-    function unpauseStrategy(address strategy) external {}
 }
