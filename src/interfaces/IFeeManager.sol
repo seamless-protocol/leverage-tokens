@@ -12,7 +12,7 @@ interface IFeeManager {
     }
 
     /// @notice Error emitted when fee manager tries to set fee higher than MAX_FEE
-    error FeeTooHigh();
+    error FeeTooHigh(uint256 fee, uint256 maxFee);
 
     /// @notice Emitted when treasury address is set
     event TreasurySet(address treasury);

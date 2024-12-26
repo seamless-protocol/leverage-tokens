@@ -48,7 +48,7 @@ contract SetStrategyActionFeeTest is FeeManagerBaseTest {
         IFeeManager.Action action = IFeeManager.Action(bound(actionNum, 0, 2));
         fee = bound(fee, feeManager.MAX_FEE() + 1, type(uint256).max);
 
-        vm.expectRevert(abi.encodeWithSelector(IFeeManager.FeeTooHigh.selector));
+        vm.expectRevert(abi.encodeWithSelector(IFeeManager.FeeTooHigh.selector, fee, feeManager.MAX_FEE()));
         _setStrategyActionFee(feeManagerRole, strategy, action, fee);
     }
 }

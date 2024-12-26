@@ -48,7 +48,7 @@ contract FeeManager is IFeeManager, AccessControlUpgradeable {
     {
         // Check if fees are not higher than 100%
         if (fee > MAX_FEE) {
-            revert FeeTooHigh();
+            revert FeeTooHigh(fee, MAX_FEE);
         }
 
         Storage.layout().strategyActionFee[strategy][action] = fee;
