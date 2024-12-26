@@ -1,0 +1,231 @@
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.13;
+
+import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import {FeeManager} from "src/FeeManager.sol";
+import {IFeeManager} from "src/interfaces/IFeeManager.sol";
+import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
+
+contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManager, UUPSUpgradeable {
+    // Base collateral ratio constant, 1e8 = 1x
+    uint256 public constant BASE_RATIO = 1e8;
+    bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
+    bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
+
+    function initialize(address initialAdmin) external initializer {
+        _grantRole(DEFAULT_ADMIN_ROLE, initialAdmin);
+    }
+
+    function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}
+
+    /// @inheritdoc ILeverageManager
+    function getStrategyConfig(address strategy) external view returns (Storage.StrategyConfig memory config) {
+        return Storage.layout().config[strategy];
+    }
+
+    /// @inheritdoc ILeverageManager
+    function getStrategyCore(address strategy) external view returns (Storage.StrategyCore memory core) {
+        return Storage.layout().config[strategy].core;
+    }
+
+    /// @inheritdoc ILeverageManager
+    function getStrategyLendingAdapter(address strategy) public view returns (ILendingAdapter adapter) {
+        return Storage.layout().lendingAdapter[strategy];
+    }
+
+    /// @inheritdoc ILeverageManager
+    function getStrategyCollateralRatios(address strategy)
+        external
+        view
+        returns (Storage.CollateralRatios memory ratios)
+    {
+        return Storage.layout().config[strategy].collateralRatios;
+    }
+
+    /// @inheritdoc ILeverageManager
+    function getStrategyCollateralCap(address strategy) external view returns (uint256 cap) {
+        return Storage.layout().config[strategy].cap;
+    }
+
+    /// @inheritdoc ILeverageManager
+    function getTotalStrategyShares(address strategy) public view returns (uint256 shares) {
+        return Storage.layout().totalShares[strategy];
+    }
+
+    /// @inheritdoc ILeverageManager
+    function getUserStrategyShares(address strategy, address user) public view returns (uint256 shares) {
+        return Storage.layout().userStrategyShares[strategy][user];
+    }
+
+    /// @inheritdoc ILeverageManager
+    function getStrategyEquityInDebtAsset(address strategy) public view returns (uint256 equity) {
+        return getStrategyLendingAdapter(strategy).getStrategyEquityInDebtAsset(strategy);
+    }
+
+    /// @inheritdoc ILeverageManager
+    function getStrategyCollateralAsset(address strategy) public view returns (address collateral) {
+        return Storage.layout().config[strategy].core.collateral;
+    }
+
+    /// @inheritdoc ILeverageManager
+    function getStrategyDebtAsset(address strategy) public view returns (address debt) {
+        return Storage.layout().config[strategy].core.debt;
+    }
+
+    /// @inheritdoc ILeverageManager
+    function getStrategyTargetCollateralRatio(address strategy) public view returns (uint256 targetRatio) {
+        return Storage.layout().config[strategy].collateralRatios.target;
+    }
+
+    /// @inheritdoc ILeverageManager
+    function setStrategyLendingAdapter(address strategy, address adapter) external onlyRole(MANAGER_ROLE) {
+        Storage.layout().lendingAdapter[strategy] = ILendingAdapter(adapter);
+        emit StrategyLendingAdapterSet(strategy, adapter);
+    }
+
+    /// @inheritdoc ILeverageManager
+    function setStrategyCore(address strategy, Storage.StrategyCore memory core) external onlyRole(MANAGER_ROLE) {
+        // Check does strategy already have core settings configured
+        if (getStrategyCollateralAsset(strategy) != address(0)) {
+            revert CoreAlreadySet();
+        }
+
+        // Check does provided core has zero addresses for collateral and debt
+        if (core.collateral == address(0) || core.debt == address(0)) {
+            revert InvalidStrategyCore();
+        }
+
+        Storage.layout().config[strategy].core = core;
+        emit StrategyCoreSet(strategy, core);
+    }
+
+    /// @inheritdoc ILeverageManager
+    function setStrategyCollateralRatios(address strategy, Storage.CollateralRatios calldata ratios)
+        external
+        onlyRole(MANAGER_ROLE)
+    {
+        // Validate that target ratio is in between min and max rebalance ratios before setting
+        bool isValid = ratios.minForRebalance <= ratios.target && ratios.target <= ratios.maxForRebalance;
+        if (!isValid) {
+            revert InvalidCollateralRatios();
+        }
+
+        Storage.layout().config[strategy].collateralRatios = ratios;
+        emit StrategyCollateralRatiosSet(strategy, ratios);
+    }
+
+    /// @inheritdoc ILeverageManager
+    function setStrategyCollateralCap(address strategy, uint256 cap) external onlyRole(MANAGER_ROLE) {
+        Storage.layout().config[strategy].cap = cap;
+        emit StrategyCapSet(strategy, cap);
+    }
+
+    /// @inheritdoc ILeverageManager
+    function deposit(address strategy, uint256 assets, address recipient, uint256 minShares)
+        external
+        returns (uint256 shares)
+    {
+        // Cache
+        ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
+
+        // Calculate how much to borrow and how much shares to mint for user. It must be done before supplying and borrowing
+        (uint256 debtToBorrow, uint256 sharesToMint) = _calculateDebtAndShares(strategy, lendingAdapter, assets);
+
+        // Charge strategy fee and mint shares for user. Revert if user does not receive enough shares
+        uint256 mintedShares = _chargeStrategyFeeAndMintShares(strategy, recipient, sharesToMint, minShares);
+
+        // Take collateral tokens from caller and supply them as collateral on lending pool
+        SafeERC20.safeTransferFrom(IERC20(getStrategyCollateralAsset(strategy)), msg.sender, address(this), assets);
+        lendingAdapter.addCollateral(strategy, assets);
+
+        // Borrow and send debt assets to user
+        lendingAdapter.borrow(strategy, debtToBorrow);
+        SafeERC20.safeTransfer(IERC20(getStrategyDebtAsset(strategy)), msg.sender, debtToBorrow);
+
+        // Emit event and explicit return statement
+        emit Deposit(strategy, msg.sender, recipient, assets, mintedShares);
+        return mintedShares;
+    }
+
+    // Calculate how much of a debt asset to borrow and how much shares should be minted for user for given collateral
+    function _calculateDebtAndShares(address strategy, ILendingAdapter lendingAdapter, uint256 collateral)
+        internal
+        view
+        returns (uint256 debt, uint256 shares)
+    {
+        // Calculate how much of a debt corresponds to collateral. Debt is rounded down, debt = collateral / target ratio
+        uint256 collateralInDebtAsset = lendingAdapter.convertCollateralToDebtAsset(strategy, collateral);
+
+        uint256 debtToBorrow = Math.mulDiv(
+            collateralInDebtAsset, BASE_RATIO, getStrategyTargetCollateralRatio(strategy), Math.Rounding.Ceil
+        );
+
+        // Calculate how much shares user should receive for their equity
+        uint256 equityInDebtAsset = collateralInDebtAsset - debtToBorrow;
+        uint256 sharesToMint = _convertToShares(strategy, equityInDebtAsset);
+
+        return (debtToBorrow, sharesToMint);
+    }
+
+    function _chargeStrategyFeeAndMintShares(address strategy, address recipient, uint256 shares, uint256 minShares)
+        internal
+        returns (uint256 sharesMinted)
+    {
+        // Calculate fee amount and deduct it from user's shares. Share fees are burned which increases overall share value
+        uint256 sharesToMint = _chargeStrategyFee(strategy, shares, IFeeManager.Action.Deposit);
+
+        // Revert if user does not receive enough shares
+        if (sharesToMint < minShares) {
+            revert InsufficientShares();
+        }
+
+        _mintShares(strategy, recipient, sharesToMint);
+        return sharesToMint;
+    }
+
+    function _mintShares(address strategy, address recipient, uint256 shares) internal {
+        Storage.Layout storage $ = Storage.layout();
+        $.userStrategyShares[strategy][recipient] += shares;
+        $.totalShares[strategy] += shares;
+
+        emit Mint(strategy, recipient, shares);
+    }
+
+    /// @notice Function that converts user's equity denominated in debt asset to strategy shares, base asset can be USD or any other asset
+    /// @notice Function uses OZ formula for calculating shares
+    /// @param strategy Strategy to convert equity to shares for
+    /// @param equity Equity to convert to shares
+    /// @dev Function must be called before supplying and borrowing
+    /// @dev Function should be used to calculate how much shares user should receive for their equity
+    function _convertToShares(address strategy, uint256 equity) internal view returns (uint256 shares) {
+        return Math.mulDiv(
+            equity,
+            getTotalStrategyShares(strategy) + 10 ** _decimalsOffset(),
+            getStrategyEquityInDebtAsset(strategy) + 1,
+            Math.Rounding.Floor
+        );
+    }
+
+    function _decimalsOffset() private pure returns (uint256 shares) {
+        return 0;
+    }
+
+    /// @inheritdoc ILeverageManager
+    function pause() external {}
+
+    /// @inheritdoc ILeverageManager
+    function unpause() external {}
+
+    /// @inheritdoc ILeverageManager
+    function pauseStrategy(address strategy) external {}
+
+    /// @inheritdoc ILeverageManager
+    function unpauseStrategy(address strategy) external {}
+}
