@@ -23,15 +23,16 @@ contract SetTreasuryTest is FeeManagerBaseTest {
         assertEq(feeManager.getTreasury(), treasury);
     }
 
-    function testFuzz_setTreasury_CallerIsNotFeeManagerRole(address caller, address treasury) public {
-        vm.assume(caller != feeManagerRole);
-        vm.startPrank(caller);
+    function testFuzz_setTreasury_CallerIsNotFeeManagerRole(address treasury) public {
+        address caller = makeAddr("caller");
 
         vm.expectRevert(
             abi.encodeWithSelector(
                 IAccessControl.AccessControlUnauthorizedAccount.selector, caller, feeManager.FEE_MANAGER_ROLE()
             )
         );
+
+        vm.prank(caller);
         feeManager.setTreasury(treasury);
     }
 }
