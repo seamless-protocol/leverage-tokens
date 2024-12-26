@@ -5,14 +5,15 @@ pragma solidity ^0.8.13;
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
 import {FeeManagerStorage as Storage} from "./storage/FeeManagerStorage.sol";
 import {IFeeManager} from "./interfaces/IFeeManager.sol";
 
-contract FeeManager is IFeeManager, AccessControlUpgradeable {
-    // Max fee that can be ste, 100_00 is 100%
+contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
+    // Max fee that can be set, 100_00 is 100%
     uint256 public constant MAX_FEE = 100_00;
     bytes32 public constant FEE_MANAGER_ROLE = keccak256("FEE_MANAGER_ROLE");
 
@@ -60,8 +61,7 @@ contract FeeManager is IFeeManager, AccessControlUpgradeable {
         internal
         returns (uint256 amountAfterFee)
     {
-        // Calculate deposit fee (always round down up) and send it to treasury
-        // This contract should be inherited by LeverageManager so we charge fees from this address
+        // Calculate deposit fee (always round up) and send it to treasury
         uint256 feeAmount = Math.mulDiv(amount, getStrategyActionFee(strategy, action), MAX_FEE, Math.Rounding.Ceil);
 
         // Emit event and explicit return statement
