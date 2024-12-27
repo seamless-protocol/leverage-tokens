@@ -49,9 +49,9 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         return leverageManager.getStrategyLendingAdapter(strategy);
     }
 
-    function _setStrategyCore(address caller, address strategy, Storage.StrategyCore memory core) internal {
+    function _createNewStrategy(address caller, address strategy, Storage.StrategyConfig memory config) internal {
         vm.prank(caller);
-        leverageManager.setStrategyCore(strategy, core);
+        leverageManager.createNewStrategy(strategy, config);
     }
 
     function _setStrategyCollateralRatios(address caller, address strategy, Storage.CollateralRatios memory ratios)
@@ -147,7 +147,11 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         vm.prank(manager);
         leverageManager.setStrategyCollateralRatios(
             strategy,
-            Storage.CollateralRatios({minForRebalance: 0, target: targetRatio, maxForRebalance: type(uint256).max})
+            Storage.CollateralRatios({
+                minCollateralRatio: 0,
+                targetCollateralRatio: targetRatio,
+                maxCollateralRatio: type(uint256).max
+            })
         );
     }
 }

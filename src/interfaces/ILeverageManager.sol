@@ -5,11 +5,14 @@ import {ILendingAdapter} from "./ILendingAdapter.sol";
 import {LeverageManagerStorage as Storage} from "../storage/LeverageManagerStorage.sol";
 
 interface ILeverageManager {
-    /// @notice Error thrown when someone tries to set core of the strategy that is already set
-    error CoreAlreadySet();
+    /// @notice Error thrown when someone tries to set strategy that already exists
+    error StrategyAlreadyExists(address strategy);
 
-    /// @notice Error thrown when someone tries to set core that is invalid (contains zero addresses)
-    error InvalidStrategyCore();
+    /// @notice Error thrown when someone tries to set zero address for collateral or debt asset when creating strategy
+    error InvalidStrategyAssets();
+
+    /// @notice Error thrown when someone tries to set zero address as lending adapter for some strategy
+    error InvalidLendingAdapter(address adapter);
 
     /// @notice Error thrown when collateral ratios are invalid
     error InvalidCollateralRatios();
@@ -20,17 +23,17 @@ interface ILeverageManager {
     /// @notice Error thrown when user receives less shares than requested
     error InsufficientShares(uint256 received, uint256 expected);
 
-    /// @notice Event emitted when core config of the strategy is set
-    event StrategyCoreSet(address indexed strategy, Storage.StrategyCore core);
-
     /// @notice Event emitted when lending adapter is set for the strategy
     event StrategyLendingAdapterSet(address indexed strategy, address adapter);
+
+    /// @notice Event emitted when new strategy is created
+    event StrategyCreated(address indexed strategy, address indexed collateralAsset, address indexed debtAsset);
 
     /// @notice Event emitted when collateral ratios are set for a strategy
     event StrategyCollateralRatiosSet(address indexed strategy, Storage.CollateralRatios ratios);
 
-    /// @notice Event emitted when caps are set/changed for a strategy
-    event StrategyCapSet(address indexed strategy, uint256 cap);
+    /// @notice Event emitted when collateral caps are set/changed for a strategy
+    event StrategyCollateralCapSet(address indexed strategy, uint256 collateralCap);
 
     /// @notice Event emitted when shares are minted to the user
     event Mint(address indexed strategy, address recipient, uint256 sharers);
@@ -39,11 +42,6 @@ interface ILeverageManager {
     event Deposit(
         address indexed strategy, address indexed from, address indexed to, uint256 assets, uint256 sharesMinted
     );
-
-    /// @notice Returns core of the strategy which is collateral asset, debt asset and lending pool
-    /// @param strategy Strategy to get assets for
-    /// @return core Core config of the strategy
-    function getStrategyCore(address strategy) external returns (Storage.StrategyCore memory core);
 
     /// @notice Returns lending adapter for the strategy
     /// @param strategy Strategy to get lending adapter for
@@ -100,11 +98,12 @@ interface ILeverageManager {
     /// @dev Equity is calculated as collateral - debt
     function getStrategyEquityInDebtAsset(address strategy) external view returns (uint256 equity);
 
-    /// @notice Sets core of the strategy which is collateral asset and debt asset
-    /// @param strategy Strategy to set core for
-    /// @param core Core config to set
-    /// @dev Only MANAGER role can call this function. Core can be set only once and can never be changed
-    function setStrategyCore(address strategy, Storage.StrategyCore calldata core) external;
+    /// @notice Creates new strategy with given config
+    /// @param strategy Address of the new strategy
+    /// @param strategyConfig Configuration of the strategy
+    /// @dev Only MANAGER role can execute this.
+    ///      If collateralAsset,debtAsset or lendingAdapter are zero addresses function will revert
+    function createNewStrategy(address strategy, Storage.StrategyConfig memory strategyConfig) external;
 
     /// @notice Sets lending adapter for the strategy
     /// @param strategy Strategy to set lending adapter for
@@ -118,12 +117,12 @@ interface ILeverageManager {
     /// @dev Only MANAGER role can call this function
     function setStrategyCollateralRatios(address strategy, Storage.CollateralRatios calldata ratios) external;
 
-    /// @notice Sets cap for strategy
+    /// @notice Sets collateral cap for strategy
     /// @param strategy Strategy to set cap for
-    /// @param cap Cap for strategy
+    /// @param collateralCap Cap for strategy
     /// @dev Cap for strategy is leveraged amount in collateral asset
     /// @dev Only address with MANAGER role can call this function
-    function setStrategyCollateralCap(address strategy, uint256 cap) external;
+    function setStrategyCollateralCap(address strategy, uint256 collateralCap) external;
 
     /// @notice Mints shares of a strategy and deposits assets into it, recipient receives shares and debt
     /// @param strategy The strategy to deposit into

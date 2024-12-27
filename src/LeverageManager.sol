@@ -14,7 +14,7 @@ import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/acce
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 
 contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManager, UUPSUpgradeable {
-    // Base collateral ratio constant, 1e8 = 1x
+    // Base collateral ratio constant, 1e8 means that collateral / debt ratio is 1:1
     uint256 public constant BASE_RATIO = 1e8;
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
@@ -31,13 +31,8 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function getStrategyCore(address strategy) external view returns (Storage.StrategyCore memory core) {
-        return Storage.layout().config[strategy].core;
-    }
-
-    /// @inheritdoc ILeverageManager
     function getStrategyLendingAdapter(address strategy) public view returns (ILendingAdapter adapter) {
-        return Storage.layout().lendingAdapter[strategy];
+        return Storage.layout().config[strategy].lendingAdapter;
     }
 
     /// @inheritdoc ILeverageManager
@@ -50,8 +45,8 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function getStrategyCollateralCap(address strategy) public view returns (uint256 cap) {
-        return Storage.layout().config[strategy].cap;
+    function getStrategyCollateralCap(address strategy) public view returns (uint256 collateralCap) {
+        return Storage.layout().config[strategy].collateralCap;
     }
 
     /// @inheritdoc ILeverageManager
@@ -71,48 +66,59 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
     /// @inheritdoc ILeverageManager
     function getStrategyCollateralAsset(address strategy) public view returns (address collateral) {
-        return Storage.layout().config[strategy].core.collateral;
+        return Storage.layout().config[strategy].collateralAsset;
     }
 
     /// @inheritdoc ILeverageManager
     function getStrategyDebtAsset(address strategy) public view returns (address debt) {
-        return Storage.layout().config[strategy].core.debt;
+        return Storage.layout().config[strategy].debtAsset;
     }
 
     /// @inheritdoc ILeverageManager
-    function getStrategyTargetCollateralRatio(address strategy) public view returns (uint256 targetRatio) {
-        return Storage.layout().config[strategy].collateralRatios.target;
+    function getStrategyTargetCollateralRatio(address strategy) public view returns (uint256 targetCollateralRatio) {
+        return Storage.layout().config[strategy].collateralRatios.targetCollateralRatio;
     }
 
     /// @inheritdoc ILeverageManager
-    function setStrategyLendingAdapter(address strategy, address adapter) external onlyRole(MANAGER_ROLE) {
-        Storage.layout().lendingAdapter[strategy] = ILendingAdapter(adapter);
+    function createNewStrategy(address strategy, Storage.StrategyConfig calldata strategyConfig)
+        external
+        onlyRole(MANAGER_ROLE)
+    {
+        // Check does strategy already have core settings configured
+        if (getStrategyCollateralAsset(strategy) != address(0)) {
+            revert StrategyAlreadyExists(strategy);
+        }
+
+        setStrategyLendingAdapter(strategy, address(strategyConfig.lendingAdapter));
+        setStrategyCollateralRatios(strategy, strategyConfig.collateralRatios);
+        setStrategyCollateralCap(strategy, strategyConfig.collateralCap);
+
+        // Check does provided core has zero addresses for collateral and debt
+        if (strategyConfig.collateralAsset == address(0) || strategyConfig.debtAsset == address(0)) {
+            revert InvalidStrategyAssets();
+        }
+
+        Storage.Layout storage $ = Storage.layout();
+        $.config[strategy].collateralAsset = strategyConfig.collateralAsset;
+        $.config[strategy].debtAsset = strategyConfig.debtAsset;
+        emit StrategyCreated(strategy, strategyConfig.collateralAsset, strategyConfig.debtAsset);
+    }
+
+    /// @inheritdoc ILeverageManager
+    function setStrategyLendingAdapter(address strategy, address adapter) public onlyRole(MANAGER_ROLE) {
+        Storage.layout().config[strategy].lendingAdapter = ILendingAdapter(adapter);
         emit StrategyLendingAdapterSet(strategy, adapter);
     }
 
     /// @inheritdoc ILeverageManager
-    function setStrategyCore(address strategy, Storage.StrategyCore memory core) external onlyRole(MANAGER_ROLE) {
-        // Check does strategy already have core settings configured
-        if (getStrategyCollateralAsset(strategy) != address(0)) {
-            revert CoreAlreadySet();
-        }
-
-        // Check does provided core has zero addresses for collateral and debt
-        if (core.collateral == address(0) || core.debt == address(0)) {
-            revert InvalidStrategyCore();
-        }
-
-        Storage.layout().config[strategy].core = core;
-        emit StrategyCoreSet(strategy, core);
-    }
-
-    /// @inheritdoc ILeverageManager
     function setStrategyCollateralRatios(address strategy, Storage.CollateralRatios calldata ratios)
-        external
+        public
         onlyRole(MANAGER_ROLE)
     {
         // Validate that target ratio is in between min and max rebalance ratios before setting
-        bool isValid = ratios.minForRebalance <= ratios.target && ratios.target <= ratios.maxForRebalance;
+        bool isValid = ratios.minCollateralRatio <= ratios.targetCollateralRatio
+            && ratios.targetCollateralRatio <= ratios.maxCollateralRatio;
+
         if (!isValid) {
             revert InvalidCollateralRatios();
         }
@@ -122,9 +128,9 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function setStrategyCollateralCap(address strategy, uint256 cap) external onlyRole(MANAGER_ROLE) {
-        Storage.layout().config[strategy].cap = cap;
-        emit StrategyCapSet(strategy, cap);
+    function setStrategyCollateralCap(address strategy, uint256 collateralCap) public onlyRole(MANAGER_ROLE) {
+        Storage.layout().config[strategy].collateralCap = collateralCap;
+        emit StrategyCollateralCapSet(strategy, collateralCap);
     }
 
     /// @inheritdoc ILeverageManager
@@ -149,7 +155,10 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         uint256 mintedShares = _chargeStrategyFeeAndMintShares(strategy, recipient, sharesToMint, minShares);
 
         // Take collateral tokens from caller and supply them as collateral on lending pool
-        SafeERC20.safeTransferFrom(IERC20(getStrategyCollateralAsset(strategy)), msg.sender, address(this), assets);
+        IERC20 collateralAsset = IERC20(getStrategyCollateralAsset(strategy));
+        SafeERC20.safeTransferFrom(collateralAsset, msg.sender, address(this), assets);
+
+        collateralAsset.approve(address(lendingAdapter), assets);
         lendingAdapter.addCollateral(strategy, assets);
 
         // Borrow and send debt assets to user

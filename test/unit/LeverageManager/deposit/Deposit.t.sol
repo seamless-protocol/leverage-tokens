@@ -23,8 +23,20 @@ contract LeverageManagerDepositTest is LeverageManagerBaseTest {
     function setUp() public override {
         super.setUp();
 
-        _setStrategyCore(
-            manager, strategy, Storage.StrategyCore({collateral: address(collateralToken), debt: address(debtToken)})
+        _createNewStrategy(
+            manager,
+            strategy,
+            Storage.StrategyConfig({
+                collateralAsset: address(collateralToken),
+                debtAsset: address(debtToken),
+                lendingAdapter: ILendingAdapter(makeAddr("lendingAdapter")),
+                collateralRatios: Storage.CollateralRatios({
+                    minCollateralRatio: 0,
+                    targetCollateralRatio: 0,
+                    maxCollateralRatio: 0
+                }),
+                collateralCap: type(uint256).max
+            })
         );
         _setStrategyCollateralCap(manager, strategy, type(uint256).max);
     }

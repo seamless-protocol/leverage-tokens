@@ -1,0 +1,121 @@
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.13;
+
+// Forge imports
+import {Test, console} from "forge-std/Test.sol";
+
+// Dependency imports
+import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
+
+// Internal imports
+import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
+import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
+import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
+import {LeverageManagerBaseTest} from "../LeverageManagerBase.t.sol";
+
+contract CreateNewStrategyTest is LeverageManagerBaseTest {
+    function setUp() public override {
+        super.setUp();
+    }
+
+    function testFuzz_CreateNewStrategy(address strategy, Storage.StrategyConfig calldata config) public {
+        vm.assume(config.collateralAsset != address(0) && config.debtAsset != address(0));
+
+        uint256 minCollateralRatio = config.collateralRatios.minCollateralRatio;
+        uint256 targetCollateralRatio = config.collateralRatios.targetCollateralRatio;
+        uint256 maxCollateralRatio = config.collateralRatios.maxCollateralRatio;
+        vm.assume(minCollateralRatio <= targetCollateralRatio && targetCollateralRatio <= maxCollateralRatio);
+
+        // Check if event is emitted properly
+        vm.expectEmit(true, true, true, true);
+        emit ILeverageManager.StrategyCreated(strategy, config.collateralAsset, config.debtAsset);
+
+        _createNewStrategy(manager, strategy, config);
+
+        // Check if the strategy core is set correctly
+        Storage.StrategyConfig memory configAfter = leverageManager.getStrategyConfig(strategy);
+        assertEq(configAfter.collateralAsset, config.collateralAsset);
+        assertEq(configAfter.debtAsset, config.debtAsset);
+        assertEq(address(configAfter.lendingAdapter), address(config.lendingAdapter));
+        assertEq(configAfter.collateralCap, config.collateralCap);
+
+        Storage.CollateralRatios memory ratios = leverageManager.getStrategyCollateralRatios(strategy);
+        assertEq(ratios.minCollateralRatio, config.collateralRatios.minCollateralRatio);
+        assertEq(ratios.maxCollateralRatio, config.collateralRatios.maxCollateralRatio);
+        assertEq(ratios.targetCollateralRatio, config.collateralRatios.targetCollateralRatio);
+
+        // Check if single getter functions return the correct values
+        assertEq(leverageManager.getStrategyCollateralAsset(strategy), config.collateralAsset);
+        assertEq(leverageManager.getStrategyDebtAsset(strategy), config.debtAsset);
+    }
+
+    function testFuzz_CreateNewStrategy_RevertIf_StrategyAlreadyExists(
+        address strategy,
+        Storage.StrategyConfig calldata config1,
+        Storage.StrategyConfig calldata config2
+    ) public {
+        vm.assume(config1.collateralAsset != address(0) && config1.debtAsset != address(0));
+        vm.assume(config2.collateralAsset != address(0) && config2.debtAsset != address(0));
+        vm.assume(address(config1.lendingAdapter) != address(0) && address(config2.lendingAdapter) != address(0));
+
+        Storage.CollateralRatios memory ratios1 = config1.collateralRatios;
+        vm.assume(
+            ratios1.minCollateralRatio <= ratios1.targetCollateralRatio
+                && ratios1.targetCollateralRatio <= ratios1.maxCollateralRatio
+        );
+
+        _createNewStrategy(manager, strategy, config1);
+        vm.expectRevert(abi.encodeWithSelector(ILeverageManager.StrategyAlreadyExists.selector, strategy));
+        _createNewStrategy(manager, strategy, config2);
+    }
+
+    // Neither collateral nor debt asset can be zero address
+    function testFuzz_CreateNewStrategy_RevertIf_AssetsAreInvalid(address strategy, address nonZeroAddress) public {
+        vm.assume(nonZeroAddress != address(0));
+
+        Storage.StrategyConfig memory config = Storage.StrategyConfig({
+            collateralAsset: address(0),
+            debtAsset: nonZeroAddress,
+            lendingAdapter: ILendingAdapter(nonZeroAddress),
+            collateralRatios: Storage.CollateralRatios({
+                minCollateralRatio: 0,
+                targetCollateralRatio: 0,
+                maxCollateralRatio: 0
+            }),
+            collateralCap: 0
+        });
+
+        // Revert if collateral is zero address
+        vm.expectRevert(ILeverageManager.InvalidStrategyAssets.selector);
+        _createNewStrategy(manager, strategy, config);
+
+        // Revert if debt is zero address
+        config.collateralAsset = nonZeroAddress;
+        config.debtAsset = address(0);
+
+        vm.expectRevert(ILeverageManager.InvalidStrategyAssets.selector);
+        _createNewStrategy(manager, strategy, config);
+
+        // Revert if both collateral and debt are zero addresses
+        config.collateralAsset = address(0);
+
+        vm.expectRevert(ILeverageManager.InvalidStrategyAssets.selector);
+        _createNewStrategy(manager, strategy, config);
+    }
+
+    // Only manager can set core configuration of the strategy
+    function testFuzz_CreateNewStrategy_RevertIf_CallerIsNotManager(
+        address caller,
+        address strategy,
+        Storage.StrategyConfig calldata config
+    ) public {
+        vm.assume(caller != manager);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, caller, leverageManager.MANAGER_ROLE()
+            )
+        );
+        _createNewStrategy(caller, strategy, config);
+    }
+}

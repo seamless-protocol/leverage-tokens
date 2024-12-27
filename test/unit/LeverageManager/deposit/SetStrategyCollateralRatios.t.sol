@@ -18,7 +18,10 @@ contract SetStrategyCollateralRatiosTest is LeverageManagerBaseTest {
     }
 
     function testFuzz_setStrategyCollateralRatios(address strategy, Storage.CollateralRatios memory ratios) public {
-        vm.assume(ratios.minForRebalance <= ratios.target && ratios.target <= ratios.maxForRebalance);
+        vm.assume(
+            ratios.minCollateralRatio <= ratios.targetCollateralRatio
+                && ratios.targetCollateralRatio <= ratios.maxCollateralRatio
+        );
 
         vm.expectEmit(true, true, true, true);
         emit ILeverageManager.StrategyCollateralRatiosSet(strategy, ratios);
@@ -27,12 +30,12 @@ contract SetStrategyCollateralRatiosTest is LeverageManagerBaseTest {
 
         // Check if the collateral ratios are set correctly
         Storage.CollateralRatios memory ratiosAfterSet = leverageManager.getStrategyCollateralRatios(strategy);
-        assertEq(ratiosAfterSet.minForRebalance, ratios.minForRebalance);
-        assertEq(ratiosAfterSet.maxForRebalance, ratios.maxForRebalance);
-        assertEq(ratiosAfterSet.target, ratios.target);
+        assertEq(ratiosAfterSet.minCollateralRatio, ratios.minCollateralRatio);
+        assertEq(ratiosAfterSet.maxCollateralRatio, ratios.maxCollateralRatio);
+        assertEq(ratiosAfterSet.targetCollateralRatio, ratios.targetCollateralRatio);
 
-        // Check that getter for target ratio returns the correct value
-        assertEq(leverageManager.getStrategyTargetCollateralRatio(strategy), ratios.target);
+        // Check that getter for targetCollateralRatio ratio returns the correct value
+        assertEq(leverageManager.getStrategyTargetCollateralRatio(strategy), ratios.targetCollateralRatio);
     }
 
     // If target ratio is not in between min and max ratios, then the transaction should revert
@@ -40,7 +43,10 @@ contract SetStrategyCollateralRatiosTest is LeverageManagerBaseTest {
         address strategy,
         Storage.CollateralRatios memory ratios
     ) public {
-        vm.assume(ratios.minForRebalance > ratios.target || ratios.maxForRebalance < ratios.target);
+        vm.assume(
+            ratios.minCollateralRatio > ratios.targetCollateralRatio
+                || ratios.maxCollateralRatio < ratios.targetCollateralRatio
+        );
         vm.expectRevert(ILeverageManager.InvalidCollateralRatios.selector);
         _setStrategyCollateralRatios(manager, strategy, ratios);
     }
