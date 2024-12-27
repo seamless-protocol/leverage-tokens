@@ -180,7 +180,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         uint256 collateralInDebtAsset = lendingAdapter.convertCollateralToDebtAsset(strategy, collateral);
 
         uint256 debtToBorrow = Math.mulDiv(
-            collateralInDebtAsset, BASE_RATIO, getStrategyTargetCollateralRatio(strategy), Math.Rounding.Ceil
+            collateralInDebtAsset, BASE_RATIO, getStrategyTargetCollateralRatio(strategy), Math.Rounding.Floor
         );
 
         // Calculate how much shares user should receive for their equity
