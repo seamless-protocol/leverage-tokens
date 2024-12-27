@@ -21,7 +21,6 @@ contract CalculateDebtAndSharesTest is LeverageManagerBaseTest {
 
     function test_calculateDebtAndShares() public {
         CalculateDebtAndSharesState memory state = CalculateDebtAndSharesState({
-            strategy: makeAddr("strategy"),
             targetRatio: 2 * _BASE_RATIO(), // 2x leverage also
             collateral: 1 ether,
             convertedCollateral: 3000 ether,
@@ -31,13 +30,12 @@ contract CalculateDebtAndSharesTest is LeverageManagerBaseTest {
 
         _mockState_CalculateDebtAndShares(state);
 
-        (uint256 debt, uint256 shares) = leverageManager.exposed_calculateDebtAndShares(
-            state.strategy, _getLendingAdapter(state.strategy), state.collateral
-        );
+        (uint256 debt, uint256 shares) =
+            leverageManager.exposed_calculateDebtAndShares(strategy, _getLendingAdapter(), state.collateral);
 
         uint256 expectedDebt = 1500 ether;
         uint256 expectedEquity = 1500 ether;
-        uint256 expectedShares = leverageManager.exposed_convertToShares(state.strategy, expectedEquity);
+        uint256 expectedShares = leverageManager.exposed_convertToShares(strategy, expectedEquity);
 
         assertEq(debt, expectedDebt);
         assertEq(shares, expectedShares);
@@ -47,13 +45,12 @@ contract CalculateDebtAndSharesTest is LeverageManagerBaseTest {
         state.targetRatio = bound(state.targetRatio, _BASE_RATIO(), 200 * _BASE_RATIO());
         _mockState_CalculateDebtAndShares(state);
 
-        address strategy = state.strategy;
         uint256 collateral = state.collateral;
         uint256 convertedCollateral = state.convertedCollateral;
         uint256 targetRatio = state.targetRatio;
 
         (uint256 debt, uint256 shares) =
-            leverageManager.exposed_calculateDebtAndShares(strategy, _getLendingAdapter(state.strategy), collateral);
+            leverageManager.exposed_calculateDebtAndShares(strategy, _getLendingAdapter(), collateral);
 
         uint256 expectedDebt = Math.mulDiv(convertedCollateral, _BASE_RATIO(), targetRatio, Math.Rounding.Ceil);
         uint256 expectedShares = leverageManager.exposed_convertToShares(strategy, convertedCollateral - expectedDebt);

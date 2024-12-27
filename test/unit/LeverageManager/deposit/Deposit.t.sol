@@ -16,7 +16,6 @@ import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStor
 import {LeverageManagerBaseTest} from "../LeverageManagerBase.t.sol";
 
 contract LeverageManagerDepositTest is LeverageManagerBaseTest {
-    address public strategy = makeAddr("strategy");
     ERC20Mock public collateralToken = new ERC20Mock();
     ERC20Mock public debtToken = new ERC20Mock();
 
@@ -25,7 +24,6 @@ contract LeverageManagerDepositTest is LeverageManagerBaseTest {
 
         _createNewStrategy(
             manager,
-            strategy,
             Storage.StrategyConfig({
                 collateralAsset: address(collateralToken),
                 debtAsset: address(debtToken),
@@ -38,7 +36,7 @@ contract LeverageManagerDepositTest is LeverageManagerBaseTest {
                 collateralCap: type(uint256).max
             })
         );
-        _setStrategyCollateralCap(manager, strategy, type(uint256).max);
+        _setStrategyCollateralCap(manager, type(uint256).max);
     }
 
     function test_deposit() public {
@@ -56,7 +54,6 @@ contract LeverageManagerDepositTest is LeverageManagerBaseTest {
 
         _mockState_CalculateDebtAndShares(
             CalculateDebtAndSharesState({
-                strategy: strategy,
                 targetRatio: targetRatio,
                 collateral: amount,
                 convertedCollateral: amountToDebtAsset,
@@ -82,13 +79,11 @@ contract LeverageManagerDepositTest is LeverageManagerBaseTest {
     }
 
     function testFuzz_deposit(CalculateDebtAndSharesState memory state, address recipient) public {
-        state.strategy = strategy;
         state.targetRatio = bound(state.targetRatio, _BASE_RATIO(), 200 * _BASE_RATIO());
         _mockState_CalculateDebtAndShares(state);
 
-        (uint256 expectedDebtToReceive, uint256 sharesBeforeFee) = leverageManager.exposed_calculateDebtAndShares(
-            state.strategy, _getLendingAdapter(state.strategy), state.collateral
-        );
+        (uint256 expectedDebtToReceive, uint256 sharesBeforeFee) =
+            leverageManager.exposed_calculateDebtAndShares(strategy, _getLendingAdapter(), state.collateral);
         uint256 expectedSharesToReceive =
             leverageManager.exposed_chargeStrategyFee(strategy, sharesBeforeFee, IFeeManager.Action.Deposit);
 
@@ -100,7 +95,7 @@ contract LeverageManagerDepositTest is LeverageManagerBaseTest {
         vm.expectEmit(true, true, true, true);
         emit ILeverageManager.Deposit(strategy, address(this), recipient, state.collateral, expectedSharesToReceive);
 
-        uint256 returnValue = leverageManager.deposit(state.strategy, state.collateral, recipient, 0);
+        uint256 returnValue = leverageManager.deposit(strategy, state.collateral, recipient, 0);
 
         assertEq(collateralToken.balanceOf(recipient), 0);
         assertEq(collateralToken.balanceOf(address(leverageManager)), state.collateral);
@@ -117,8 +112,8 @@ contract LeverageManagerDepositTest is LeverageManagerBaseTest {
         uint256 collateralAfterDeposit = uint256(amount) + currentCollateral;
         vm.assume(collateralAfterDeposit > cap);
 
-        _setStrategyCollateralCap(manager, strategy, cap);
-        _mockStrategyCollateral(strategy, currentCollateral);
+        _setStrategyCollateralCap(manager, cap);
+        _mockStrategyCollateral(currentCollateral);
 
         vm.expectRevert(
             abi.encodeWithSelector(ILeverageManager.CollateralExceedsCap.selector, collateralAfterDeposit, cap)

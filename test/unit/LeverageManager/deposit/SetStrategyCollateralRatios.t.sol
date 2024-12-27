@@ -17,7 +17,7 @@ contract SetStrategyCollateralRatiosTest is LeverageManagerBaseTest {
         super.setUp();
     }
 
-    function testFuzz_setStrategyCollateralRatios(address strategy, Storage.CollateralRatios memory ratios) public {
+    function testFuzz_setStrategyCollateralRatios(Storage.CollateralRatios memory ratios) public {
         vm.assume(
             ratios.minCollateralRatio <= ratios.targetCollateralRatio
                 && ratios.targetCollateralRatio <= ratios.maxCollateralRatio
@@ -26,7 +26,7 @@ contract SetStrategyCollateralRatiosTest is LeverageManagerBaseTest {
         vm.expectEmit(true, true, true, true);
         emit ILeverageManager.StrategyCollateralRatiosSet(strategy, ratios);
 
-        _setStrategyCollateralRatios(manager, strategy, ratios);
+        _setStrategyCollateralRatios(manager, ratios);
 
         // Check if the collateral ratios are set correctly
         Storage.CollateralRatios memory ratiosAfterSet = leverageManager.getStrategyCollateralRatios(strategy);
@@ -40,7 +40,6 @@ contract SetStrategyCollateralRatiosTest is LeverageManagerBaseTest {
 
     // If target ratio is not in between min and max ratios, then the transaction should revert
     function testFuzz_setStrategyCollateralRatios_RevertIf_InvalidCollateralRatios(
-        address strategy,
         Storage.CollateralRatios memory ratios
     ) public {
         vm.assume(
@@ -48,13 +47,12 @@ contract SetStrategyCollateralRatiosTest is LeverageManagerBaseTest {
                 || ratios.maxCollateralRatio < ratios.targetCollateralRatio
         );
         vm.expectRevert(ILeverageManager.InvalidCollateralRatios.selector);
-        _setStrategyCollateralRatios(manager, strategy, ratios);
+        _setStrategyCollateralRatios(manager, ratios);
     }
 
     // If caller is not the manager, then the transaction should revert
     function testFuzz_setStrategyCollateralRatios_RevertIf_CallerIsNotManager(
         address caller,
-        address strategy,
         Storage.CollateralRatios memory ratios
     ) public {
         vm.assume(caller != manager);
@@ -64,7 +62,7 @@ contract SetStrategyCollateralRatiosTest is LeverageManagerBaseTest {
                 IAccessControl.AccessControlUnauthorizedAccount.selector, caller, leverageManager.MANAGER_ROLE()
             )
         );
-        _setStrategyCollateralRatios(caller, strategy, ratios);
+        _setStrategyCollateralRatios(caller, ratios);
 
         vm.stopPrank();
     }

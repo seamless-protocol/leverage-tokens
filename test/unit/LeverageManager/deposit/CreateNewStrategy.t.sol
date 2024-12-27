@@ -18,7 +18,7 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
         super.setUp();
     }
 
-    function testFuzz_CreateNewStrategy(address strategy, Storage.StrategyConfig calldata config) public {
+    function testFuzz_CreateNewStrategy(Storage.StrategyConfig calldata config) public {
         vm.assume(config.collateralAsset != address(0) && config.debtAsset != address(0));
 
         uint256 minCollateralRatio = config.collateralRatios.minCollateralRatio;
@@ -30,7 +30,7 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
         vm.expectEmit(true, true, true, true);
         emit ILeverageManager.StrategyCreated(strategy, config.collateralAsset, config.debtAsset);
 
-        _createNewStrategy(manager, strategy, config);
+        _createNewStrategy(manager, config);
 
         // Check if the strategy core is set correctly
         Storage.StrategyConfig memory configAfter = leverageManager.getStrategyConfig(strategy);
@@ -50,7 +50,6 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
     }
 
     function testFuzz_CreateNewStrategy_RevertIf_StrategyAlreadyExists(
-        address strategy,
         Storage.StrategyConfig calldata config1,
         Storage.StrategyConfig calldata config2
     ) public {
@@ -64,13 +63,13 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
                 && ratios1.targetCollateralRatio <= ratios1.maxCollateralRatio
         );
 
-        _createNewStrategy(manager, strategy, config1);
+        _createNewStrategy(manager, config1);
         vm.expectRevert(abi.encodeWithSelector(ILeverageManager.StrategyAlreadyExists.selector, strategy));
-        _createNewStrategy(manager, strategy, config2);
+        _createNewStrategy(manager, config2);
     }
 
     // Neither collateral nor debt asset can be zero address
-    function testFuzz_CreateNewStrategy_RevertIf_AssetsAreInvalid(address strategy, address nonZeroAddress) public {
+    function testFuzz_CreateNewStrategy_RevertIf_AssetsAreInvalid(address nonZeroAddress) public {
         vm.assume(nonZeroAddress != address(0));
 
         Storage.StrategyConfig memory config = Storage.StrategyConfig({
@@ -87,26 +86,25 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
 
         // Revert if collateral is zero address
         vm.expectRevert(ILeverageManager.InvalidStrategyAssets.selector);
-        _createNewStrategy(manager, strategy, config);
+        _createNewStrategy(manager, config);
 
         // Revert if debt is zero address
         config.collateralAsset = nonZeroAddress;
         config.debtAsset = address(0);
 
         vm.expectRevert(ILeverageManager.InvalidStrategyAssets.selector);
-        _createNewStrategy(manager, strategy, config);
+        _createNewStrategy(manager, config);
 
         // Revert if both collateral and debt are zero addresses
         config.collateralAsset = address(0);
 
         vm.expectRevert(ILeverageManager.InvalidStrategyAssets.selector);
-        _createNewStrategy(manager, strategy, config);
+        _createNewStrategy(manager, config);
     }
 
     // Only manager can set core configuration of the strategy
     function testFuzz_CreateNewStrategy_RevertIf_CallerIsNotManager(
         address caller,
-        address strategy,
         Storage.StrategyConfig calldata config
     ) public {
         vm.assume(caller != manager);
@@ -116,6 +114,6 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
                 IAccessControl.AccessControlUnauthorizedAccount.selector, caller, leverageManager.MANAGER_ROLE()
             )
         );
-        _createNewStrategy(caller, strategy, config);
+        _createNewStrategy(caller, config);
     }
 }

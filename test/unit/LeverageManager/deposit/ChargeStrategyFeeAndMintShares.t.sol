@@ -21,9 +21,7 @@ contract ChargeStrategyFeeAndMintSharesTest is LeverageManagerBaseTest {
         super.setUp();
     }
 
-    function testFuzz_chargeStrategyFeeAndMintShares(address strategy, uint256 fee, address to, uint256 shares)
-        public
-    {
+    function testFuzz_chargeStrategyFeeAndMintShares(uint256 fee, address to, uint256 shares) public {
         fee = bound(fee, 0, leverageManager.MAX_FEE());
         _setStrategyActionFee(feeManagerRole, strategy, IFeeManager.Action.Deposit, fee);
 
@@ -39,12 +37,9 @@ contract ChargeStrategyFeeAndMintSharesTest is LeverageManagerBaseTest {
         assertEq(returnValue, expectedShares);
     }
 
-    function testFuzz_chargeStrategyFeeAndMintShares_RevertIf_NotEnoughShares(
-        address strategy,
-        uint256 fee,
-        address to,
-        uint256 shares
-    ) public {
+    function testFuzz_chargeStrategyFeeAndMintShares_RevertIf_NotEnoughShares(uint256 fee, address to, uint256 shares)
+        public
+    {
         fee = bound(fee, 1, leverageManager.MAX_FEE());
         _setStrategyActionFee(feeManagerRole, strategy, IFeeManager.Action.Deposit, fee);
 

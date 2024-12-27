@@ -19,19 +19,19 @@ contract MintSharesTest is LeverageManagerBaseTest {
         super.setUp();
     }
 
-    function testFuzz_mintShares_OneMint(address strategy, address user, uint256 amount) public {
+    function testFuzz_mintShares_OneMint(address user, uint256 amount) public {
         vm.expectEmit(true, true, true, true);
         emit ILeverageManager.Mint(strategy, user, amount);
 
-        _mintShares(strategy, user, amount);
+        _mintShares(user, amount);
 
         assertEq(leverageManager.getTotalStrategyShares(strategy), amount);
         assertEq(leverageManager.getUserStrategyShares(strategy, user), amount);
     }
 
-    function testFuzz_mintShares_TwoMints(address strategy, address user, uint128 amount1, uint128 amount2) public {
-        _mintShares(strategy, user, amount1);
-        _mintShares(strategy, user, amount2);
+    function testFuzz_mintShares_TwoMints(address user, uint128 amount1, uint128 amount2) public {
+        _mintShares(user, amount1);
+        _mintShares(user, amount2);
 
         assertEq(leverageManager.getTotalStrategyShares(strategy), uint256(amount1) + amount2);
         assertEq(leverageManager.getUserStrategyShares(strategy, user), uint256(amount1) + amount2);

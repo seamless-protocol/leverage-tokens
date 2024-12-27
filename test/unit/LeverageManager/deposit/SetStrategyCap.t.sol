@@ -17,17 +17,13 @@ contract setStrategyCollateralCapTest is LeverageManagerBaseTest {
         super.setUp();
     }
 
-    function testFuzz_setStrategyCollateralCap(address strategy, uint256 cap) public {
-        _setStrategyCollateralCap(manager, strategy, cap);
+    function testFuzz_setStrategyCollateralCap(uint256 cap) public {
+        _setStrategyCollateralCap(manager, cap);
         assertEq(leverageManager.getStrategyCollateralCap(strategy), cap);
     }
 
     // If caller is not the manager, then the transaction should revert
-    function testFuzz_setStrategyCollateralCap_RevertIf_CallerIsNotManager(
-        address caller,
-        address strategy,
-        uint256 cap
-    ) public {
+    function testFuzz_setStrategyCollateralCap_RevertIf_CallerIsNotManager(address caller, uint256 cap) public {
         vm.assume(caller != manager);
 
         vm.expectRevert(
@@ -35,6 +31,6 @@ contract setStrategyCollateralCapTest is LeverageManagerBaseTest {
                 IAccessControl.AccessControlUnauthorizedAccount.selector, caller, leverageManager.MANAGER_ROLE()
             )
         );
-        _setStrategyCollateralCap(caller, strategy, cap);
+        _setStrategyCollateralCap(caller, cap);
     }
 }

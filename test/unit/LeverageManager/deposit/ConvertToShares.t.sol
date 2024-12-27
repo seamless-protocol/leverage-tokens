@@ -18,11 +18,9 @@ contract ConvertToShares is LeverageManagerBaseTest {
         super.setUp();
     }
 
-    function testFuzz_convertToShares(address strategy, uint128 equity, uint128 totalEquity, uint128 sharesTotalSupply)
-        public
-    {
+    function testFuzz_convertToShares(uint128 equity, uint128 totalEquity, uint128 sharesTotalSupply) public {
         _mockState_ConvertToShareOrEquity(
-            ConvertToSharesState({strategy: strategy, totalEquity: totalEquity, sharesTotalSupply: sharesTotalSupply})
+            ConvertToSharesState({totalEquity: totalEquity, sharesTotalSupply: sharesTotalSupply})
         );
 
         uint256 shares = leverageManager.exposed_convertToShares(strategy, equity);
