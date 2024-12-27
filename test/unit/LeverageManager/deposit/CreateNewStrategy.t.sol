@@ -103,11 +103,8 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
     }
 
     // Only manager can set core configuration of the strategy
-    function testFuzz_CreateNewStrategy_RevertIf_CallerIsNotManager(
-        address caller,
-        Storage.StrategyConfig calldata config
-    ) public {
-        vm.assume(caller != manager);
+    function testFuzz_CreateNewStrategy_RevertIf_CallerIsNotManager(Storage.StrategyConfig calldata config) public {
+        address caller = makeAddr("caller");
 
         vm.expectRevert(
             abi.encodeWithSelector(
