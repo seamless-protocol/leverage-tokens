@@ -25,9 +25,7 @@ contract ChargeStrategyFeeAndMintSharesTest is LeverageManagerBaseTest {
         fee = bound(fee, 0, leverageManager.MAX_FEE());
         _setStrategyActionFee(feeManagerRole, strategy, IFeeManager.Action.Deposit, fee);
 
-        uint256 expectedShares = FeeManagerHarness(address(leverageManager)).exposed_chargeStrategyFee(
-            strategy, shares, IFeeManager.Action.Deposit
-        );
+        uint256 expectedShares = leverageManager.exposed_chargeStrategyFee(strategy, shares, IFeeManager.Action.Deposit);
 
         uint256 returnValue =
             leverageManager.exposed_chargeStrategyFeeAndMintShares(strategy, to, shares, expectedShares);
@@ -43,9 +41,7 @@ contract ChargeStrategyFeeAndMintSharesTest is LeverageManagerBaseTest {
         fee = bound(fee, 1, leverageManager.MAX_FEE());
         _setStrategyActionFee(feeManagerRole, strategy, IFeeManager.Action.Deposit, fee);
 
-        uint256 expectedShares = FeeManagerHarness(address(leverageManager)).exposed_chargeStrategyFee(
-            strategy, shares, IFeeManager.Action.Deposit
-        );
+        uint256 expectedShares = leverageManager.exposed_chargeStrategyFee(strategy, shares, IFeeManager.Action.Deposit);
 
         vm.expectRevert(
             abi.encodeWithSelector(ILeverageManager.InsufficientShares.selector, expectedShares, expectedShares + 1)
