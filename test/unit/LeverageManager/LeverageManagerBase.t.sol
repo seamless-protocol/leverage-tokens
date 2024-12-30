@@ -39,7 +39,12 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     }
 
     function test_setUp() public view virtual override {
+        bytes32 expectedSlot = keccak256(
+            abi.encode(uint256(keccak256("seamless.contracts.storage.LeverageManager")) - 1)
+        ) & ~bytes32(uint256(0xff));
+
         assertTrue(leverageManager.hasRole(leverageManager.DEFAULT_ADMIN_ROLE(), defaultAdmin));
+        assertEq(leverageManager.exposed_leverageManager_layoutSlot(), expectedSlot);
     }
 
     function _BASE_RATIO() internal view returns (uint256) {

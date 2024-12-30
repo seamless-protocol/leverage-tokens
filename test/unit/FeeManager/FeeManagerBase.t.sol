@@ -27,7 +27,11 @@ contract FeeManagerBaseTest is Test {
     }
 
     function test_setUp() public view virtual {
+        bytes32 expectedSlot = keccak256(abi.encode(uint256(keccak256("seamless.contracts.storage.FeeManager")) - 1))
+            & ~bytes32(uint256(0xff));
+
         assertTrue(feeManager.hasRole(feeManager.FEE_MANAGER_ROLE(), feeManagerRole));
+        assertEq(feeManager.exposed_feeManager_layoutSlot(), expectedSlot);
     }
 
     function _setStrategyActionFee(address caller, address strategy, IFeeManager.Action action, uint256 fee) internal {

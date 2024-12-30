@@ -4,9 +4,18 @@ pragma solidity ^0.8.13;
 import {FeeManagerHarness} from "test/unit/FeeManager/harness/FeeManagerHarness.sol";
 import {LeverageManager} from "src/LeverageManager.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
+import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 
 /// @notice Wrapper contract that exposes all internal functions of LeverageManager
 contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
+    function exposed_leverageManager_layoutSlot() external pure returns (bytes32 slot) {
+        Storage.Layout storage $ = Storage.layout();
+
+        assembly {
+            slot := $.slot
+        }
+    }
+
     function exposed_calculateDebtAndShares(address strategy, ILendingAdapter lendingAdapter, uint256 collateral)
         external
         view
