@@ -108,7 +108,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     }
 
     function _mockState_ConvertToShareOrEquity(ConvertToSharesState memory state) internal {
-        _mockStrategyTotalSupply(state.sharesTotalSupply);
+        _mintShares(address(0), state.sharesTotalSupply);
         _mockStrategyTotalEquity(state.totalEquity);
     }
 
@@ -132,10 +132,6 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
             abi.encodeWithSelector(ILendingAdapter.getStrategyEquityInDebtAsset.selector, strategy),
             abi.encode(totalEquity)
         );
-    }
-
-    function _mockStrategyTotalSupply(uint256 totalSupply) internal {
-        leverageManager.exposed_mintShares(strategy, address(0), totalSupply);
     }
 
     function _setStrategyTargetRatio(uint256 targetRatio) internal {
