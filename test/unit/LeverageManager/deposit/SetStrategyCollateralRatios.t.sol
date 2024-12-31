@@ -51,9 +51,12 @@ contract SetStrategyCollateralRatiosTest is LeverageManagerBaseTest {
         _setStrategyCollateralRatios(manager, ratios);
     }
 
-    // If caller is not the manager, then the transaction should revert
-    function testFuzz_setStrategyCollateralRatios_RevertIf_CallerIsNotManager(CollateralRatios memory ratios) public {
-        address caller = makeAddr("caller");
+    /// forge-config: default.fuzz.runs = 1
+    function testFuzz_setStrategyCollateralRatios_RevertIf_CallerIsNotManager(
+        address caller,
+        CollateralRatios memory ratios
+    ) public {
+        vm.assume(caller != manager);
 
         vm.expectRevert(
             abi.encodeWithSelector(

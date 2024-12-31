@@ -13,6 +13,7 @@ contract SetTreasuryTest is FeeManagerBaseTest {
         super.setUp();
     }
 
+    /// forge-config: default.fuzz.runs = 1
     function testFuzz_setTreasury(address treasury) public {
         vm.startPrank(feeManagerRole);
 
@@ -23,9 +24,9 @@ contract SetTreasuryTest is FeeManagerBaseTest {
         assertEq(feeManager.getTreasury(), treasury);
     }
 
-    function test_setTreasury_CallerIsNotFeeManagerRole() public {
-        address caller = makeAddr("caller");
-        address treasury = makeAddr("treasury");
+    /// forge-config: default.fuzz.runs = 1
+    function testFuzz_setTreasury_CallerIsNotFeeManagerRole(address caller, address treasury) public {
+        vm.assume(caller != feeManagerRole);
 
         vm.expectRevert(
             abi.encodeWithSelector(

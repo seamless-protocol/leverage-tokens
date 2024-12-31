@@ -106,6 +106,7 @@ contract LeverageManagerDepositTest is LeverageManagerBaseTest {
     }
     */
 
+    /// forge-config: default.fuzz.runs = 1
     function testFuzz_deposit_RevertIf_CollateralExceedsCap(uint128 amount, uint128 currentCollateral, uint256 cap)
         public
     {

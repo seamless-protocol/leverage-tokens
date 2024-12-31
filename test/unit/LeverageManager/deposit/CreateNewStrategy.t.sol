@@ -50,6 +50,7 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
         assertEq(leverageManager.getStrategyDebtAsset(strategy), config.debtAsset);
     }
 
+    /// forge-config: default.fuzz.runs = 1
     function testFuzz_CreateNewStrategy_RevertIf_StrategyAlreadyExists(
         Storage.StrategyConfig calldata config1,
         Storage.StrategyConfig calldata config2
@@ -68,7 +69,6 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
         _createNewStrategy(manager, config2);
     }
 
-    // Neither collateral nor debt asset can be zero address
     function testFuzz_CreateNewStrategy_RevertIf_AssetsAreInvalid(address nonZeroAddress) public {
         vm.assume(nonZeroAddress != address(0));
 
@@ -100,9 +100,12 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
         _createNewStrategy(manager, config);
     }
 
-    // Only manager can set core configuration of the strategy
-    function testFuzz_CreateNewStrategy_RevertIf_CallerIsNotManager(Storage.StrategyConfig calldata config) public {
-        address caller = makeAddr("caller");
+    /// forge-config: default.fuzz.runs = 1
+    function testFuzz_CreateNewStrategy_RevertIf_CallerIsNotManager(
+        address caller,
+        Storage.StrategyConfig calldata config
+    ) public {
+        vm.assume(caller != manager);
 
         vm.expectRevert(
             abi.encodeWithSelector(

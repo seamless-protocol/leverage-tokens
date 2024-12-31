@@ -22,9 +22,9 @@ contract setStrategyCollateralCapTest is LeverageManagerBaseTest {
         assertEq(leverageManager.getStrategyCollateralCap(strategy), cap);
     }
 
-    // If caller is not the manager, then the transaction should revert
-    function testFuzz_setStrategyCollateralCap_RevertIf_CallerIsNotManager(uint256 cap) public {
-        address caller = makeAddr("caller");
+    /// forge-config: default.fuzz.runs = 1
+    function testFuzz_setStrategyCollateralCap_RevertIf_CallerIsNotManager(address caller, uint256 cap) public {
+        vm.assume(caller != manager);
 
         vm.expectRevert(
             abi.encodeWithSelector(
