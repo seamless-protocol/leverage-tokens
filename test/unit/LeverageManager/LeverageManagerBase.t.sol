@@ -118,10 +118,6 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         uint256 targetRatio;
     }
 
-    function _mockState_CalculateExcessOfCollateral(CalculateExcessOfCollateralState memory state) internal {
-        _mockStrategyTargetRatio(state.targetRatio);
-    }
-
     function _mockConvertCollateral(uint256 collateral, uint256 debt) internal {
         vm.mockCall(
             address(leverageManager.getStrategyLendingAdapter(strategy)),
