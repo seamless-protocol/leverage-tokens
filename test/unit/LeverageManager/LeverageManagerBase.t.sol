@@ -91,7 +91,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
 
         _mockStrategyCollateral(state.strategyCollateral);
         _mockConvertCollateral(state.depositAmount, state.depositAmountInDebtAsset);
-        _mockStrategyTargetRatio(state.targetRatio);
+        _setStrategyTargetRatio(state.targetRatio);
     }
 
     function _mockStrategyCollateral(uint256 collateral) internal {
@@ -138,7 +138,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         leverageManager.exposed_mintShares(strategy, address(0), totalSupply);
     }
 
-    function _mockStrategyTargetRatio(uint256 targetRatio) internal {
+    function _setStrategyTargetRatio(uint256 targetRatio) internal {
         vm.prank(manager);
         leverageManager.setStrategyCollateralRatios(
             strategy,

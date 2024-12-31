@@ -57,7 +57,7 @@ contract LeverageManagerDepositTest is LeverageManagerBaseTest {
         );
 
         (uint256 expectedCollateral, uint256 expectedDebt, uint256 expectedShares) =
-            leverageManager.exposed_calculateDebtAndShares(strategy, _getLendingAdapter(), amount);
+            leverageManager.exposed_calculateCollateralDebtAndShares(strategy, _getLendingAdapter(), amount);
 
         debtToken.mint(address(leverageManager), expectedDebt);
         collateralToken.mint(address(this), expectedCollateral);
@@ -82,8 +82,8 @@ contract LeverageManagerDepositTest is LeverageManagerBaseTest {
         state.targetRatio = bound(state.targetRatio, _BASE_RATIO() + 1, 200 * _BASE_RATIO());
         _mockState_CalculateDebtAndShares(state);
 
-        (uint256 expectedCollateral, uint256 expectedDebt, uint256 sharesBeforeFee) =
-            leverageManager.exposed_calculateDebtAndShares(strategy, _getLendingAdapter(), state.depositAmount);
+        (uint256 expectedCollateral, uint256 expectedDebt, uint256 sharesBeforeFee) = leverageManager
+            .exposed_calculateCollateralDebtAndShares(strategy, _getLendingAdapter(), state.depositAmount);
         uint256 expectedSharesToReceive =
             leverageManager.exposed_chargeStrategyFee(strategy, sharesBeforeFee, IFeeManager.Action.Deposit);
 
@@ -106,7 +106,6 @@ contract LeverageManagerDepositTest is LeverageManagerBaseTest {
         assertEq(returnValue, expectedSharesToReceive);
     }
 
-    /// forge-config: default.fuzz.runs = 1
     function testFuzz_deposit_RevertIf_CollateralExceedsCap(CalculateDebtAndSharesState memory state, uint256 cap)
         public
     {
@@ -115,8 +114,9 @@ contract LeverageManagerDepositTest is LeverageManagerBaseTest {
         _setStrategyCollateralCap(manager, cap);
         _mockState_CalculateDebtAndShares(state);
 
-        (uint256 expectedCollateral,,) =
-            leverageManager.exposed_calculateDebtAndShares(strategy, _getLendingAdapter(), state.depositAmount);
+        (uint256 expectedCollateral,,) = leverageManager.exposed_calculateCollateralDebtAndShares(
+            strategy, _getLendingAdapter(), state.depositAmount
+        );
 
         uint256 collateralAfterDeposit = uint256(expectedCollateral) + state.strategyCollateral;
         vm.assume(collateralAfterDeposit > cap);

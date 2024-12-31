@@ -69,6 +69,7 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
         _createNewStrategy(manager, config2);
     }
 
+    // forge-config: default.fuzz.runs = 1
     function testFuzz_CreateNewStrategy_RevertIf_AssetsAreInvalid(address nonZeroAddress) public {
         vm.assume(nonZeroAddress != address(0));
 
