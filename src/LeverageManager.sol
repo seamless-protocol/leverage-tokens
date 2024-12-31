@@ -1,17 +1,21 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
+// Dependency imports
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import {FeeManager} from "src/FeeManager.sol";
-import {IFeeManager} from "src/interfaces/IFeeManager.sol";
-import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+
+// Internal imports
+import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
+import {FeeManager} from "src/FeeManager.sol";
+import {IFeeManager} from "src/interfaces/IFeeManager.sol";
+import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
+import {CollateralRatios} from "src/types/DataTypes.sol";
 
 contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManager, UUPSUpgradeable {
     // Base collateral ratio constant, 1e8 means that collateral / debt ratio is 1:1
@@ -36,12 +40,14 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function getStrategyCollateralRatios(address strategy)
-        external
-        view
-        returns (Storage.CollateralRatios memory ratios)
-    {
-        return Storage.layout().config[strategy].collateralRatios;
+    function getStrategyCollateralRatios(address strategy) external view returns (CollateralRatios memory ratios) {
+        Storage.StrategyConfig storage config = Storage.layout().config[strategy];
+
+        return CollateralRatios({
+            minCollateralRatio: config.minCollateralRatio,
+            maxCollateralRatio: config.maxCollateralRatio,
+            targetCollateralRatio: config.targetCollateralRatio
+        });
     }
 
     /// @inheritdoc ILeverageManager
@@ -76,7 +82,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
     /// @inheritdoc ILeverageManager
     function getStrategyTargetCollateralRatio(address strategy) public view returns (uint256 targetCollateralRatio) {
-        return Storage.layout().config[strategy].collateralRatios.targetCollateralRatio;
+        return Storage.layout().config[strategy].targetCollateralRatio;
     }
 
     /// @inheritdoc ILeverageManager
@@ -90,8 +96,15 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         }
 
         setStrategyLendingAdapter(strategy, address(strategyConfig.lendingAdapter));
-        setStrategyCollateralRatios(strategy, strategyConfig.collateralRatios);
         setStrategyCollateralCap(strategy, strategyConfig.collateralCap);
+        setStrategyCollateralRatios(
+            strategy,
+            CollateralRatios({
+                minCollateralRatio: strategyConfig.minCollateralRatio,
+                targetCollateralRatio: strategyConfig.targetCollateralRatio,
+                maxCollateralRatio: strategyConfig.maxCollateralRatio
+            })
+        );
 
         // Check does provided core has zero addresses for collateral and debt
         if (strategyConfig.collateralAsset == address(0) || strategyConfig.debtAsset == address(0)) {
@@ -111,7 +124,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function setStrategyCollateralRatios(address strategy, Storage.CollateralRatios calldata ratios)
+    function setStrategyCollateralRatios(address strategy, CollateralRatios memory ratios)
         public
         onlyRole(MANAGER_ROLE)
     {
@@ -123,7 +136,11 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             revert InvalidCollateralRatios();
         }
 
-        Storage.layout().config[strategy].collateralRatios = ratios;
+        Storage.StrategyConfig storage config = Storage.layout().config[strategy];
+        config.minCollateralRatio = ratios.minCollateralRatio;
+        config.maxCollateralRatio = ratios.maxCollateralRatio;
+        config.targetCollateralRatio = ratios.targetCollateralRatio;
+
         emit StrategyCollateralRatiosSet(strategy, ratios);
     }
 

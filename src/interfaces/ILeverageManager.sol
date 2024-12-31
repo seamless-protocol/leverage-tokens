@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+import {CollateralRatios} from "src/types/DataTypes.sol";
 import {ILendingAdapter} from "./ILendingAdapter.sol";
 import {LeverageManagerStorage as Storage} from "../storage/LeverageManagerStorage.sol";
 
@@ -30,7 +31,7 @@ interface ILeverageManager {
     event StrategyCreated(address indexed strategy, address indexed collateralAsset, address indexed debtAsset);
 
     /// @notice Event emitted when collateral ratios are set for a strategy
-    event StrategyCollateralRatiosSet(address indexed strategy, Storage.CollateralRatios ratios);
+    event StrategyCollateralRatiosSet(address indexed strategy, CollateralRatios ratios);
 
     /// @notice Event emitted when collateral caps are set/changed for a strategy
     event StrategyCollateralCapSet(address indexed strategy, uint256 collateralCap);
@@ -57,7 +58,7 @@ interface ILeverageManager {
     /// @notice Returns leverage config for a strategy including min, max and target
     /// @param strategy Strategy to get leverage config for
     /// @return ratios Collateral ratios for the strategy
-    function getStrategyCollateralRatios(address strategy) external returns (Storage.CollateralRatios memory ratios);
+    function getStrategyCollateralRatios(address strategy) external returns (CollateralRatios memory ratios);
 
     /// @notice Returns target ratio for a strategy
     /// @param strategy Strategy to get target ratio for
@@ -115,7 +116,8 @@ interface ILeverageManager {
     /// @param strategy Strategy to set collateral ratios for
     /// @param ratios Collateral ratios to set
     /// @dev Only MANAGER role can call this function
-    function setStrategyCollateralRatios(address strategy, Storage.CollateralRatios calldata ratios) external;
+    ///      If collateral ratios are not valid function will revert
+    function setStrategyCollateralRatios(address strategy, CollateralRatios calldata ratios) external;
 
     /// @notice Sets collateral cap for strategy
     /// @param strategy Strategy to set cap for

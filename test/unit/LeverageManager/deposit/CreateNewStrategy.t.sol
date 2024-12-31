@@ -12,6 +12,7 @@ import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 import {LeverageManagerBaseTest} from "../LeverageManagerBase.t.sol";
+import {CollateralRatios} from "src/types/DataTypes.sol";
 
 contract CreateNewStrategyTest is LeverageManagerBaseTest {
     function setUp() public override {
@@ -21,9 +22,9 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
     function testFuzz_CreateNewStrategy(Storage.StrategyConfig calldata config) public {
         vm.assume(config.collateralAsset != address(0) && config.debtAsset != address(0));
 
-        uint256 minCollateralRatio = config.collateralRatios.minCollateralRatio;
-        uint256 targetCollateralRatio = config.collateralRatios.targetCollateralRatio;
-        uint256 maxCollateralRatio = config.collateralRatios.maxCollateralRatio;
+        uint256 minCollateralRatio = config.minCollateralRatio;
+        uint256 targetCollateralRatio = config.targetCollateralRatio;
+        uint256 maxCollateralRatio = config.maxCollateralRatio;
         vm.assume(minCollateralRatio <= targetCollateralRatio && targetCollateralRatio <= maxCollateralRatio);
 
         // Check if event is emitted properly
@@ -39,10 +40,10 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
         assertEq(address(configAfter.lendingAdapter), address(config.lendingAdapter));
         assertEq(configAfter.collateralCap, config.collateralCap);
 
-        Storage.CollateralRatios memory ratios = leverageManager.getStrategyCollateralRatios(strategy);
-        assertEq(ratios.minCollateralRatio, config.collateralRatios.minCollateralRatio);
-        assertEq(ratios.maxCollateralRatio, config.collateralRatios.maxCollateralRatio);
-        assertEq(ratios.targetCollateralRatio, config.collateralRatios.targetCollateralRatio);
+        CollateralRatios memory ratios = leverageManager.getStrategyCollateralRatios(strategy);
+        assertEq(ratios.minCollateralRatio, config.minCollateralRatio);
+        assertEq(ratios.maxCollateralRatio, config.maxCollateralRatio);
+        assertEq(ratios.targetCollateralRatio, config.targetCollateralRatio);
 
         // Check if single getter functions return the correct values
         assertEq(leverageManager.getStrategyCollateralAsset(strategy), config.collateralAsset);
@@ -57,10 +58,9 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
         vm.assume(config2.collateralAsset != address(0) && config2.debtAsset != address(0));
         vm.assume(address(config1.lendingAdapter) != address(0) && address(config2.lendingAdapter) != address(0));
 
-        Storage.CollateralRatios memory ratios1 = config1.collateralRatios;
         vm.assume(
-            ratios1.minCollateralRatio <= ratios1.targetCollateralRatio
-                && ratios1.targetCollateralRatio <= ratios1.maxCollateralRatio
+            config1.minCollateralRatio <= config1.targetCollateralRatio
+                && config1.targetCollateralRatio <= config1.maxCollateralRatio
         );
 
         _createNewStrategy(manager, config1);
@@ -76,11 +76,9 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
             collateralAsset: address(0),
             debtAsset: nonZeroAddress,
             lendingAdapter: ILendingAdapter(nonZeroAddress),
-            collateralRatios: Storage.CollateralRatios({
-                minCollateralRatio: 0,
-                targetCollateralRatio: 0,
-                maxCollateralRatio: 0
-            }),
+            minCollateralRatio: 0,
+            targetCollateralRatio: 0,
+            maxCollateralRatio: 0,
             collateralCap: 0
         });
 

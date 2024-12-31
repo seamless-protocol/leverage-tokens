@@ -11,13 +11,14 @@ import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol"
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 import {LeverageManagerBaseTest} from "../LeverageManagerBase.t.sol";
+import {CollateralRatios} from "src/types/DataTypes.sol";
 
 contract SetStrategyCollateralRatiosTest is LeverageManagerBaseTest {
     function setUp() public override {
         super.setUp();
     }
 
-    function testFuzz_setStrategyCollateralRatios(Storage.CollateralRatios memory ratios) public {
+    function testFuzz_setStrategyCollateralRatios(CollateralRatios memory ratios) public {
         vm.assume(
             ratios.minCollateralRatio <= ratios.targetCollateralRatio
                 && ratios.targetCollateralRatio <= ratios.maxCollateralRatio
@@ -29,7 +30,7 @@ contract SetStrategyCollateralRatiosTest is LeverageManagerBaseTest {
         _setStrategyCollateralRatios(manager, ratios);
 
         // Check if the collateral ratios are set correctly
-        Storage.CollateralRatios memory ratiosAfterSet = leverageManager.getStrategyCollateralRatios(strategy);
+        CollateralRatios memory ratiosAfterSet = leverageManager.getStrategyCollateralRatios(strategy);
         assertEq(ratiosAfterSet.minCollateralRatio, ratios.minCollateralRatio);
         assertEq(ratiosAfterSet.maxCollateralRatio, ratios.maxCollateralRatio);
         assertEq(ratiosAfterSet.targetCollateralRatio, ratios.targetCollateralRatio);
@@ -39,9 +40,9 @@ contract SetStrategyCollateralRatiosTest is LeverageManagerBaseTest {
     }
 
     // If target ratio is not in between min and max ratios, then the transaction should revert
-    function testFuzz_setStrategyCollateralRatios_RevertIf_InvalidCollateralRatios(
-        Storage.CollateralRatios memory ratios
-    ) public {
+    function testFuzz_setStrategyCollateralRatios_RevertIf_InvalidCollateralRatios(CollateralRatios memory ratios)
+        public
+    {
         vm.assume(
             ratios.minCollateralRatio > ratios.targetCollateralRatio
                 || ratios.maxCollateralRatio < ratios.targetCollateralRatio
@@ -51,9 +52,7 @@ contract SetStrategyCollateralRatiosTest is LeverageManagerBaseTest {
     }
 
     // If caller is not the manager, then the transaction should revert
-    function testFuzz_setStrategyCollateralRatios_RevertIf_CallerIsNotManager(Storage.CollateralRatios memory ratios)
-        public
-    {
+    function testFuzz_setStrategyCollateralRatios_RevertIf_CallerIsNotManager(CollateralRatios memory ratios) public {
         address caller = makeAddr("caller");
 
         vm.expectRevert(

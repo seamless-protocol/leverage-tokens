@@ -14,6 +14,7 @@ import {LeverageManager} from "src/LeverageManager.sol";
 import {LeverageManagerHarness} from "test/unit/LeverageManager/harness/LeverageManagerHarness.sol";
 import {FeeManagerBaseTest} from "test/unit/FeeManager/FeeManagerBase.t.sol";
 import {FeeManagerHarness} from "test/unit/FeeManager/harness/FeeManagerHarness.sol";
+import {CollateralRatios} from "src/types/DataTypes.sol";
 
 contract LeverageManagerBaseTest is FeeManagerBaseTest {
     address public lendingAdapter = makeAddr("lendingAdapter");
@@ -60,7 +61,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         leverageManager.createNewStrategy(strategy, config);
     }
 
-    function _setStrategyCollateralRatios(address caller, Storage.CollateralRatios memory ratios) internal {
+    function _setStrategyCollateralRatios(address caller, CollateralRatios memory ratios) internal {
         vm.prank(caller);
         leverageManager.setStrategyCollateralRatios(strategy, ratios);
     }
@@ -144,7 +145,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         vm.prank(manager);
         leverageManager.setStrategyCollateralRatios(
             strategy,
-            Storage.CollateralRatios({
+            CollateralRatios({
                 minCollateralRatio: 0,
                 targetCollateralRatio: targetRatio,
                 maxCollateralRatio: type(uint256).max
