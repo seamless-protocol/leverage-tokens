@@ -40,85 +40,90 @@ contract LeverageManagerDepositTest is LeverageManagerBaseTest {
     function test_deposit() public {
         address recipient = makeAddr("recipient");
 
-        uint128 amount = 1 ether;
-        collateralToken.mint(address(this), amount);
-
         uint256 targetRatio = 2 * _BASE_RATIO();
+        uint128 strategyCollateral = 1 ether;
+        uint128 amount = 1 ether;
         uint128 amountToDebtAsset = 3000 ether;
-
-        uint256 expectedSharesToReceive = 1500 ether;
-        uint256 expectedDebtToReceive = 1500 ether;
-        debtToken.mint(address(leverageManager), expectedDebtToReceive);
 
         _mockState_CalculateDebtAndShares(
             CalculateDebtAndSharesState({
                 targetRatio: targetRatio,
-                collateral: amount,
-                convertedCollateral: amountToDebtAsset,
+                strategyCollateral: strategyCollateral,
+                depositAmount: amount,
+                depositAmountInDebtAsset: amountToDebtAsset,
                 totalEquity: 0,
                 strategyTotalShares: 0
             })
         );
 
-        collateralToken.approve(address(leverageManager), amount);
+        (uint256 expectedCollateral, uint256 expectedDebt, uint256 expectedShares) =
+            leverageManager.exposed_calculateDebtAndShares(strategy, _getLendingAdapter(), amount);
+
+        debtToken.mint(address(leverageManager), expectedDebt);
+        collateralToken.mint(address(this), expectedCollateral);
+
+        collateralToken.approve(address(leverageManager), expectedCollateral);
 
         vm.expectEmit(true, true, true, true);
-        emit ILeverageManager.Deposit(strategy, address(this), recipient, amount, expectedSharesToReceive);
+        emit ILeverageManager.Deposit(strategy, address(this), recipient, amount, expectedShares);
 
         uint256 returnValue = leverageManager.deposit(strategy, amount, recipient, 0);
 
         assertEq(collateralToken.balanceOf(recipient), 0);
-        assertEq(collateralToken.balanceOf(address(leverageManager)), amount);
+        assertEq(collateralToken.balanceOf(address(leverageManager)), expectedCollateral);
 
-        assertEq(debtToken.balanceOf(address(this)), expectedDebtToReceive);
+        assertEq(debtToken.balanceOf(address(this)), expectedDebt);
         assertEq(debtToken.balanceOf(address(leverageManager)), 0);
 
-        assertEq(returnValue, expectedSharesToReceive);
+        assertEq(returnValue, expectedShares);
     }
 
-    /*
     function testFuzz_deposit(CalculateDebtAndSharesState memory state, address recipient) public {
-        state.targetRatio = bound(state.targetRatio, _BASE_RATIO(), 200 * _BASE_RATIO());
+        state.targetRatio = bound(state.targetRatio, _BASE_RATIO() + 1, 200 * _BASE_RATIO());
         _mockState_CalculateDebtAndShares(state);
 
-        (uint256 expectedDebtToReceive, uint256 sharesBeforeFee) =
-            leverageManager.exposed_calculateDebtAndShares(strategy, _getLendingAdapter(), state.collateral);
+        (uint256 expectedCollateral, uint256 expectedDebt, uint256 sharesBeforeFee) =
+            leverageManager.exposed_calculateDebtAndShares(strategy, _getLendingAdapter(), state.depositAmount);
         uint256 expectedSharesToReceive =
             leverageManager.exposed_chargeStrategyFee(strategy, sharesBeforeFee, IFeeManager.Action.Deposit);
 
-        collateralToken.mint(address(this), state.collateral);
-        debtToken.mint(address(leverageManager), expectedDebtToReceive);
+        collateralToken.mint(address(this), expectedCollateral);
+        debtToken.mint(address(leverageManager), expectedDebt);
 
-        collateralToken.approve(address(leverageManager), state.collateral);
+        collateralToken.approve(address(leverageManager), expectedCollateral);
 
         vm.expectEmit(true, true, true, true);
-        emit ILeverageManager.Deposit(strategy, address(this), recipient, state.collateral, expectedSharesToReceive);
+        emit ILeverageManager.Deposit(strategy, address(this), recipient, state.depositAmount, expectedSharesToReceive);
 
-        uint256 returnValue = leverageManager.deposit(strategy, state.collateral, recipient, 0);
+        uint256 returnValue = leverageManager.deposit(strategy, state.depositAmount, recipient, 0);
 
         assertEq(collateralToken.balanceOf(recipient), 0);
-        assertEq(collateralToken.balanceOf(address(leverageManager)), state.collateral);
+        assertEq(collateralToken.balanceOf(address(leverageManager)), expectedCollateral);
 
-        assertEq(debtToken.balanceOf(address(this)), expectedDebtToReceive);
+        assertEq(debtToken.balanceOf(address(this)), expectedDebt);
         assertEq(debtToken.balanceOf(address(leverageManager)), 0);
 
         assertEq(returnValue, expectedSharesToReceive);
     }
-    */
 
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_deposit_RevertIf_CollateralExceedsCap(uint128 amount, uint128 currentCollateral, uint256 cap)
+    function testFuzz_deposit_RevertIf_CollateralExceedsCap(CalculateDebtAndSharesState memory state, uint256 cap)
         public
     {
-        uint256 collateralAfterDeposit = uint256(amount) + currentCollateral;
-        vm.assume(collateralAfterDeposit > cap);
+        state.targetRatio = bound(state.targetRatio, _BASE_RATIO() + 1, 200 * _BASE_RATIO());
 
         _setStrategyCollateralCap(manager, cap);
-        _mockStrategyCollateral(currentCollateral);
+        _mockState_CalculateDebtAndShares(state);
+
+        (uint256 expectedCollateral,,) =
+            leverageManager.exposed_calculateDebtAndShares(strategy, _getLendingAdapter(), state.depositAmount);
+
+        uint256 collateralAfterDeposit = uint256(expectedCollateral) + state.strategyCollateral;
+        vm.assume(collateralAfterDeposit > cap);
 
         vm.expectRevert(
             abi.encodeWithSelector(ILeverageManager.CollateralExceedsCap.selector, collateralAfterDeposit, cap)
         );
-        leverageManager.deposit(strategy, amount, address(this), 0);
+        leverageManager.deposit(strategy, state.depositAmount, address(this), 0);
     }
 }

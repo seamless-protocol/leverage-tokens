@@ -126,9 +126,9 @@ interface ILeverageManager {
     /// @dev Only address with MANAGER role can call this function
     function setStrategyCollateralCap(address strategy, uint256 collateralCap) external;
 
-    /// @notice Mints shares of a strategy and deposits assets into it, recipient receives shares and debt
+    /// @notice Mints shares of a strategy and deposits assets into it, recipient receives shares but caller receives debt
     /// @param strategy The strategy to deposit into
-    /// @param assets The leveraged amount of assets to deposit
+    /// @param assets The quantity of assets to deposit
     /// @param recipient The address to receive the shares and debt
     /// @param minShares The minimum amount of shares to receive
     /// @return shares Actual amount of shares given to the user

@@ -16,12 +16,12 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
         }
     }
 
-    function exposed_calculateDebtAndShares(address strategy, ILendingAdapter lendingAdapter, uint256 collateral)
+    function exposed_calculateDebtAndShares(address strategy, ILendingAdapter lendingAdapter, uint256 assets)
         external
         view
-        returns (uint256 debt, uint256 shares)
+        returns (uint256 collateral, uint256 debt, uint256 shares)
     {
-        return _calculateDebtAndShares(strategy, lendingAdapter, collateral);
+        return _calculateCollateralDebtAndShares(strategy, lendingAdapter, assets);
     }
 
     function exposed_chargeStrategyFeeAndMintShares(

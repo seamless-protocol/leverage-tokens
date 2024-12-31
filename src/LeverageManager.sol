@@ -158,27 +158,29 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         // Cache
         ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
 
+        // Calculate how much to borrow and how much shares to mint for user. It must be done before supplying and borrowing
+        (uint256 collateral, uint256 debtToBorrow, uint256 sharesToMint) =
+            _calculateCollateralDebtAndShares(strategy, lendingAdapter, assets);
+
+        // Revert if there is not enough space in the strategy
         uint256 currCollateral = lendingAdapter.getStrategyCollateral(strategy);
         uint256 collateralCap = getStrategyCollateralCap(strategy);
 
-        if (currCollateral + assets > collateralCap) {
-            revert CollateralExceedsCap(currCollateral + assets, collateralCap);
+        if (currCollateral + collateral > collateralCap) {
+            revert CollateralExceedsCap(currCollateral + collateral, collateralCap);
         }
-
-        // Calculate how much to borrow and how much shares to mint for user. It must be done before supplying and borrowing
-        (uint256 debtToBorrow, uint256 sharesToMint) = _calculateDebtAndShares(strategy, lendingAdapter, assets);
 
         // Charge strategy fee and mint shares for user. Revert if user does not receive enough shares
         uint256 mintedShares = _chargeStrategyFeeAndMintShares(strategy, recipient, sharesToMint, minShares);
 
         // Take collateral tokens from caller and supply them as collateral on lending pool
         IERC20 collateralAsset = IERC20(getStrategyCollateralAsset(strategy));
-        SafeERC20.safeTransferFrom(collateralAsset, msg.sender, address(this), assets);
+        SafeERC20.safeTransferFrom(collateralAsset, msg.sender, address(this), collateral);
 
-        collateralAsset.approve(address(lendingAdapter), assets);
-        lendingAdapter.addCollateral(strategy, assets);
+        collateralAsset.approve(address(lendingAdapter), collateral);
+        lendingAdapter.addCollateral(strategy, collateral);
 
-        // Borrow and send debt assets to user
+        // Borrow and send debt assets to caller
         lendingAdapter.borrow(strategy, debtToBorrow);
         SafeERC20.safeTransfer(IERC20(getStrategyDebtAsset(strategy)), msg.sender, debtToBorrow);
 
@@ -187,24 +189,23 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         return mintedShares;
     }
 
-    // Calculate how much of a debt asset to borrow and how much shares should be minted for user for given collateral
-    function _calculateDebtAndShares(address strategy, ILendingAdapter lendingAdapter, uint256 collateral)
+    // Calculate how much of a debt asset to borrow and how much shares should be minted for user for given equity assets
+    function _calculateCollateralDebtAndShares(address strategy, ILendingAdapter lendingAdapter, uint256 assets)
         internal
         view
-        returns (uint256 debt, uint256 shares)
+        returns (uint256 collateral, uint256 debt, uint256 shares)
     {
-        // Calculate how much of a debt corresponds to collateral. Debt is rounded down, debt = collateral / target ratio
-        uint256 collateralInDebtAsset = lendingAdapter.convertCollateralToDebtAsset(strategy, collateral);
+        // Convert user's equity to debt asset and calculate how much to borrow
+        uint256 targetRatio = getStrategyTargetCollateralRatio(strategy);
+        uint256 equityInDebtAsset = lendingAdapter.convertCollateralToDebtAsset(strategy, assets);
 
-        uint256 debtToBorrow = Math.mulDiv(
-            collateralInDebtAsset, BASE_RATIO, getStrategyTargetCollateralRatio(strategy), Math.Rounding.Floor
-        );
+        // debt = equity / (1 - targetRatio), collateral = equity * targetRatio / (targetRatio - 1)
+        debt = Math.mulDiv(equityInDebtAsset, BASE_RATIO, targetRatio - BASE_RATIO, Math.Rounding.Floor);
+        collateral = Math.mulDiv(assets, targetRatio, targetRatio - BASE_RATIO, Math.Rounding.Ceil);
 
-        // Calculate how much shares user should receive for their equity
-        uint256 equityInDebtAsset = collateralInDebtAsset - debtToBorrow;
         uint256 sharesToMint = _convertToShares(strategy, equityInDebtAsset);
 
-        return (debtToBorrow, sharesToMint);
+        return (collateral, debt, sharesToMint);
     }
 
     function _chargeStrategyFeeAndMintShares(address strategy, address recipient, uint256 shares, uint256 minShares)

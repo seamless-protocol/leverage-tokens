@@ -77,8 +77,9 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
 
     struct CalculateDebtAndSharesState {
         uint256 targetRatio;
-        uint128 collateral;
-        uint128 convertedCollateral;
+        uint128 strategyCollateral;
+        uint128 depositAmount;
+        uint128 depositAmountInDebtAsset;
         uint128 totalEquity;
         uint128 strategyTotalShares;
     }
@@ -88,8 +89,8 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
             ConvertToSharesState({totalEquity: state.totalEquity, sharesTotalSupply: state.strategyTotalShares})
         );
 
-        _mockStrategyCollateral(state.collateral);
-        _mockConvertCollateral(state.collateral, state.convertedCollateral);
+        _mockStrategyCollateral(state.strategyCollateral);
+        _mockConvertCollateral(state.depositAmount, state.depositAmountInDebtAsset);
         _mockStrategyTargetRatio(state.targetRatio);
     }
 
