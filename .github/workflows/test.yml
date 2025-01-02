@@ -41,5 +41,17 @@ jobs:
 
       - name: Run Forge tests
         run: |
-          forge test -vvv
+          forge coverage --report lcov
         id: test
+
+      - name: Run Slither Static Analysis
+        uses: crytic/slither-action@v0.4.0
+        id: slither
+        with:
+          sarif: results.sarif
+          fail-on: none
+
+      - name: Upload SARIF file
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ${{ steps.slither.outputs.sarif }}
