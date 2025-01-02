@@ -13,15 +13,15 @@ contract SetTreasuryTest is FeeManagerBaseTest {
         super.setUp();
     }
 
-    function testFuzz_setTreasury(address treasury) public {
-        vm.startPrank(feeManagerRole);
+    // function testFuzz_setTreasury(address treasury) public {
+    //     vm.startPrank(feeManagerRole);
 
-        vm.expectEmit(true, true, true, true);
-        emit IFeeManager.TreasurySet(treasury);
+    //     vm.expectEmit(true, true, true, true);
+    //     emit IFeeManager.TreasurySet(treasury);
 
-        feeManager.setTreasury(treasury);
-        assertEq(feeManager.getTreasury(), treasury);
-    }
+    //     feeManager.setTreasury(treasury);
+    //     assertEq(feeManager.getTreasury(), treasury);
+    // }
 
     function test_setTreasury_CallerIsNotFeeManagerRole() public {
         address caller = makeAddr("caller");

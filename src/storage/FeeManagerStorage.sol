@@ -14,6 +14,7 @@ library FeeManagerStorage {
     }
 
     function layout() internal pure returns (Layout storage l) {
+        // slither-disable-next-line assembly
         assembly {
             // keccak256(abi.encode(uint256(keccak256("seamless.contracts.storage.FeeManager")) - 1)) & ~bytes32(uint256(0xff));
             l.slot := 0x6c0d8f7f1305f10aa51c80093531513ff85a99140b414f68890d41ac36949e00
