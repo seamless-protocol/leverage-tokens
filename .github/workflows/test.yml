@@ -53,9 +53,8 @@ jobs:
         with:
           coverage-files: lcov.info
           minimum-coverage: 100
-          artifact-name: code-coverage-report
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          working-directory: .
+          working-directory: ./src
           update-comment: true
 
       - name: Run Slither Static Analysis
