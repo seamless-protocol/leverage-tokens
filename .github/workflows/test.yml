@@ -56,6 +56,8 @@ jobs:
           working-directory: .
           update-comment: true
 
+      - name: Setup LCOV
+        uses: hrishikesh-kadam/setup-lcov@v1
       - name: Run Slither Static Analysis
         uses: crytic/slither-action@v0.4.0
         id: slither
