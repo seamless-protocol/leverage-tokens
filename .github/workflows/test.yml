@@ -51,7 +51,7 @@ jobs:
       - name: Check Forge test coverage
         uses: zgosalvez/github-actions-report-lcov@v3
         with:
-          coverage-files: lcov.*.info
+          coverage-files: lcov.info
           minimum-coverage: 100
           artifact-name: code-coverage-report
           github-token: ${{ secrets.GITHUB_TOKEN }}
