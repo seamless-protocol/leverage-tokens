@@ -45,15 +45,32 @@ jobs:
         run: |
           forge coverage --report lcov
         id: test
+      
+      - name: Check Forge test coverage
+        uses: zgosalvez/github-actions-report-lcov@v3
+        with:
+          coverage-files: lcov.*.info
+          minimum-coverage: 100
+          artifact-name: code-coverage-report
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          working-directory: .
+          update-comment: true
 
       - name: Run Slither Static Analysis
         uses: crytic/slither-action@v0.4.0
         id: slither
         with:
-          sarif: results.sarif
           fail-on: none
+          slither-args: --checklist --markdown-root ${{ github.server_url }}/${{ github.repository }}/blob/${{ github.sha }}/
 
-      - name: Upload SARIF file
-        uses: github/codeql-action/upload-sarif@v3
+      - name: Create/update Slither result as PR comment
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        env:
+          REPORT: ${{ steps.slither.outputs.stdout }}
         with:
-          sarif_file: ${{ steps.slither.outputs.sarif }}
+          script: |
+            const script = require('.github/scripts/comment')
+            const header = '# Slither report'
+            const body = process.env.REPORT
+            await script({ github, context, header, body })
