@@ -14,8 +14,6 @@ module.exports = async ({ github, context, header, body }) => {
     );
   
     const commentFn = botComment ? "updateComment" : "createComment";
-
-    console.log("commentFn:", commentFn, "body", comment);
   
     await github.rest.issues[commentFn]({
       owner: context.repo.owner,
