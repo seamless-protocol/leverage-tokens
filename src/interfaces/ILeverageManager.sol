@@ -93,12 +93,6 @@ interface ILeverageManager {
     /// @return shares The amount of shares the user has in the strategy
     function getUserStrategyShares(address strategy, address user) external view returns (uint256 shares);
 
-    /// @notice Returns equity of the strategy denominated in debt asset of the strategy
-    /// @param strategy Strategy to query equity for
-    /// @return equity Equity of the strategy
-    /// @dev Equity is calculated as collateral - debt
-    function getStrategyEquityInDebtAsset(address strategy) external view returns (uint256 equity);
-
     /// @notice Creates new strategy with given config
     /// @param strategy Address of the new strategy
     /// @param strategyConfig Configuration of the strategy

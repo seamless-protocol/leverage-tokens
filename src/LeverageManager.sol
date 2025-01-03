@@ -66,11 +66,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function getStrategyEquityInDebtAsset(address strategy) public view returns (uint256 equity) {
-        return getStrategyLendingAdapter(strategy).getStrategyEquityInDebtAsset(strategy);
-    }
-
-    /// @inheritdoc ILeverageManager
     function getStrategyCollateralAsset(address strategy) public view returns (address collateral) {
         return Storage.layout().config[strategy].collateralAsset;
     }
@@ -240,10 +235,12 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     /// @dev Function must be called before supplying and borrowing
     /// @dev Function should be used to calculate how much shares user should receive for their equity
     function _convertToShares(address strategy, uint256 equity) internal view returns (uint256 shares) {
+        ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
+
         return Math.mulDiv(
             equity,
             getTotalStrategyShares(strategy) + 10 ** _decimalsOffset(),
-            getStrategyEquityInDebtAsset(strategy) + 1,
+            lendingAdapter.getStrategyEquityInDebtAsset(strategy) + 1,
             Math.Rounding.Floor
         );
     }
