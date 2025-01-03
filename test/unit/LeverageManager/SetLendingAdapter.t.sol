@@ -9,7 +9,7 @@ import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol"
 
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
-import {LeverageManagerBaseTest} from "../LeverageManagerBase.t.sol";
+import {LeverageManagerBaseTest} from "./LeverageManagerBase.t.sol";
 
 contract SetStrategyLendingAdapterTest is LeverageManagerBaseTest {
     function setUp() public override {

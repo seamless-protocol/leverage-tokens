@@ -10,7 +10,7 @@ import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol"
 // Internal imports
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
-import {LeverageManagerBaseTest} from "../LeverageManagerBase.t.sol";
+import {LeverageManagerBaseTest} from "./LeverageManagerBase.t.sol";
 
 contract setStrategyCollateralCapTest is LeverageManagerBaseTest {
     function setUp() public override {
