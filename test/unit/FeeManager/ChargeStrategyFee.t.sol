@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.26;
 
 // Dependency imports
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
