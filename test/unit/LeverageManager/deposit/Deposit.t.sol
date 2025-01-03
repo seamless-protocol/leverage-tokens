@@ -32,9 +32,9 @@ contract LeverageManagerDepositTest is LeverageManagerBaseTest {
                 collateralAsset: address(collateralToken),
                 debtAsset: address(debtToken),
                 lendingAdapter: ILendingAdapter(address(lendingAdapter)),
-                minCollateralRatio: 0,
-                maxCollateralRatio: 0,
-                targetCollateralRatio: 0,
+                minCollateralRatio: _BASE_RATIO(),
+                maxCollateralRatio: _BASE_RATIO() + 2,
+                targetCollateralRatio: _BASE_RATIO() + 1,
                 collateralCap: type(uint256).max
             })
         );

@@ -129,7 +129,8 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         onlyRole(MANAGER_ROLE)
     {
         // Validate that target ratio is in between min and max rebalance ratios before setting
-        bool isValid = ratios.minCollateralRatio <= ratios.targetCollateralRatio
+        bool isValid = ratios.targetCollateralRatio > BASE_RATIO
+            && ratios.minCollateralRatio <= ratios.targetCollateralRatio
             && ratios.targetCollateralRatio <= ratios.maxCollateralRatio;
 
         if (!isValid) {

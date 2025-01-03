@@ -20,7 +20,7 @@ contract SetStrategyCollateralRatiosTest is LeverageManagerBaseTest {
 
     function testFuzz_setStrategyCollateralRatios(CollateralRatios memory ratios) public {
         vm.assume(
-            ratios.minCollateralRatio <= ratios.targetCollateralRatio
+            ratios.targetCollateralRatio > _BASE_RATIO() && ratios.minCollateralRatio <= ratios.targetCollateralRatio
                 && ratios.targetCollateralRatio <= ratios.maxCollateralRatio
         );
 
@@ -44,7 +44,7 @@ contract SetStrategyCollateralRatiosTest is LeverageManagerBaseTest {
         public
     {
         vm.assume(
-            ratios.minCollateralRatio > ratios.targetCollateralRatio
+            ratios.targetCollateralRatio <= _BASE_RATIO() || ratios.minCollateralRatio > ratios.targetCollateralRatio
                 || ratios.maxCollateralRatio < ratios.targetCollateralRatio
         );
         vm.expectRevert(ILeverageManager.InvalidCollateralRatios.selector);

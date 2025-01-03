@@ -25,7 +25,10 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
         uint256 minCollateralRatio = config.minCollateralRatio;
         uint256 targetCollateralRatio = config.targetCollateralRatio;
         uint256 maxCollateralRatio = config.maxCollateralRatio;
-        vm.assume(minCollateralRatio <= targetCollateralRatio && targetCollateralRatio <= maxCollateralRatio);
+        vm.assume(
+            targetCollateralRatio > _BASE_RATIO() && minCollateralRatio <= targetCollateralRatio
+                && targetCollateralRatio <= maxCollateralRatio
+        );
 
         // Check if event is emitted properly
         vm.expectEmit(true, true, true, true);
@@ -58,9 +61,8 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
         vm.assume(config1.collateralAsset != address(0) && config1.debtAsset != address(0));
         vm.assume(config2.collateralAsset != address(0) && config2.debtAsset != address(0));
         vm.assume(address(config1.lendingAdapter) != address(0) && address(config2.lendingAdapter) != address(0));
-
         vm.assume(
-            config1.minCollateralRatio <= config1.targetCollateralRatio
+            config1.targetCollateralRatio > _BASE_RATIO() && config1.minCollateralRatio <= config1.targetCollateralRatio
                 && config1.targetCollateralRatio <= config1.maxCollateralRatio
         );
 
@@ -77,9 +79,9 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
             collateralAsset: address(0),
             debtAsset: nonZeroAddress,
             lendingAdapter: ILendingAdapter(nonZeroAddress),
-            minCollateralRatio: 0,
-            targetCollateralRatio: 0,
-            maxCollateralRatio: 0,
+            minCollateralRatio: _BASE_RATIO(),
+            targetCollateralRatio: _BASE_RATIO() + 1,
+            maxCollateralRatio: _BASE_RATIO() + 2,
             collateralCap: 0
         });
 
