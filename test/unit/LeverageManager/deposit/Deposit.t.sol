@@ -80,7 +80,7 @@ contract LeverageManagerDepositTest is LeverageManagerBaseTest {
     }
 
     function testFuzz_deposit(CalculateDebtAndSharesState memory state, address recipient) public {
-        state.targetRatio = bound(state.targetRatio, _BASE_RATIO() + 1, 200 * _BASE_RATIO());
+        vm.assume(state.targetRatio > _BASE_RATIO());
         _mockState_CalculateDebtAndShares(state);
 
         (uint256 expectedCollateral, uint256 expectedDebt, uint256 sharesBeforeFee) = leverageManager
@@ -108,7 +108,7 @@ contract LeverageManagerDepositTest is LeverageManagerBaseTest {
     function testFuzz_deposit_RevertIf_CollateralExceedsCap(CalculateDebtAndSharesState memory state, uint256 cap)
         public
     {
-        state.targetRatio = bound(state.targetRatio, _BASE_RATIO() + 1, 200 * _BASE_RATIO());
+        vm.assume(state.targetRatio > _BASE_RATIO());
 
         _setStrategyCollateralCap(manager, cap);
         _mockState_CalculateDebtAndShares(state);

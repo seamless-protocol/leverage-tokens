@@ -46,7 +46,7 @@ contract CalculateDebtAndSharesTest is LeverageManagerBaseTest {
 
     function testFuzz_calculateDebtAndShares(CalculateDebtAndSharesState memory state) public {
         vm.assume(state.depositAmount > 0);
-        state.targetRatio = bound(state.targetRatio, _BASE_RATIO() + 1, 200 * _BASE_RATIO());
+        vm.assume(state.targetRatio > _BASE_RATIO());
         _mockState_CalculateDebtAndShares(state);
 
         uint256 depositAmount = state.depositAmount;
