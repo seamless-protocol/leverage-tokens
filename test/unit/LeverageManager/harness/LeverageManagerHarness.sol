@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.26;
 
 import {FeeManagerHarness} from "test/unit/FeeManager/harness/FeeManagerHarness.sol";
 import {LeverageManager} from "src/LeverageManager.sol";
@@ -43,5 +43,9 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
 
     function exposed_mintShares(address strategy, address recipient, uint256 shares) external {
         _mintShares(strategy, recipient, shares);
+    }
+
+    function exposed_decimalsOffset() external pure returns (uint256) {
+        return _decimalsOffset();
     }
 }
