@@ -20,6 +20,7 @@ import {CollateralRatios} from "src/types/DataTypes.sol";
 contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManager, UUPSUpgradeable {
     // Base collateral ratio constant, 1e8 means that collateral / debt ratio is 1:1
     uint256 public constant BASE_RATIO = 1e8;
+    uint256 public constant DECIMALS_OFFSET = 0;
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
 
@@ -239,13 +240,9 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
         return Math.mulDiv(
             equity,
-            getTotalStrategyShares(strategy) + 10 ** _decimalsOffset(),
+            getTotalStrategyShares(strategy) + 10 ** DECIMALS_OFFSET,
             lendingAdapter.getStrategyEquityInDebtAsset(strategy) + 1,
             Math.Rounding.Floor
         );
-    }
-
-    function _decimalsOffset() internal pure returns (uint256 offset) {
-        return 0;
     }
 }

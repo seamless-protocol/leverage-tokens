@@ -46,7 +46,6 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
 
         assertTrue(leverageManager.hasRole(leverageManager.DEFAULT_ADMIN_ROLE(), defaultAdmin));
         assertEq(leverageManager.exposed_leverageManager_layoutSlot(), expectedSlot);
-        assertEq(leverageManager.exposed_decimalsOffset(), 0);
     }
 
     function _BASE_RATIO() internal view returns (uint256) {

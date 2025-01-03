@@ -44,8 +44,4 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
     function exposed_mintShares(address strategy, address recipient, uint256 shares) external {
         _mintShares(strategy, recipient, shares);
     }
-
-    function exposed_decimalsOffset() external pure returns (uint256) {
-        return _decimalsOffset();
-    }
 }
