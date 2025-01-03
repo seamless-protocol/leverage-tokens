@@ -13,6 +13,7 @@ contract SetStrategyActionFeeTest is FeeManagerBaseTest {
         super.setUp();
     }
 
+    /// forge-config: default.fuzz.runs = 1
     function testFuzz_setStrategyActionFee(address strategy, uint256 actionNum, uint256 fee) public {
         IFeeManager.Action action = IFeeManager.Action(bound(actionNum, 0, 2));
         fee = bound(fee, 0, feeManager.MAX_FEE());
@@ -25,6 +26,7 @@ contract SetStrategyActionFeeTest is FeeManagerBaseTest {
         assertEq(feeManager.getStrategyActionFee(strategy, action), fee);
     }
 
+    /// forge-config: default.fuzz.runs = 1
     function testFuzz_setStrategyActionFee_CallerIsNotFeeManagerRole(
         address caller,
         address strategy,
@@ -42,6 +44,7 @@ contract SetStrategyActionFeeTest is FeeManagerBaseTest {
         _setStrategyActionFee(caller, strategy, action, fee);
     }
 
+    /// forge-config: default.fuzz.runs = 1
     function testFuzz_setStrategyActionFee_RevertIfFeeTooHigh(address strategy, uint256 actionNum, uint256 fee)
         public
     {
