@@ -248,7 +248,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         );
     }
 
-    function _decimalsOffset() private pure returns (uint256 shares) {
+    function _decimalsOffset() internal pure returns (uint256 offset) {
         return 0;
     }
 }
