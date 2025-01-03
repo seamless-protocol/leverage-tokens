@@ -2,6 +2,8 @@ name: CI
 
 on:
   push:
+    branches:
+      - main
   pull_request:
   workflow_dispatch:
 
@@ -41,5 +43,31 @@ jobs:
 
       - name: Run Forge tests
         run: |
-          forge test -vvv
+          forge coverage --report lcov
         id: test
+      
+      - name: Check Forge test coverage
+        uses: VeryGoodOpenSource/very_good_coverage@v2
+        with:
+          path: './lcov.info'
+          min_coverage: 100
+          exclude: "**/*.t.sol **/test/**"
+
+      - name: Run Slither Static Analysis
+        uses: crytic/slither-action@v0.4.0
+        id: slither
+        with:
+          fail-on: none
+          slither-args: --checklist --markdown-root ${{ github.server_url }}/${{ github.repository }}/blob/${{ github.sha }}/
+
+      - name: Create/update Slither result as PR comment
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        env:
+          REPORT: ${{ steps.slither.outputs.stdout }}
+        with:
+          script: |
+            const script = require('.github/scripts/comment')
+            const header = '# Slither report'
+            const body = process.env.REPORT
+            await script({ github, context, header, body })
