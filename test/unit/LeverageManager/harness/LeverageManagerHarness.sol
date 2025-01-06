@@ -28,6 +28,22 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
         return _calculateCollateralDebtAndShares(strategy, lendingAdapter, assets);
     }
 
+    function exposed_getStrategyCollateralRatioAndExcess(address strategy, ILendingAdapter lendingAdapter)
+        external
+        view
+        returns (uint256 currCollateralRatio, uint256 excessCollateral)
+    {
+        return _getStrategyCollateralRatioAndExcess(strategy, lendingAdapter);
+    }
+
+    function exposed_calculateCollateralAndDebtToCoverEquity(
+        address strategy,
+        ILendingAdapter lendingAdapter,
+        uint256 equity
+    ) external view returns (uint256 collateral, uint256 debt) {
+        return _calculateCollateralAndDebtToCoverEquity(strategy, lendingAdapter, equity);
+    }
+
     function exposed_chargeStrategyFeeAndMintShares(
         address strategy,
         address recipient,
@@ -39,6 +55,10 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
 
     function exposed_convertToShares(address strategy, uint256 equity) external view returns (uint256 shares) {
         return _convertToShares(strategy, equity);
+    }
+
+    function exposed_convertToEquity(address strategy, uint256 shares) external view returns (uint256 equity) {
+        return _convertToEquity(strategy, shares);
     }
 
     function exposed_mintShares(address strategy, address recipient, uint256 shares) external {

@@ -24,6 +24,12 @@ interface ILeverageManager {
     /// @notice Error thrown when user receives less shares than requested
     error InsufficientShares(uint256 received, uint256 expected);
 
+    /// @notice  Error thrown when user receives less assets than requested
+    error InsufficientAssets(uint256 received, uint256 expected);
+
+    /// @notice Error thrown when user tries to burn more shares than he has
+    error InsufficientBalance(uint256 requested, uint256 actual);
+
     /// @notice Event emitted when lending adapter is set for the strategy
     event StrategyLendingAdapterSet(address indexed strategy, address adapter);
 
@@ -42,6 +48,11 @@ interface ILeverageManager {
     /// @notice Event emitted when user deposits assets into strategy
     event Deposit(
         address indexed strategy, address indexed from, address indexed to, uint256 assets, uint256 sharesMinted
+    );
+
+    /// @notice Event emitted when user redeems assets from strategy
+    event Redeem(
+        address indexed strategy, address indexed from, address indexed to, uint256 shares, uint256 assetsReceived
     );
 
     /// @notice Returns lending adapter for the strategy
@@ -131,5 +142,13 @@ interface ILeverageManager {
         external
         returns (uint256 shares);
 
-    // TODO: interface for rebalance functions
+    /// @notice Redeems shares of a strategy and withdraws assets from it, recipient receives assets but caller pays debt
+    /// @param strategy The strategy to redeem from
+    /// @param shares The quantity of shares to redeem
+    /// @param recipient The address to receive the assets and shares
+    /// @param minAssets The minimum amount of collateral to receive
+    /// @return assets Actual amount of assets given to the user
+    function redeem(address strategy, uint256 shares, address recipient, uint256 minAssets)
+        external
+        returns (uint256 assets);
 }
