@@ -4,11 +4,6 @@ pragma solidity ^0.8.26;
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 
 interface ILendingAdapter {
-    /// @notice Returns current collateral ratio of the strategy
-    /// @param strategy Strategy to query collateral ratio for
-    /// @return ratio Current collateral ratio of the strategy
-    function getStrategyCollateralRatio(address strategy) external view returns (uint256 ratio);
-
     /// @notice Returns total collateral of the strategy
     /// @param strategy Strategy to query collateral for
     /// @return collateral Total collateral of the strategy
