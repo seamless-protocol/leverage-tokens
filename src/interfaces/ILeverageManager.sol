@@ -24,7 +24,7 @@ interface ILeverageManager {
     /// @notice Error thrown when user receives less shares than requested
     error InsufficientShares(uint256 received, uint256 expected);
 
-    /// @notice  Error thrown when user receives less assets than requested
+    /// @notice Error thrown when user receives less assets than requested
     error InsufficientAssets(uint256 received, uint256 expected);
 
     /// @notice Error thrown when user tries to burn more shares than he has
