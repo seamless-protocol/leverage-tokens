@@ -8,12 +8,9 @@ import {Test, console} from "forge-std/Test.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // Internal imports
-import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
-import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 import {LeverageManagerBaseTest} from "../LeverageManagerBase.t.sol";
 
-contract GetStrategyCollateralStatsTest is LeverageManagerBaseTest {
+contract GetStrategyCollateralRatioAndExcessTest is LeverageManagerBaseTest {
     function setUp() public override {
         super.setUp();
     }
@@ -119,5 +116,20 @@ contract GetStrategyCollateralStatsTest is LeverageManagerBaseTest {
 
         assertEq(collateralRatio, expectedCollateralRatio);
         assertEq(excess, 0);
+    }
+
+    function testFuzz_getStrategyCollateralRatioAndExcess_DebtIsZero(
+        CalculateStrategyCollateralRatioAndExcessState memory state
+    ) public {
+        state.debt = 0;
+        vm.assume(state.targetRatio > _BASE_RATIO());
+
+        _mockState_CalculateStrategyCollateralRatioAndExcess(state);
+
+        (uint256 collateralRatio, uint256 excess) =
+            leverageManager.exposed_getStrategyCollateralRatioAndExcess(strategy, _getLendingAdapter());
+
+        assertEq(collateralRatio, type(uint256).max);
+        assertEq(excess, state.collateralInDebt);
     }
 }

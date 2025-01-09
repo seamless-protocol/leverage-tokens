@@ -298,7 +298,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         return (collateral, debt);
     }
 
-    // This function calculates how much excess of collateral strategy has denominated in debt asset
+    // This function calculates how much excess of collateral strategy has denominated in debt asset and current collateral ratio
     function _getStrategyCollateralRatioAndExcess(address strategy, ILendingAdapter lendingAdapter)
         internal
         view
@@ -307,6 +307,10 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         // Get collateral and debt of the strategy denominated in debt asset
         uint256 collateral = lendingAdapter.getStrategyCollateralInDebtAsset(strategy);
         uint256 debt = lendingAdapter.getStrategyDebt(strategy);
+
+        if (debt == 0) {
+            return (type(uint256).max, collateral);
+        }
 
         // Calculate how much collateral should be in the strategy to match target ratio. Rounded up!
         uint256 targetRatio = getStrategyTargetCollateralRatio(strategy);
