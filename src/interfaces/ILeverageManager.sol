@@ -27,7 +27,7 @@ interface ILeverageManager {
     /// @notice Error thrown when user receives less assets than requested
     error InsufficientAssets(uint256 received, uint256 expected);
 
-    /// @notice Error thrown when user tries to burn more shares than he has
+    /// @notice Error thrown when user tries to burn more shares than they have
     error InsufficientBalance(uint256 requested, uint256 actual);
 
     /// @notice Event emitted when lending adapter is set for the strategy
