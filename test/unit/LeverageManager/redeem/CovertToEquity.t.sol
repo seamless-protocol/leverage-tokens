@@ -25,7 +25,7 @@ contract ConvertToEquity is LeverageManagerBaseTest {
         assertEq(equity, 0);
     }
 
-    function testFuzz_convertToShares(uint128 shares, uint128 totalEquity, uint128 sharesTotalSupply) public {
+    function testFuzz_convertToEquity(uint128 shares, uint128 totalEquity, uint128 sharesTotalSupply) public {
         _mockState_ConvertToShareOrEquity(
             ConvertToSharesState({totalEquity: totalEquity, sharesTotalSupply: sharesTotalSupply})
         );
