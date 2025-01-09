@@ -99,7 +99,7 @@ contract RedeemTest is LeverageManagerBaseTest {
         _mockState_Redeem(state);
 
         uint256 sharesAfterFee =
-            leverageManager.exposed_chargeStrategyFee(strategy, sharesToRedeem, IFeeManager.Action.Redeem);
+            leverageManager.exposed_computeFeeAdjustedShares(strategy, sharesToRedeem, IFeeManager.Action.Redeem);
         uint256 expectedEquity = leverageManager.exposed_convertToEquity(strategy, sharesAfterFee);
 
         vm.expectRevert(
@@ -123,7 +123,7 @@ contract RedeemTest is LeverageManagerBaseTest {
         _mockState_Redeem(state);
 
         uint256 sharesAfterFee =
-            leverageManager.exposed_chargeStrategyFee(strategy, sharesToRedeem, IFeeManager.Action.Redeem);
+            leverageManager.exposed_computeFeeAdjustedShares(strategy, sharesToRedeem, IFeeManager.Action.Redeem);
         uint256 expectedEquity = leverageManager.exposed_convertToEquity(strategy, sharesAfterFee);
 
         (uint256 collateral, uint256 debtToCoverEquity) = leverageManager

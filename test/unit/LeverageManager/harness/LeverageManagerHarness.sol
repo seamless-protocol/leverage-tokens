@@ -44,13 +44,13 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
         return _calculateCollateralAndDebtToCoverEquity(strategy, lendingAdapter, equity);
     }
 
-    function exposed_chargeStrategyFeeAndMintShares(
+    function exposed_computeFeeAdjustedSharesAndMintShares(
         address strategy,
         address recipient,
         uint256 debt,
         uint256 collateral
     ) external returns (uint256) {
-        return _chargeStrategyFeeAndMintShares(strategy, recipient, debt, collateral);
+        return _computeFeeAdjustedSharesAndMintShares(strategy, recipient, debt, collateral);
     }
 
     function exposed_convertToShares(address strategy, uint256 equity) external view returns (uint256 shares) {

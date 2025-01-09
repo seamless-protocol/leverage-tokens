@@ -168,7 +168,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         }
 
         // Charge strategy fee and mint shares for user. Revert if user does not receive enough shares
-        uint256 mintedShares = _chargeStrategyFeeAndMintShares(strategy, recipient, sharesToMint, minShares);
+        uint256 mintedShares = _computeFeeAdjustedSharesAndMintShares(strategy, recipient, sharesToMint, minShares);
 
         // Take collateral tokens from caller and supply them as collateral on lending pool
         IERC20 collateralAsset = IERC20(getStrategyCollateralAsset(strategy));
@@ -205,12 +205,14 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         return (collateral, debt, sharesToMint);
     }
 
-    function _chargeStrategyFeeAndMintShares(address strategy, address recipient, uint256 shares, uint256 minShares)
-        internal
-        returns (uint256 sharesMinted)
-    {
+    function _computeFeeAdjustedSharesAndMintShares(
+        address strategy,
+        address recipient,
+        uint256 shares,
+        uint256 minShares
+    ) internal returns (uint256 sharesMinted) {
         // Calculate fee amount and deduct it from user's shares. Share fees are burned which increases overall share value
-        uint256 sharesToMint = _chargeStrategyFee(strategy, shares, IFeeManager.Action.Deposit);
+        uint256 sharesToMint = _computeFeeAdjustedShares(strategy, shares, IFeeManager.Action.Deposit);
 
         // Revert if user does not receive enough shares
         if (sharesToMint < minShares) {
@@ -240,7 +242,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
 
         // Charge strategy fee. Fee is not sent to treasury but burned which increases overall share value
-        uint256 sharesAfterFee = _chargeStrategyFee(strategy, shares, IFeeManager.Action.Redeem);
+        uint256 sharesAfterFee = _computeFeeAdjustedShares(strategy, shares, IFeeManager.Action.Redeem);
         uint256 equity = _convertToEquity(strategy, sharesAfterFee);
 
         // Revert if user does not receive enough assets
