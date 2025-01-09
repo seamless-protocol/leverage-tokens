@@ -230,10 +230,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function redeem(address strategy, uint256 shares, address recipient, uint256 minAssets)
-        external
-        returns (uint256 assets)
-    {
+    function redeem(address strategy, uint256 shares, uint256 minAssets) external returns (uint256 assets) {
         uint256 userSharesBalance = getUserStrategyShares(strategy, msg.sender);
         if (userSharesBalance < shares) {
             revert InsufficientBalance(shares, userSharesBalance);
@@ -257,7 +254,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         $.userStrategyShares[strategy][msg.sender] -= shares;
         $.totalShares[strategy] -= shares;
 
-        // Take assets from user and repay the debt
+        // Take assets from sender and repay the debt
         IERC20 debtAsset = IERC20(getStrategyDebtAsset(strategy));
         SafeERC20.safeTransferFrom(debtAsset, msg.sender, address(this), debt);
 
@@ -266,10 +263,10 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
         // Withdraw from lending pool and send assets to user
         lendingAdapter.removeCollateral(strategy, collateral);
-        SafeERC20.safeTransfer(IERC20(getStrategyCollateralAsset(strategy)), recipient, collateral);
+        SafeERC20.safeTransfer(IERC20(getStrategyCollateralAsset(strategy)), msg.sender, collateral);
 
         // Emit event and explicit return statement
-        emit Redeem(strategy, msg.sender, recipient, shares, collateral);
+        emit Redeem(strategy, msg.sender, shares, collateral, debt);
         return collateral;
     }
 
@@ -288,9 +285,9 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             // Equity that user needs to repay debt for
             uint256 equityToCover = equity - excessCollateral;
 
-            // If there is excess of collateral this means that after withdrawing excess strategy will be at target ratio.
-            // So everything after that can be covered by following target ratio
-            // If there is no excess this means that full withdrawal needs to be executed by following current ratio
+            // After withdrawing any excess collateral, the strategy will be at target ratio.
+            // Thus, the amount of debt to be repaid to withdraw the remaining equity can be calculated using the target ratio.
+            // If there is no excess collateral, the amount of debt to be repaid needs to use the current collateral ratio.
             uint256 ratio = excessCollateral > 0 ? getStrategyTargetCollateralRatio(strategy) : currCollateralRatio;
 
             // Debt to repay = equity / (ratio - 1)
