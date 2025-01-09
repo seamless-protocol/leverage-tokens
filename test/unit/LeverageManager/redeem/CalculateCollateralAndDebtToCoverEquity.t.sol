@@ -32,9 +32,8 @@ contract CalculateCollateralAndDebtToCoverEquityTest is LeverageManagerBaseTest 
         );
 
         uint256 equity = 1000 ether;
-
-        // Mocks exchange rate. Not important for this test bu it is important that call to lending adapter is mocked with correct call parameters
         uint256 debtToCollateral = 3 ether;
+        // Mocks exchange rate. Not important for this test bu it is important that call to lending adapter is mocked with correct call parameters
         _mockConvertDebt(equity, debtToCollateral);
 
         (uint256 collateral, uint256 debtToCoverEquity) =

@@ -112,6 +112,35 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         _mockStrategyTotalEquity(state.totalEquity);
     }
 
+    struct RedeemState {
+        uint128 collateralInDebt;
+        uint128 debt;
+        uint128 targetRatio;
+        uint128 userShares;
+        uint128 totalShares;
+    }
+
+    function _mockState_Redeem(RedeemState memory state) internal {
+        _mockState_CalculateStrategyCollateralRatioAndExcess(
+            CalculateStrategyCollateralRatioAndExcessState({
+                collateralInDebt: state.collateralInDebt,
+                debt: state.debt,
+                targetRatio: state.targetRatio
+            })
+        );
+        _mockStrategyTotalEquity(state.collateralInDebt - state.debt);
+
+        _mintShares(address(this), state.userShares);
+        _mintShares(address(0), state.totalShares - state.userShares);
+
+        // Mock convert rate in _calculateCollateralAndDebtToCoverEquity function. Not important for redeem test
+        vm.mockCall(
+            address(leverageManager.getStrategyLendingAdapter(strategy)),
+            abi.encodeWithSelector(ILendingAdapter.convertDebtToCollateralAsset.selector),
+            abi.encode(4 ether)
+        );
+    }
+
     struct CalculateStrategyCollateralRatioAndExcessState {
         uint128 collateralInDebt;
         uint128 debt;
