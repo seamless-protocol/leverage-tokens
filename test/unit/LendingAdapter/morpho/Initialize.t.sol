@@ -21,10 +21,10 @@ contract MorphoLendingAdapterInitializeTest is Test {
     ERC20Mock public collateralToken = new ERC20Mock();
     ERC20Mock public debtToken = new ERC20Mock();
 
-    MarketParams public marketParams;
+    MarketParams public defaultMarketParams;
 
     function setUp() public {
-        marketParams = MarketParams({
+        defaultMarketParams = MarketParams({
             loanToken: address(debtToken),
             collateralToken: address(collateralToken),
             oracle: makeAddr("mockMorphoMarketOracle"), // doesn't matter for these tests as calls to morpho are mocked
@@ -33,31 +33,31 @@ contract MorphoLendingAdapterInitializeTest is Test {
         });
 
         // Mocked Morpho protocol is setup with a market with id 1
-        morpho = new MockMorpho(Id.wrap(bytes32("1")), marketParams);
+        morpho = new MockMorpho(Id.wrap(bytes32("1")), defaultMarketParams);
 
         lendingAdapter = new MorphoLendingAdapter();
     }
 
-    function testFuzz_initialize(bytes32 marketId) public {
+    function testFuzz_initialize(MarketParams memory _marketParams) public {
         vm.expectEmit(true, true, true, true);
-        emit IMorphoLendingAdapter.Initialized(IMorpho(address(morpho)), marketParams);
-        lendingAdapter.initialize(IMorpho(address(morpho)), marketParams);
+        emit IMorphoLendingAdapter.Initialized(IMorpho(address(morpho)), _marketParams);
+        lendingAdapter.initialize(IMorpho(address(morpho)), _marketParams);
 
         assertEq(address(lendingAdapter.morpho()), address(morpho));
 
         (address loanToken, address _collateralToken, address oracle, address irm, uint256 lltv) =
             lendingAdapter.marketParams();
-        assertEq(loanToken, marketParams.loanToken);
-        assertEq(_collateralToken, marketParams.collateralToken);
-        assertEq(oracle, marketParams.oracle);
-        assertEq(irm, marketParams.irm);
-        assertEq(lltv, marketParams.lltv);
+        assertEq(loanToken, _marketParams.loanToken);
+        assertEq(_collateralToken, _marketParams.collateralToken);
+        assertEq(oracle, _marketParams.oracle);
+        assertEq(irm, _marketParams.irm);
+        assertEq(lltv, _marketParams.lltv);
     }
 
     function test_initialize_RevertIf_Initialized() public {
-        lendingAdapter.initialize(IMorpho(address(morpho)), marketParams);
+        lendingAdapter.initialize(IMorpho(address(morpho)), defaultMarketParams);
 
         vm.expectRevert(abi.encodeWithSelector(Initializable.InvalidInitialization.selector));
-        lendingAdapter.initialize(IMorpho(address(morpho)), marketParams);
+        lendingAdapter.initialize(IMorpho(address(morpho)), defaultMarketParams);
     }
 }

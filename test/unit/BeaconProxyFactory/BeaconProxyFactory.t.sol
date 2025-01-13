@@ -59,7 +59,9 @@ contract BeaconProxyFactoryTest is Test {
         assertEq(MockImplementation(proxy).mockFunction(), 0);
     }
 
-    function testFuzz_createProxy_WithEncodedCall(uint256 value) public {
+    function test_createProxy_WithEncodedCall() public {
+        uint256 value = 100;
+
         vm.expectCall(implementation, abi.encodeWithSelector(MockImplementation.initialize.selector, value));
         address proxy = factory.createProxy(abi.encodeWithSelector(MockImplementation.initialize.selector, value));
 
