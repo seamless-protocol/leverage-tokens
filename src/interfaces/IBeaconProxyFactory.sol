@@ -14,6 +14,12 @@ interface IBeaconProxyFactory {
     /// @return beacon The address of the beacon contract
     function beacon() external view returns (address beacon);
 
+    /// @notice Computes the address of a beacon proxy before deployment
+    /// @param data The initialization data passed to the proxy
+    /// @param salt The salt used for deterministic deployment
+    /// @return proxy The predicted address of the beacon proxy
+    function computeProxyAddress(bytes memory data, bytes32 salt) external view returns (address proxy);
+
     /// @notice The list of beacon proxies deployed by the factory
     /// @return proxies The list of beacon proxies
     function getProxies() external view returns (address[] memory proxies);
@@ -25,6 +31,7 @@ interface IBeaconProxyFactory {
 
     /// @notice Creates a new beacon proxy
     /// @param data The data to initialize the beacon proxy with
+    /// @param salt The salt to deploy the beacon proxy with (CREATE2)
     /// @return proxy The address of the new beacon proxy
-    function createProxy(bytes memory data) external returns (address proxy);
+    function createProxy(bytes memory data, bytes32 salt) external returns (address proxy);
 }
