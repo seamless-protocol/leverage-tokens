@@ -2,7 +2,7 @@
 pragma solidity ^0.8.26;
 
 // Internal imports
-import {IMorpho, IMorphoBase} from "src/vendor/morpho/IMorpho.sol";
+import {IMorpho, IMorphoBase} from "src/interfaces/IMorpho.sol";
 import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
 
 contract MorphoLendingAdapterBorrowTest is MorphoLendingAdapterBaseTest {

@@ -7,9 +7,9 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 // Internal imports
-import {ILendingAdapter} from "../../../interfaces/ILendingAdapter.sol";
-import {IMorphoLendingAdapter} from "../../../interfaces/IMorphoLendingAdapter.sol";
-import {Id, IMorpho, MarketParams} from "../../../vendor/morpho/IMorpho.sol";
+import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
+import {Id, IMorpho, MarketParams} from "src/interfaces/IMorpho.sol";
+import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 
 contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     /// @inheritdoc IMorphoLendingAdapter

@@ -10,8 +10,8 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
-import {Id, MarketParams, IMorpho, IMorphoBase} from "src/vendor/morpho/IMorpho.sol";
-import {MorphoLendingAdapter} from "src/adapters/lending/morpho/MorphoLendingAdapter.sol";
+import {Id, MarketParams, IMorpho, IMorphoBase} from "src/interfaces/IMorpho.sol";
+import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
 import {MockMorpho} from "../../mock/MockMorpho.sol";
 
 contract MorphoLendingAdapterBaseTest is Test {

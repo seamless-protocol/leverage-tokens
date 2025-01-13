@@ -5,7 +5,7 @@ pragma solidity ^0.8.26;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
-import {IMorpho, IMorphoBase} from "src/vendor/morpho/IMorpho.sol";
+import {IMorpho, IMorphoBase} from "src/interfaces/IMorpho.sol";
 import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
 
 contract MorphoLendingAdapterRepayTest is MorphoLendingAdapterBaseTest {

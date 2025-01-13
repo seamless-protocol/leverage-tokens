@@ -6,7 +6,7 @@ import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol"
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 // Internal imports
-import {IBeaconProxyFactory} from "./interfaces/IBeaconProxyFactory.sol";
+import {IBeaconProxyFactory} from "src/interfaces/IBeaconProxyFactory.sol";
 
 contract BeaconProxyFactory is IBeaconProxyFactory {
     /// @inheritdoc IBeaconProxyFactory
