@@ -2,6 +2,11 @@
 pragma solidity ^0.8.26;
 
 interface IBeaconProxyFactory {
+    /// @notice Emitted when a new beacon proxy is created
+    /// @param proxy The address of the new beacon proxy
+    /// @param data The data used to initialize the beacon proxy
+    event BeaconProxyCreated(address indexed proxy, bytes data);
+
     /// @notice The beacon contract
     function beacon() external view returns (address);
 

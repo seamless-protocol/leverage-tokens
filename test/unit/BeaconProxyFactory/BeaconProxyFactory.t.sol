@@ -10,6 +10,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
 import {BeaconProxyFactory} from "src/BeaconProxyFactory.sol";
+import {IBeaconProxyFactory} from "src/interfaces/IBeaconProxyFactory.sol";
 
 contract MockImplementation {
     uint256 public value;

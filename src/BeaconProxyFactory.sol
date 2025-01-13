@@ -2,8 +2,8 @@
 pragma solidity ^0.8.26;
 
 // Dependency imports
-import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
+import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 // Internal imports
 import {IBeaconProxyFactory} from "./interfaces/IBeaconProxyFactory.sol";
@@ -26,11 +26,11 @@ contract BeaconProxyFactory is IBeaconProxyFactory {
     function createProxy(bytes memory data) external returns (address proxy) {
         proxy = address(new BeaconProxy(address(beacon), data));
         proxies.push(proxy);
-        return proxy;
+        emit BeaconProxyCreated(proxy, data);
     }
 
     /// @inheritdoc IBeaconProxyFactory
-    function getProxies() external view returns (address[] memory) {
+    function getProxies() external view returns (address[] memory _proxies) {
         return proxies;
     }
 }
