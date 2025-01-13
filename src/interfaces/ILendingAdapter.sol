@@ -26,8 +26,18 @@ interface ILendingAdapter {
     /// @param amount Amount of assets to supply
     function addCollateral(address strategy, uint256 amount) external;
 
+    /// @notice Withdraws assets to the lending pool
+    /// @param strategy Address of the strategy
+    /// @param amount Amount of assets to withdraw
+    function removeCollateral(address strategy, uint256 amount) external;
+
     /// @notice Borrows assets from the lending pool
     /// @param strategy Address of the strategy
     /// @param amount Amount of assets to borrow
     function borrow(address strategy, uint256 amount) external;
+
+    /// @notice Repays debt to the lending pool
+    /// @param strategy Address of the strategy
+    /// @param amount Amount of assets of debt to repay
+    function repay(address strategy, uint256 amount) external;
 }
