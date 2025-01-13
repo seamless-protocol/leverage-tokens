@@ -2,6 +2,9 @@
 pragma solidity ^0.8.26;
 
 interface IBeaconProxyFactory {
+    /// @notice Error thrown when an invalid address is provided
+    error InvalidAddress();
+
     /// @notice Emitted when a new beacon proxy is created
     /// @param proxy The address of the new beacon proxy
     /// @param data The data used to initialize the beacon proxy

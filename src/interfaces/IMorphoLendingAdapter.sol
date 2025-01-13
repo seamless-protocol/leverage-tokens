@@ -9,9 +9,9 @@ interface IMorphoLendingAdapter is ILendingAdapter {
     event Initialized(IMorpho morpho, Id marketId);
 
     /// @notice Initializes the Morpho lending adapter
-    /// @param morpho Morpho core protocol contract
-    /// @param marketId Market ID of the Morpho lending pool
-    function initialize(IMorpho morpho, Id marketId) external;
+    /// @param _morpho Morpho core protocol contract
+    /// @param _marketId Market ID of the Morpho lending pool
+    function initialize(IMorpho _morpho, Id _marketId) external;
 
     /// @notice The Morpho core protocol contract
     function morpho() external view returns (IMorpho);

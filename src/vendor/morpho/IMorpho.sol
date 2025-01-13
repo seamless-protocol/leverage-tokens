@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-pragma solidity >=0.5.0;
+pragma solidity ^0.8.26;
 
 /**
  * @dev Obtained from https://github.com/morpho-org/morpho-blue/blob/81d922c9d98e6181beab738a89182c50cf890d7a/src/interfaces/IMorpho.sol

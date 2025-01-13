@@ -10,7 +10,7 @@ import {IBeaconProxyFactory} from "./interfaces/IBeaconProxyFactory.sol";
 
 contract BeaconProxyFactory is IBeaconProxyFactory {
     /// @inheritdoc IBeaconProxyFactory
-    address public beacon;
+    address public immutable beacon;
 
     /// @inheritdoc IBeaconProxyFactory
     address[] public proxies;
@@ -19,6 +19,7 @@ contract BeaconProxyFactory is IBeaconProxyFactory {
     /// @param implementation The implementation contract
     /// @param beaconOwner The owner of the upgradeable beacon
     constructor(address implementation, address beaconOwner) {
+        if (implementation == address(0) || beaconOwner == address(0)) revert InvalidAddress();
         beacon = address(new UpgradeableBeacon(implementation, beaconOwner));
     }
 

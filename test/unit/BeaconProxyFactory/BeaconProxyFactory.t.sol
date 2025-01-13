@@ -40,6 +40,16 @@ contract BeaconProxyFactoryTest is Test {
         assertEq(UpgradeableBeacon(factory.beacon()).owner(), owner);
     }
 
+    function test_constructor_RevertIf_ImplementationIsZeroAddress() public {
+        vm.expectRevert(IBeaconProxyFactory.InvalidAddress.selector);
+        new BeaconProxyFactory(address(0), owner);
+    }
+
+    function test_constructor_RevertIf_OwnerIsZeroAddress() public {
+        vm.expectRevert(IBeaconProxyFactory.InvalidAddress.selector);
+        new BeaconProxyFactory(implementation, address(0));
+    }
+
     function test_createProxy() public {
         address proxy = factory.createProxy("");
         assertEq(factory.getProxies().length, 1);
