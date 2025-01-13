@@ -6,7 +6,6 @@ import {IMorpho, IMorphoBase} from "src/vendor/morpho/IMorpho.sol";
 import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
 
 contract MorphoLendingAdapterBorrowTest is MorphoLendingAdapterBaseTest {
-
     address public alice = makeAddr("alice");
 
     function testFuzz_borrow(uint256 amount) public {
@@ -19,10 +18,11 @@ contract MorphoLendingAdapterBorrowTest is MorphoLendingAdapterBaseTest {
         // // Mock the borrow call to morpho
         vm.mockCall(
             address(morpho),
-            abi.encodeWithSelector(IMorphoBase.borrow.selector, defaultMarketParams, amount, 0, address(lendingAdapter), alice),
+            abi.encodeWithSelector(
+                IMorphoBase.borrow.selector, defaultMarketParams, amount, 0, address(lendingAdapter), alice
+            ),
             abi.encode(0, 0) // Mocked return values that are not used
         );
-
 
         // Expect Morpho.borrow to be called with the correct parameters
         vm.expectCall(

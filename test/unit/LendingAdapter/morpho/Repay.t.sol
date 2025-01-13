@@ -9,7 +9,6 @@ import {IMorpho, IMorphoBase} from "src/vendor/morpho/IMorpho.sol";
 import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
 
 contract MorphoLendingAdapterRepayTest is MorphoLendingAdapterBaseTest {
-
     address public alice = makeAddr("alice");
 
     function testFuzz_repay(uint256 amount) public {
@@ -26,7 +25,9 @@ contract MorphoLendingAdapterRepayTest is MorphoLendingAdapterBaseTest {
         // Mock the repay call to morpho
         vm.mockCall(
             address(morpho),
-            abi.encodeWithSelector(IMorphoBase.repay.selector, defaultMarketParams, amount, 0, address(lendingAdapter), hex""),
+            abi.encodeWithSelector(
+                IMorphoBase.repay.selector, defaultMarketParams, amount, 0, address(lendingAdapter), hex""
+            ),
             abi.encode(0, 0) // Mocked return values that are not used
         );
 
@@ -35,7 +36,10 @@ contract MorphoLendingAdapterRepayTest is MorphoLendingAdapterBaseTest {
         debtToken.approve(address(lendingAdapter), amount);
 
         // Expect the Alice's assets to be transferred to the lending adapter
-        vm.expectCall(address(debtToken), abi.encodeWithSelector(IERC20.transferFrom.selector, alice, address(lendingAdapter), amount));
+        vm.expectCall(
+            address(debtToken),
+            abi.encodeWithSelector(IERC20.transferFrom.selector, alice, address(lendingAdapter), amount)
+        );
         // Expect LendingAdapter.repay to approve the morpho market to spend the assets for the amount
         vm.expectCall(address(debtToken), abi.encodeWithSelector(IERC20.approve.selector, address(morpho), amount));
         // Expect Morpho.repay to be called with the correct parameters

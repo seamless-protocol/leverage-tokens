@@ -5,7 +5,7 @@ pragma solidity ^0.8.26;
 import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
 
 contract ConvertCollateralToDebtAsset is MorphoLendingAdapterBaseTest {
-  function test_convertCollateralToDebtAsset() public {
-    assertEq(lendingAdapter.convertCollateralToDebtAsset(address(0), 0), block.timestamp);
-  }
+    function test_convertCollateralToDebtAsset() public view {
+        assertEq(lendingAdapter.convertCollateralToDebtAsset(address(0), 0), block.timestamp);
+    }
 }

@@ -5,7 +5,7 @@ pragma solidity ^0.8.26;
 import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
 
 contract GetStrategyEquityInDebtAsset is MorphoLendingAdapterBaseTest {
-  function test_getStrategyEquityInDebtAsset() public {
-    assertEq(lendingAdapter.getStrategyEquityInDebtAsset(address(0)), block.timestamp);
-  }
+    function test_getStrategyEquityInDebtAsset() public view {
+        assertEq(lendingAdapter.getStrategyEquityInDebtAsset(address(0)), block.timestamp);
+    }
 }

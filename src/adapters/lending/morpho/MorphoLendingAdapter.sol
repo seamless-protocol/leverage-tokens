@@ -12,7 +12,6 @@ import {IMorphoLendingAdapter} from "../../../interfaces/IMorphoLendingAdapter.s
 import {Id, IMorpho, MarketParams} from "../../../vendor/morpho/IMorpho.sol";
 
 contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
-
     /// @inheritdoc IMorphoLendingAdapter
     IMorpho public morpho;
 
@@ -26,28 +25,33 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     function initialize(IMorpho _morpho, Id _marketId) external initializer {
         morpho = _morpho;
         marketId = _marketId;
+        emit Initialized(_morpho, _marketId);
     }
 
     /// @inheritdoc ILendingAdapter
-    function getStrategyCollateral(address /* strategy */) external view returns (uint256 collateral) {
+    function getStrategyCollateral(address /* strategy */ ) external view returns (uint256 collateral) {
         // TODO: Implement this
         return block.timestamp;
     }
 
     /// @inheritdoc ILendingAdapter
-    function getStrategyEquityInDebtAsset(address /* strategy */) external view returns (uint256 equity) {
+    function getStrategyEquityInDebtAsset(address /* strategy */ ) external view returns (uint256 equity) {
         // TODO: Implement this
         return block.timestamp;
     }
 
     /// @inheritdoc ILendingAdapter
-    function convertCollateralToDebtAsset(address /* strategy */, uint256 /* collateral */) external view returns (uint256 debt) {
+    function convertCollateralToDebtAsset(address, /* strategy */ uint256 /* collateral */ )
+        external
+        view
+        returns (uint256 debt)
+    {
         // TODO: Implement this
         return block.timestamp;
     }
 
     /// @inheritdoc ILendingAdapter
-    function addCollateral(address /* strategy */, uint256 amount) external {
+    function addCollateral(address, /* strategy */ uint256 amount) external {
         IMorpho _morpho = morpho;
 
         MarketParams memory marketParams = _morpho.idToMarketParams(marketId);
@@ -61,7 +65,7 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     }
 
     /// @inheritdoc ILendingAdapter
-    function removeCollateral(address /* strategy */, uint256 amount) external {
+    function removeCollateral(address, /* strategy */ uint256 amount) external {
         IMorpho _morpho = morpho;
 
         MarketParams memory marketParams = _morpho.idToMarketParams(marketId);
@@ -71,7 +75,7 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     }
 
     /// @inheritdoc ILendingAdapter
-    function borrow(address /* strategy */, uint256 amount) external {
+    function borrow(address, /* strategy */ uint256 amount) external {
         IMorpho _morpho = morpho;
 
         MarketParams memory marketParams = _morpho.idToMarketParams(marketId);
@@ -81,7 +85,7 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     }
 
     /// @inheritdoc ILendingAdapter
-    function repay(address /* strategy */, uint256 amount) external {
+    function repay(address, /* strategy */ uint256 amount) external {
         IMorpho _morpho = morpho;
 
         MarketParams memory marketParams = _morpho.idToMarketParams(marketId);

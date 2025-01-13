@@ -9,7 +9,6 @@ import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol"
 import {IBeaconProxyFactory} from "./interfaces/IBeaconProxyFactory.sol";
 
 contract BeaconProxyFactory is IBeaconProxyFactory {
-
     /// @inheritdoc IBeaconProxyFactory
     address public beacon;
 

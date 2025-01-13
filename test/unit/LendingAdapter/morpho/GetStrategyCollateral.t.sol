@@ -5,8 +5,7 @@ pragma solidity ^0.8.26;
 import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
 
 contract GetStrategyCollateral is MorphoLendingAdapterBaseTest {
-    function test_getStrategyCollateral() public {
-      lendingAdapter.getStrategyCollateral(address(0));
-  }
-
+    function test_getStrategyCollateral() public view {
+        lendingAdapter.getStrategyCollateral(address(0));
+    }
 }

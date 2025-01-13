@@ -24,7 +24,6 @@ contract MockImplementation {
 }
 
 contract BeaconProxyFactoryTest is Test {
-
     BeaconProxyFactory public factory;
 
     address public implementation;
@@ -47,14 +46,10 @@ contract BeaconProxyFactoryTest is Test {
 
         // Returns zero because the MockImplementation has not been initialized
         assertEq(MockImplementation(proxy).mockFunction(), 0);
-
     }
 
     function testFuzz_createProxy_WithEncodedCall(uint256 value) public {
-        vm.expectCall(
-            implementation,
-            abi.encodeWithSelector(MockImplementation.initialize.selector, value)
-        );
+        vm.expectCall(implementation, abi.encodeWithSelector(MockImplementation.initialize.selector, value));
         address proxy = factory.createProxy(abi.encodeWithSelector(MockImplementation.initialize.selector, value));
 
         assertEq(MockImplementation(proxy).mockFunction(), value);

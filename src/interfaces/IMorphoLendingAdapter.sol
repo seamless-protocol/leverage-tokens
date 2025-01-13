@@ -5,6 +5,8 @@ import {ILendingAdapter} from "./ILendingAdapter.sol";
 import {Id, IMorpho} from "../vendor/morpho/IMorpho.sol";
 
 interface IMorphoLendingAdapter is ILendingAdapter {
+    /// @notice Emitted when the Morpho lending adapter is initialized
+    event Initialized(IMorpho morpho, Id marketId);
 
     /// @notice Initializes the Morpho lending adapter
     /// @param morpho Morpho core protocol contract

@@ -9,7 +9,6 @@ import {IMorpho, IMorphoBase} from "src/vendor/morpho/IMorpho.sol";
 import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
 
 contract MorphoLendingAdapterRemoveCollateralTest is MorphoLendingAdapterBaseTest {
-
     address public alice = makeAddr("alice");
 
     function testFuzz_removeCollateral(uint256 amount) public {
@@ -22,17 +21,20 @@ contract MorphoLendingAdapterRemoveCollateralTest is MorphoLendingAdapterBaseTes
         // Mock the withdrawCollateral call to morpho
         vm.mockCall(
             address(morpho),
-            abi.encodeWithSelector(IMorphoBase.withdrawCollateral.selector, defaultMarketParams, amount, address(lendingAdapter), alice),
+            abi.encodeWithSelector(
+                IMorphoBase.withdrawCollateral.selector, defaultMarketParams, amount, address(lendingAdapter), alice
+            ),
             abi.encode()
         );
 
         // Expect Morpho.withdrawCollateral to be called with the correct parameters
         vm.expectCall(
             address(morpho),
-            abi.encodeCall(IMorphoBase.withdrawCollateral, (defaultMarketParams, amount, address(lendingAdapter), alice))
+            abi.encodeCall(
+                IMorphoBase.withdrawCollateral, (defaultMarketParams, amount, address(lendingAdapter), alice)
+            )
         );
         vm.prank(alice);
         lendingAdapter.removeCollateral(makeAddr("random"), amount);
     }
 }
-

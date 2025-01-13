@@ -9,7 +9,6 @@ import {IMorpho, IMorphoBase} from "src/vendor/morpho/IMorpho.sol";
 import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
 
 contract MorphoLendingAdapterAddCollateralTest is MorphoLendingAdapterBaseTest {
-
     address public alice = makeAddr("alice");
 
     function testFuzz_addCollateral(uint256 amount) public {
@@ -25,7 +24,9 @@ contract MorphoLendingAdapterAddCollateralTest is MorphoLendingAdapterBaseTest {
         // Mock the supplyCollateral call to morpho
         vm.mockCall(
             address(morpho),
-            abi.encodeWithSelector(IMorphoBase.supplyCollateral.selector, defaultMarketParams, amount, address(lendingAdapter), hex""),
+            abi.encodeWithSelector(
+                IMorphoBase.supplyCollateral.selector, defaultMarketParams, amount, address(lendingAdapter), hex""
+            ),
             abi.encode()
         );
 
@@ -34,9 +35,14 @@ contract MorphoLendingAdapterAddCollateralTest is MorphoLendingAdapterBaseTest {
         collateralToken.approve(address(lendingAdapter), amount);
 
         // Expect the Alice's assets to be transferred to the lending adapter
-        vm.expectCall(address(collateralToken), abi.encodeWithSelector(IERC20.transferFrom.selector, alice, address(lendingAdapter), amount));
+        vm.expectCall(
+            address(collateralToken),
+            abi.encodeWithSelector(IERC20.transferFrom.selector, alice, address(lendingAdapter), amount)
+        );
         // Expect LendingAdapter.addCollateral to approve the morpho market to spend the assets for the amount
-        vm.expectCall(address(collateralToken), abi.encodeWithSelector(IERC20.approve.selector, address(morpho), amount));
+        vm.expectCall(
+            address(collateralToken), abi.encodeWithSelector(IERC20.approve.selector, address(morpho), amount)
+        );
         // Expect Morpho.supplyCollateral to be called with the correct parameters
         vm.expectCall(
             address(morpho),
@@ -46,4 +52,3 @@ contract MorphoLendingAdapterAddCollateralTest is MorphoLendingAdapterBaseTest {
         vm.stopPrank();
     }
 }
-

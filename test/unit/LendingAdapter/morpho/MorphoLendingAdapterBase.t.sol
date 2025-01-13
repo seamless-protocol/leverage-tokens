@@ -15,25 +15,25 @@ import {MorphoLendingAdapter} from "src/adapters/lending/morpho/MorphoLendingAda
 import {MockMorpho} from "../../mock/MockMorpho.sol";
 
 contract MorphoLendingAdapterBaseTest is Test {
-  MockMorpho public morpho;
-  IMorphoLendingAdapter public lendingAdapter;
+    MockMorpho public morpho;
+    IMorphoLendingAdapter public lendingAdapter;
 
-  ERC20Mock public collateralToken = new ERC20Mock();
-  ERC20Mock public debtToken = new ERC20Mock();
+    ERC20Mock public collateralToken = new ERC20Mock();
+    ERC20Mock public debtToken = new ERC20Mock();
 
-  // Mocked Morpho protocol is setup with a market with id 1 and some default market params
-  Id public defaultMarketId = Id.wrap(bytes32("1"));
-  MarketParams public defaultMarketParams = MarketParams({
-      loanToken: address(debtToken),
-      collateralToken: address(collateralToken),
-      oracle: makeAddr("mockMorphoMarketOracle"), // doesn't matter for these tests as calls to morpho should be mocked
-      irm: makeAddr("mockMorphoIRM"), // doesn't matter for these tests as calls to morpho should be mocked
-      lltv: 1e18 // 100%, doesn't matter for these tests as calls to morpho should be mocked
+    // Mocked Morpho protocol is setup with a market with id 1 and some default market params
+    Id public defaultMarketId = Id.wrap(bytes32("1"));
+    MarketParams public defaultMarketParams = MarketParams({
+        loanToken: address(debtToken),
+        collateralToken: address(collateralToken),
+        oracle: makeAddr("mockMorphoMarketOracle"), // doesn't matter for these tests as calls to morpho should be mocked
+        irm: makeAddr("mockMorphoIRM"), // doesn't matter for these tests as calls to morpho should be mocked
+        lltv: 1e18 // 100%, doesn't matter for these tests as calls to morpho should be mocked
     });
 
-  function setUp() public {
-    morpho = new MockMorpho(defaultMarketId, defaultMarketParams);
-    lendingAdapter = new MorphoLendingAdapter();
-    lendingAdapter.initialize(IMorpho(address(morpho)), defaultMarketId);
-  }
+    function setUp() public {
+        morpho = new MockMorpho(defaultMarketId, defaultMarketParams);
+        lendingAdapter = new MorphoLendingAdapter();
+        lendingAdapter.initialize(IMorpho(address(morpho)), defaultMarketId);
+    }
 }
