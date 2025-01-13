@@ -21,8 +21,10 @@ contract MorphoLendingAdapterInitializeTest is Test {
     ERC20Mock public collateralToken = new ERC20Mock();
     ERC20Mock public debtToken = new ERC20Mock();
 
+    MarketParams public marketParams;
+
     function setUp() public {
-        MarketParams memory marketParams = MarketParams({
+        marketParams = MarketParams({
             loanToken: address(debtToken),
             collateralToken: address(collateralToken),
             oracle: makeAddr("mockMorphoMarketOracle"), // doesn't matter for these tests as calls to morpho are mocked
@@ -38,17 +40,24 @@ contract MorphoLendingAdapterInitializeTest is Test {
 
     function testFuzz_initialize(bytes32 marketId) public {
         vm.expectEmit(true, true, true, true);
-        emit IMorphoLendingAdapter.Initialized(IMorpho(address(morpho)), Id.wrap(marketId));
-        lendingAdapter.initialize(IMorpho(address(morpho)), Id.wrap(marketId));
+        emit IMorphoLendingAdapter.Initialized(IMorpho(address(morpho)), marketParams);
+        lendingAdapter.initialize(IMorpho(address(morpho)), marketParams);
 
         assertEq(address(lendingAdapter.morpho()), address(morpho));
-        assertEq(abi.encode(lendingAdapter.marketId()), abi.encode(marketId));
+
+        (address loanToken, address _collateralToken, address oracle, address irm, uint256 lltv) =
+            lendingAdapter.marketParams();
+        assertEq(loanToken, marketParams.loanToken);
+        assertEq(_collateralToken, marketParams.collateralToken);
+        assertEq(oracle, marketParams.oracle);
+        assertEq(irm, marketParams.irm);
+        assertEq(lltv, marketParams.lltv);
     }
 
     function test_initialize_RevertIf_Initialized() public {
-        lendingAdapter.initialize(IMorpho(address(morpho)), Id.wrap(bytes32("1")));
+        lendingAdapter.initialize(IMorpho(address(morpho)), marketParams);
 
         vm.expectRevert(abi.encodeWithSelector(Initializable.InvalidInitialization.selector));
-        lendingAdapter.initialize(IMorpho(address(morpho)), Id.wrap(bytes32("1")));
+        lendingAdapter.initialize(IMorpho(address(morpho)), marketParams);
     }
 }

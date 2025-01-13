@@ -16,16 +16,16 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     IMorpho public morpho;
 
     /// @inheritdoc IMorphoLendingAdapter
-    Id public marketId;
+    MarketParams public marketParams;
 
     /// @notice Initialize the lending adapter
     /// @dev An initializer is used instead of a constructor as it is intended to be used within a beacon proxy setup
     /// @param _morpho The Morpho lending pool
-    /// @param _marketId The market ID
-    function initialize(IMorpho _morpho, Id _marketId) external initializer {
+    /// @param _marketParams The market parameters of the Morpho lending pool
+    function initialize(IMorpho _morpho, MarketParams memory _marketParams) external initializer {
         morpho = _morpho;
-        marketId = _marketId;
-        emit Initialized(_morpho, _marketId);
+        marketParams = _marketParams;
+        emit Initialized(_morpho, _marketParams);
     }
 
     /// @inheritdoc ILendingAdapter
@@ -50,47 +50,39 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     function addCollateral(uint256 amount) external {
         IMorpho _morpho = morpho;
 
-        MarketParams memory marketParams = _morpho.idToMarketParams(marketId);
+        MarketParams memory _marketParams = marketParams;
 
         // Transfer the collateral from msg.sender to this contract
-        SafeERC20.safeTransferFrom(IERC20(marketParams.collateralToken), msg.sender, address(this), amount);
+        SafeERC20.safeTransferFrom(IERC20(_marketParams.collateralToken), msg.sender, address(this), amount);
 
         // Supply the collateral to the Morpho market
-        IERC20(marketParams.collateralToken).approve(address(_morpho), amount);
-        _morpho.supplyCollateral(marketParams, amount, address(this), hex"");
+        IERC20(_marketParams.collateralToken).approve(address(_morpho), amount);
+        _morpho.supplyCollateral(_marketParams, amount, address(this), hex"");
     }
 
     /// @inheritdoc ILendingAdapter
     function removeCollateral(uint256 amount) external {
-        IMorpho _morpho = morpho;
-
-        MarketParams memory marketParams = _morpho.idToMarketParams(marketId);
-
         // Withdraw the collateral from the Morpho market and send it to msg.sender
-        _morpho.withdrawCollateral(marketParams, amount, address(this), msg.sender);
+        morpho.withdrawCollateral(marketParams, amount, address(this), msg.sender);
     }
 
     /// @inheritdoc ILendingAdapter
     function borrow(uint256 amount) external {
-        IMorpho _morpho = morpho;
-
-        MarketParams memory marketParams = _morpho.idToMarketParams(marketId);
-
         // Borrow the debt asset from the Morpho market and send it to the caller
-        _morpho.borrow(marketParams, amount, 0, address(this), msg.sender);
+        morpho.borrow(marketParams, amount, 0, address(this), msg.sender);
     }
 
     /// @inheritdoc ILendingAdapter
     function repay(uint256 amount) external {
         IMorpho _morpho = morpho;
 
-        MarketParams memory marketParams = _morpho.idToMarketParams(marketId);
+        MarketParams memory _marketParams = marketParams;
 
         // Transfer the debt asset from msg.sender to this contract
-        SafeERC20.safeTransferFrom(IERC20(marketParams.loanToken), msg.sender, address(this), amount);
+        SafeERC20.safeTransferFrom(IERC20(_marketParams.loanToken), msg.sender, address(this), amount);
 
         // Repay the debt asset to the Morpho market
-        IERC20(marketParams.loanToken).approve(address(_morpho), amount);
-        _morpho.repay(marketParams, amount, 0, address(this), hex"");
+        IERC20(_marketParams.loanToken).approve(address(_morpho), amount);
+        _morpho.repay(_marketParams, amount, 0, address(this), hex"");
     }
 }

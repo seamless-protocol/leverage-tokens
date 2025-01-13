@@ -15,13 +15,6 @@ contract MorphoLendingAdapterRepayTest is MorphoLendingAdapterBaseTest {
         // Deal alice the required debt
         deal(address(debtToken), alice, amount);
 
-        // Mock the idToMarketParams call to morpho
-        vm.mockCall(
-            address(morpho),
-            abi.encodeWithSelector(IMorpho.idToMarketParams.selector, defaultMarketId),
-            abi.encode(defaultMarketParams)
-        );
-
         // Mock the repay call to morpho
         vm.mockCall(
             address(morpho),

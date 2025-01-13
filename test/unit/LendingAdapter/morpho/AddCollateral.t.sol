@@ -15,12 +15,6 @@ contract MorphoLendingAdapterAddCollateralTest is MorphoLendingAdapterBaseTest {
         // Deal alice the required collateral
         deal(address(collateralToken), alice, amount);
 
-        // Mock the idToMarketParams call to morpho
-        vm.mockCall(
-            address(morpho),
-            abi.encodeWithSelector(IMorpho.idToMarketParams.selector, defaultMarketId),
-            abi.encode(defaultMarketParams)
-        );
         // Mock the supplyCollateral call to morpho
         vm.mockCall(
             address(morpho),

@@ -2,15 +2,22 @@
 pragma solidity ^0.8.26;
 
 import {ILendingAdapter} from "./ILendingAdapter.sol";
-import {Id, IMorpho} from "./IMorpho.sol";
+import {IMorpho, MarketParams} from "./IMorpho.sol";
 
 interface IMorphoLendingAdapter is ILendingAdapter {
     /// @notice Emitted when the Morpho lending adapter is initialized
-    event Initialized(IMorpho morpho, Id marketId);
+    event Initialized(IMorpho indexed morpho, MarketParams indexed marketParams);
 
-    /// @notice The market ID of the Morpho lending pool
-    /// @return marketId The market ID of the Morpho lending pool
-    function marketId() external view returns (Id marketId);
+    /// @notice The market parameters of the Morpho lending pool
+    /// @return loanToken The loan token of the Morpho lending pool
+    /// @return collateralToken The collateral token of the Morpho lending pool
+    /// @return oracle The oracle of the Morpho lending pool
+    /// @return irm The IRM of the Morpho lending pool
+    /// @return lltv The LLTV of the Morpho lending pool
+    function marketParams()
+        external
+        view
+        returns (address loanToken, address collateralToken, address oracle, address irm, uint256 lltv);
 
     /// @notice The Morpho core protocol contract
     /// @return morpho The Morpho core protocol contract
@@ -18,6 +25,6 @@ interface IMorphoLendingAdapter is ILendingAdapter {
 
     /// @notice Initializes the Morpho lending adapter
     /// @param _morpho Morpho core protocol contract
-    /// @param _marketId Market ID of the Morpho lending pool
-    function initialize(IMorpho _morpho, Id _marketId) external;
+    /// @param _marketParams The market parameters of the Morpho lending pool
+    function initialize(IMorpho _morpho, MarketParams memory _marketParams) external;
 }

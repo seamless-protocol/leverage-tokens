@@ -12,12 +12,6 @@ contract MorphoLendingAdapterRemoveCollateralTest is MorphoLendingAdapterBaseTes
     address public alice = makeAddr("alice");
 
     function testFuzz_removeCollateral(uint256 amount) public {
-        // Mock the idToMarketParams call to morpho
-        vm.mockCall(
-            address(morpho),
-            abi.encodeWithSelector(IMorpho.idToMarketParams.selector, defaultMarketId),
-            abi.encode(defaultMarketParams)
-        );
         // Mock the withdrawCollateral call to morpho
         vm.mockCall(
             address(morpho),
