@@ -47,7 +47,7 @@ contract MorphoLendingAdapterRepayTest is MorphoLendingAdapterBaseTest {
             address(morpho),
             abi.encodeCall(IMorphoBase.repay, (defaultMarketParams, amount, 0, address(lendingAdapter), hex""))
         );
-        lendingAdapter.repay(makeAddr("random"), amount);
+        lendingAdapter.repay(amount);
         vm.stopPrank();
     }
 }

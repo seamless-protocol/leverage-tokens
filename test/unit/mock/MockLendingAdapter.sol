@@ -18,11 +18,11 @@ contract MockLendingAdapter {
         debtAsset = ERC20Mock(_debtAsset);
     }
 
-    function addCollateral(address, uint256 amount) external {
+    function addCollateral(uint256 amount) external {
         SafeERC20.safeTransferFrom(collateralAsset, msg.sender, address(this), amount);
     }
 
-    function borrow(address, uint256 amount) external {
+    function borrow(uint256 amount) external {
         debtAsset.mint(msg.sender, amount);
     }
 }

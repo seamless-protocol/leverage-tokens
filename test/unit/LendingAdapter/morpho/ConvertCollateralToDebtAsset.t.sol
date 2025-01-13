@@ -6,6 +6,6 @@ import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
 
 contract ConvertCollateralToDebtAsset is MorphoLendingAdapterBaseTest {
     function test_convertCollateralToDebtAsset() public view {
-        assertEq(lendingAdapter.convertCollateralToDebtAsset(address(0), 0), block.timestamp);
+        assertEq(lendingAdapter.convertCollateralToDebtAsset(0), block.timestamp);
     }
 }

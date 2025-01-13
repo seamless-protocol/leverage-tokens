@@ -35,6 +35,6 @@ contract MorphoLendingAdapterRemoveCollateralTest is MorphoLendingAdapterBaseTes
             )
         );
         vm.prank(alice);
-        lendingAdapter.removeCollateral(makeAddr("random"), amount);
+        lendingAdapter.removeCollateral(amount);
     }
 }

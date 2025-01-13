@@ -4,40 +4,33 @@ pragma solidity ^0.8.26;
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 
 interface ILendingAdapter {
-    /// @notice Returns total collateral of the strategy
-    /// @param strategy Strategy to query collateral for
-    /// @return collateral Total collateral of the strategy
-    function getStrategyCollateral(address strategy) external view returns (uint256 collateral);
+    /// @notice Returns total collateral of the position held by the lending adapter
+    /// @return collateral Total collateral of the position held by the lending adapter
+    function getCollateral() external view returns (uint256 collateral);
 
-    /// @notice Returns total equity of the strategy denominated in debt asset of the strategy
-    /// @param strategy Strategy to query equity for
-    /// @return equity Equity of the strategy
+    /// @notice Returns total equity of the position held by the lending adapter denominated in debt asset
+    /// @return equity Equity of the position held by the lending adapter
     /// @dev Equity is calculated as collateral - debt
-    function getStrategyEquityInDebtAsset(address strategy) external view returns (uint256 equity);
+    function getEquityInDebtAsset() external view returns (uint256 equity);
 
     /// @notice Converts amount of collateral asset to debt asset amount based on lending pool oracle
-    /// @param strategy Address of the strategy
     /// @param collateral Collateral amount
     /// @return debt Amount of debt asset
-    function convertCollateralToDebtAsset(address strategy, uint256 collateral) external view returns (uint256 debt);
+    function convertCollateralToDebtAsset(uint256 collateral) external view returns (uint256 debt);
 
     /// @notice Supplies assets to the lending pool
-    /// @param strategy Address of the strategy
     /// @param amount Amount of assets to supply
-    function addCollateral(address strategy, uint256 amount) external;
+    function addCollateral(uint256 amount) external;
 
     /// @notice Withdraws assets to the lending pool
-    /// @param strategy Address of the strategy
     /// @param amount Amount of assets to withdraw
-    function removeCollateral(address strategy, uint256 amount) external;
+    function removeCollateral(uint256 amount) external;
 
     /// @notice Borrows assets from the lending pool
-    /// @param strategy Address of the strategy
     /// @param amount Amount of assets to borrow
-    function borrow(address strategy, uint256 amount) external;
+    function borrow(uint256 amount) external;
 
     /// @notice Repays debt to the lending pool
-    /// @param strategy Address of the strategy
     /// @param amount Amount of assets of debt to repay
-    function repay(address strategy, uint256 amount) external;
+    function repay(uint256 amount) external;
 }

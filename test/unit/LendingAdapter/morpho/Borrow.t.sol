@@ -15,7 +15,7 @@ contract MorphoLendingAdapterBorrowTest is MorphoLendingAdapterBaseTest {
             abi.encodeWithSelector(IMorpho.idToMarketParams.selector, defaultMarketId),
             abi.encode(defaultMarketParams)
         );
-        // // Mock the borrow call to morpho
+        // Mock the borrow call to morpho
         vm.mockCall(
             address(morpho),
             abi.encodeWithSelector(
@@ -30,6 +30,6 @@ contract MorphoLendingAdapterBorrowTest is MorphoLendingAdapterBaseTest {
             abi.encodeCall(IMorphoBase.borrow, (defaultMarketParams, amount, 0, address(lendingAdapter), alice))
         );
         vm.prank(alice);
-        lendingAdapter.borrow(makeAddr("random"), amount);
+        lendingAdapter.borrow(amount);
     }
 }
