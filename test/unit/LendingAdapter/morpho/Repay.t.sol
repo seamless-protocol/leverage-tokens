@@ -15,15 +15,6 @@ contract MorphoLendingAdapterRepayTest is MorphoLendingAdapterBaseTest {
         // Deal alice the required debt
         deal(address(debtToken), alice, amount);
 
-        // Mock the repay call to morpho
-        vm.mockCall(
-            address(morpho),
-            abi.encodeWithSelector(
-                IMorphoBase.repay.selector, defaultMarketParams, amount, 0, address(lendingAdapter), hex""
-            ),
-            abi.encode(0, 0) // Mocked return values that are not used
-        );
-
         // Alice approves the lending adapter to spend her assets
         vm.startPrank(alice);
         debtToken.approve(address(lendingAdapter), amount);
@@ -42,5 +33,7 @@ contract MorphoLendingAdapterRepayTest is MorphoLendingAdapterBaseTest {
         );
         lendingAdapter.repay(amount);
         vm.stopPrank();
+
+        assertEq(debtToken.balanceOf(address(morpho)), amount);
     }
 }

@@ -15,15 +15,6 @@ contract MorphoLendingAdapterAddCollateralTest is MorphoLendingAdapterBaseTest {
         // Deal alice the required collateral
         deal(address(collateralToken), alice, amount);
 
-        // Mock the supplyCollateral call to morpho
-        vm.mockCall(
-            address(morpho),
-            abi.encodeWithSelector(
-                IMorphoBase.supplyCollateral.selector, defaultMarketParams, amount, address(lendingAdapter), hex""
-            ),
-            abi.encode()
-        );
-
         // Alice approves the lending adapter to spend her assets
         vm.startPrank(alice);
         collateralToken.approve(address(lendingAdapter), amount);
@@ -44,5 +35,7 @@ contract MorphoLendingAdapterAddCollateralTest is MorphoLendingAdapterBaseTest {
         );
         lendingAdapter.addCollateral(amount);
         vm.stopPrank();
+
+        assertEq(collateralToken.balanceOf(address(morpho)), amount);
     }
 }

@@ -8,19 +8,8 @@ import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
 
 contract MorphoLendingAdapterBorrowTest is MorphoLendingAdapterBaseTest {
     function testFuzz_borrow(uint256 amount) public {
-        // Mock the borrow call to morpho
-        vm.mockCall(
-            address(morpho),
-            abi.encodeWithSelector(
-                IMorphoBase.borrow.selector,
-                defaultMarketParams,
-                amount,
-                0,
-                address(lendingAdapter),
-                address(leverageManager)
-            ),
-            abi.encode(0, 0) // Mocked return values that are not used
-        );
+        // Deal Morpho the required debt token amount
+        deal(address(debtToken), address(morpho), amount);
 
         // Expect Morpho.borrow to be called with the correct parameters
         vm.expectCall(
@@ -32,6 +21,8 @@ contract MorphoLendingAdapterBorrowTest is MorphoLendingAdapterBaseTest {
 
         vm.prank(address(leverageManager));
         lendingAdapter.borrow(amount);
+
+        assertEq(debtToken.balanceOf(address(leverageManager)), amount);
     }
 
     function testFuzz_borrow_RevertIf_NotLeverageManager(address caller) public {

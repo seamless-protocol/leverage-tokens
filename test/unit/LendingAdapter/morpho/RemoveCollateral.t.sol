@@ -11,18 +11,8 @@ import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
 
 contract MorphoLendingAdapterRemoveCollateralTest is MorphoLendingAdapterBaseTest {
     function testFuzz_removeCollateral(uint256 amount) public {
-        // Mock the withdrawCollateral call to morpho
-        vm.mockCall(
-            address(morpho),
-            abi.encodeWithSelector(
-                IMorphoBase.withdrawCollateral.selector,
-                defaultMarketParams,
-                amount,
-                address(lendingAdapter),
-                address(leverageManager)
-            ),
-            abi.encode()
-        );
+        // Deal Morpho the required collateral token amount
+        deal(address(collateralToken), address(morpho), amount);
 
         // Expect Morpho.withdrawCollateral to be called with the correct parameters
         vm.expectCall(
@@ -34,6 +24,8 @@ contract MorphoLendingAdapterRemoveCollateralTest is MorphoLendingAdapterBaseTes
         );
         vm.prank(address(leverageManager));
         lendingAdapter.removeCollateral(amount);
+
+        assertEq(collateralToken.balanceOf(address(leverageManager)), amount);
     }
 
     function testFuzz_removeCollateral_RevertIf_NotLeverageManager(address caller) public {
