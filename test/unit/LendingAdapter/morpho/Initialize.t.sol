@@ -9,6 +9,7 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 
 // Internal imports
+import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {Id, MarketParams, IMorpho} from "src/interfaces/IMorpho.sol";
 import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
@@ -38,12 +39,15 @@ contract MorphoLendingAdapterInitializeTest is Test {
         lendingAdapter = new MorphoLendingAdapter();
     }
 
-    function testFuzz_initialize(MarketParams memory _marketParams) public {
+    function testFuzz_initialize(ILeverageManager _leverageManager, IMorpho _morpho, MarketParams memory _marketParams)
+        public
+    {
         vm.expectEmit(true, true, true, true);
-        emit IMorphoLendingAdapter.Initialized(IMorpho(address(morpho)), _marketParams);
-        lendingAdapter.initialize(IMorpho(address(morpho)), _marketParams);
+        emit IMorphoLendingAdapter.Initialized(_leverageManager, _morpho, _marketParams);
+        lendingAdapter.initialize(_leverageManager, _morpho, _marketParams);
 
-        assertEq(address(lendingAdapter.morpho()), address(morpho));
+        assertEq(address(lendingAdapter.leverageManager()), address(_leverageManager));
+        assertEq(address(lendingAdapter.morpho()), address(_morpho));
 
         (address loanToken, address _collateralToken, address oracle, address irm, uint256 lltv) =
             lendingAdapter.marketParams();
@@ -55,9 +59,10 @@ contract MorphoLendingAdapterInitializeTest is Test {
     }
 
     function test_initialize_RevertIf_Initialized() public {
-        lendingAdapter.initialize(IMorpho(address(morpho)), defaultMarketParams);
+        ILeverageManager leverageManager = ILeverageManager(makeAddr("leverageManager"));
+        lendingAdapter.initialize(leverageManager, IMorpho(address(morpho)), defaultMarketParams);
 
         vm.expectRevert(abi.encodeWithSelector(Initializable.InvalidInitialization.selector));
-        lendingAdapter.initialize(IMorpho(address(morpho)), defaultMarketParams);
+        lendingAdapter.initialize(leverageManager, IMorpho(address(morpho)), defaultMarketParams);
     }
 }

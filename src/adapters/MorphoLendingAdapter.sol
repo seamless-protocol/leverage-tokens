@@ -8,10 +8,14 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
+import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {Id, IMorpho, MarketParams} from "src/interfaces/IMorpho.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 
 contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
+    /// @notice The Seamless ilm-v2 LeverageManager contract
+    ILeverageManager public leverageManager;
+
     /// @inheritdoc IMorphoLendingAdapter
     IMorpho public morpho;
 
@@ -20,12 +24,17 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
 
     /// @notice Initialize the lending adapter
     /// @dev An initializer is used instead of a constructor as it is intended to be used within a beacon proxy setup
+    /// @param _leverageManager The Seamless ilm-v2 LeverageManager contract
     /// @param _morpho The Morpho lending pool
     /// @param _marketParams The market parameters of the Morpho lending pool
-    function initialize(IMorpho _morpho, MarketParams memory _marketParams) external initializer {
+    function initialize(ILeverageManager _leverageManager, IMorpho _morpho, MarketParams memory _marketParams)
+        external
+        initializer
+    {
+        leverageManager = _leverageManager;
         morpho = _morpho;
         marketParams = _marketParams;
-        emit Initialized(_morpho, _marketParams);
+        emit Initialized(_leverageManager, _morpho, _marketParams);
     }
 
     /// @inheritdoc ILendingAdapter
@@ -61,13 +70,13 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     }
 
     /// @inheritdoc ILendingAdapter
-    function removeCollateral(uint256 amount) external {
+    function removeCollateral(uint256 amount) external onlyLeverageManager {
         // Withdraw the collateral from the Morpho market and send it to msg.sender
         morpho.withdrawCollateral(marketParams, amount, address(this), msg.sender);
     }
 
     /// @inheritdoc ILendingAdapter
-    function borrow(uint256 amount) external {
+    function borrow(uint256 amount) external onlyLeverageManager {
         // Borrow the debt asset from the Morpho market and send it to the caller
         morpho.borrow(marketParams, amount, 0, address(this), msg.sender);
     }
@@ -84,5 +93,10 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
         // Repay the debt asset to the Morpho market
         IERC20(_marketParams.loanToken).approve(address(_morpho), amount);
         _morpho.repay(_marketParams, amount, 0, address(this), hex"");
+    }
+
+    modifier onlyLeverageManager() {
+        if (msg.sender != address(leverageManager)) revert Unauthorized();
+        _;
     }
 }

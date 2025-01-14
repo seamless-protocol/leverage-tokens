@@ -6,17 +6,20 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
 import {IMorpho, IMorphoBase} from "src/interfaces/IMorpho.sol";
+import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
 
 contract MorphoLendingAdapterRemoveCollateralTest is MorphoLendingAdapterBaseTest {
-    address public alice = makeAddr("alice");
-
     function testFuzz_removeCollateral(uint256 amount) public {
         // Mock the withdrawCollateral call to morpho
         vm.mockCall(
             address(morpho),
             abi.encodeWithSelector(
-                IMorphoBase.withdrawCollateral.selector, defaultMarketParams, amount, address(lendingAdapter), alice
+                IMorphoBase.withdrawCollateral.selector,
+                defaultMarketParams,
+                amount,
+                address(lendingAdapter),
+                address(leverageManager)
             ),
             abi.encode()
         );
@@ -25,10 +28,19 @@ contract MorphoLendingAdapterRemoveCollateralTest is MorphoLendingAdapterBaseTes
         vm.expectCall(
             address(morpho),
             abi.encodeCall(
-                IMorphoBase.withdrawCollateral, (defaultMarketParams, amount, address(lendingAdapter), alice)
+                IMorphoBase.withdrawCollateral,
+                (defaultMarketParams, amount, address(lendingAdapter), address(leverageManager))
             )
         );
-        vm.prank(alice);
+        vm.prank(address(leverageManager));
         lendingAdapter.removeCollateral(amount);
+    }
+
+    function testFuzz_removeCollateral_RevertIf_NotLeverageManager(address caller) public {
+        vm.assume(caller != address(leverageManager));
+
+        vm.expectRevert(IMorphoLendingAdapter.Unauthorized.selector);
+        vm.prank(caller);
+        lendingAdapter.removeCollateral(1);
     }
 }

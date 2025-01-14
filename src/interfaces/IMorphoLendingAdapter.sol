@@ -2,11 +2,21 @@
 pragma solidity ^0.8.26;
 
 import {ILendingAdapter} from "./ILendingAdapter.sol";
+import {ILeverageManager} from "./ILeverageManager.sol";
 import {IMorpho, MarketParams} from "./IMorpho.sol";
 
 interface IMorphoLendingAdapter is ILendingAdapter {
     /// @notice Emitted when the Morpho lending adapter is initialized
-    event Initialized(IMorpho indexed morpho, MarketParams indexed marketParams);
+    event Initialized(
+        ILeverageManager indexed leverageManager, IMorpho indexed morpho, MarketParams indexed marketParams
+    );
+
+    /// @notice Error thrown when the caller is unauthorized to call a function
+    error Unauthorized();
+
+    /// @notice The Seamless ilm-v2 LeverageManager contract
+    /// @return leverageManager The Seamless ilm-v2 LeverageManager contract
+    function leverageManager() external view returns (ILeverageManager leverageManager);
 
     /// @notice The market parameters of the Morpho lending pool
     /// @return loanToken The loan token of the Morpho lending pool
@@ -24,7 +34,9 @@ interface IMorphoLendingAdapter is ILendingAdapter {
     function morpho() external view returns (IMorpho morpho);
 
     /// @notice Initializes the Morpho lending adapter
+    /// @param _leverageManager The Seamless ilm-v2 LeverageManager contract
     /// @param _morpho Morpho core protocol contract
     /// @param _marketParams The market parameters of the Morpho lending pool
-    function initialize(IMorpho _morpho, MarketParams memory _marketParams) external;
+    function initialize(ILeverageManager _leverageManager, IMorpho _morpho, MarketParams memory _marketParams)
+        external;
 }
