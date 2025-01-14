@@ -11,18 +11,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 // Internal imports
 import {BeaconProxyFactory} from "src/BeaconProxyFactory.sol";
 import {IBeaconProxyFactory} from "src/interfaces/IBeaconProxyFactory.sol";
-
-contract MockImplementation {
-    uint256 public value;
-
-    function initialize(uint256 _value) public {
-        value = _value;
-    }
-
-    function mockFunction() public view returns (uint256) {
-        return value;
-    }
-}
+import {MockValue} from "../mock/MockValue.sol";
 
 contract BeaconProxyFactoryTest is Test {
     BeaconProxyFactory public factory;
@@ -31,7 +20,7 @@ contract BeaconProxyFactoryTest is Test {
     address public owner = makeAddr("owner");
 
     function setUp() public {
-        implementation = address(new MockImplementation());
+        implementation = address(new MockValue());
         factory = new BeaconProxyFactory(implementation, owner);
     }
 
@@ -61,22 +50,23 @@ contract BeaconProxyFactoryTest is Test {
         assertEq(proxy, expectedProxyAddress);
         assertEq(factory.getProxies().length, 1);
         assertEq(factory.getProxies()[0], proxy);
-        assertEq(MockImplementation(proxy).mockFunction(), 0); // Zero because it was not initialized
+        assertEq(MockValue(proxy).mockFunction(), 0); // Zero because it was not initialized
     }
 
     function testFuzz_createProxy_WithInitializationData(bytes32 salt) public {
         uint256 value = 100;
         address expectedProxyAddress =
-            factory.computeProxyAddress(abi.encodeWithSelector(MockImplementation.initialize.selector, value), salt);
+            factory.computeProxyAddress(abi.encodeWithSelector(MockValue.initialize.selector, value), salt);
 
-        vm.expectCall(implementation, abi.encodeWithSelector(MockImplementation.initialize.selector, value));
+        vm.expectCall(implementation, abi.encodeWithSelector(MockValue.initialize.selector, value));
         vm.expectEmit(true, true, true, true);
         emit IBeaconProxyFactory.BeaconProxyCreated(
-            expectedProxyAddress, abi.encodeWithSelector(MockImplementation.initialize.selector, value)
+            expectedProxyAddress, abi.encodeWithSelector(MockValue.initialize.selector, value)
         );
-        address proxy = factory.createProxy(abi.encodeWithSelector(MockImplementation.initialize.selector, value), salt);
+        address proxy = factory.createProxy(abi.encodeWithSelector(MockValue.initialize.selector, value), salt);
 
-        assertEq(MockImplementation(proxy).mockFunction(), value);
+        assertEq(MockValue(proxy).mockFunction(), value);
+        assertEq(MockValue(proxy).initialized(), true);
         assertEq(factory.getProxies().length, 1);
         assertEq(factory.getProxies()[0], proxy);
         assertEq(proxy, expectedProxyAddress);
