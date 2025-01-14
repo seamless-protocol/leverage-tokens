@@ -37,7 +37,7 @@ contract MorphoLendingAdapterBaseTest is Test {
 
     function setUp() public {
         morpho = new MockMorpho(defaultMarketId, defaultMarketParams);
-        lendingAdapter = new MorphoLendingAdapter();
-        lendingAdapter.initialize(leverageManager, IMorpho(address(morpho)), defaultMarketParams);
+        lendingAdapter = new MorphoLendingAdapter(leverageManager, IMorpho(address(morpho)));
+        lendingAdapter.initialize(defaultMarketParams);
     }
 }

@@ -7,9 +7,7 @@ import {IMorpho, MarketParams} from "./IMorpho.sol";
 
 interface IMorphoLendingAdapter is ILendingAdapter {
     /// @notice Emitted when the Morpho lending adapter is initialized
-    event Initialized(
-        ILeverageManager indexed leverageManager, IMorpho indexed morpho, MarketParams indexed marketParams
-    );
+    event Initialized(MarketParams indexed marketParams);
 
     /// @notice Error thrown when the caller is unauthorized to call a function
     error Unauthorized();
@@ -34,9 +32,6 @@ interface IMorphoLendingAdapter is ILendingAdapter {
     function morpho() external view returns (IMorpho morpho);
 
     /// @notice Initializes the Morpho lending adapter
-    /// @param _leverageManager The Seamless ilm-v2 LeverageManager contract
-    /// @param _morpho Morpho core protocol contract
     /// @param _marketParams The market parameters of the Morpho lending pool
-    function initialize(ILeverageManager _leverageManager, IMorpho _morpho, MarketParams memory _marketParams)
-        external;
+    function initialize(MarketParams memory _marketParams) external;
 }

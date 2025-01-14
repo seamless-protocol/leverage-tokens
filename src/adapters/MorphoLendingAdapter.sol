@@ -14,23 +14,26 @@ import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 
 contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     /// @inheritdoc IMorphoLendingAdapter
-    ILeverageManager public leverageManager;
+    ILeverageManager public immutable leverageManager;
 
     /// @inheritdoc IMorphoLendingAdapter
-    IMorpho public morpho;
+    IMorpho public immutable morpho;
 
     /// @inheritdoc IMorphoLendingAdapter
     MarketParams public marketParams;
 
-    /// @inheritdoc IMorphoLendingAdapter
-    function initialize(ILeverageManager _leverageManager, IMorpho _morpho, MarketParams memory _marketParams)
-        external
-        initializer
-    {
+    /// @notice Creates a new Morpho lending adapter
+    /// @param _leverageManager The Seamless ilm-v2 LeverageManager contract
+    /// @param _morpho The Morpho core protocol contract
+    constructor(ILeverageManager _leverageManager, IMorpho _morpho) {
         leverageManager = _leverageManager;
         morpho = _morpho;
+    }
+
+    /// @inheritdoc IMorphoLendingAdapter
+    function initialize(MarketParams memory _marketParams) external initializer {
         marketParams = _marketParams;
-        emit Initialized(_leverageManager, _morpho, _marketParams);
+        emit Initialized(_marketParams);
     }
 
     /// @inheritdoc ILendingAdapter

@@ -6,63 +6,53 @@ import {Test} from "forge-std/Test.sol";
 
 // Dependency imports
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 
 // Internal imports
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {Id, MarketParams, IMorpho} from "src/interfaces/IMorpho.sol";
 import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
-import {MockMorpho} from "../../mock/MockMorpho.sol";
 
 contract MorphoLendingAdapterInitializeTest is Test {
-    MorphoLendingAdapter public lendingAdapter;
-    MockMorpho public morpho;
-
-    ERC20Mock public collateralToken = new ERC20Mock();
-    ERC20Mock public debtToken = new ERC20Mock();
-
-    MarketParams public defaultMarketParams;
-
-    function setUp() public {
-        defaultMarketParams = MarketParams({
-            loanToken: address(debtToken),
-            collateralToken: address(collateralToken),
-            oracle: makeAddr("mockMorphoMarketOracle"), // doesn't matter for these tests as calls to morpho are mocked
-            irm: makeAddr("mockMorphoIRM"), // doesn't matter for these tests as calls to morpho are mocked
-            lltv: 1e18 // 100%, doesn't matter for these tests as calls to morpho are mocked
-        });
-
-        // Mocked Morpho protocol is setup with a market with id 1
-        morpho = new MockMorpho(Id.wrap(bytes32("1")), defaultMarketParams);
-
-        lendingAdapter = new MorphoLendingAdapter();
-    }
-
-    function testFuzz_initialize(ILeverageManager _leverageManager, IMorpho _morpho, MarketParams memory _marketParams)
+    function testFuzz_initialize(ILeverageManager leverageManager, IMorpho _morpho, MarketParams memory marketParams)
         public
     {
-        vm.expectEmit(true, true, true, true);
-        emit IMorphoLendingAdapter.Initialized(_leverageManager, _morpho, _marketParams);
-        lendingAdapter.initialize(_leverageManager, _morpho, _marketParams);
+        MorphoLendingAdapter lendingAdapter = new MorphoLendingAdapter(leverageManager, _morpho);
+        assertEq(address(lendingAdapter.leverageManager()), address(leverageManager));
+        assertEq(address(lendingAdapter.morpho()), address(_morpho));
 
-        assertEq(address(lendingAdapter.leverageManager()), address(_leverageManager));
+        vm.expectEmit(true, true, true, true);
+        emit IMorphoLendingAdapter.Initialized(marketParams);
+        lendingAdapter.initialize(marketParams);
+
+        assertEq(address(lendingAdapter.leverageManager()), address(leverageManager));
         assertEq(address(lendingAdapter.morpho()), address(_morpho));
 
         (address loanToken, address _collateralToken, address oracle, address irm, uint256 lltv) =
             lendingAdapter.marketParams();
-        assertEq(loanToken, _marketParams.loanToken);
-        assertEq(_collateralToken, _marketParams.collateralToken);
-        assertEq(oracle, _marketParams.oracle);
-        assertEq(irm, _marketParams.irm);
-        assertEq(lltv, _marketParams.lltv);
+        assertEq(loanToken, marketParams.loanToken);
+        assertEq(_collateralToken, marketParams.collateralToken);
+        assertEq(oracle, marketParams.oracle);
+        assertEq(irm, marketParams.irm);
+        assertEq(lltv, marketParams.lltv);
     }
 
     function test_initialize_RevertIf_Initialized() public {
+        MarketParams memory marketParams = MarketParams({
+            loanToken: makeAddr("loanToken"), // doesn't matter for these tests as there are no calls to morpho
+            collateralToken: makeAddr("collateralToken"), // doesn't matter for these tests as there are no calls to morpho
+            oracle: makeAddr("mockMorphoMarketOracle"), // doesn't matter for these tests as there are no calls to morpho
+            irm: makeAddr("mockMorphoIRM"), // doesn't matter for these tests as there are no calls to morpho
+            lltv: 1e18 // 100%, doesn't matter for these tests as there are no calls to morpho
+        });
+
         ILeverageManager leverageManager = ILeverageManager(makeAddr("leverageManager"));
-        lendingAdapter.initialize(leverageManager, IMorpho(address(morpho)), defaultMarketParams);
+        IMorpho morpho = IMorpho(makeAddr("morpho"));
+        MorphoLendingAdapter lendingAdapter = new MorphoLendingAdapter(leverageManager, morpho);
+
+        lendingAdapter.initialize(marketParams);
 
         vm.expectRevert(abi.encodeWithSelector(Initializable.InvalidInitialization.selector));
-        lendingAdapter.initialize(leverageManager, IMorpho(address(morpho)), defaultMarketParams);
+        lendingAdapter.initialize(marketParams);
     }
 }
