@@ -70,26 +70,18 @@ contract BeaconProxyFactoryTest is Test {
         assertEq(proxy, expectedProxyAddress);
     }
 
-    function testFuzz_createProxy_DifferentSalt(bytes32 saltA, bytes32 saltB) public {
-        vm.assume(saltA != saltB);
-        bytes memory data = hex"";
-
-        address proxyA = factory.createProxy(data, saltA);
-        address proxyB = factory.createProxy(data, saltB);
-        assertNotEq(proxyA, proxyB);
-
-        data = abi.encodeWithSelector(MockValue.initialize.selector, 100);
-        address proxyC = factory.createProxy(data, saltA);
-        address proxyD = factory.createProxy(data, saltB);
-        assertNotEq(proxyC, proxyD);
-    }
-
     function testFuzz_computeProxyAddress_DifferentSalt(bytes32 saltA, bytes32 saltB) public view {
         vm.assume(saltA != saltB);
-        bytes memory data = hex"";
-        address expectedProxyAddressA = factory.computeProxyAddress(data, saltA);
-        address expectedProxyAddressB = factory.computeProxyAddress(data, saltB);
+        bytes memory emptyData = hex"";
+        address expectedProxyAddressA = factory.computeProxyAddress(emptyData, saltA);
+        address expectedProxyAddressB = factory.computeProxyAddress(emptyData, saltB);
 
         assertNotEq(expectedProxyAddressA, expectedProxyAddressB);
+
+        bytes memory initializeData = abi.encodeWithSelector(MockValue.initialize.selector, 100);
+        address expectedProxyAddressC = factory.computeProxyAddress(initializeData, saltA);
+        address expectedProxyAddressD = factory.computeProxyAddress(initializeData, saltB);
+
+        assertNotEq(expectedProxyAddressC, expectedProxyAddressD);
     }
 }

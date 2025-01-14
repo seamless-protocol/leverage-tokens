@@ -6,6 +6,6 @@ import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
 
 contract GetCollateral is MorphoLendingAdapterBaseTest {
     function test_getCollateral() public view {
-        lendingAdapter.getCollateral();
+        assertEq(lendingAdapter.getCollateral(), block.timestamp);
     }
 }
