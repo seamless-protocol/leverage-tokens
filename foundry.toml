@@ -1,5 +1,6 @@
 [profile.default]
 solc = "0.8.26"
+optimizer = false
 via_ir = true
 evm_version = "cancun"
 src = "src"
