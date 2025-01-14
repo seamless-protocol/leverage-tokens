@@ -22,11 +22,7 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     /// @inheritdoc IMorphoLendingAdapter
     MarketParams public marketParams;
 
-    /// @notice Initialize the lending adapter
-    /// @dev An initializer is used instead of a constructor as it is intended to be used within a beacon proxy setup
-    /// @param _leverageManager The Seamless ilm-v2 LeverageManager contract
-    /// @param _morpho The Morpho lending pool
-    /// @param _marketParams The market parameters of the Morpho lending pool
+    /// @inheritdoc IMorphoLendingAdapter
     function initialize(ILeverageManager _leverageManager, IMorpho _morpho, MarketParams memory _marketParams)
         external
         initializer

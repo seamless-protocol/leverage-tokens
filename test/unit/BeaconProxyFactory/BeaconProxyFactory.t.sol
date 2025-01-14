@@ -55,20 +55,41 @@ contract BeaconProxyFactoryTest is Test {
 
     function testFuzz_createProxy_WithInitializationData(bytes32 salt) public {
         uint256 value = 100;
-        address expectedProxyAddress =
-            factory.computeProxyAddress(abi.encodeWithSelector(MockValue.initialize.selector, value), salt);
+        bytes memory data = abi.encodeWithSelector(MockValue.initialize.selector, value);
+        address expectedProxyAddress = factory.computeProxyAddress(data, salt);
 
-        vm.expectCall(implementation, abi.encodeWithSelector(MockValue.initialize.selector, value));
+        vm.expectCall(implementation, data);
         vm.expectEmit(true, true, true, true);
-        emit IBeaconProxyFactory.BeaconProxyCreated(
-            expectedProxyAddress, abi.encodeWithSelector(MockValue.initialize.selector, value)
-        );
-        address proxy = factory.createProxy(abi.encodeWithSelector(MockValue.initialize.selector, value), salt);
+        emit IBeaconProxyFactory.BeaconProxyCreated(expectedProxyAddress, data);
+        address proxy = factory.createProxy(data, salt);
 
         assertEq(MockValue(proxy).mockFunction(), value);
         assertEq(MockValue(proxy).initialized(), true);
         assertEq(factory.getProxies().length, 1);
         assertEq(factory.getProxies()[0], proxy);
         assertEq(proxy, expectedProxyAddress);
+    }
+
+    function testFuzz_createProxy_DifferentSalt(bytes32 saltA, bytes32 saltB) public {
+        vm.assume(saltA != saltB);
+        bytes memory data = hex"";
+
+        address proxyA = factory.createProxy(data, saltA);
+        address proxyB = factory.createProxy(data, saltB);
+        assertNotEq(proxyA, proxyB);
+
+        data = abi.encodeWithSelector(MockValue.initialize.selector, 100);
+        address proxyC = factory.createProxy(data, saltA);
+        address proxyD = factory.createProxy(data, saltB);
+        assertNotEq(proxyC, proxyD);
+    }
+
+    function testFuzz_computeProxyAddress_DifferentSalt(bytes32 saltA, bytes32 saltB) public view {
+        vm.assume(saltA != saltB);
+        bytes memory data = hex"";
+        address expectedProxyAddressA = factory.computeProxyAddress(data, saltA);
+        address expectedProxyAddressB = factory.computeProxyAddress(data, saltB);
+
+        assertNotEq(expectedProxyAddressA, expectedProxyAddressB);
     }
 }
