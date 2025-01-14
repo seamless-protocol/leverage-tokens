@@ -25,18 +25,18 @@ contract SetStrategyCollateralRatiosTest is LeverageManagerBaseTest {
         );
 
         vm.expectEmit(true, true, true, true);
-        emit ILeverageManager.StrategyCollateralRatiosSet(strategy, ratios);
+        emit ILeverageManager.StrategyCollateralRatiosSet(strategyId, ratios);
 
         _setStrategyCollateralRatios(manager, ratios);
 
         // Check if the collateral ratios are set correctly
-        CollateralRatios memory ratiosAfterSet = leverageManager.getStrategyCollateralRatios(strategy);
+        CollateralRatios memory ratiosAfterSet = leverageManager.getStrategyCollateralRatios(strategyId);
         assertEq(ratiosAfterSet.minCollateralRatio, ratios.minCollateralRatio);
         assertEq(ratiosAfterSet.maxCollateralRatio, ratios.maxCollateralRatio);
         assertEq(ratiosAfterSet.targetCollateralRatio, ratios.targetCollateralRatio);
 
         // Check that getter for targetCollateralRatio ratio returns the correct value
-        assertEq(leverageManager.getStrategyTargetCollateralRatio(strategy), ratios.targetCollateralRatio);
+        assertEq(leverageManager.getStrategyTargetCollateralRatio(strategyId), ratios.targetCollateralRatio);
     }
 
     // If target ratio is not in between min and max ratios, then the transaction should revert

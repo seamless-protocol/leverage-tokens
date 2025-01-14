@@ -32,25 +32,25 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
 
         // Check if event is emitted properly
         vm.expectEmit(true, true, true, true);
-        emit ILeverageManager.StrategyCreated(strategy, config.collateralAsset, config.debtAsset);
+        emit ILeverageManager.StrategyCreated(strategyId, config.collateralAsset, config.debtAsset);
 
         _createNewStrategy(manager, config);
 
         // Check if the strategy core is set correctly
-        Storage.StrategyConfig memory configAfter = leverageManager.getStrategyConfig(strategy);
+        Storage.StrategyConfig memory configAfter = leverageManager.getStrategyConfig(strategyId);
         assertEq(configAfter.collateralAsset, config.collateralAsset);
         assertEq(configAfter.debtAsset, config.debtAsset);
         assertEq(address(configAfter.lendingAdapter), address(config.lendingAdapter));
         assertEq(configAfter.collateralCap, config.collateralCap);
 
-        CollateralRatios memory ratios = leverageManager.getStrategyCollateralRatios(strategy);
+        CollateralRatios memory ratios = leverageManager.getStrategyCollateralRatios(strategyId);
         assertEq(ratios.minCollateralRatio, config.minCollateralRatio);
         assertEq(ratios.maxCollateralRatio, config.maxCollateralRatio);
         assertEq(ratios.targetCollateralRatio, config.targetCollateralRatio);
 
         // Check if single getter functions return the correct values
-        assertEq(leverageManager.getStrategyCollateralAsset(strategy), config.collateralAsset);
-        assertEq(leverageManager.getStrategyDebtAsset(strategy), config.debtAsset);
+        assertEq(leverageManager.getStrategyCollateralAsset(strategyId), config.collateralAsset);
+        assertEq(leverageManager.getStrategyDebtAsset(strategyId), config.debtAsset);
     }
 
     /// forge-config: default.fuzz.runs = 1
@@ -67,7 +67,7 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
         );
 
         _createNewStrategy(manager, config1);
-        vm.expectRevert(abi.encodeWithSelector(ILeverageManager.StrategyAlreadyExists.selector, strategy));
+        vm.expectRevert(abi.encodeWithSelector(ILeverageManager.StrategyAlreadyExists.selector, strategyId));
         _createNewStrategy(manager, config2);
     }
 

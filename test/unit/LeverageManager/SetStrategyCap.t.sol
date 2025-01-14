@@ -19,7 +19,7 @@ contract setStrategyCollateralCapTest is LeverageManagerBaseTest {
 
     function testFuzz_setStrategyCollateralCap(uint256 cap) public {
         _setStrategyCollateralCap(manager, cap);
-        assertEq(leverageManager.getStrategyCollateralCap(strategy), cap);
+        assertEq(leverageManager.getStrategyCollateralCap(strategyId), cap);
     }
 
     /// forge-config: default.fuzz.runs = 1

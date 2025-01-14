@@ -20,7 +20,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     address public lendingAdapter = makeAddr("lendingAdapter");
     address public defaultAdmin = makeAddr("defaultAdmin");
     address public manager = makeAddr("manager");
-    address public strategy = makeAddr("strategy");
+    uint256 public strategyId = 1;
 
     LeverageManagerHarness public leverageManager;
 
@@ -53,26 +53,26 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     }
 
     function _getLendingAdapter() internal view returns (ILendingAdapter) {
-        return leverageManager.getStrategyLendingAdapter(strategy);
+        return leverageManager.getStrategyLendingAdapter(strategyId);
     }
 
     function _createNewStrategy(address caller, Storage.StrategyConfig memory config) internal {
         vm.prank(caller);
-        leverageManager.createNewStrategy(strategy, config);
+        leverageManager.createNewStrategy(strategyId, config);
     }
 
     function _setStrategyCollateralRatios(address caller, CollateralRatios memory ratios) internal {
         vm.prank(caller);
-        leverageManager.setStrategyCollateralRatios(strategy, ratios);
+        leverageManager.setStrategyCollateralRatios(strategyId, ratios);
     }
 
     function _setStrategyCollateralCap(address caller, uint256 cap) internal {
         vm.prank(caller);
-        leverageManager.setStrategyCollateralCap(strategy, cap);
+        leverageManager.setStrategyCollateralCap(strategyId, cap);
     }
 
     function _mintShares(address recipient, uint256 amount) internal {
-        leverageManager.exposed_mintShares(strategy, recipient, amount);
+        leverageManager.exposed_mint(recipient, strategyId, amount);
     }
 
     struct CalculateDebtAndSharesState {
@@ -97,7 +97,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     function _mockStrategyCollateral(uint256 collateral) internal {
         vm.mockCall(
             address(_getLendingAdapter()),
-            abi.encodeWithSelector(ILendingAdapter.getStrategyCollateral.selector, strategy),
+            abi.encodeWithSelector(ILendingAdapter.getStrategyCollateral.selector, strategyId),
             abi.encode(collateral)
         );
     }
@@ -120,16 +120,16 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
 
     function _mockConvertCollateral(uint256 collateral, uint256 debt) internal {
         vm.mockCall(
-            address(leverageManager.getStrategyLendingAdapter(strategy)),
-            abi.encodeWithSelector(ILendingAdapter.convertCollateralToDebtAsset.selector, strategy, collateral),
+            address(leverageManager.getStrategyLendingAdapter(strategyId)),
+            abi.encodeWithSelector(ILendingAdapter.convertCollateralToDebtAsset.selector, strategyId, collateral),
             abi.encode(debt)
         );
     }
 
     function _mockStrategyTotalEquity(uint256 totalEquity) internal {
         vm.mockCall(
-            address(leverageManager.getStrategyLendingAdapter(strategy)),
-            abi.encodeWithSelector(ILendingAdapter.getStrategyEquityInDebtAsset.selector, strategy),
+            address(leverageManager.getStrategyLendingAdapter(strategyId)),
+            abi.encodeWithSelector(ILendingAdapter.getStrategyEquityInDebtAsset.selector, strategyId),
             abi.encode(totalEquity)
         );
     }
@@ -137,7 +137,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     function _setStrategyTargetRatio(uint256 targetRatio) internal {
         vm.prank(manager);
         leverageManager.setStrategyCollateralRatios(
-            strategy,
+            strategyId,
             CollateralRatios({
                 minCollateralRatio: 0,
                 targetCollateralRatio: targetRatio,

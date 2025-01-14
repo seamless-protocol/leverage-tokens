@@ -5,29 +5,32 @@ import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStor
 
 interface ILendingAdapter {
     /// @notice Returns total collateral of the strategy
-    /// @param strategy Strategy to query collateral for
+    /// @param strategyId Strategy to query collateral for
     /// @return collateral Total collateral of the strategy
-    function getStrategyCollateral(address strategy) external view returns (uint256 collateral);
+    function getStrategyCollateral(uint256 strategyId) external view returns (uint256 collateral);
 
     /// @notice Returns total equity of the strategy denominated in debt asset of the strategy
-    /// @param strategy Strategy to query equity for
+    /// @param strategyId Strategy to query equity for
     /// @return equity Equity of the strategy
     /// @dev Equity is calculated as collateral - debt
-    function getStrategyEquityInDebtAsset(address strategy) external view returns (uint256 equity);
+    function getStrategyEquityInDebtAsset(uint256 strategyId) external view returns (uint256 equity);
 
     /// @notice Converts amount of collateral asset to debt asset amount based on lending pool oracle
-    /// @param strategy Address of the strategy
+    /// @param strategyId Address of the strategy
     /// @param collateral Collateral amount
     /// @return debt Amount of debt asset
-    function convertCollateralToDebtAsset(address strategy, uint256 collateral) external view returns (uint256 debt);
+    function convertCollateralToDebtAsset(uint256 strategyId, uint256 collateral)
+        external
+        view
+        returns (uint256 debt);
 
     /// @notice Supplies assets to the lending pool
-    /// @param strategy Address of the strategy
+    /// @param strategyId Strategy
     /// @param amount Amount of assets to supply
-    function addCollateral(address strategy, uint256 amount) external;
+    function addCollateral(uint256 strategyId, uint256 amount) external;
 
     /// @notice Borrows assets from the lending pool
-    /// @param strategy Address of the strategy
+    /// @param strategyId Strategy
     /// @param amount Amount of assets to borrow
-    function borrow(address strategy, uint256 amount) external;
+    function borrow(uint256 strategyId, uint256 amount) external;
 }

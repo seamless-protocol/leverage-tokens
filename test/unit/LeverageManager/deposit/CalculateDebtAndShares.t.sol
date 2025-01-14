@@ -32,12 +32,12 @@ contract CalculateDebtAndSharesTest is LeverageManagerBaseTest {
         _mockState_CalculateDebtAndShares(state);
 
         (uint256 collateral, uint256 debt, uint256 shares) = leverageManager.exposed_calculateCollateralDebtAndShares(
-            strategy, _getLendingAdapter(), state.depositAmount
+            strategyId, _getLendingAdapter(), state.depositAmount
         );
 
         uint256 expectedCollateral = 2 ether;
         uint256 expectedDebt = 3000 ether;
-        uint256 expectedShares = leverageManager.exposed_convertToShares(strategy, state.depositAmountInDebtAsset);
+        uint256 expectedShares = leverageManager.exposed_convertToShares(strategyId, state.depositAmountInDebtAsset);
 
         assertEq(collateral, expectedCollateral);
         assertEq(debt, expectedDebt);
@@ -54,9 +54,9 @@ contract CalculateDebtAndSharesTest is LeverageManagerBaseTest {
         uint256 targetRatio = state.targetRatio;
 
         (uint256 collateral, uint256 debt, uint256 shares) =
-            leverageManager.exposed_calculateCollateralDebtAndShares(strategy, _getLendingAdapter(), depositAmount);
+            leverageManager.exposed_calculateCollateralDebtAndShares(strategyId, _getLendingAdapter(), depositAmount);
 
-        uint256 expectedShares = leverageManager.exposed_convertToShares(strategy, depositAmountInDebtAsset);
+        uint256 expectedShares = leverageManager.exposed_convertToShares(strategyId, depositAmountInDebtAsset);
         uint256 expectedCollateral =
             Math.mulDiv(depositAmount, targetRatio, targetRatio - _BASE_RATIO(), Math.Rounding.Ceil);
         uint256 expectedDebt =

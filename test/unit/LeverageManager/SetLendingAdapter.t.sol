@@ -17,17 +17,17 @@ contract SetStrategyLendingAdapterTest is LeverageManagerBaseTest {
     }
 
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_setStrategyLendingAdapter(address strategy, address adapter) public {
+    function testFuzz_setStrategyLendingAdapter(uint256 strategyId, address adapter) public {
         vm.prank(manager);
-        leverageManager.setStrategyLendingAdapter(strategy, adapter);
+        leverageManager.setStrategyLendingAdapter(strategyId, adapter);
 
-        assertEq(address(leverageManager.getStrategyLendingAdapter(strategy)), address(adapter));
+        assertEq(address(leverageManager.getStrategyLendingAdapter(strategyId)), address(adapter));
     }
 
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_setStrategyLendingAdapter_RevertIf_CallerIsNotManager(
         address caller,
-        address strategy,
+        uint256 strategyId,
         address adapter
     ) public {
         vm.assume(caller != manager);
@@ -38,6 +38,6 @@ contract SetStrategyLendingAdapterTest is LeverageManagerBaseTest {
             )
         );
         vm.prank(caller);
-        leverageManager.setStrategyLendingAdapter(strategy, adapter);
+        leverageManager.setStrategyLendingAdapter(strategyId, adapter);
     }
 }

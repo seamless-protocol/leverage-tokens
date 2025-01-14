@@ -26,12 +26,8 @@ library LeverageManagerStorage {
     /// @dev Struct containing all state for the LeverageManager contract
     /// @custom:storage-location erc7201:seamless.contracts.storage.LeverageManager
     struct Layout {
-        /// @dev Strategy address => Config for strategy
-        mapping(address strategy => StrategyConfig) config;
-        /// @dev Strategy address => Total shares in circulation
-        mapping(address strategy => uint256) totalShares;
-        /// @dev Strategy address => User address => Shares that user owns
-        mapping(address strategy => mapping(address user => uint256)) userStrategyShares;
+        /// @dev Strategy id => Config for strategy
+        mapping(uint256 strategyId => StrategyConfig) config;
     }
 
     function layout() internal pure returns (Layout storage l) {

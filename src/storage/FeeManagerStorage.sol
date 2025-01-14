@@ -9,8 +9,8 @@ library FeeManagerStorage {
     struct Layout {
         /// @dev Treasury address that receives all the fees
         address treasury;
-        /// @dev Strategy address => Action => Fee
-        mapping(address strategy => mapping(IFeeManager.Action => uint256)) strategyActionFee;
+        /// @dev Strategy id => Action => Fee
+        mapping(uint256 strategyId => mapping(IFeeManager.Action => uint256)) strategyActionFee;
     }
 
     function layout() internal pure returns (Layout storage l) {

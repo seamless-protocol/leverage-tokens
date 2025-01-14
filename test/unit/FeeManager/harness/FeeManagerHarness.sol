@@ -15,10 +15,10 @@ contract FeeManagerHarness is FeeManager {
         }
     }
 
-    function exposed_chargeStrategyFee(address strategy, uint256 amount, IFeeManager.Action action)
+    function exposed_chargeStrategyFee(uint256 strategyId, uint256 amount, IFeeManager.Action action)
         external
         returns (uint256 amountAfterFee)
     {
-        return _chargeStrategyFee(strategy, amount, action);
+        return _chargeStrategyFee(strategyId, amount, action);
     }
 }
