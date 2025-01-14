@@ -13,7 +13,7 @@ import {Id, IMorpho, MarketParams} from "src/interfaces/IMorpho.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 
 contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
-    /// @notice The Seamless ilm-v2 LeverageManager contract
+    /// @inheritdoc IMorphoLendingAdapter
     ILeverageManager public leverageManager;
 
     /// @inheritdoc IMorphoLendingAdapter
