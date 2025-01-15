@@ -9,6 +9,9 @@ interface ILeverageManager {
     /// @notice Error thrown when someone tries to set strategy that already exists
     error StrategyAlreadyExists(address strategy);
 
+    /// @notice Error thrown when someone tries to create strategy with lending adapter that already exists
+    error LendingAdapterAlreadyInUse(address adapter);
+
     /// @notice Error thrown when someone tries to set zero address for collateral or debt asset when creating strategy
     error InvalidStrategyAssets();
 
@@ -52,6 +55,11 @@ interface ILeverageManager {
 
     /// @notice Event emitted when user redeems assets from strategy
     event Redeem(address indexed strategy, address indexed from, uint256 shares, uint256 collateral, uint256 debt);
+
+    /// @notice Returns if lending adapter is in use by some other strategy
+    /// @param adapter Adapter to check
+    /// @return isUsed True if adapter is used by some strategy
+    function getIsLendingAdapterUsed(address adapter) external view returns (bool isUsed);
 
     /// @notice Returns lending adapter for the strategy
     /// @param strategy Strategy to get lending adapter for
