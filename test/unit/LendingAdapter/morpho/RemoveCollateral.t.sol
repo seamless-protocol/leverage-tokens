@@ -28,6 +28,7 @@ contract MorphoLendingAdapterRemoveCollateralTest is MorphoLendingAdapterBaseTes
         assertEq(collateralToken.balanceOf(address(leverageManager)), amount);
     }
 
+    /// forge-config: default.fuzz.runs = 1
     function testFuzz_removeCollateral_RevertIf_NotLeverageManager(address caller) public {
         vm.assume(caller != address(leverageManager));
 

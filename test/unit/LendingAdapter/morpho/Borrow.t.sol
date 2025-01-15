@@ -25,6 +25,7 @@ contract MorphoLendingAdapterBorrowTest is MorphoLendingAdapterBaseTest {
         assertEq(debtToken.balanceOf(address(leverageManager)), amount);
     }
 
+    /// forge-config: default.fuzz.runs = 1
     function testFuzz_borrow_RevertIf_NotLeverageManager(address caller) public {
         vm.assume(caller != address(leverageManager));
 

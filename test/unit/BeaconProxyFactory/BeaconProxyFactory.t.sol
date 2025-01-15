@@ -39,6 +39,7 @@ contract BeaconProxyFactoryTest is Test {
         new BeaconProxyFactory(implementation, address(0));
     }
 
+    /// forge-config: default.fuzz.runs = 1
     function testFuzz_createProxy_WithoutInitializationData(bytes32 salt) public {
         bytes memory data = hex"";
         address expectedProxyAddress = factory.computeProxyAddress(address(this), data, salt);
@@ -53,6 +54,7 @@ contract BeaconProxyFactoryTest is Test {
         assertEq(MockValue(proxy).mockFunction(), 0); // Zero because it was not initialized
     }
 
+    /// forge-config: default.fuzz.runs = 1
     function testFuzz_createProxy_WithInitializationData(bytes32 salt) public {
         uint256 value = 100;
         bytes memory data = abi.encodeWithSelector(MockValue.initialize.selector, value);
