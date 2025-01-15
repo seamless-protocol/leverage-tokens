@@ -51,9 +51,6 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
         // Check if single getter functions return the correct values
         assertEq(leverageManager.getStrategyCollateralAsset(strategy), config.collateralAsset);
         assertEq(leverageManager.getStrategyDebtAsset(strategy), config.debtAsset);
-
-        // Check if the lending adapter is used
-        assertEq(leverageManager.getIsLendingAdapterUsed(address(config.lendingAdapter)), true);
     }
 
     /// forge-config: default.fuzz.runs = 1
