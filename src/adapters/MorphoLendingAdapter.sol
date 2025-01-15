@@ -22,6 +22,12 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     /// @inheritdoc IMorphoLendingAdapter
     MarketParams public marketParams;
 
+    /// @dev Reverts if the caller is not the stored leverageManager address
+    modifier onlyLeverageManager() {
+        if (msg.sender != address(leverageManager)) revert Unauthorized();
+        _;
+    }
+
     /// @notice Creates a new Morpho lending adapter
     /// @param _leverageManager The Seamless ilm-v2 LeverageManager contract
     /// @param _morpho The Morpho core protocol contract
@@ -92,10 +98,5 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
         // Repay the debt asset to the Morpho market
         IERC20(_marketParams.loanToken).approve(address(_morpho), amount);
         _morpho.repay(_marketParams, amount, 0, address(this), hex"");
-    }
-
-    modifier onlyLeverageManager() {
-        if (msg.sender != address(leverageManager)) revert Unauthorized();
-        _;
     }
 }
