@@ -3,7 +3,7 @@ pragma solidity ^0.8.26;
 
 // Internal imports
 import {IMorpho, IMorphoBase} from "src/interfaces/IMorpho.sol";
-import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
+import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
 
 contract MorphoLendingAdapterBorrowTest is MorphoLendingAdapterBaseTest {
@@ -29,7 +29,7 @@ contract MorphoLendingAdapterBorrowTest is MorphoLendingAdapterBaseTest {
     function testFuzz_borrow_RevertIf_NotLeverageManager(address caller) public {
         vm.assume(caller != address(leverageManager));
 
-        vm.expectRevert(IMorphoLendingAdapter.Unauthorized.selector);
+        vm.expectRevert(ILendingAdapter.Unauthorized.selector);
         vm.prank(caller);
         lendingAdapter.borrow(1);
     }

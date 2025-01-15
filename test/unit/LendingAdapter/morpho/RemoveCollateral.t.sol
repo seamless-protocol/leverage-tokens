@@ -6,7 +6,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
 import {IMorpho, IMorphoBase} from "src/interfaces/IMorpho.sol";
-import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
+import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
 
 contract MorphoLendingAdapterRemoveCollateralTest is MorphoLendingAdapterBaseTest {
@@ -32,7 +32,7 @@ contract MorphoLendingAdapterRemoveCollateralTest is MorphoLendingAdapterBaseTes
     function testFuzz_removeCollateral_RevertIf_NotLeverageManager(address caller) public {
         vm.assume(caller != address(leverageManager));
 
-        vm.expectRevert(IMorphoLendingAdapter.Unauthorized.selector);
+        vm.expectRevert(ILendingAdapter.Unauthorized.selector);
         vm.prank(caller);
         lendingAdapter.removeCollateral(1);
     }

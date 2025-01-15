@@ -6,9 +6,6 @@ import {ILeverageManager} from "./ILeverageManager.sol";
 import {IMorpho, MarketParams} from "./IMorpho.sol";
 
 interface IMorphoLendingAdapter is ILendingAdapter {
-    /// @notice Error thrown when the caller is unauthorized to call a function
-    error Unauthorized();
-
     /// @notice The Seamless ilm-v2 LeverageManager contract
     /// @return leverageManager The Seamless ilm-v2 LeverageManager contract
     function leverageManager() external view returns (ILeverageManager leverageManager);

@@ -4,6 +4,9 @@ pragma solidity ^0.8.26;
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 
 interface ILendingAdapter {
+    /// @notice Error thrown when the caller is unauthorized to call a function
+    error Unauthorized();
+
     /// @notice Converts amount of collateral asset to debt asset amount based on lending pool oracle
     /// @param collateral Collateral amount
     /// @return debt Amount of debt asset
