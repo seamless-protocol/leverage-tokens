@@ -10,11 +10,11 @@ import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 
 contract MockLendingAdapter {
-    IERC20 public collateralAsset;
+    ERC20Mock public collateralAsset;
     ERC20Mock public debtAsset;
 
     constructor(address _collateralAsset, address _debtAsset) {
-        collateralAsset = IERC20(_collateralAsset);
+        collateralAsset = ERC20Mock(_collateralAsset);
         debtAsset = ERC20Mock(_debtAsset);
     }
 
@@ -22,7 +22,15 @@ contract MockLendingAdapter {
         SafeERC20.safeTransferFrom(collateralAsset, msg.sender, address(this), amount);
     }
 
+    function removeCollateral(address, uint256 amount) external {
+        collateralAsset.mint(msg.sender, amount);
+    }
+
     function borrow(address, uint256 amount) external {
         debtAsset.mint(msg.sender, amount);
+    }
+
+    function repay(address, uint256 amount) external {
+        SafeERC20.safeTransferFrom(debtAsset, msg.sender, address(this), amount);
     }
 }
