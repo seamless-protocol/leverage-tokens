@@ -51,6 +51,31 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
         // Check if single getter functions return the correct values
         assertEq(leverageManager.getStrategyCollateralAsset(strategy), config.collateralAsset);
         assertEq(leverageManager.getStrategyDebtAsset(strategy), config.debtAsset);
+
+        // Check if the lending adapter is used
+        assertEq(leverageManager.getIsLendingAdapterUsed(address(config.lendingAdapter)), true);
+    }
+
+    /// forge-config: default.fuzz.runs = 1
+    function testFuzz_createNewStrategy_RevertIf_LendingAdapterAlreadyInUse(Storage.StrategyConfig calldata config)
+        public
+    {
+        vm.assume(config.collateralAsset != address(0) && config.debtAsset != address(0));
+
+        uint256 minCollateralRatio = config.minCollateralRatio;
+        uint256 targetCollateralRatio = config.targetCollateralRatio;
+        uint256 maxCollateralRatio = config.maxCollateralRatio;
+        vm.assume(
+            targetCollateralRatio > _BASE_RATIO() && minCollateralRatio <= targetCollateralRatio
+                && targetCollateralRatio <= maxCollateralRatio
+        );
+
+        _createNewStrategy(manager, config);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(ILeverageManager.LendingAdapterAlreadyInUse.selector, address(config.lendingAdapter))
+        );
+        _createNewStrategy(manager, config);
     }
 
     /// forge-config: default.fuzz.runs = 1

@@ -31,6 +31,11 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}
 
     /// @inheritdoc ILeverageManager
+    function getIsLendingAdapterUsed(address lendingAdapter) public view returns (bool isUsed) {
+        return Storage.layout().isLendingAdapterUsed[lendingAdapter];
+    }
+
+    /// @inheritdoc ILeverageManager
     function getStrategyConfig(address strategy) external view returns (Storage.StrategyConfig memory config) {
         return Storage.layout().config[strategy];
     }
@@ -86,12 +91,18 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         external
         onlyRole(MANAGER_ROLE)
     {
+        // Check is some other strategy already using the same lending adapter
+        address lendingAdapter = address(strategyConfig.lendingAdapter);
+        if (getIsLendingAdapterUsed(lendingAdapter)) {
+            revert LendingAdapterAlreadyInUse(lendingAdapter);
+        }
+
         // Check does strategy already have core settings configured
         if (getStrategyCollateralAsset(strategy) != address(0)) {
             revert StrategyAlreadyExists(strategy);
         }
 
-        setStrategyLendingAdapter(strategy, address(strategyConfig.lendingAdapter));
+        setStrategyLendingAdapter(strategy, lendingAdapter);
         setStrategyCollateralCap(strategy, strategyConfig.collateralCap);
         setStrategyCollateralRatios(
             strategy,
@@ -108,6 +119,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         }
 
         Storage.Layout storage $ = Storage.layout();
+        $.isLendingAdapterUsed[lendingAdapter] = true;
         $.config[strategy].collateralAsset = strategyConfig.collateralAsset;
         $.config[strategy].debtAsset = strategyConfig.debtAsset;
         emit StrategyCreated(strategy, strategyConfig.collateralAsset, strategyConfig.debtAsset);
