@@ -8,7 +8,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {MarketParams, Id} from "src/interfaces/IMorpho.sol";
 
 contract MockMorpho {
-    mapping(Id => MarketParams) private idToMarketParams;
+    mapping(Id => MarketParams) public idToMarketParams;
 
     constructor(Id marketId, MarketParams memory marketParams) {
         idToMarketParams[marketId] = marketParams;

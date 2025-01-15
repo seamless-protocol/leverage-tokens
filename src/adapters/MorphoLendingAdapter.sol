@@ -30,10 +30,10 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
         morpho = _morpho;
     }
 
-    /// @inheritdoc IMorphoLendingAdapter
-    function initialize(MarketParams memory _marketParams) external initializer {
-        marketParams = _marketParams;
-        emit Initialized(_marketParams);
+    /// @notice Initializes the Morpho lending adapter
+    /// @param morphoMarketId The Morpho market ID
+    function initialize(Id morphoMarketId) external initializer {
+        marketParams = morpho.idToMarketParams(morphoMarketId);
     }
 
     /// @inheritdoc ILendingAdapter

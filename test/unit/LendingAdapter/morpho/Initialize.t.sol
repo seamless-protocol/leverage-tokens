@@ -12,24 +12,27 @@ import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {Id, MarketParams, IMorpho} from "src/interfaces/IMorpho.sol";
 import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
+import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
+import {MockMorpho} from "../../mock/MockMorpho.sol";
 
-contract MorphoLendingAdapterInitializeTest is Test {
-    function testFuzz_initialize(ILeverageManager leverageManager, IMorpho _morpho, MarketParams memory marketParams)
-        public
-    {
-        MorphoLendingAdapter lendingAdapter = new MorphoLendingAdapter(leverageManager, _morpho);
-        assertEq(address(lendingAdapter.leverageManager()), address(leverageManager));
-        assertEq(address(lendingAdapter.morpho()), address(_morpho));
+contract MorphoLendingAdapterInitializeTest is MorphoLendingAdapterBaseTest {
+    /// forge-config: default.fuzz.runs = 1
+    function testFuzz_initialize(Id marketId, MarketParams memory marketParams) public {
+        morpho.mockSetMarketParams(marketId, marketParams);
+
+        MorphoLendingAdapter _lendingAdapter = new MorphoLendingAdapter(leverageManager, IMorpho(address(morpho)));
+        assertEq(address(_lendingAdapter.leverageManager()), address(leverageManager));
+        assertEq(address(_lendingAdapter.morpho()), address(morpho));
 
         vm.expectEmit(true, true, true, true);
-        emit IMorphoLendingAdapter.Initialized(marketParams);
-        lendingAdapter.initialize(marketParams);
+        emit Initializable.Initialized(1);
+        _lendingAdapter.initialize(marketId);
 
-        assertEq(address(lendingAdapter.leverageManager()), address(leverageManager));
-        assertEq(address(lendingAdapter.morpho()), address(_morpho));
+        assertEq(address(_lendingAdapter.leverageManager()), address(leverageManager));
+        assertEq(address(_lendingAdapter.morpho()), address(morpho));
 
         (address loanToken, address _collateralToken, address oracle, address irm, uint256 lltv) =
-            lendingAdapter.marketParams();
+            _lendingAdapter.marketParams();
         assertEq(loanToken, marketParams.loanToken);
         assertEq(_collateralToken, marketParams.collateralToken);
         assertEq(oracle, marketParams.oracle);
@@ -38,21 +41,10 @@ contract MorphoLendingAdapterInitializeTest is Test {
     }
 
     function test_initialize_RevertIf_Initialized() public {
-        MarketParams memory marketParams = MarketParams({
-            loanToken: makeAddr("loanToken"), // doesn't matter for these tests as there are no calls to morpho
-            collateralToken: makeAddr("collateralToken"), // doesn't matter for these tests as there are no calls to morpho
-            oracle: makeAddr("mockMorphoMarketOracle"), // doesn't matter for these tests as there are no calls to morpho
-            irm: makeAddr("mockMorphoIRM"), // doesn't matter for these tests as there are no calls to morpho
-            lltv: 1e18 // 100%, doesn't matter for these tests as there are no calls to morpho
-        });
-
-        ILeverageManager leverageManager = ILeverageManager(makeAddr("leverageManager"));
-        IMorpho morpho = IMorpho(makeAddr("morpho"));
-        MorphoLendingAdapter lendingAdapter = new MorphoLendingAdapter(leverageManager, morpho);
-
-        lendingAdapter.initialize(marketParams);
+        MorphoLendingAdapter _lendingAdapter = new MorphoLendingAdapter(leverageManager, IMorpho(address(morpho)));
+        _lendingAdapter.initialize(defaultMarketId);
 
         vm.expectRevert(abi.encodeWithSelector(Initializable.InvalidInitialization.selector));
-        lendingAdapter.initialize(marketParams);
+        _lendingAdapter.initialize(defaultMarketId);
     }
 }
