@@ -5,6 +5,8 @@ pragma solidity ^0.8.26;
 import {Test} from "forge-std/Test.sol";
 
 // Dependency imports
+import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
+import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 // Internal imports
@@ -46,5 +48,29 @@ contract MorphoLendingAdapterInitializeTest is MorphoLendingAdapterBaseTest {
 
         vm.expectRevert(abi.encodeWithSelector(Initializable.InvalidInitialization.selector));
         _lendingAdapter.initialize(defaultMarketId);
+    }
+
+    function test_initialize_UsingBeaconProxy() public {
+        UpgradeableBeacon morphoLendingAdapterBeacon = new UpgradeableBeacon(address(lendingAdapter), address(this));
+        assertEq(address(morphoLendingAdapterBeacon.implementation()), address(lendingAdapter));
+
+        IMorphoLendingAdapter morphoLendingAdapterProxy = IMorphoLendingAdapter(
+            address(
+                new BeaconProxy(
+                    address(morphoLendingAdapterBeacon),
+                    abi.encodeWithSelector(MorphoLendingAdapter.initialize.selector, defaultMarketId)
+                )
+            )
+        );
+
+        assertEq(address(morphoLendingAdapterProxy.leverageManager()), address(leverageManager));
+        assertEq(address(morphoLendingAdapterProxy.morpho()), address(morpho));
+        (address loanToken, address _collateralToken, address oracle, address irm, uint256 lltv) =
+            morphoLendingAdapterProxy.marketParams();
+        assertEq(loanToken, defaultMarketParams.loanToken);
+        assertEq(_collateralToken, defaultMarketParams.collateralToken);
+        assertEq(oracle, defaultMarketParams.oracle);
+        assertEq(irm, defaultMarketParams.irm);
+        assertEq(lltv, defaultMarketParams.lltv);
     }
 }
