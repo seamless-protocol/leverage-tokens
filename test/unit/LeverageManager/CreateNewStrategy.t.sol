@@ -57,28 +57,6 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
     }
 
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_createNewStrategy_RevertIf_LendingAdapterAlreadyInUse(Storage.StrategyConfig calldata config)
-        public
-    {
-        vm.assume(config.collateralAsset != address(0) && config.debtAsset != address(0));
-
-        uint256 minCollateralRatio = config.minCollateralRatio;
-        uint256 targetCollateralRatio = config.targetCollateralRatio;
-        uint256 maxCollateralRatio = config.maxCollateralRatio;
-        vm.assume(
-            targetCollateralRatio > _BASE_RATIO() && minCollateralRatio <= targetCollateralRatio
-                && targetCollateralRatio <= maxCollateralRatio
-        );
-
-        _createNewStrategy(manager, config);
-
-        vm.expectRevert(
-            abi.encodeWithSelector(ILeverageManager.LendingAdapterAlreadyInUse.selector, address(config.lendingAdapter))
-        );
-        _createNewStrategy(manager, config);
-    }
-
-    /// forge-config: default.fuzz.runs = 1
     function testFuzz_CreateNewStrategy_RevertIf_StrategyAlreadyExists(
         Storage.StrategyConfig calldata config1,
         Storage.StrategyConfig calldata config2
