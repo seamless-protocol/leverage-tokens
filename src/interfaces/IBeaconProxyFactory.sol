@@ -8,17 +8,22 @@ interface IBeaconProxyFactory {
     /// @notice Emitted when a new beacon proxy is created
     /// @param proxy The address of the new beacon proxy
     /// @param data The data used to initialize the beacon proxy
-    event BeaconProxyCreated(address indexed proxy, bytes data);
+    /// @param baseSalt The base salt used for deterministic deployment
+    event BeaconProxyCreated(address indexed proxy, bytes data, bytes32 baseSalt);
 
     /// @notice The beacon contract
     /// @return beacon The address of the beacon contract
     function beacon() external view returns (address beacon);
 
     /// @notice Computes the address of a beacon proxy before deployment
+    /// @param sender The address that will deploy the beacon proxy using the factory
     /// @param data The initialization data passed to the proxy
-    /// @param salt The salt used for deterministic deployment
+    /// @param baseSalt The base salt used for deterministic deployment
     /// @return proxy The predicted address of the beacon proxy
-    function computeProxyAddress(bytes memory data, bytes32 salt) external view returns (address proxy);
+    function computeProxyAddress(address sender, bytes memory data, bytes32 baseSalt)
+        external
+        view
+        returns (address proxy);
 
     /// @notice The list of beacon proxies deployed by the factory
     /// @return proxies The list of beacon proxies
@@ -30,8 +35,8 @@ interface IBeaconProxyFactory {
     function proxies(uint256 index) external view returns (address proxy);
 
     /// @notice Creates a new beacon proxy
-    /// @param data The data to initialize the beacon proxy with
-    /// @param salt The salt to deploy the beacon proxy with (CREATE2)
+    /// @param data The initialization data passed to the proxy
+    /// @param baseSalt The base salt used for deterministic deployment
     /// @return proxy The address of the new beacon proxy
-    function createProxy(bytes memory data, bytes32 salt) external returns (address proxy);
+    function createProxy(bytes memory data, bytes32 baseSalt) external returns (address proxy);
 }
