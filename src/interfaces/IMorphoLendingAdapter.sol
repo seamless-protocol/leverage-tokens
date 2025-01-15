@@ -6,11 +6,11 @@ import {ILeverageManager} from "./ILeverageManager.sol";
 import {IMorpho, MarketParams} from "./IMorpho.sol";
 
 interface IMorphoLendingAdapter is ILendingAdapter {
-    /// @notice Emitted when the Morpho lending adapter is initialized
-    event Initialized(MarketParams indexed marketParams);
-
     /// @notice Error thrown when the caller is unauthorized to call a function
     error Unauthorized();
+
+    /// @notice Emitted when the Morpho lending adapter is initialized
+    event Initialized(MarketParams indexed marketParams);
 
     /// @notice The Seamless ilm-v2 LeverageManager contract
     /// @return leverageManager The Seamless ilm-v2 LeverageManager contract

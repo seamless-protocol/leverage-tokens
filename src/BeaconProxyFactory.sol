@@ -67,5 +67,7 @@ contract BeaconProxyFactory is IBeaconProxyFactory {
             type(BeaconProxy).creationCode, // BeaconProxy's runtime bytecode
             abi.encode(beacon, data) // Constructor arguments: beacon address and initialization data
         );
+
+        return bytecode;
     }
 }
