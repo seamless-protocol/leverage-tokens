@@ -40,8 +40,4 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
     function exposed_convertToShares(address strategy, uint256 equity) external view returns (uint256 shares) {
         return _convertToShares(strategy, equity);
     }
-
-    function exposed_mintShares(address strategy, address recipient, uint256 shares) external {
-        _mintShares(strategy, recipient, shares);
-    }
 }

@@ -9,19 +9,24 @@ import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol"
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // Internal imports
+import {IStrategyToken} from "src/interfaces/IStrategyToken.sol";
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
-import {FeeManagerHarness} from "test/unit/FeeManager/harness/FeeManagerHarness.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
+import {FeeManagerHarness} from "test/unit/FeeManager/harness/FeeManagerHarness.sol";
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 import {LeverageManagerBaseTest} from "../LeverageManagerBase.t.sol";
 
 contract ChargeStrategyFeeAndMintSharesTest is LeverageManagerBaseTest {
     function setUp() public override {
         super.setUp();
+
+        _createDummyStrategy();
     }
 
     function testFuzz_chargeStrategyFeeAndMintShares(uint256 fee, address to, uint256 shares) public {
+        vm.assume(to != address(0));
+
         fee = bound(fee, 0, leverageManager.MAX_FEE());
         _setStrategyActionFee(feeManagerRole, strategy, IFeeManager.Action.Deposit, fee);
 
@@ -30,14 +35,16 @@ contract ChargeStrategyFeeAndMintSharesTest is LeverageManagerBaseTest {
         uint256 returnValue =
             leverageManager.exposed_chargeStrategyFeeAndMintShares(strategy, to, shares, expectedShares);
 
-        assertEq(leverageManager.getTotalStrategyShares(strategy), expectedShares);
-        assertEq(leverageManager.getUserStrategyShares(strategy, to), expectedShares);
+        assertEq(IStrategyToken(strategy).totalSupply(), expectedShares);
+        assertEq(IStrategyToken(strategy).balanceOf(to), expectedShares);
         assertEq(returnValue, expectedShares);
     }
 
     function testFuzz_chargeStrategyFeeAndMintShares_RevertIf_NotEnoughShares(uint256 fee, address to, uint256 shares)
         public
     {
+        vm.assume(to != address(0));
+
         fee = bound(fee, 1, leverageManager.MAX_FEE());
         _setStrategyActionFee(feeManagerRole, strategy, IFeeManager.Action.Deposit, fee);
 

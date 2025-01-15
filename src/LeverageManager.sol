@@ -8,14 +8,18 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 // Internal imports
+import {IStrategyToken} from "src/interfaces/IStrategyToken.sol";
+import {IBeaconProxyFactory} from "src/interfaces/IBeaconProxyFactory.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {FeeManager} from "src/FeeManager.sol";
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {CollateralRatios} from "src/types/DataTypes.sol";
+import {StrategyToken} from "src/StrategyToken.sol";
 
 contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManager, UUPSUpgradeable {
     // Base collateral ratio constant, 1e8 means that collateral / debt ratio is 1:1
@@ -29,6 +33,11 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}
+
+    /// @inheritdoc ILeverageManager
+    function getStrategyTokenFactory() public view returns (IBeaconProxyFactory factory) {
+        return Storage.layout().strategyTokenFactory;
+    }
 
     /// @inheritdoc ILeverageManager
     function getStrategyConfig(address strategy) external view returns (Storage.StrategyConfig memory config) {
@@ -57,16 +66,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function getTotalStrategyShares(address strategy) public view returns (uint256 shares) {
-        return Storage.layout().totalShares[strategy];
-    }
-
-    /// @inheritdoc ILeverageManager
-    function getUserStrategyShares(address strategy, address user) public view returns (uint256 shares) {
-        return Storage.layout().userStrategyShares[strategy][user];
-    }
-
-    /// @inheritdoc ILeverageManager
     function getStrategyCollateralAsset(address strategy) public view returns (address collateral) {
         return Storage.layout().config[strategy].collateralAsset;
     }
@@ -82,14 +81,23 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function createNewStrategy(address strategy, Storage.StrategyConfig calldata strategyConfig)
+    function setStrategyTokenFactory(address factory) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        Storage.layout().strategyTokenFactory = IBeaconProxyFactory(factory);
+        emit StrategyTokenFactorySet(factory);
+    }
+
+    /// @inheritdoc ILeverageManager
+    function createNewStrategy(Storage.StrategyConfig calldata strategyConfig, string memory name, string memory symbol)
         external
         onlyRole(MANAGER_ROLE)
+        returns (address strategy)
     {
-        // Check does strategy already have core settings configured
-        if (getStrategyCollateralAsset(strategy) != address(0)) {
-            revert StrategyAlreadyExists(strategy);
-        }
+        IBeaconProxyFactory strategyTokenFactory = getStrategyTokenFactory();
+
+        strategy = strategyTokenFactory.createProxy(
+            abi.encodeWithSelector(StrategyToken.initialize.selector, address(this), name, symbol),
+            bytes32(strategyTokenFactory.getProxies().length)
+        );
 
         setStrategyLendingAdapter(strategy, address(strategyConfig.lendingAdapter));
         setStrategyCollateralCap(strategy, strategyConfig.collateralCap);
@@ -110,7 +118,9 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         Storage.Layout storage $ = Storage.layout();
         $.config[strategy].collateralAsset = strategyConfig.collateralAsset;
         $.config[strategy].debtAsset = strategyConfig.debtAsset;
+
         emit StrategyCreated(strategy, strategyConfig.collateralAsset, strategyConfig.debtAsset);
+        return strategy;
     }
 
     /// @inheritdoc ILeverageManager
@@ -217,16 +227,8 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             revert InsufficientShares(sharesToMint, minShares);
         }
 
-        _mintShares(strategy, recipient, sharesToMint);
+        IStrategyToken(strategy).mint(recipient, sharesToMint);
         return sharesToMint;
-    }
-
-    function _mintShares(address strategy, address recipient, uint256 shares) internal {
-        Storage.Layout storage $ = Storage.layout();
-        $.userStrategyShares[strategy][recipient] += shares;
-        $.totalShares[strategy] += shares;
-
-        emit Mint(strategy, recipient, shares);
     }
 
     /// @notice Function that converts user's equity denominated in debt asset to strategy shares, base asset can be USD or any other asset
@@ -240,7 +242,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
         return Math.mulDiv(
             equity,
-            getTotalStrategyShares(strategy) + 10 ** DECIMALS_OFFSET,
+            IERC20(strategy).totalSupply() + 10 ** DECIMALS_OFFSET,
             lendingAdapter.getStrategyEquityInDebtAsset(strategy) + 1,
             Math.Rounding.Floor
         );

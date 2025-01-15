@@ -13,13 +13,18 @@ import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 import {LeverageManagerBaseTest} from "./LeverageManagerBase.t.sol";
 import {CollateralRatios} from "src/types/DataTypes.sol";
+import {StrategyToken} from "src/StrategyToken.sol";
 
 contract CreateNewStrategyTest is LeverageManagerBaseTest {
     function setUp() public override {
         super.setUp();
     }
 
-    function testFuzz_CreateNewStrategy(Storage.StrategyConfig calldata config) public {
+    function testFuzz_CreateNewStrategy(
+        Storage.StrategyConfig calldata config,
+        string memory name,
+        string memory symbol
+    ) public {
         vm.assume(config.collateralAsset != address(0) && config.debtAsset != address(0));
 
         uint256 minCollateralRatio = config.minCollateralRatio;
@@ -30,11 +35,19 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
                 && targetCollateralRatio <= maxCollateralRatio
         );
 
+        address expectedStrategyAddress = strategyTokenFactory.computeProxyAddress(
+            abi.encodeWithSelector(StrategyToken.initialize.selector, address(leverageManager), name, symbol), 0
+        );
+
         // Check if event is emitted properly
         vm.expectEmit(true, true, true, true);
-        emit ILeverageManager.StrategyCreated(strategy, config.collateralAsset, config.debtAsset);
+        emit ILeverageManager.StrategyCreated(expectedStrategyAddress, config.collateralAsset, config.debtAsset);
 
-        _createNewStrategy(manager, config);
+        _createNewStrategy(manager, config, name, symbol);
+
+        // Check name of the strategy token
+        assertEq(StrategyToken(expectedStrategyAddress).name(), name);
+        assertEq(StrategyToken(expectedStrategyAddress).symbol(), symbol);
 
         // Check if the strategy core is set correctly
         Storage.StrategyConfig memory configAfter = leverageManager.getStrategyConfig(strategy);
@@ -53,24 +66,6 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
         assertEq(leverageManager.getStrategyDebtAsset(strategy), config.debtAsset);
     }
 
-    /// forge-config: default.fuzz.runs = 1
-    function testFuzz_CreateNewStrategy_RevertIf_StrategyAlreadyExists(
-        Storage.StrategyConfig calldata config1,
-        Storage.StrategyConfig calldata config2
-    ) public {
-        vm.assume(config1.collateralAsset != address(0) && config1.debtAsset != address(0));
-        vm.assume(config2.collateralAsset != address(0) && config2.debtAsset != address(0));
-        vm.assume(address(config1.lendingAdapter) != address(0) && address(config2.lendingAdapter) != address(0));
-        vm.assume(
-            config1.targetCollateralRatio > _BASE_RATIO() && config1.minCollateralRatio <= config1.targetCollateralRatio
-                && config1.targetCollateralRatio <= config1.maxCollateralRatio
-        );
-
-        _createNewStrategy(manager, config1);
-        vm.expectRevert(abi.encodeWithSelector(ILeverageManager.StrategyAlreadyExists.selector, strategy));
-        _createNewStrategy(manager, config2);
-    }
-
     // forge-config: default.fuzz.runs = 1
     function testFuzz_CreateNewStrategy_RevertIf_AssetsAreInvalid(address nonZeroAddress) public {
         vm.assume(nonZeroAddress != address(0));
@@ -87,20 +82,20 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
 
         // Revert if collateral is zero address
         vm.expectRevert(ILeverageManager.InvalidStrategyAssets.selector);
-        _createNewStrategy(manager, config);
+        _createNewStrategy(manager, config, "", "");
 
         // Revert if debt is zero address
         config.collateralAsset = nonZeroAddress;
         config.debtAsset = address(0);
 
         vm.expectRevert(ILeverageManager.InvalidStrategyAssets.selector);
-        _createNewStrategy(manager, config);
+        _createNewStrategy(manager, config, "", "");
 
         // Revert if both collateral and debt are zero addresses
         config.collateralAsset = address(0);
 
         vm.expectRevert(ILeverageManager.InvalidStrategyAssets.selector);
-        _createNewStrategy(manager, config);
+        _createNewStrategy(manager, config, "", "");
     }
 
     /// forge-config: default.fuzz.runs = 1
@@ -115,6 +110,6 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
                 IAccessControl.AccessControlUnauthorizedAccount.selector, caller, leverageManager.MANAGER_ROLE()
             )
         );
-        _createNewStrategy(caller, config);
+        _createNewStrategy(caller, config, "", "");
     }
 }

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.26;
 
 import {CollateralRatios} from "src/types/DataTypes.sol";
+import {IBeaconProxyFactory} from "./IBeaconProxyFactory.sol";
 import {ILendingAdapter} from "./ILendingAdapter.sol";
 import {LeverageManagerStorage as Storage} from "../storage/LeverageManagerStorage.sol";
 
@@ -24,6 +25,9 @@ interface ILeverageManager {
     /// @notice Error thrown when user receives less shares than requested
     error InsufficientShares(uint256 received, uint256 expected);
 
+    /// @notice Event emitted when strategy token factory is set
+    event StrategyTokenFactorySet(address factory);
+
     /// @notice Event emitted when lending adapter is set for the strategy
     event StrategyLendingAdapterSet(address indexed strategy, address adapter);
 
@@ -43,6 +47,10 @@ interface ILeverageManager {
     event Deposit(
         address indexed strategy, address indexed from, address indexed to, uint256 assets, uint256 sharesMinted
     );
+
+    /// @notice Returns factory for creating new strategy tokens
+    /// @return factory Factory for creating new strategy tokens
+    function getStrategyTokenFactory() external view returns (IBeaconProxyFactory factory);
 
     /// @notice Returns lending adapter for the strategy
     /// @param strategy Strategy to get lending adapter for
@@ -82,23 +90,21 @@ interface ILeverageManager {
     /// @return config Strategy configuration
     function getStrategyConfig(address strategy) external returns (Storage.StrategyConfig memory config);
 
-    /// @notice Returns the total amount of shares in circulation for a given strategy
-    /// @param strategy The strategy to query shares for
-    /// @return shares The total amount of shares in circulation for the strategy
-    function getTotalStrategyShares(address strategy) external view returns (uint256 shares);
-
-    /// @notice Returns the amount of shares a user has in a strategy
-    /// @param strategy The strategy to query shares for
-    /// @param user The user to query shares for
-    /// @return shares The amount of shares the user has in the strategy
-    function getUserStrategyShares(address strategy, address user) external view returns (uint256 shares);
+    /// @notice Sets factory for creating new strategy tokens
+    /// @param factory Factory to set
+    /// @dev Only DEFAULT_ADMIN_ROLE can call this function
+    function setStrategyTokenFactory(address factory) external;
 
     /// @notice Creates new strategy with given config
-    /// @param strategy Address of the new strategy
     /// @param strategyConfig Configuration of the strategy
+    /// @param name Name of the strategy token
+    /// @param symbol Symbol of the strategy token
+    /// @return strategy Address of the new strategy
     /// @dev Only MANAGER role can execute this.
     ///      If collateralAsset,debtAsset or lendingAdapter are zero addresses function will revert
-    function createNewStrategy(address strategy, Storage.StrategyConfig memory strategyConfig) external;
+    function createNewStrategy(Storage.StrategyConfig memory strategyConfig, string memory name, string memory symbol)
+        external
+        returns (address strategy);
 
     /// @notice Sets lending adapter for the strategy
     /// @param strategy Strategy to set lending adapter for

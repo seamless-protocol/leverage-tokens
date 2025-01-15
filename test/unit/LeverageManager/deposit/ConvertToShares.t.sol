@@ -16,6 +16,8 @@ import {LeverageManagerBaseTest} from "../LeverageManagerBase.t.sol";
 contract ConvertToShares is LeverageManagerBaseTest {
     function setUp() public override {
         super.setUp();
+
+        _createDummyStrategy();
     }
 
     function test_convertToShares_RoundedDown() public {
