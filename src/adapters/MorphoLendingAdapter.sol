@@ -43,19 +43,37 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     }
 
     /// @inheritdoc ILendingAdapter
+    function convertCollateralToDebtAsset(uint256 /* collateral */ ) external view returns (uint256 debt) {
+        // TODO: Implement this
+        return block.timestamp;
+    }
+
+    /// @inheritdoc ILendingAdapter
+    function convertDebtToCollateralAsset(uint256 /* debt */ ) external view returns (uint256 collateral) {
+        // TODO: Implement this
+        return block.timestamp;
+    }
+
+    /// @inheritdoc ILendingAdapter
     function getCollateral() external view returns (uint256 collateral) {
         // TODO: Implement this
         return block.timestamp;
     }
 
     /// @inheritdoc ILendingAdapter
-    function getEquityInDebtAsset() external view returns (uint256 equity) {
+    function getCollateralInDebtAsset() external view returns (uint256 collateral) {
         // TODO: Implement this
         return block.timestamp;
     }
 
     /// @inheritdoc ILendingAdapter
-    function convertCollateralToDebtAsset(uint256 /* collateral */ ) external view returns (uint256 debt) {
+    function getDebt() external view returns (uint256 debt) {
+        // TODO: Implement this
+        return block.timestamp;
+    }
+
+    /// @inheritdoc ILendingAdapter
+    function getEquityInDebtAsset() external view returns (uint256 equity) {
         // TODO: Implement this
         return block.timestamp;
     }

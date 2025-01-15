@@ -13,7 +13,7 @@ contract SetStrategyActionFeeTest is FeeManagerBaseTest {
         super.setUp();
     }
 
-    function test_chargeStrategyFee_FeeRoundedUp() public {
+    function test_computeFeeAdjustedShares_FeeRoundedUp() public {
         address strategy = makeAddr("strategy");
         uint256 amount = 1;
         uint256 fee = 1;
@@ -21,13 +21,16 @@ contract SetStrategyActionFeeTest is FeeManagerBaseTest {
         for (uint256 i = 0; i < uint256(type(IFeeManager.Action).max) + 1; i++) {
             _setStrategyActionFee(feeManagerRole, strategy, IFeeManager.Action(i), fee);
 
-            uint256 amountAfterFee = feeManager.exposed_chargeStrategyFee(strategy, amount, IFeeManager.Action.Deposit);
+            uint256 amountAfterFee =
+                feeManager.exposed_computeFeeAdjustedShares(strategy, amount, IFeeManager.Action.Deposit);
 
             assertEq(amountAfterFee, 0);
         }
     }
 
-    function testFuzz_chargeStrategyFee(address strategy, uint256 amount, uint256 actionNum, uint256 fee) public {
+    function testFuzz_computeFeeAdjustedShares(address strategy, uint256 amount, uint256 actionNum, uint256 fee)
+        public
+    {
         IFeeManager.Action action = IFeeManager.Action(bound(actionNum, 0, 2));
         fee = bound(fee, 0, feeManager.MAX_FEE());
 
@@ -38,7 +41,7 @@ contract SetStrategyActionFeeTest is FeeManagerBaseTest {
         vm.expectEmit(true, true, true, true);
         emit IFeeManager.FeeCharged(strategy, action, amount, amount - expectedAmountAfterFee);
 
-        uint256 amountAfterFee = feeManager.exposed_chargeStrategyFee(strategy, amount, action);
+        uint256 amountAfterFee = feeManager.exposed_computeFeeAdjustedShares(strategy, amount, action);
 
         assertEq(amountAfterFee, expectedAmountAfterFee);
     }

@@ -57,7 +57,7 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
     }
 
     // Calculates and charges fee based on action type
-    function _chargeStrategyFee(address strategy, uint256 amount, IFeeManager.Action action)
+    function _computeFeeAdjustedShares(address strategy, uint256 amount, IFeeManager.Action action)
         internal
         returns (uint256 amountAfterFee)
     {

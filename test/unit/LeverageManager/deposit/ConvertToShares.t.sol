@@ -4,13 +4,7 @@ pragma solidity ^0.8.26;
 // Forge imports
 import {Test, console} from "forge-std/Test.sol";
 
-// Dependency imports
-import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
-
 // Internal imports
-import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
-import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 import {LeverageManagerBaseTest} from "../LeverageManagerBase.t.sol";
 
 contract ConvertToShares is LeverageManagerBaseTest {

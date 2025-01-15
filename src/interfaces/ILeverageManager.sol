@@ -9,6 +9,9 @@ interface ILeverageManager {
     /// @notice Error thrown when someone tries to set strategy that already exists
     error StrategyAlreadyExists(address strategy);
 
+    /// @notice Error thrown when someone tries to create strategy with lending adapter that already exists
+    error LendingAdapterAlreadyInUse(address adapter);
+
     /// @notice Error thrown when someone tries to set zero address for collateral or debt asset when creating strategy
     error InvalidStrategyAssets();
 
@@ -23,6 +26,12 @@ interface ILeverageManager {
 
     /// @notice Error thrown when user receives less shares than requested
     error InsufficientShares(uint256 received, uint256 expected);
+
+    /// @notice Error thrown when user receives less assets than requested
+    error InsufficientAssets(uint256 received, uint256 expected);
+
+    /// @notice Error thrown when user tries to burn more shares than they have
+    error InsufficientBalance(uint256 requested, uint256 actual);
 
     /// @notice Event emitted when lending adapter is set for the strategy
     event StrategyLendingAdapterSet(address indexed strategy, address adapter);
@@ -43,6 +52,14 @@ interface ILeverageManager {
     event Deposit(
         address indexed strategy, address indexed from, address indexed to, uint256 assets, uint256 sharesMinted
     );
+
+    /// @notice Event emitted when user redeems assets from strategy
+    event Redeem(address indexed strategy, address indexed from, uint256 shares, uint256 collateral, uint256 debt);
+
+    /// @notice Returns if lending adapter is in use by some other strategy
+    /// @param adapter Adapter to check
+    /// @return isUsed True if adapter is used by some strategy
+    function getIsLendingAdapterUsed(address adapter) external view returns (bool isUsed);
 
     /// @notice Returns lending adapter for the strategy
     /// @param strategy Strategy to get lending adapter for
@@ -131,5 +148,10 @@ interface ILeverageManager {
         external
         returns (uint256 shares);
 
-    // TODO: interface for rebalance functions
+    /// @notice Redeems shares of a strategy and withdraws assets from it, sender receives assets and caller pays debt
+    /// @param strategy The strategy to redeem from
+    /// @param shares The quantity of shares to redeem
+    /// @param minAssets The minimum amount of collateral to receive
+    /// @return assets Actual amount of assets given to the user
+    function redeem(address strategy, uint256 shares, uint256 minAssets) external returns (uint256 assets);
 }

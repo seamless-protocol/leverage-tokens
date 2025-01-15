@@ -21,31 +21,35 @@ contract ChargeStrategyFeeAndMintSharesTest is LeverageManagerBaseTest {
         super.setUp();
     }
 
-    function testFuzz_chargeStrategyFeeAndMintShares(uint256 fee, address to, uint256 shares) public {
+    function testFuzz_computeFeeAdjustedSharesAndMintShares(uint256 fee, address to, uint256 shares) public {
         fee = bound(fee, 0, leverageManager.MAX_FEE());
         _setStrategyActionFee(feeManagerRole, strategy, IFeeManager.Action.Deposit, fee);
 
-        uint256 expectedShares = leverageManager.exposed_chargeStrategyFee(strategy, shares, IFeeManager.Action.Deposit);
+        uint256 expectedShares =
+            leverageManager.exposed_computeFeeAdjustedShares(strategy, shares, IFeeManager.Action.Deposit);
 
         uint256 returnValue =
-            leverageManager.exposed_chargeStrategyFeeAndMintShares(strategy, to, shares, expectedShares);
+            leverageManager.exposed_computeFeeAdjustedSharesAndMintShares(strategy, to, shares, expectedShares);
 
         assertEq(leverageManager.getTotalStrategyShares(strategy), expectedShares);
         assertEq(leverageManager.getUserStrategyShares(strategy, to), expectedShares);
         assertEq(returnValue, expectedShares);
     }
 
-    function testFuzz_chargeStrategyFeeAndMintShares_RevertIf_NotEnoughShares(uint256 fee, address to, uint256 shares)
-        public
-    {
+    function testFuzz_computeFeeAdjustedSharesAndMintShares_RevertIf_NotEnoughShares(
+        uint256 fee,
+        address to,
+        uint256 shares
+    ) public {
         fee = bound(fee, 1, leverageManager.MAX_FEE());
         _setStrategyActionFee(feeManagerRole, strategy, IFeeManager.Action.Deposit, fee);
 
-        uint256 expectedShares = leverageManager.exposed_chargeStrategyFee(strategy, shares, IFeeManager.Action.Deposit);
+        uint256 expectedShares =
+            leverageManager.exposed_computeFeeAdjustedShares(strategy, shares, IFeeManager.Action.Deposit);
 
         vm.expectRevert(
             abi.encodeWithSelector(ILeverageManager.InsufficientShares.selector, expectedShares, expectedShares + 1)
         );
-        leverageManager.exposed_chargeStrategyFeeAndMintShares(strategy, to, shares, expectedShares + 1);
+        leverageManager.exposed_computeFeeAdjustedSharesAndMintShares(strategy, to, shares, expectedShares + 1);
     }
 }
