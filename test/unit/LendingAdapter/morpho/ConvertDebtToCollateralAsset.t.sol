@@ -1,0 +1,11 @@
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.26;
+
+// Internal imports
+import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
+
+contract ConvertDebtToCollateralAsset is MorphoLendingAdapterBaseTest {
+    function test_convertDebtToCollateralAsset() public view {
+        assertEq(lendingAdapter.convertDebtToCollateralAsset(0), block.timestamp);
+    }
+}
