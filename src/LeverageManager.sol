@@ -174,7 +174,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             _calculateCollateralDebtAndShares(strategy, lendingAdapter, assets);
 
         // Revert if there is not enough space in the strategy
-        uint256 currCollateral = lendingAdapter.getStrategyCollateral(strategy);
+        uint256 currCollateral = lendingAdapter.getCollateral();
         uint256 collateralCap = getStrategyCollateralCap(strategy);
 
         if (currCollateral + collateral > collateralCap) {
@@ -189,10 +189,10 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         SafeERC20.safeTransferFrom(collateralAsset, msg.sender, address(this), collateral);
 
         collateralAsset.approve(address(lendingAdapter), collateral);
-        lendingAdapter.addCollateral(strategy, collateral);
+        lendingAdapter.addCollateral(collateral);
 
         // Borrow and send debt assets to caller
-        lendingAdapter.borrow(strategy, debtToBorrow);
+        lendingAdapter.borrow(debtToBorrow);
         SafeERC20.safeTransfer(IERC20(getStrategyDebtAsset(strategy)), msg.sender, debtToBorrow);
 
         // Emit event and explicit return statement
@@ -208,7 +208,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     {
         // Convert user's equity to debt asset and calculate how much to borrow
         uint256 targetRatio = getStrategyTargetCollateralRatio(strategy);
-        uint256 equityInDebtAsset = lendingAdapter.convertCollateralToDebtAsset(strategy, assets);
+        uint256 equityInDebtAsset = lendingAdapter.convertCollateralToDebtAsset(assets);
 
         // debt = equity / (1 - targetRatio), collateral = equity * targetRatio / (targetRatio - 1)
         debt = Math.mulDiv(equityInDebtAsset, BASE_RATIO, targetRatio - BASE_RATIO, Math.Rounding.Floor);
@@ -275,10 +275,10 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         SafeERC20.safeTransferFrom(debtAsset, msg.sender, address(this), debt);
 
         debtAsset.approve(address(lendingAdapter), debt);
-        lendingAdapter.repay(strategy, debt);
+        lendingAdapter.repay(debt);
 
         // Withdraw from lending pool and send assets to user
-        lendingAdapter.removeCollateral(strategy, collateral);
+        lendingAdapter.removeCollateral(collateral);
         SafeERC20.safeTransfer(IERC20(getStrategyCollateralAsset(strategy)), msg.sender, collateral);
 
         // Emit event and explicit return statement
@@ -310,7 +310,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             debt = Math.mulDiv(equityToCover, BASE_RATIO, ratio - BASE_RATIO);
         }
 
-        collateral = lendingAdapter.convertDebtToCollateralAsset(strategy, debt + equity);
+        collateral = lendingAdapter.convertDebtToCollateralAsset(debt + equity);
         return (collateral, debt);
     }
 
@@ -321,8 +321,8 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         returns (uint256 currCollateralRatio, uint256 excessCollateral)
     {
         // Get collateral and debt of the strategy denominated in debt asset
-        uint256 collateral = lendingAdapter.getStrategyCollateralInDebtAsset(strategy);
-        uint256 debt = lendingAdapter.getStrategyDebt(strategy);
+        uint256 collateral = lendingAdapter.getCollateralInDebtAsset();
+        uint256 debt = lendingAdapter.getDebt();
 
         if (debt == 0) {
             return (type(uint256).max, collateral);
@@ -351,7 +351,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         return Math.mulDiv(
             equity,
             getTotalStrategyShares(strategy) + 10 ** DECIMALS_OFFSET,
-            lendingAdapter.getStrategyEquityInDebtAsset(strategy) + 1,
+            lendingAdapter.getEquityInDebtAsset() + 1,
             Math.Rounding.Floor
         );
     }
@@ -367,7 +367,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
         return Math.mulDiv(
             shares,
-            lendingAdapter.getStrategyEquityInDebtAsset(strategy) + 1,
+            lendingAdapter.getEquityInDebtAsset() + 1,
             getTotalStrategyShares(strategy) + 10 ** DECIMALS_OFFSET,
             Math.Rounding.Floor
         );

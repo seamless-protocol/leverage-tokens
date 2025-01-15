@@ -97,7 +97,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     function _mockStrategyCollateral(uint256 collateral) internal {
         vm.mockCall(
             address(_getLendingAdapter()),
-            abi.encodeWithSelector(ILendingAdapter.getStrategyCollateral.selector, strategy),
+            abi.encodeWithSelector(ILendingAdapter.getCollateral.selector),
             abi.encode(collateral)
         );
     }
@@ -158,7 +158,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     function _mockConvertCollateral(uint256 collateral, uint256 debt) internal {
         vm.mockCall(
             address(leverageManager.getStrategyLendingAdapter(strategy)),
-            abi.encodeWithSelector(ILendingAdapter.convertCollateralToDebtAsset.selector, strategy, collateral),
+            abi.encodeWithSelector(ILendingAdapter.convertCollateralToDebtAsset.selector, collateral),
             abi.encode(debt)
         );
     }
@@ -166,7 +166,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     function _mockConvertDebt(uint256 debt, uint256 collateral) internal {
         vm.mockCall(
             address(leverageManager.getStrategyLendingAdapter(strategy)),
-            abi.encodeWithSelector(ILendingAdapter.convertDebtToCollateralAsset.selector, strategy, debt),
+            abi.encodeWithSelector(ILendingAdapter.convertDebtToCollateralAsset.selector, debt),
             abi.encode(collateral)
         );
     }
@@ -174,7 +174,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     function _mockStrategyTotalEquity(uint256 totalEquity) internal {
         vm.mockCall(
             address(leverageManager.getStrategyLendingAdapter(strategy)),
-            abi.encodeWithSelector(ILendingAdapter.getStrategyEquityInDebtAsset.selector, strategy),
+            abi.encodeWithSelector(ILendingAdapter.getEquityInDebtAsset.selector),
             abi.encode(totalEquity)
         );
     }
@@ -194,7 +194,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     function _mockStrategyDebt(uint256 debt) internal {
         vm.mockCall(
             address(leverageManager.getStrategyLendingAdapter(strategy)),
-            abi.encodeWithSelector(ILendingAdapter.getStrategyDebt.selector, strategy),
+            abi.encodeWithSelector(ILendingAdapter.getDebt.selector),
             abi.encode(debt)
         );
     }
@@ -202,7 +202,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     function _mockStrategyCollateralInDebtAsset(uint256 collateral) internal {
         vm.mockCall(
             address(leverageManager.getStrategyLendingAdapter(strategy)),
-            abi.encodeWithSelector(ILendingAdapter.getStrategyCollateralInDebtAsset.selector, strategy),
+            abi.encodeWithSelector(ILendingAdapter.getCollateralInDebtAsset.selector),
             abi.encode(collateral)
         );
     }
