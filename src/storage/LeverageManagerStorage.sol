@@ -32,6 +32,8 @@ library LeverageManagerStorage {
         mapping(address strategy => uint256) totalShares;
         /// @dev Strategy address => User address => Shares that user owns
         mapping(address strategy => mapping(address user => uint256)) userStrategyShares;
+        /// @dev Lending adapter address => Is lending adapter registered. Two strategies can't have same lending adapter
+        mapping(address lendingAdapter => bool) isLendingAdapterUsed;
     }
 
     function layout() internal pure returns (Layout storage l) {

@@ -31,6 +31,11 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}
 
     /// @inheritdoc ILeverageManager
+    function getIsLendingAdapterUsed(address lendingAdapter) public view returns (bool isUsed) {
+        return Storage.layout().isLendingAdapterUsed[lendingAdapter];
+    }
+
+    /// @inheritdoc ILeverageManager
     function getStrategyConfig(address strategy) external view returns (Storage.StrategyConfig memory config) {
         return Storage.layout().config[strategy];
     }
@@ -115,7 +120,16 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
     /// @inheritdoc ILeverageManager
     function setStrategyLendingAdapter(address strategy, address adapter) public onlyRole(MANAGER_ROLE) {
-        Storage.layout().config[strategy].lendingAdapter = ILendingAdapter(adapter);
+        if (getIsLendingAdapterUsed(adapter)) {
+            revert LendingAdapterAlreadyInUse(adapter);
+        }
+
+        Storage.Layout storage $ = Storage.layout();
+        $.isLendingAdapterUsed[address(getStrategyLendingAdapter(strategy))] = false;
+
+        $.config[strategy].lendingAdapter = ILendingAdapter(adapter);
+        $.isLendingAdapterUsed[adapter] = true;
+
         emit StrategyLendingAdapterSet(strategy, adapter);
     }
 
