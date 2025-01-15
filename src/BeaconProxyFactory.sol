@@ -47,8 +47,6 @@ contract BeaconProxyFactory is IBeaconProxyFactory {
 
         // Emit an event for the newly created proxy
         emit BeaconProxyCreated(proxy, data, baseSalt);
-
-        return proxy;
     }
 
     /// @dev Returns the deploy salt for the BeaconProxy, which is the hash of the sender and the base salt
@@ -67,7 +65,5 @@ contract BeaconProxyFactory is IBeaconProxyFactory {
             type(BeaconProxy).creationCode, // BeaconProxy's runtime bytecode
             abi.encode(beacon, data) // Constructor arguments: beacon address and initialization data
         );
-
-        return bytecode;
     }
 }
