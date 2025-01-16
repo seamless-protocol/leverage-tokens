@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
+// Internal imports
+import {IStrategy} from "src/interfaces/IStrategy.sol";
+import {IBeaconProxyFactory} from "src/interfaces/IBeaconProxyFactory.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 
 library LeverageManagerStorage {
@@ -26,12 +29,10 @@ library LeverageManagerStorage {
     /// @dev Struct containing all state for the LeverageManager contract
     /// @custom:storage-location erc7201:seamless.contracts.storage.LeverageManager
     struct Layout {
+        /// @dev Factory for deploying new strategy tokens when creating new strategies
+        IBeaconProxyFactory strategyTokenFactory;
         /// @dev Strategy address => Config for strategy
-        mapping(address strategy => StrategyConfig) config;
-        /// @dev Strategy address => Total shares in circulation
-        mapping(address strategy => uint256) totalShares;
-        /// @dev Strategy address => User address => Shares that user owns
-        mapping(address strategy => mapping(address user => uint256)) userStrategyShares;
+        mapping(IStrategy strategy => StrategyConfig) config;
         /// @dev Lending adapter address => Is lending adapter registered. Two strategies can't have same lending adapter
         mapping(address lendingAdapter => bool) isLendingAdapterUsed;
     }

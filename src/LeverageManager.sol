@@ -8,14 +8,18 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 // Internal imports
+import {IStrategy} from "src/interfaces/IStrategy.sol";
+import {IBeaconProxyFactory} from "src/interfaces/IBeaconProxyFactory.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {FeeManager} from "src/FeeManager.sol";
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {CollateralRatios} from "src/types/DataTypes.sol";
+import {Strategy} from "src/Strategy.sol";
 
 contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManager, UUPSUpgradeable {
     // Base collateral ratio constant, 1e8 means that collateral / debt ratio is 1:1
@@ -31,22 +35,26 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}
 
     /// @inheritdoc ILeverageManager
+    function getStrategyTokenFactory() public view returns (IBeaconProxyFactory factory) {
+        return Storage.layout().strategyTokenFactory;
+    }
+
     function getIsLendingAdapterUsed(address lendingAdapter) public view returns (bool isUsed) {
         return Storage.layout().isLendingAdapterUsed[lendingAdapter];
     }
 
     /// @inheritdoc ILeverageManager
-    function getStrategyConfig(address strategy) external view returns (Storage.StrategyConfig memory config) {
+    function getStrategyConfig(IStrategy strategy) external view returns (Storage.StrategyConfig memory config) {
         return Storage.layout().config[strategy];
     }
 
     /// @inheritdoc ILeverageManager
-    function getStrategyLendingAdapter(address strategy) public view returns (ILendingAdapter adapter) {
+    function getStrategyLendingAdapter(IStrategy strategy) public view returns (ILendingAdapter adapter) {
         return Storage.layout().config[strategy].lendingAdapter;
     }
 
     /// @inheritdoc ILeverageManager
-    function getStrategyCollateralRatios(address strategy) external view returns (CollateralRatios memory ratios) {
+    function getStrategyCollateralRatios(IStrategy strategy) external view returns (CollateralRatios memory ratios) {
         Storage.StrategyConfig storage config = Storage.layout().config[strategy];
 
         return CollateralRatios({
@@ -57,44 +65,45 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function getStrategyCollateralCap(address strategy) public view returns (uint256 collateralCap) {
+    function getStrategyCollateralCap(IStrategy strategy) public view returns (uint256 collateralCap) {
         return Storage.layout().config[strategy].collateralCap;
     }
 
     /// @inheritdoc ILeverageManager
-    function getTotalStrategyShares(address strategy) public view returns (uint256 shares) {
-        return Storage.layout().totalShares[strategy];
-    }
-
-    /// @inheritdoc ILeverageManager
-    function getUserStrategyShares(address strategy, address user) public view returns (uint256 shares) {
-        return Storage.layout().userStrategyShares[strategy][user];
-    }
-
-    /// @inheritdoc ILeverageManager
-    function getStrategyCollateralAsset(address strategy) public view returns (address collateral) {
+    function getStrategyCollateralAsset(IStrategy strategy) public view returns (address collateral) {
         return Storage.layout().config[strategy].collateralAsset;
     }
 
     /// @inheritdoc ILeverageManager
-    function getStrategyDebtAsset(address strategy) public view returns (address debt) {
+    function getStrategyDebtAsset(IStrategy strategy) public view returns (address debt) {
         return Storage.layout().config[strategy].debtAsset;
     }
 
     /// @inheritdoc ILeverageManager
-    function getStrategyTargetCollateralRatio(address strategy) public view returns (uint256 targetCollateralRatio) {
+    function getStrategyTargetCollateralRatio(IStrategy strategy) public view returns (uint256 targetCollateralRatio) {
         return Storage.layout().config[strategy].targetCollateralRatio;
     }
 
     /// @inheritdoc ILeverageManager
-    function createNewStrategy(address strategy, Storage.StrategyConfig calldata strategyConfig)
+    function setStrategyTokenFactory(address factory) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        Storage.layout().strategyTokenFactory = IBeaconProxyFactory(factory);
+        emit StrategyTokenFactorySet(factory);
+    }
+
+    /// @inheritdoc ILeverageManager
+    function createNewStrategy(Storage.StrategyConfig calldata strategyConfig, string memory name, string memory symbol)
         external
         onlyRole(MANAGER_ROLE)
+        returns (IStrategy strategy)
     {
-        // Check does strategy already have core settings configured
-        if (getStrategyCollateralAsset(strategy) != address(0)) {
-            revert StrategyAlreadyExists(strategy);
-        }
+        IBeaconProxyFactory strategyTokenFactory = getStrategyTokenFactory();
+
+        strategy = IStrategy(
+            strategyTokenFactory.createProxy(
+                abi.encodeWithSelector(Strategy.initialize.selector, address(this), name, symbol),
+                bytes32(strategyTokenFactory.getProxies().length)
+            )
+        );
 
         setStrategyLendingAdapter(strategy, address(strategyConfig.lendingAdapter));
         setStrategyCollateralCap(strategy, strategyConfig.collateralCap);
@@ -115,11 +124,13 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         Storage.Layout storage $ = Storage.layout();
         $.config[strategy].collateralAsset = strategyConfig.collateralAsset;
         $.config[strategy].debtAsset = strategyConfig.debtAsset;
+
         emit StrategyCreated(strategy, strategyConfig.collateralAsset, strategyConfig.debtAsset);
+        return strategy;
     }
 
     /// @inheritdoc ILeverageManager
-    function setStrategyLendingAdapter(address strategy, address adapter) public onlyRole(MANAGER_ROLE) {
+    function setStrategyLendingAdapter(IStrategy strategy, address adapter) public onlyRole(MANAGER_ROLE) {
         if (getIsLendingAdapterUsed(adapter)) {
             revert LendingAdapterAlreadyInUse(adapter);
         }
@@ -134,7 +145,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function setStrategyCollateralRatios(address strategy, CollateralRatios memory ratios)
+    function setStrategyCollateralRatios(IStrategy strategy, CollateralRatios memory ratios)
         public
         onlyRole(MANAGER_ROLE)
     {
@@ -156,13 +167,13 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function setStrategyCollateralCap(address strategy, uint256 collateralCap) public onlyRole(MANAGER_ROLE) {
+    function setStrategyCollateralCap(IStrategy strategy, uint256 collateralCap) public onlyRole(MANAGER_ROLE) {
         Storage.layout().config[strategy].collateralCap = collateralCap;
         emit StrategyCollateralCapSet(strategy, collateralCap);
     }
 
     /// @inheritdoc ILeverageManager
-    function deposit(address strategy, uint256 assets, address recipient, uint256 minShares)
+    function deposit(IStrategy strategy, uint256 assets, address recipient, uint256 minShares)
         external
         returns (uint256 shares)
     {
@@ -201,7 +212,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     // Calculate how much of a debt asset to borrow and how much shares should be minted for user for given equity assets
-    function _calculateCollateralDebtAndShares(address strategy, ILendingAdapter lendingAdapter, uint256 assets)
+    function _calculateCollateralDebtAndShares(IStrategy strategy, ILendingAdapter lendingAdapter, uint256 assets)
         internal
         view
         returns (uint256 collateral, uint256 debt, uint256 shares)
@@ -220,7 +231,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     function _computeFeeAdjustedSharesAndMintShares(
-        address strategy,
+        IStrategy strategy,
         address recipient,
         uint256 shares,
         uint256 minShares
@@ -233,26 +244,12 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             revert InsufficientShares(sharesToMint, minShares);
         }
 
-        _mintShares(strategy, recipient, sharesToMint);
+        strategy.mint(recipient, sharesToMint);
         return sharesToMint;
     }
 
-    function _mintShares(address strategy, address recipient, uint256 shares) internal {
-        Storage.Layout storage $ = Storage.layout();
-        $.userStrategyShares[strategy][recipient] += shares;
-        $.totalShares[strategy] += shares;
-
-        emit Mint(strategy, recipient, shares);
-    }
-
     /// @inheritdoc ILeverageManager
-    function redeem(address strategy, uint256 shares, uint256 minAssets) external returns (uint256 assets) {
-        uint256 userSharesBalance = getUserStrategyShares(strategy, msg.sender);
-        if (userSharesBalance < shares) {
-            revert InsufficientBalance(shares, userSharesBalance);
-        }
-
-        Storage.Layout storage $ = Storage.layout();
+    function redeem(IStrategy strategy, uint256 shares, uint256 minAssets) external returns (uint256 assets) {
         ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
 
         // Charge strategy fee. Fee is not sent to treasury but burned which increases overall share value
@@ -267,8 +264,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         (uint256 collateral, uint256 debt) = _calculateCollateralAndDebtToCoverEquity(strategy, lendingAdapter, equity);
 
         // Burn shares from user and total supply
-        $.userStrategyShares[strategy][msg.sender] -= shares;
-        $.totalShares[strategy] -= shares;
+        strategy.burn(msg.sender, shares);
 
         // Take assets from sender and repay the debt
         IERC20 debtAsset = IERC20(getStrategyDebtAsset(strategy));
@@ -287,11 +283,11 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     // Calculates how much debt should user repay to cover equity they want to redeem
-    function _calculateCollateralAndDebtToCoverEquity(address strategy, ILendingAdapter lendingAdapter, uint256 equity)
-        internal
-        view
-        returns (uint256 collateral, uint256 debt)
-    {
+    function _calculateCollateralAndDebtToCoverEquity(
+        IStrategy strategy,
+        ILendingAdapter lendingAdapter,
+        uint256 equity
+    ) internal view returns (uint256 collateral, uint256 debt) {
         // Get current collateral ratio and excess excess collateral in debt asset. Excess of collateral can be redeemed without repaying the debt
         (uint256 currCollateralRatio, uint256 excessCollateral) =
             _getStrategyCollateralRatioAndExcess(strategy, lendingAdapter);
@@ -315,7 +311,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     // This function calculates how much excess of collateral strategy has denominated in debt asset and current collateral ratio
-    function _getStrategyCollateralRatioAndExcess(address strategy, ILendingAdapter lendingAdapter)
+    function _getStrategyCollateralRatioAndExcess(IStrategy strategy, ILendingAdapter lendingAdapter)
         internal
         view
         returns (uint256 currCollateralRatio, uint256 excessCollateral)
@@ -345,12 +341,12 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     /// @param equity Equity to convert to shares
     /// @dev Function must be called before supplying and borrowing
     /// @dev Function should be used to calculate how much shares user should receive for their equity
-    function _convertToShares(address strategy, uint256 equity) internal view returns (uint256 shares) {
+    function _convertToShares(IStrategy strategy, uint256 equity) internal view returns (uint256 shares) {
         ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
 
         return Math.mulDiv(
             equity,
-            getTotalStrategyShares(strategy) + 10 ** DECIMALS_OFFSET,
+            strategy.totalSupply() + 10 ** DECIMALS_OFFSET,
             lendingAdapter.getEquityInDebtAsset() + 1,
             Math.Rounding.Floor
         );
@@ -362,13 +358,13 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     /// @param shares Shares to convert to equity
     /// @dev Function must be called before supplying and borrowing
     /// @dev Function should be used to calculate how much shares user should receive for their shares
-    function _convertToEquity(address strategy, uint256 shares) internal view returns (uint256 equityInDebtAsset) {
+    function _convertToEquity(IStrategy strategy, uint256 shares) internal view returns (uint256 equityInDebtAsset) {
         ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
 
         return Math.mulDiv(
             shares,
             lendingAdapter.getEquityInDebtAsset() + 1,
-            getTotalStrategyShares(strategy) + 10 ** DECIMALS_OFFSET,
+            strategy.totalSupply() + 10 ** DECIMALS_OFFSET,
             Math.Rounding.Floor
         );
     }

@@ -9,8 +9,9 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
-import {FeeManagerStorage as Storage} from "./storage/FeeManagerStorage.sol";
-import {IFeeManager} from "./interfaces/IFeeManager.sol";
+import {IStrategy} from "src/interfaces/IStrategy.sol";
+import {FeeManagerStorage as Storage} from "src/storage/FeeManagerStorage.sol";
+import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 
 contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
     // Max fee that can be set, 100_00 is 100%
@@ -32,7 +33,7 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
     }
 
     /// @inheritdoc IFeeManager
-    function getStrategyActionFee(address strategy, IFeeManager.Action action) public view returns (uint256 fee) {
+    function getStrategyActionFee(IStrategy strategy, IFeeManager.Action action) public view returns (uint256 fee) {
         return Storage.layout().strategyActionFee[strategy][action];
     }
 
@@ -43,7 +44,7 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
     }
 
     /// @inheritdoc IFeeManager
-    function setStrategyActionFee(address strategy, IFeeManager.Action action, uint256 fee)
+    function setStrategyActionFee(IStrategy strategy, IFeeManager.Action action, uint256 fee)
         external
         onlyRole(FEE_MANAGER_ROLE)
     {
@@ -57,7 +58,7 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
     }
 
     // Calculates and charges fee based on action type
-    function _computeFeeAdjustedShares(address strategy, uint256 amount, IFeeManager.Action action)
+    function _computeFeeAdjustedShares(IStrategy strategy, uint256 amount, IFeeManager.Action action)
         internal
         returns (uint256 amountAfterFee)
     {

@@ -10,6 +10,8 @@ import {LeverageManagerBaseTest} from "../LeverageManagerBase.t.sol";
 contract ConvertToEquity is LeverageManagerBaseTest {
     function setUp() public override {
         super.setUp();
+
+        _createDummyStrategy();
     }
 
     function test_convertToEquity_RoundedDown() public {

@@ -13,6 +13,8 @@ import {LeverageManagerBaseTest} from "../LeverageManagerBase.t.sol";
 contract GetStrategyCollateralRatioAndExcessTest is LeverageManagerBaseTest {
     function setUp() public override {
         super.setUp();
+
+        _createDummyStrategy();
     }
 
     function test_getStrategyCollateralRatioAndExcess_ExcessExists() public {

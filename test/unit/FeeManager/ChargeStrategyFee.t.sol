@@ -5,6 +5,7 @@ pragma solidity ^0.8.26;
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // Internal imports
+import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {FeeManagerBaseTest} from "test/unit/FeeManager/FeeManagerBase.t.sol";
 
@@ -14,7 +15,7 @@ contract SetStrategyActionFeeTest is FeeManagerBaseTest {
     }
 
     function test_computeFeeAdjustedShares_FeeRoundedUp() public {
-        address strategy = makeAddr("strategy");
+        IStrategy strategy = IStrategy(makeAddr("strategy"));
         uint256 amount = 1;
         uint256 fee = 1;
 
@@ -28,7 +29,7 @@ contract SetStrategyActionFeeTest is FeeManagerBaseTest {
         }
     }
 
-    function testFuzz_computeFeeAdjustedShares(address strategy, uint256 amount, uint256 actionNum, uint256 fee)
+    function testFuzz_computeFeeAdjustedShares(IStrategy strategy, uint256 amount, uint256 actionNum, uint256 fee)
         public
     {
         IFeeManager.Action action = IFeeManager.Action(bound(actionNum, 0, 2));

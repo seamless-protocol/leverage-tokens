@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
+import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {FeeManagerHarness} from "test/unit/FeeManager/harness/FeeManagerHarness.sol";
 import {LeverageManager} from "src/LeverageManager.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
@@ -20,15 +21,15 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
         _authorizeUpgrade(newImplementation);
     }
 
-    function exposed_calculateCollateralDebtAndShares(address strategy, ILendingAdapter lendingAdapter, uint256 assets)
-        external
-        view
-        returns (uint256 collateral, uint256 debt, uint256 shares)
-    {
+    function exposed_calculateCollateralDebtAndShares(
+        IStrategy strategy,
+        ILendingAdapter lendingAdapter,
+        uint256 assets
+    ) external view returns (uint256 collateral, uint256 debt, uint256 shares) {
         return _calculateCollateralDebtAndShares(strategy, lendingAdapter, assets);
     }
 
-    function exposed_getStrategyCollateralRatioAndExcess(address strategy, ILendingAdapter lendingAdapter)
+    function exposed_getStrategyCollateralRatioAndExcess(IStrategy strategy, ILendingAdapter lendingAdapter)
         external
         view
         returns (uint256 currCollateralRatio, uint256 excessCollateral)
@@ -37,7 +38,7 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
     }
 
     function exposed_calculateCollateralAndDebtToCoverEquity(
-        address strategy,
+        IStrategy strategy,
         ILendingAdapter lendingAdapter,
         uint256 equity
     ) external view returns (uint256 collateral, uint256 debt) {
@@ -45,7 +46,7 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
     }
 
     function exposed_computeFeeAdjustedSharesAndMintShares(
-        address strategy,
+        IStrategy strategy,
         address recipient,
         uint256 debt,
         uint256 collateral
@@ -53,15 +54,11 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
         return _computeFeeAdjustedSharesAndMintShares(strategy, recipient, debt, collateral);
     }
 
-    function exposed_convertToShares(address strategy, uint256 equity) external view returns (uint256 shares) {
+    function exposed_convertToShares(IStrategy strategy, uint256 equity) external view returns (uint256 shares) {
         return _convertToShares(strategy, equity);
     }
 
-    function exposed_convertToEquity(address strategy, uint256 shares) external view returns (uint256 equity) {
+    function exposed_convertToEquity(IStrategy strategy, uint256 shares) external view returns (uint256 equity) {
         return _convertToEquity(strategy, shares);
-    }
-
-    function exposed_mintShares(address strategy, address recipient, uint256 shares) external {
-        _mintShares(strategy, recipient, shares);
     }
 }

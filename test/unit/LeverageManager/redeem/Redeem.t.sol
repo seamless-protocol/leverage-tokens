@@ -5,6 +5,7 @@ pragma solidity ^0.8.13;
 import {Test, console} from "forge-std/Test.sol";
 
 // Dependency imports
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 
@@ -35,7 +36,9 @@ contract RedeemTest is LeverageManagerBaseTest {
                 maxCollateralRatio: _BASE_RATIO() + 2,
                 targetCollateralRatio: _BASE_RATIO() + 1,
                 collateralCap: type(uint256).max
-            })
+            }),
+            "dummy name",
+            "dummy symbol"
         );
     }
 
@@ -108,17 +111,6 @@ contract RedeemTest is LeverageManagerBaseTest {
         leverageManager.redeem(strategy, sharesToRedeem, expectedEquity + 1);
     }
 
-    function test_Redeem_RevertIf_InsufficientBalance(uint256 userShares, uint256 sharesToRedeem) external {
-        vm.assume(userShares < sharesToRedeem);
-
-        _mintShares(address(this), userShares);
-
-        vm.expectRevert(
-            abi.encodeWithSelector(ILeverageManager.InsufficientBalance.selector, sharesToRedeem, userShares)
-        );
-        leverageManager.redeem(strategy, sharesToRedeem, 0);
-    }
-
     function _test_Redeem(RedeemState memory state, uint256 sharesToRedeem) internal {
         _mockState_Redeem(state);
 
@@ -135,8 +127,8 @@ contract RedeemTest is LeverageManagerBaseTest {
         leverageManager.redeem(strategy, sharesToRedeem, 0);
 
         assertEq(collateralToken.balanceOf(address(this)), collateral);
-        assertEq(leverageManager.getUserStrategyShares(strategy, address(this)), state.userShares - sharesToRedeem);
-        assertEq(leverageManager.getTotalStrategyShares(strategy), state.totalShares - sharesToRedeem);
+        assertEq(IERC20(strategy).balanceOf(address(this)), state.userShares - sharesToRedeem);
+        assertEq(IERC20(strategy).totalSupply(), state.totalShares - sharesToRedeem);
         assertEq(debtToken.balanceOf(address(_getLendingAdapter())), debtToCoverEquity);
     }
 }

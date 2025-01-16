@@ -5,6 +5,7 @@ pragma solidity ^0.8.26;
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
 
 // Internal imports
+import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {FeeManagerBaseTest} from "test/unit/FeeManager/FeeManagerBase.t.sol";
 
@@ -14,7 +15,7 @@ contract SetStrategyActionFeeTest is FeeManagerBaseTest {
     }
 
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_setStrategyActionFee(address strategy, uint256 actionNum, uint256 fee) public {
+    function testFuzz_setStrategyActionFee(IStrategy strategy, uint256 actionNum, uint256 fee) public {
         IFeeManager.Action action = IFeeManager.Action(bound(actionNum, 0, 2));
         fee = bound(fee, 0, feeManager.MAX_FEE());
 
@@ -29,7 +30,7 @@ contract SetStrategyActionFeeTest is FeeManagerBaseTest {
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_setStrategyActionFee_CallerIsNotFeeManagerRole(
         address caller,
-        address strategy,
+        IStrategy strategy,
         uint256 actionNum,
         uint256 fee
     ) public {
@@ -45,7 +46,7 @@ contract SetStrategyActionFeeTest is FeeManagerBaseTest {
     }
 
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_setStrategyActionFee_RevertIfFeeTooHigh(address strategy, uint256 actionNum, uint256 fee)
+    function testFuzz_setStrategyActionFee_RevertIfFeeTooHigh(IStrategy strategy, uint256 actionNum, uint256 fee)
         public
     {
         IFeeManager.Action action = IFeeManager.Action(bound(actionNum, 0, 2));
