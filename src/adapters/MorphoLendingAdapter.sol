@@ -3,6 +3,10 @@ pragma solidity ^0.8.26;
 
 // Dependency imports
 import {Id, IMorpho, MarketParams} from "@morpho-blue/interfaces/IMorpho.sol";
+import {IOracle} from "@morpho-blue/interfaces/IOracle.sol";
+import {ORACLE_PRICE_SCALE} from "@morpho-blue/libraries/ConstantsLib.sol";
+import {MorphoBalancesLib} from "@morpho-blue/libraries/periphery/MorphoBalancesLib.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -57,39 +61,35 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     }
 
     /// @inheritdoc ILendingAdapter
-    function convertCollateralToDebtAsset(uint256 /* collateral */ ) external view returns (uint256 debt) {
-        // TODO: Implement this
-        return block.timestamp;
+    function convertCollateralToDebtAsset(uint256 collateral) public view returns (uint256 debt) {
+        uint256 collateralAssetPriceInDebtAsset = IOracle(marketParams.oracle).price();
+        debt = Math.mulDiv(collateral, collateralAssetPriceInDebtAsset, ORACLE_PRICE_SCALE, Math.Rounding.Floor);
     }
 
     /// @inheritdoc ILendingAdapter
-    function convertDebtToCollateralAsset(uint256 /* debt */ ) external view returns (uint256 collateral) {
-        // TODO: Implement this
-        return block.timestamp;
+    function convertDebtToCollateralAsset(uint256 debt) external view returns (uint256 collateral) {
+        uint256 collateralAssetPriceInDebtAsset = IOracle(marketParams.oracle).price();
+        collateral = Math.mulDiv(debt, ORACLE_PRICE_SCALE, collateralAssetPriceInDebtAsset, Math.Rounding.Floor);
     }
 
     /// @inheritdoc ILendingAdapter
-    function getCollateral() external view returns (uint256 collateral) {
-        // TODO: Implement this
-        return block.timestamp;
+    function getCollateral() public view returns (uint256 collateral) {
+        return morpho.position(morphoMarketId, address(this)).collateral;
     }
 
     /// @inheritdoc ILendingAdapter
-    function getCollateralInDebtAsset() external view returns (uint256 collateral) {
-        // TODO: Implement this
-        return block.timestamp;
+    function getCollateralInDebtAsset() public view returns (uint256 collateral) {
+        return convertCollateralToDebtAsset(getCollateral());
     }
 
     /// @inheritdoc ILendingAdapter
-    function getDebt() external view returns (uint256 debt) {
-        // TODO: Implement this
-        return block.timestamp;
+    function getDebt() public view returns (uint256 debt) {
+        return MorphoBalancesLib.expectedBorrowAssets(morpho, marketParams, address(this));
     }
 
     /// @inheritdoc ILendingAdapter
     function getEquityInDebtAsset() external view returns (uint256 equity) {
-        // TODO: Implement this
-        return block.timestamp;
+        return getCollateralInDebtAsset() - getDebt();
     }
 
     /// @inheritdoc ILendingAdapter
