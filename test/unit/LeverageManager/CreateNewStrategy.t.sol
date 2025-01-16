@@ -5,6 +5,7 @@ pragma solidity ^0.8.26;
 import {Test, console} from "forge-std/Test.sol";
 
 // Dependency imports
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
 
 // Internal imports
@@ -51,8 +52,8 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
         _createNewStrategy(manager, config, name, symbol);
 
         // Check name of the strategy token
-        // assertEq(IStrategy(expectedStrategyAddress).name(), name);
-        // assertEq(IStrategy(expectedStrategyAddress).symbol(), symbol);
+        assertEq(IERC20Metadata(expectedStrategyAddress).name(), name);
+        assertEq(IERC20Metadata(expectedStrategyAddress).symbol(), symbol);
 
         // Check if the strategy core is set correctly
         Storage.StrategyConfig memory configAfter = leverageManager.getStrategyConfig(strategy);
