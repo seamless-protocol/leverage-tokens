@@ -2,6 +2,7 @@
 pragma solidity ^0.8.26;
 
 // Dependency imports
+import {Id, IMorpho, MarketParams} from "@morpho-blue/interfaces/IMorpho.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -9,7 +10,6 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {Id, IMorpho, MarketParams} from "src/interfaces/IMorpho.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 
 contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
@@ -18,6 +18,9 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
 
     /// @inheritdoc IMorphoLendingAdapter
     IMorpho public immutable morpho;
+
+    /// @inheritdoc IMorphoLendingAdapter
+    Id public morphoMarketId;
 
     /// @inheritdoc IMorphoLendingAdapter
     MarketParams public marketParams;
@@ -37,9 +40,10 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     }
 
     /// @notice Initializes the Morpho lending adapter
-    /// @param morphoMarketId The Morpho market ID
-    function initialize(Id morphoMarketId) external initializer {
-        marketParams = morpho.idToMarketParams(morphoMarketId);
+    /// @param _morphoMarketId The Morpho market ID
+    function initialize(Id _morphoMarketId) external initializer {
+        morphoMarketId = _morphoMarketId;
+        marketParams = morpho.idToMarketParams(_morphoMarketId);
     }
 
     /// @inheritdoc ILendingAdapter

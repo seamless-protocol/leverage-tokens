@@ -5,13 +5,13 @@ pragma solidity ^0.8.26;
 import {Test, console2} from "forge-std/Test.sol";
 
 // Dependency imports
+import {Id, MarketParams, IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
-import {Id, MarketParams, IMorpho, IMorphoBase} from "src/interfaces/IMorpho.sol";
 import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
 import {MockMorpho} from "../../mock/MockMorpho.sol";
 

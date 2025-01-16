@@ -5,6 +5,7 @@ pragma solidity ^0.8.26;
 import {Test} from "forge-std/Test.sol";
 
 // Dependency imports
+import {Id, MarketParams, IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -12,7 +13,6 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 // Internal imports
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
-import {Id, MarketParams, IMorpho} from "src/interfaces/IMorpho.sol";
 import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
 import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
 import {MockMorpho} from "../../mock/MockMorpho.sol";
