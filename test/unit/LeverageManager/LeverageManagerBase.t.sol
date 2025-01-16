@@ -70,8 +70,6 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
             _createNewStrategy(
                 manager,
                 Storage.StrategyConfig({
-                    collateralAsset: address(1),
-                    debtAsset: address(1),
                     lendingAdapter: ILendingAdapter(address(lendingAdapter)),
                     minCollateralRatio: _BASE_RATIO(),
                     maxCollateralRatio: _BASE_RATIO() + 2,

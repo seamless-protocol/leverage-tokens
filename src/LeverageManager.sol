@@ -70,16 +70,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function getStrategyCollateralAsset(IStrategy strategy) public view returns (address collateral) {
-        return Storage.layout().config[strategy].collateralAsset;
-    }
-
-    /// @inheritdoc ILeverageManager
-    function getStrategyDebtAsset(IStrategy strategy) public view returns (address debt) {
-        return Storage.layout().config[strategy].debtAsset;
-    }
-
-    /// @inheritdoc ILeverageManager
     function getStrategyTargetCollateralRatio(IStrategy strategy) public view returns (uint256 targetCollateralRatio) {
         return Storage.layout().config[strategy].targetCollateralRatio;
     }
@@ -116,16 +106,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             })
         );
 
-        // Check does provided core has zero addresses for collateral and debt
-        if (strategyConfig.collateralAsset == address(0) || strategyConfig.debtAsset == address(0)) {
-            revert InvalidStrategyAssets();
-        }
-
-        Storage.Layout storage $ = Storage.layout();
-        $.config[strategy].collateralAsset = strategyConfig.collateralAsset;
-        $.config[strategy].debtAsset = strategyConfig.debtAsset;
-
-        emit StrategyCreated(strategy, strategyConfig.collateralAsset, strategyConfig.debtAsset);
+        emit StrategyCreated(strategy);
         return strategy;
     }
 
@@ -196,7 +177,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         uint256 mintedShares = _computeFeeAdjustedSharesAndMintShares(strategy, recipient, sharesToMint, minShares);
 
         // Take collateral tokens from caller and supply them as collateral on lending pool
-        IERC20 collateralAsset = IERC20(getStrategyCollateralAsset(strategy));
+        IERC20 collateralAsset = lendingAdapter.getCollateralAsset();
         SafeERC20.safeTransferFrom(collateralAsset, msg.sender, address(this), collateral);
 
         collateralAsset.approve(address(lendingAdapter), collateral);
@@ -204,7 +185,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
         // Borrow and send debt assets to caller
         lendingAdapter.borrow(debtToBorrow);
-        SafeERC20.safeTransfer(IERC20(getStrategyDebtAsset(strategy)), msg.sender, debtToBorrow);
+        SafeERC20.safeTransfer(lendingAdapter.getDebtAsset(), msg.sender, debtToBorrow);
 
         // Emit event and explicit return statement
         emit Deposit(strategy, msg.sender, recipient, assets, mintedShares);
@@ -267,7 +248,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         strategy.burn(msg.sender, shares);
 
         // Take assets from sender and repay the debt
-        IERC20 debtAsset = IERC20(getStrategyDebtAsset(strategy));
+        IERC20 debtAsset = lendingAdapter.getDebtAsset();
         SafeERC20.safeTransferFrom(debtAsset, msg.sender, address(this), debt);
 
         debtAsset.approve(address(lendingAdapter), debt);
@@ -275,7 +256,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
         // Withdraw from lending pool and send assets to user
         lendingAdapter.removeCollateral(collateral);
-        SafeERC20.safeTransfer(IERC20(getStrategyCollateralAsset(strategy)), msg.sender, collateral);
+        SafeERC20.safeTransfer(lendingAdapter.getCollateralAsset(), msg.sender, collateral);
 
         // Emit event and explicit return statement
         emit Redeem(strategy, msg.sender, shares, collateral, debt);

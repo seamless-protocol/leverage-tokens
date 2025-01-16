@@ -33,7 +33,7 @@ interface ILeverageManager {
     event StrategyLendingAdapterSet(IStrategy indexed strategy, address adapter);
 
     /// @notice Event emitted when new strategy is created
-    event StrategyCreated(IStrategy indexed strategy, address indexed collateralAsset, address indexed debtAsset);
+    event StrategyCreated(IStrategy indexed strategy);
 
     /// @notice Event emitted when collateral ratios are set for a strategy
     event StrategyCollateralRatiosSet(IStrategy indexed strategy, CollateralRatios ratios);
@@ -78,18 +78,6 @@ interface ILeverageManager {
     /// @param strategy Strategy to get target ratio for
     /// @return targetRatio Target ratio
     function getStrategyTargetCollateralRatio(IStrategy strategy) external view returns (uint256 targetRatio);
-
-    /// @notice Returns collateral asset of the strategy
-    /// @notice Collateral asset is the asset that is deposited into lending pool
-    /// @param strategy Strategy to get collateral asset for
-    /// @return collateral Collateral asset
-    function getStrategyCollateralAsset(IStrategy strategy) external view returns (address collateral);
-
-    /// @notice Returns debt asset of the strategy
-    /// @notice Debt asset is the asset that is borrowed from lending pool
-    /// @param strategy Strategy to get debt asset for
-    /// @return debt Debt asset
-    function getStrategyDebtAsset(IStrategy strategy) external view returns (address debt);
 
     /// @notice Returns entire configuration for given strategy
     /// @param strategy Address of the strategy to get config for

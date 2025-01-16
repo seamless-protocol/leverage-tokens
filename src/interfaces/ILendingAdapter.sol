@@ -1,11 +1,23 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
+// Dependency imports
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+// Internal imports
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 
 interface ILendingAdapter {
     /// @notice Error thrown when the caller is unauthorized to call a function
     error Unauthorized();
+
+    /// @notice Returns the address of the collateral asset
+    /// @return collateralAsset Address of the collateral asset
+    function getCollateralAsset() external view returns (IERC20 collateralAsset);
+
+    /// @notice Returns the address of the debt asset
+    /// @return debtAsset Address of the debt asset
+    function getDebtAsset() external view returns (IERC20 debtAsset);
 
     /// @notice Converts amount of collateral asset to debt asset amount based on lending pool oracle
     /// @param collateral Collateral amount

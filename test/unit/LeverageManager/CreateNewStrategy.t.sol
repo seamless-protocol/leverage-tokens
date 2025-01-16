@@ -27,8 +27,6 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
         string memory name,
         string memory symbol
     ) public {
-        vm.assume(config.collateralAsset != address(0) && config.debtAsset != address(0));
-
         uint256 minCollateralRatio = config.minCollateralRatio;
         uint256 targetCollateralRatio = config.targetCollateralRatio;
         uint256 maxCollateralRatio = config.maxCollateralRatio;
@@ -45,9 +43,7 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
 
         // Check if event is emitted properly
         vm.expectEmit(true, true, true, true);
-        emit ILeverageManager.StrategyCreated(
-            IStrategy(expectedStrategyAddress), config.collateralAsset, config.debtAsset
-        );
+        emit ILeverageManager.StrategyCreated(IStrategy(expectedStrategyAddress));
 
         _createNewStrategy(manager, config, name, symbol);
 
@@ -57,8 +53,6 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
 
         // Check if the strategy core is set correctly
         Storage.StrategyConfig memory configAfter = leverageManager.getStrategyConfig(strategy);
-        assertEq(configAfter.collateralAsset, config.collateralAsset);
-        assertEq(configAfter.debtAsset, config.debtAsset);
         assertEq(address(configAfter.lendingAdapter), address(config.lendingAdapter));
         assertEq(configAfter.collateralCap, config.collateralCap);
 
@@ -66,42 +60,6 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
         assertEq(ratios.minCollateralRatio, config.minCollateralRatio);
         assertEq(ratios.maxCollateralRatio, config.maxCollateralRatio);
         assertEq(ratios.targetCollateralRatio, config.targetCollateralRatio);
-
-        // Check if single getter functions return the correct values
-        assertEq(leverageManager.getStrategyCollateralAsset(strategy), config.collateralAsset);
-        assertEq(leverageManager.getStrategyDebtAsset(strategy), config.debtAsset);
-    }
-
-    // forge-config: default.fuzz.runs = 1
-    function testFuzz_CreateNewStrategy_RevertIf_AssetsAreInvalid(address nonZeroAddress) public {
-        vm.assume(nonZeroAddress != address(0));
-
-        Storage.StrategyConfig memory config = Storage.StrategyConfig({
-            collateralAsset: address(0),
-            debtAsset: nonZeroAddress,
-            lendingAdapter: ILendingAdapter(nonZeroAddress),
-            minCollateralRatio: _BASE_RATIO(),
-            targetCollateralRatio: _BASE_RATIO() + 1,
-            maxCollateralRatio: _BASE_RATIO() + 2,
-            collateralCap: 0
-        });
-
-        // Revert if collateral is zero address
-        vm.expectRevert(ILeverageManager.InvalidStrategyAssets.selector);
-        _createNewStrategy(manager, config, "", "");
-
-        // Revert if debt is zero address
-        config.collateralAsset = nonZeroAddress;
-        config.debtAsset = address(0);
-
-        vm.expectRevert(ILeverageManager.InvalidStrategyAssets.selector);
-        _createNewStrategy(manager, config, "", "");
-
-        // Revert if both collateral and debt are zero addresses
-        config.collateralAsset = address(0);
-
-        vm.expectRevert(ILeverageManager.InvalidStrategyAssets.selector);
-        _createNewStrategy(manager, config, "", "");
     }
 
     /// forge-config: default.fuzz.runs = 1

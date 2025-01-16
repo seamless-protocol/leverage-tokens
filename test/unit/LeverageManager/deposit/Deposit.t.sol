@@ -29,8 +29,6 @@ contract LeverageManagerDepositTest is LeverageManagerBaseTest {
         _createNewStrategy(
             manager,
             Storage.StrategyConfig({
-                collateralAsset: address(collateralToken),
-                debtAsset: address(debtToken),
                 lendingAdapter: ILendingAdapter(address(lendingAdapter)),
                 minCollateralRatio: _BASE_RATIO(),
                 maxCollateralRatio: _BASE_RATIO() + 2,

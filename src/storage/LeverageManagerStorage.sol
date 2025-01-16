@@ -9,10 +9,6 @@ import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 library LeverageManagerStorage {
     /// @dev Struct that contains entire strategy config
     struct StrategyConfig {
-        /// @dev Collateral asset on the lending pool, immutable
-        address collateralAsset;
-        /// @dev Debt asset on the lending pool, immutable
-        address debtAsset;
         /// @dev Lending adapter for strategy
         ILendingAdapter lendingAdapter;
         /// @dev Cap of the strategy, leveraged amount that can be changed
