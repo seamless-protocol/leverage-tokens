@@ -5,6 +5,7 @@ pragma solidity ^0.8.26;
 import {Test, console} from "forge-std/Test.sol";
 
 // Dependency imports
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
 
@@ -24,11 +25,11 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
 
     function testFuzz_CreateNewStrategy(
         Storage.StrategyConfig calldata config,
+        address collateralAsset,
+        address debtAsset,
         string memory name,
         string memory symbol
     ) public {
-        vm.assume(config.collateralAsset != address(0) && config.debtAsset != address(0));
-
         uint256 minCollateralRatio = config.minCollateralRatio;
         uint256 targetCollateralRatio = config.targetCollateralRatio;
         uint256 maxCollateralRatio = config.maxCollateralRatio;
@@ -46,10 +47,10 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
         // Check if event is emitted properly
         vm.expectEmit(true, true, true, true);
         emit ILeverageManager.StrategyCreated(
-            IStrategy(expectedStrategyAddress), config.collateralAsset, config.debtAsset
+            IStrategy(expectedStrategyAddress), IERC20(collateralAsset), IERC20(debtAsset), config
         );
 
-        _createNewStrategy(manager, config, name, symbol);
+        _createNewStrategy(manager, config, collateralAsset, debtAsset, name, symbol);
 
         // Check name of the strategy token
         assertEq(IERC20Metadata(expectedStrategyAddress).name(), name);
@@ -57,8 +58,6 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
 
         // Check if the strategy core is set correctly
         Storage.StrategyConfig memory configAfter = leverageManager.getStrategyConfig(strategy);
-        assertEq(configAfter.collateralAsset, config.collateralAsset);
-        assertEq(configAfter.debtAsset, config.debtAsset);
         assertEq(address(configAfter.lendingAdapter), address(config.lendingAdapter));
         assertEq(configAfter.collateralCap, config.collateralCap);
 
@@ -66,42 +65,6 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
         assertEq(ratios.minCollateralRatio, config.minCollateralRatio);
         assertEq(ratios.maxCollateralRatio, config.maxCollateralRatio);
         assertEq(ratios.targetCollateralRatio, config.targetCollateralRatio);
-
-        // Check if single getter functions return the correct values
-        assertEq(leverageManager.getStrategyCollateralAsset(strategy), config.collateralAsset);
-        assertEq(leverageManager.getStrategyDebtAsset(strategy), config.debtAsset);
-    }
-
-    // forge-config: default.fuzz.runs = 1
-    function testFuzz_CreateNewStrategy_RevertIf_AssetsAreInvalid(address nonZeroAddress) public {
-        vm.assume(nonZeroAddress != address(0));
-
-        Storage.StrategyConfig memory config = Storage.StrategyConfig({
-            collateralAsset: address(0),
-            debtAsset: nonZeroAddress,
-            lendingAdapter: ILendingAdapter(nonZeroAddress),
-            minCollateralRatio: _BASE_RATIO(),
-            targetCollateralRatio: _BASE_RATIO() + 1,
-            maxCollateralRatio: _BASE_RATIO() + 2,
-            collateralCap: 0
-        });
-
-        // Revert if collateral is zero address
-        vm.expectRevert(ILeverageManager.InvalidStrategyAssets.selector);
-        _createNewStrategy(manager, config, "", "");
-
-        // Revert if debt is zero address
-        config.collateralAsset = nonZeroAddress;
-        config.debtAsset = address(0);
-
-        vm.expectRevert(ILeverageManager.InvalidStrategyAssets.selector);
-        _createNewStrategy(manager, config, "", "");
-
-        // Revert if both collateral and debt are zero addresses
-        config.collateralAsset = address(0);
-
-        vm.expectRevert(ILeverageManager.InvalidStrategyAssets.selector);
-        _createNewStrategy(manager, config, "", "");
     }
 
     /// forge-config: default.fuzz.runs = 1
@@ -116,6 +79,6 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
                 IAccessControl.AccessControlUnauthorizedAccount.selector, caller, leverageManager.MANAGER_ROLE()
             )
         );
-        _createNewStrategy(caller, config, "", "");
+        _createNewStrategy(caller, config, address(0), address(0), "", "");
     }
 }

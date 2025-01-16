@@ -29,14 +29,14 @@ contract RedeemTest is LeverageManagerBaseTest {
         _createNewStrategy(
             manager,
             Storage.StrategyConfig({
-                collateralAsset: address(collateralToken),
-                debtAsset: address(debtToken),
                 lendingAdapter: ILendingAdapter(address(lendingAdapter)),
                 minCollateralRatio: _BASE_RATIO(),
                 maxCollateralRatio: _BASE_RATIO() + 2,
                 targetCollateralRatio: _BASE_RATIO() + 1,
                 collateralCap: type(uint256).max
             }),
+            address(collateralToken),
+            address(debtToken),
             "dummy name",
             "dummy symbol"
         );

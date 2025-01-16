@@ -18,6 +18,14 @@ contract MockLendingAdapter {
         debtAsset = ERC20Mock(_debtAsset);
     }
 
+    function getCollateralAsset() external view returns (IERC20) {
+        return collateralAsset;
+    }
+
+    function getDebtAsset() external view returns (IERC20) {
+        return debtAsset;
+    }
+
     function addCollateral(uint256 amount) external {
         SafeERC20.safeTransferFrom(collateralAsset, msg.sender, address(this), amount);
     }
