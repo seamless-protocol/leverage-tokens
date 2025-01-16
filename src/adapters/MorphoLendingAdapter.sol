@@ -6,6 +6,7 @@ import {Id, IMorpho, MarketParams} from "@morpho-blue/interfaces/IMorpho.sol";
 import {IOracle} from "@morpho-blue/interfaces/IOracle.sol";
 import {ORACLE_PRICE_SCALE} from "@morpho-blue/libraries/ConstantsLib.sol";
 import {MorphoBalancesLib} from "@morpho-blue/libraries/periphery/MorphoBalancesLib.sol";
+import {MorphoLib} from "@morpho-blue/libraries/periphery/MorphoLib.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -69,12 +70,12 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     /// @inheritdoc ILendingAdapter
     function convertDebtToCollateralAsset(uint256 debt) external view returns (uint256 collateral) {
         uint256 collateralAssetPriceInDebtAsset = IOracle(marketParams.oracle).price();
-        collateral = Math.mulDiv(debt, ORACLE_PRICE_SCALE, collateralAssetPriceInDebtAsset, Math.Rounding.Floor);
+        collateral = Math.mulDiv(debt, ORACLE_PRICE_SCALE, collateralAssetPriceInDebtAsset, Math.Rounding.Ceil);
     }
 
     /// @inheritdoc ILendingAdapter
     function getCollateral() public view returns (uint256 collateral) {
-        return morpho.position(morphoMarketId, address(this)).collateral;
+        collateral = MorphoLib.collateral(morpho, morphoMarketId, address(this));
     }
 
     /// @inheritdoc ILendingAdapter

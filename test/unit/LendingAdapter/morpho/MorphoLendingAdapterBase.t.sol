@@ -6,6 +6,7 @@ import {Test, console2} from "forge-std/Test.sol";
 
 // Dependency imports
 import {Id, MarketParams, IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
+import {MarketParamsLib} from "@morpho-blue/libraries/MarketParamsLib.sol";
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -26,7 +27,7 @@ contract MorphoLendingAdapterBaseTest is Test {
     ILeverageManager public leverageManager = ILeverageManager(makeAddr("leverageManager"));
 
     // Mocked Morpho protocol is setup with a market with id 1 and some default market params
-    Id public defaultMarketId = Id.wrap(bytes32("1"));
+    Id public defaultMarketId;
     MarketParams public defaultMarketParams = MarketParams({
         loanToken: address(debtToken),
         collateralToken: address(collateralToken),
@@ -36,6 +37,7 @@ contract MorphoLendingAdapterBaseTest is Test {
     });
 
     function setUp() public {
+        defaultMarketId = MarketParamsLib.id(defaultMarketParams);
         morpho = new MockMorpho(defaultMarketId, defaultMarketParams);
         lendingAdapter = new MorphoLendingAdapter(leverageManager, IMorpho(address(morpho)));
         MorphoLendingAdapter(address(lendingAdapter)).initialize(defaultMarketId);
