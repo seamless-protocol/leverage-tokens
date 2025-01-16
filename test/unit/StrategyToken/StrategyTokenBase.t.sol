@@ -8,19 +8,19 @@ import {Test, console} from "forge-std/Test.sol";
 import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 
 // Internal imports
-import {StrategyToken} from "src/StrategyToken.sol";
+import {Strategy} from "src/Strategy.sol";
 
 contract StrategyTokenBaseTest is Test {
-    StrategyToken public strategyToken;
+    Strategy public strategyToken;
 
     function setUp() public virtual {
-        address strategyTokenImplementation = address(new StrategyToken());
+        address strategyTokenImplementation = address(new Strategy());
         address strategyTokenProxy = UnsafeUpgrades.deployUUPSProxy(
             strategyTokenImplementation,
-            abi.encodeWithSelector(StrategyToken.initialize.selector, address(this), "Test name", "Test symbol")
+            abi.encodeWithSelector(Strategy.initialize.selector, address(this), "Test name", "Test symbol")
         );
 
-        strategyToken = StrategyToken(strategyTokenProxy);
+        strategyToken = Strategy(strategyTokenProxy);
     }
 
     function test_setUp() public view {

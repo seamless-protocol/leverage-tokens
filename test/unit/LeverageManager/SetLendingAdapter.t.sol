@@ -8,6 +8,7 @@ import {Test, console} from "forge-std/Test.sol";
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
 
 // Internal imports
+import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageManagerBaseTest} from "./LeverageManagerBase.t.sol";
@@ -18,17 +19,17 @@ contract SetStrategyLendingAdapterTest is LeverageManagerBaseTest {
     }
 
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_setStrategyLendingAdapter(address strategy, address adapter) public {
+    function testFuzz_setStrategyLendingAdapter(IStrategy strategy, address adapter) public {
         vm.prank(manager);
         leverageManager.setStrategyLendingAdapter(strategy, adapter);
 
-        assertEq(address(leverageManager.getStrategyLendingAdapter(strategy)), address(adapter));
+        assertEq(address(leverageManager.getStrategyLendingAdapter(strategy)), adapter);
         assertEq(leverageManager.getIsLendingAdapterUsed(adapter), true);
     }
 
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_setStrategyLendingAdapter_ProperlyReplaceOldAdapter(
-        address strategy,
+        IStrategy strategy,
         address adapter1,
         address adapter2
     ) public {
@@ -46,7 +47,7 @@ contract SetStrategyLendingAdapterTest is LeverageManagerBaseTest {
     }
 
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_setStrategyLendingAdapter_RevertIf_DuplicateAdapter(address strategy, address adapter) public {
+    function testFuzz_setStrategyLendingAdapter_RevertIf_DuplicateAdapter(IStrategy strategy, address adapter) public {
         vm.startPrank(manager);
         leverageManager.setStrategyLendingAdapter(strategy, adapter);
 
@@ -58,7 +59,7 @@ contract SetStrategyLendingAdapterTest is LeverageManagerBaseTest {
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_setStrategyLendingAdapter_RevertIf_CallerIsNotManager(
         address caller,
-        address strategy,
+        IStrategy strategy,
         address adapter
     ) public {
         vm.assume(caller != manager);

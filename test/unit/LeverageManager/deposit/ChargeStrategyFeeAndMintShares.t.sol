@@ -9,7 +9,6 @@ import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol"
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // Internal imports
-import {IStrategyToken} from "src/interfaces/IStrategyToken.sol";
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
@@ -24,7 +23,9 @@ contract ChargeStrategyFeeAndMintSharesTest is LeverageManagerBaseTest {
         _createDummyStrategy();
     }
 
-    function testFuzz_computeFeeAdjustedSharesAndMintShares(uint256 fee, address to, uint256 shares) public {
+    function testFuzz_chargeStrategyFeeAndMintShares(uint256 fee, address to, uint256 shares) public {
+        vm.assume(to != address(0));
+
         fee = bound(fee, 0, leverageManager.MAX_FEE());
         _setStrategyActionFee(feeManagerRole, strategy, IFeeManager.Action.Deposit, fee);
 
@@ -34,16 +35,16 @@ contract ChargeStrategyFeeAndMintSharesTest is LeverageManagerBaseTest {
         uint256 returnValue =
             leverageManager.exposed_computeFeeAdjustedSharesAndMintShares(strategy, to, shares, expectedShares);
 
-        assertEq(IStrategyToken(strategy).totalSupply(), expectedShares);
-        assertEq(IStrategyToken(strategy).balanceOf(to), expectedShares);
+        assertEq(strategy.totalSupply(), expectedShares);
+        assertEq(strategy.balanceOf(to), expectedShares);
         assertEq(returnValue, expectedShares);
     }
 
-    function testFuzz_computeFeeAdjustedSharesAndMintShares_RevertIf_NotEnoughShares(
-        uint256 fee,
-        address to,
-        uint256 shares
-    ) public {
+    function testFuzz_chargeStrategyFeeAndMintShares_RevertIf_NotEnoughShares(uint256 fee, address to, uint256 shares)
+        public
+    {
+        vm.assume(to != address(0));
+
         fee = bound(fee, 1, leverageManager.MAX_FEE());
         _setStrategyActionFee(feeManagerRole, strategy, IFeeManager.Action.Deposit, fee);
 

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
+import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 
 library FeeManagerStorage {
@@ -10,7 +11,7 @@ library FeeManagerStorage {
         /// @dev Treasury address that receives all the fees
         address treasury;
         /// @dev Strategy address => Action => Fee
-        mapping(address strategy => mapping(IFeeManager.Action => uint256)) strategyActionFee;
+        mapping(IStrategy strategy => mapping(IFeeManager.Action => uint256)) strategyActionFee;
     }
 
     function layout() internal pure returns (Layout storage l) {

@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
-/*
 
 // Forge imports
 import {Test, console} from "forge-std/Test.sol";
@@ -11,6 +10,8 @@ import {LeverageManagerBaseTest} from "../LeverageManagerBase.t.sol";
 contract ConvertToEquity is LeverageManagerBaseTest {
     function setUp() public override {
         super.setUp();
+
+        _createDummyStrategy();
     }
 
     function test_convertToEquity_RoundedDown() public {
@@ -37,5 +38,3 @@ contract ConvertToEquity is LeverageManagerBaseTest {
         assertEq(equity, expectedEquity);
     }
 }
-
-*/

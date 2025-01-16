@@ -8,6 +8,7 @@ import {Test, console} from "forge-std/Test.sol";
 import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 
 // Local imports
+import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {FeeManager} from "src/FeeManager.sol";
 import {FeeManagerHarness} from "test/unit/FeeManager/harness/FeeManagerHarness.sol";
@@ -34,7 +35,9 @@ contract FeeManagerBaseTest is Test {
         assertEq(feeManager.exposed_feeManager_layoutSlot(), expectedSlot);
     }
 
-    function _setStrategyActionFee(address caller, address strategy, IFeeManager.Action action, uint256 fee) internal {
+    function _setStrategyActionFee(address caller, IStrategy strategy, IFeeManager.Action action, uint256 fee)
+        internal
+    {
         vm.prank(caller);
         feeManager.setStrategyActionFee(strategy, action, fee);
     }

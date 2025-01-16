@@ -9,7 +9,7 @@ import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
-import {IStrategyToken} from "src/interfaces/IStrategyToken.sol";
+import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 import {LeverageManager} from "src/LeverageManager.sol";
 import {LeverageManagerHarness} from "test/unit/LeverageManager/harness/LeverageManagerHarness.sol";
@@ -17,20 +17,20 @@ import {FeeManagerBaseTest} from "test/unit/FeeManager/FeeManagerBase.t.sol";
 import {FeeManagerHarness} from "test/unit/FeeManager/harness/FeeManagerHarness.sol";
 import {CollateralRatios} from "src/types/DataTypes.sol";
 import {BeaconProxyFactory} from "src/BeaconProxyFactory.sol";
-import {StrategyToken} from "src/StrategyToken.sol";
+import {Strategy} from "src/Strategy.sol";
 
 contract LeverageManagerBaseTest is FeeManagerBaseTest {
+    IStrategy public strategy;
     address public lendingAdapter = makeAddr("lendingAdapter");
     address public defaultAdmin = makeAddr("defaultAdmin");
     address public manager = makeAddr("manager");
-    address public strategy = makeAddr("strategy");
 
     address public strategyTokenImplementation;
     BeaconProxyFactory public strategyTokenFactory;
     LeverageManagerHarness public leverageManager;
 
     function setUp() public virtual override {
-        strategyTokenImplementation = address(new StrategyToken());
+        strategyTokenImplementation = address(new Strategy());
         strategyTokenFactory = new BeaconProxyFactory(strategyTokenImplementation, address(this));
 
         address leverageManagerImplementation = address(new LeverageManagerHarness());
@@ -66,19 +66,21 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     }
 
     function _createDummyStrategy() internal {
-        strategy = _createNewStrategy(
-            manager,
-            Storage.StrategyConfig({
-                collateralAsset: address(1),
-                debtAsset: address(1),
-                lendingAdapter: ILendingAdapter(address(lendingAdapter)),
-                minCollateralRatio: _BASE_RATIO(),
-                maxCollateralRatio: _BASE_RATIO() + 2,
-                targetCollateralRatio: _BASE_RATIO() + 1,
-                collateralCap: type(uint256).max
-            }),
-            "dummy name",
-            "dummy symbol"
+        strategy = IStrategy(
+            _createNewStrategy(
+                manager,
+                Storage.StrategyConfig({
+                    collateralAsset: address(1),
+                    debtAsset: address(1),
+                    lendingAdapter: ILendingAdapter(address(lendingAdapter)),
+                    minCollateralRatio: _BASE_RATIO(),
+                    maxCollateralRatio: _BASE_RATIO() + 2,
+                    targetCollateralRatio: _BASE_RATIO() + 1,
+                    collateralCap: type(uint256).max
+                }),
+                "dummy name",
+                "dummy symbol"
+            )
         );
     }
 
@@ -87,7 +89,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         Storage.StrategyConfig memory config,
         string memory name,
         string memory symbol
-    ) internal returns (address) {
+    ) internal returns (IStrategy) {
         vm.prank(caller);
         strategy = leverageManager.createNewStrategy(config, name, symbol);
         return strategy;
@@ -105,7 +107,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
 
     function _mintShares(address recipient, uint256 amount) internal {
         vm.prank(address(leverageManager));
-        IStrategyToken(strategy).mint(recipient, amount);
+        strategy.mint(recipient, amount);
     }
 
     struct CalculateDebtAndSharesState {
@@ -164,7 +166,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         _mockStrategyTotalEquity(state.collateralInDebt - state.debt);
 
         _mintShares(address(this), state.userShares);
-        _mintShares(address(0), state.totalShares - state.userShares);
+        _mintShares(address(1), state.totalShares - state.userShares);
 
         // Mock convert rate in _calculateCollateralAndDebtToCoverEquity function. Not important for redeem test
         vm.mockCall(

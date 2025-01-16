@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
-/*
 
 // Forge imports
 import {Test, console} from "forge-std/Test.sol";
@@ -14,6 +13,8 @@ import {LeverageManagerBaseTest} from "../LeverageManagerBase.t.sol";
 contract GetStrategyCollateralRatioAndExcessTest is LeverageManagerBaseTest {
     function setUp() public override {
         super.setUp();
+
+        _createDummyStrategy();
     }
 
     function test_getStrategyCollateralRatioAndExcess_ExcessExists() public {
@@ -134,4 +135,3 @@ contract GetStrategyCollateralRatioAndExcessTest is LeverageManagerBaseTest {
         assertEq(excess, state.collateralInDebt);
     }
 }
-*/

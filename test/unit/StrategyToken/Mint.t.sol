@@ -7,7 +7,7 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
 // Internal imports
 
 import {StrategyTokenBaseTest} from "./StrategyTokenBase.t.sol";
-import {StrategyToken} from "src/StrategyToken.sol";
+import {Strategy} from "src/Strategy.sol";
 
 contract MintTest is StrategyTokenBaseTest {
     function setUp() public override {

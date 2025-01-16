@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: UNLICENSED
-/*
 pragma solidity ^0.8.13;
 
 // Forge imports
@@ -98,5 +97,3 @@ contract CalculateCollateralAndDebtToCoverEquityTest is LeverageManagerBaseTest 
         assertEq(collateral, debtToCollateral);
     }
 }
-
-*/

@@ -7,20 +7,20 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 // Internal imports
-import {IStrategyToken} from "src/interfaces/IStrategyToken.sol";
+import {IStrategy} from "src/interfaces/IStrategy.sol";
 
-contract StrategyToken is Initializable, ERC20Upgradeable, OwnableUpgradeable, IStrategyToken {
+contract Strategy is Initializable, ERC20Upgradeable, OwnableUpgradeable, IStrategy {
     function initialize(address owner, string memory _name, string memory _symbol) external initializer {
         __ERC20_init(_name, _symbol);
         __Ownable_init(owner);
     }
 
-    /// @inheritdoc IStrategyToken
+    /// @inheritdoc IStrategy
     function mint(address to, uint256 amount) external onlyOwner {
         _mint(to, amount);
     }
 
-    /// @inheritdoc IStrategyToken
+    /// @inheritdoc IStrategy
     function burn(address from, uint256 amount) external onlyOwner {
         _burn(from, amount);
     }

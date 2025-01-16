@@ -2,6 +2,7 @@
 pragma solidity ^0.8.26;
 
 // Internal imports
+import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {IBeaconProxyFactory} from "src/interfaces/IBeaconProxyFactory.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 
@@ -31,7 +32,7 @@ library LeverageManagerStorage {
         /// @dev Factory for deploying new strategy tokens when creating new strategies
         IBeaconProxyFactory strategyTokenFactory;
         /// @dev Strategy address => Config for strategy
-        mapping(address strategy => StrategyConfig) config;
+        mapping(IStrategy strategy => StrategyConfig) config;
         /// @dev Lending adapter address => Is lending adapter registered. Two strategies can't have same lending adapter
         mapping(address lendingAdapter => bool) isLendingAdapterUsed;
     }
