@@ -7,7 +7,7 @@ interface IFeeManager {
     /// @notice Enum representing all action types on which fee can be charged
     enum Action {
         Deposit,
-        Withdraw,
+        Redeem,
         Compound
     }
 

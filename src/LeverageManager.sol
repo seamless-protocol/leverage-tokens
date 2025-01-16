@@ -39,6 +39,10 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         return Storage.layout().strategyTokenFactory;
     }
 
+    function getIsLendingAdapterUsed(address lendingAdapter) public view returns (bool isUsed) {
+        return Storage.layout().isLendingAdapterUsed[lendingAdapter];
+    }
+
     /// @inheritdoc ILeverageManager
     function getStrategyConfig(address strategy) external view returns (Storage.StrategyConfig memory config) {
         return Storage.layout().config[strategy];
@@ -125,7 +129,16 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
     /// @inheritdoc ILeverageManager
     function setStrategyLendingAdapter(address strategy, address adapter) public onlyRole(MANAGER_ROLE) {
-        Storage.layout().config[strategy].lendingAdapter = ILendingAdapter(adapter);
+        if (getIsLendingAdapterUsed(adapter)) {
+            revert LendingAdapterAlreadyInUse(adapter);
+        }
+
+        Storage.Layout storage $ = Storage.layout();
+        $.isLendingAdapterUsed[address(getStrategyLendingAdapter(strategy))] = false;
+
+        $.config[strategy].lendingAdapter = ILendingAdapter(adapter);
+        $.isLendingAdapterUsed[adapter] = true;
+
         emit StrategyLendingAdapterSet(strategy, adapter);
     }
 
@@ -170,7 +183,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             _calculateCollateralDebtAndShares(strategy, lendingAdapter, assets);
 
         // Revert if there is not enough space in the strategy
-        uint256 currCollateral = lendingAdapter.getStrategyCollateral(strategy);
+        uint256 currCollateral = lendingAdapter.getCollateral();
         uint256 collateralCap = getStrategyCollateralCap(strategy);
 
         if (currCollateral + collateral > collateralCap) {
@@ -178,17 +191,17 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         }
 
         // Charge strategy fee and mint shares for user. Revert if user does not receive enough shares
-        uint256 mintedShares = _chargeStrategyFeeAndMintShares(strategy, recipient, sharesToMint, minShares);
+        uint256 mintedShares = _computeFeeAdjustedSharesAndMintShares(strategy, recipient, sharesToMint, minShares);
 
         // Take collateral tokens from caller and supply them as collateral on lending pool
         IERC20 collateralAsset = IERC20(getStrategyCollateralAsset(strategy));
         SafeERC20.safeTransferFrom(collateralAsset, msg.sender, address(this), collateral);
 
         collateralAsset.approve(address(lendingAdapter), collateral);
-        lendingAdapter.addCollateral(strategy, collateral);
+        lendingAdapter.addCollateral(collateral);
 
         // Borrow and send debt assets to caller
-        lendingAdapter.borrow(strategy, debtToBorrow);
+        lendingAdapter.borrow(debtToBorrow);
         SafeERC20.safeTransfer(IERC20(getStrategyDebtAsset(strategy)), msg.sender, debtToBorrow);
 
         // Emit event and explicit return statement
@@ -204,7 +217,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     {
         // Convert user's equity to debt asset and calculate how much to borrow
         uint256 targetRatio = getStrategyTargetCollateralRatio(strategy);
-        uint256 equityInDebtAsset = lendingAdapter.convertCollateralToDebtAsset(strategy, assets);
+        uint256 equityInDebtAsset = lendingAdapter.convertCollateralToDebtAsset(assets);
 
         // debt = equity / (1 - targetRatio), collateral = equity * targetRatio / (targetRatio - 1)
         debt = Math.mulDiv(equityInDebtAsset, BASE_RATIO, targetRatio - BASE_RATIO, Math.Rounding.Floor);
@@ -215,12 +228,14 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         return (collateral, debt, sharesToMint);
     }
 
-    function _chargeStrategyFeeAndMintShares(address strategy, address recipient, uint256 shares, uint256 minShares)
-        internal
-        returns (uint256 sharesMinted)
-    {
+    function _computeFeeAdjustedSharesAndMintShares(
+        address strategy,
+        address recipient,
+        uint256 shares,
+        uint256 minShares
+    ) internal returns (uint256 sharesMinted) {
         // Calculate fee amount and deduct it from user's shares. Share fees are burned which increases overall share value
-        uint256 sharesToMint = _chargeStrategyFee(strategy, shares, IFeeManager.Action.Deposit);
+        uint256 sharesToMint = _computeFeeAdjustedShares(strategy, shares, IFeeManager.Action.Deposit);
 
         // Revert if user does not receive enough shares
         if (sharesToMint < minShares) {
@@ -229,6 +244,93 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
         IStrategyToken(strategy).mint(recipient, sharesToMint);
         return sharesToMint;
+    }
+
+    /// @inheritdoc ILeverageManager
+    function redeem(address strategy, uint256 shares, uint256 minAssets) external returns (uint256 assets) {
+        ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
+
+        // Charge strategy fee. Fee is not sent to treasury but burned which increases overall share value
+        uint256 sharesAfterFee = _computeFeeAdjustedShares(strategy, shares, IFeeManager.Action.Redeem);
+        uint256 equity = _convertToEquity(strategy, sharesAfterFee);
+
+        // Revert if user does not receive enough assets
+        if (equity < minAssets) {
+            revert InsufficientAssets(equity, minAssets);
+        }
+
+        (uint256 collateral, uint256 debt) = _calculateCollateralAndDebtToCoverEquity(strategy, lendingAdapter, equity);
+
+        // Burn shares from user and total supply
+        IStrategyToken(strategy).burn(msg.sender, shares);
+
+        // Take assets from sender and repay the debt
+        IERC20 debtAsset = IERC20(getStrategyDebtAsset(strategy));
+        SafeERC20.safeTransferFrom(debtAsset, msg.sender, address(this), debt);
+
+        debtAsset.approve(address(lendingAdapter), debt);
+        lendingAdapter.repay(debt);
+
+        // Withdraw from lending pool and send assets to user
+        lendingAdapter.removeCollateral(collateral);
+        SafeERC20.safeTransfer(IERC20(getStrategyCollateralAsset(strategy)), msg.sender, collateral);
+
+        // Emit event and explicit return statement
+        emit Redeem(strategy, msg.sender, shares, collateral, debt);
+        return collateral;
+    }
+
+    // Calculates how much debt should user repay to cover equity they want to redeem
+    function _calculateCollateralAndDebtToCoverEquity(address strategy, ILendingAdapter lendingAdapter, uint256 equity)
+        internal
+        view
+        returns (uint256 collateral, uint256 debt)
+    {
+        // Get current collateral ratio and excess excess collateral in debt asset. Excess of collateral can be redeemed without repaying the debt
+        (uint256 currCollateralRatio, uint256 excessCollateral) =
+            _getStrategyCollateralRatioAndExcess(strategy, lendingAdapter);
+
+        // If strategy has enough excess there is no debt to cover just withdraw collateral otherwise debt needs to be calculated
+        if (excessCollateral < equity) {
+            // Equity that user needs to repay debt for
+            uint256 equityToCover = equity - excessCollateral;
+
+            // After withdrawing any excess collateral, the strategy will be at target ratio.
+            // Thus, the amount of debt to be repaid to withdraw the remaining equity can be calculated using the target ratio.
+            // If there is no excess collateral, the amount of debt to be repaid needs to use the current collateral ratio.
+            uint256 ratio = excessCollateral > 0 ? getStrategyTargetCollateralRatio(strategy) : currCollateralRatio;
+
+            // Debt to repay = equity / (ratio - 1)
+            debt = Math.mulDiv(equityToCover, BASE_RATIO, ratio - BASE_RATIO);
+        }
+
+        collateral = lendingAdapter.convertDebtToCollateralAsset(debt + equity);
+        return (collateral, debt);
+    }
+
+    // This function calculates how much excess of collateral strategy has denominated in debt asset and current collateral ratio
+    function _getStrategyCollateralRatioAndExcess(address strategy, ILendingAdapter lendingAdapter)
+        internal
+        view
+        returns (uint256 currCollateralRatio, uint256 excessCollateral)
+    {
+        // Get collateral and debt of the strategy denominated in debt asset
+        uint256 collateral = lendingAdapter.getCollateralInDebtAsset();
+        uint256 debt = lendingAdapter.getDebt();
+
+        if (debt == 0) {
+            return (type(uint256).max, collateral);
+        }
+
+        // Calculate how much collateral should be in the strategy to match target ratio. Rounded up!
+        uint256 targetRatio = getStrategyTargetCollateralRatio(strategy);
+        uint256 targetCollateral = Math.mulDiv(debt, targetRatio, BASE_RATIO, Math.Rounding.Ceil);
+
+        // Calculate excess of collateral. If collateral is higher than target, return the difference, otherwise return 0
+        excessCollateral = collateral > targetCollateral ? collateral - targetCollateral : 0;
+        currCollateralRatio = Math.mulDiv(collateral, BASE_RATIO, debt, Math.Rounding.Floor);
+
+        return (currCollateralRatio, excessCollateral);
     }
 
     /// @notice Function that converts user's equity denominated in debt asset to strategy shares, base asset can be USD or any other asset
@@ -243,7 +345,24 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         return Math.mulDiv(
             equity,
             IERC20(strategy).totalSupply() + 10 ** DECIMALS_OFFSET,
-            lendingAdapter.getStrategyEquityInDebtAsset(strategy) + 1,
+            lendingAdapter.getEquityInDebtAsset() + 1,
+            Math.Rounding.Floor
+        );
+    }
+
+    /// @notice Function that converts user's shares to strategy equity, equity will be denominated in debt asset
+    /// @notice Function uses OZ formula for calculating assets
+    /// @param strategy Strategy to convert shares for
+    /// @param shares Shares to convert to equity
+    /// @dev Function must be called before supplying and borrowing
+    /// @dev Function should be used to calculate how much shares user should receive for their shares
+    function _convertToEquity(address strategy, uint256 shares) internal view returns (uint256 equityInDebtAsset) {
+        ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
+
+        return Math.mulDiv(
+            shares,
+            lendingAdapter.getEquityInDebtAsset() + 1,
+            IERC20(strategy).totalSupply() + 10 ** DECIMALS_OFFSET,
             Math.Rounding.Floor
         );
     }

@@ -130,7 +130,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     function _mockStrategyCollateral(uint256 collateral) internal {
         vm.mockCall(
             address(_getLendingAdapter()),
-            abi.encodeWithSelector(ILendingAdapter.getStrategyCollateral.selector, strategy),
+            abi.encodeWithSelector(ILendingAdapter.getCollateral.selector),
             abi.encode(collateral)
         );
     }
@@ -145,24 +145,69 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         _mockStrategyTotalEquity(state.totalEquity);
     }
 
-    struct CalculateExcessOfCollateralState {
+    struct RedeemState {
         uint128 collateralInDebt;
         uint128 debt;
-        uint256 targetRatio;
+        uint128 targetRatio;
+        uint128 userShares;
+        uint128 totalShares;
+    }
+
+    function _mockState_Redeem(RedeemState memory state) internal {
+        _mockState_CalculateStrategyCollateralRatioAndExcess(
+            CalculateStrategyCollateralRatioAndExcessState({
+                collateralInDebt: state.collateralInDebt,
+                debt: state.debt,
+                targetRatio: state.targetRatio
+            })
+        );
+        _mockStrategyTotalEquity(state.collateralInDebt - state.debt);
+
+        _mintShares(address(this), state.userShares);
+        _mintShares(address(0), state.totalShares - state.userShares);
+
+        // Mock convert rate in _calculateCollateralAndDebtToCoverEquity function. Not important for redeem test
+        vm.mockCall(
+            address(leverageManager.getStrategyLendingAdapter(strategy)),
+            abi.encodeWithSelector(ILendingAdapter.convertDebtToCollateralAsset.selector),
+            abi.encode(4 ether)
+        );
+    }
+
+    struct CalculateStrategyCollateralRatioAndExcessState {
+        uint128 collateralInDebt;
+        uint128 debt;
+        uint128 targetRatio;
+    }
+
+    function _mockState_CalculateStrategyCollateralRatioAndExcess(
+        CalculateStrategyCollateralRatioAndExcessState memory state
+    ) internal {
+        _mockStrategyCollateralInDebtAsset(state.collateralInDebt);
+        _mockStrategyDebt(state.debt);
+        _setStrategyTargetRatio(state.targetRatio);
     }
 
     function _mockConvertCollateral(uint256 collateral, uint256 debt) internal {
         vm.mockCall(
             address(leverageManager.getStrategyLendingAdapter(strategy)),
-            abi.encodeWithSelector(ILendingAdapter.convertCollateralToDebtAsset.selector, strategy, collateral),
+            abi.encodeWithSelector(ILendingAdapter.convertCollateralToDebtAsset.selector, collateral),
             abi.encode(debt)
+        );
+    }
+
+    function _mockConvertDebt(uint256 debt, uint256 collateral) internal {
+        vm.mockCall(
+            address(leverageManager.getStrategyLendingAdapter(strategy)),
+            abi.encodeWithSelector(ILendingAdapter.convertDebtToCollateralAsset.selector, debt),
+            abi.encode(collateral)
         );
     }
 
     function _mockStrategyTotalEquity(uint256 totalEquity) internal {
         vm.mockCall(
             address(leverageManager.getStrategyLendingAdapter(strategy)),
-            abi.encodeWithSelector(ILendingAdapter.getStrategyEquityInDebtAsset.selector, strategy),
+            abi.encodeWithSelector(ILendingAdapter.getEquityInDebtAsset.selector),
             abi.encode(totalEquity)
         );
     }
@@ -176,6 +221,22 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
                 targetCollateralRatio: targetRatio,
                 maxCollateralRatio: type(uint256).max
             })
+        );
+    }
+
+    function _mockStrategyDebt(uint256 debt) internal {
+        vm.mockCall(
+            address(leverageManager.getStrategyLendingAdapter(strategy)),
+            abi.encodeWithSelector(ILendingAdapter.getDebt.selector),
+            abi.encode(debt)
+        );
+    }
+
+    function _mockStrategyCollateralInDebtAsset(uint256 collateral) internal {
+        vm.mockCall(
+            address(leverageManager.getStrategyLendingAdapter(strategy)),
+            abi.encodeWithSelector(ILendingAdapter.getCollateralInDebtAsset.selector),
+            abi.encode(collateral)
         );
     }
 }

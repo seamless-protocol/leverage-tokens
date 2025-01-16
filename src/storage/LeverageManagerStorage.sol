@@ -32,6 +32,8 @@ library LeverageManagerStorage {
         IBeaconProxyFactory strategyTokenFactory;
         /// @dev Strategy address => Config for strategy
         mapping(address strategy => StrategyConfig) config;
+        /// @dev Lending adapter address => Is lending adapter registered. Two strategies can't have same lending adapter
+        mapping(address lendingAdapter => bool) isLendingAdapterUsed;
     }
 
     function layout() internal pure returns (Layout storage l) {

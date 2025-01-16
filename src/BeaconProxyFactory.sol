@@ -25,8 +25,13 @@ contract BeaconProxyFactory is IBeaconProxyFactory {
     }
 
     /// @inheritdoc IBeaconProxyFactory
-    function computeProxyAddress(bytes memory data, bytes32 salt) external view returns (address proxy) {
-        return Create2.computeAddress(salt, keccak256(_getCreationCode(data)), address(this));
+    function computeProxyAddress(address sender, bytes memory data, bytes32 baseSalt)
+        external
+        view
+        returns (address proxy)
+    {
+        return
+            Create2.computeAddress(_getDeploySalt(sender, baseSalt), keccak256(_getCreationCode(data)), address(this));
     }
 
     /// @inheritdoc IBeaconProxyFactory
@@ -35,13 +40,21 @@ contract BeaconProxyFactory is IBeaconProxyFactory {
     }
 
     /// @inheritdoc IBeaconProxyFactory
-    function createProxy(bytes memory data, bytes32 salt) external returns (address proxy) {
-        proxy = Create2.deploy(0, salt, _getCreationCode(data));
+    function createProxy(bytes memory data, bytes32 baseSalt) external returns (address proxy) {
+        proxy = Create2.deploy(0, _getDeploySalt(msg.sender, baseSalt), _getCreationCode(data));
 
         proxies.push(proxy);
 
         // Emit an event for the newly created proxy
-        emit BeaconProxyCreated(proxy, data);
+        emit BeaconProxyCreated(proxy, data, baseSalt);
+    }
+
+    /// @dev Returns the deploy salt for the BeaconProxy, which is the hash of the sender and the base salt
+    /// @param sender The address that will deploy the beacon proxy using the factory
+    /// @param baseSalt The base salt used for deterministic deployment
+    /// @return salt The deploy salt for the BeaconProxy
+    function _getDeploySalt(address sender, bytes32 baseSalt) internal pure returns (bytes32 salt) {
+        return keccak256(abi.encode(sender, baseSalt));
     }
 
     /// @dev Returns the creation code for the BeaconProxy

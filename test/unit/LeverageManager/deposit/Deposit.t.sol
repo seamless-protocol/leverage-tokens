@@ -88,7 +88,7 @@ contract LeverageManagerDepositTest is LeverageManagerBaseTest {
         (uint256 expectedCollateral, uint256 expectedDebt, uint256 sharesBeforeFee) = leverageManager
             .exposed_calculateCollateralDebtAndShares(strategy, _getLendingAdapter(), state.depositAmount);
         uint256 expectedSharesToReceive =
-            leverageManager.exposed_chargeStrategyFee(strategy, sharesBeforeFee, IFeeManager.Action.Deposit);
+            leverageManager.exposed_computeFeeAdjustedShares(strategy, sharesBeforeFee, IFeeManager.Action.Deposit);
 
         collateralToken.mint(address(this), expectedCollateral);
         collateralToken.approve(address(leverageManager), expectedCollateral);
