@@ -35,6 +35,8 @@ contract LeverageManagerDepositTest is LeverageManagerBaseTest {
                 targetCollateralRatio: _BASE_RATIO() + 1,
                 collateralCap: type(uint256).max
             }),
+            address(collateralToken),
+            address(debtToken),
             "random name",
             "random symbol"
         );

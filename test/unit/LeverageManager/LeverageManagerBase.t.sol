@@ -76,6 +76,8 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
                     targetCollateralRatio: _BASE_RATIO() + 1,
                     collateralCap: type(uint256).max
                 }),
+                address(0),
+                address(0),
                 "dummy name",
                 "dummy symbol"
             )
@@ -85,9 +87,22 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     function _createNewStrategy(
         address caller,
         Storage.StrategyConfig memory config,
+        address collateralAsset,
+        address debtAsset,
         string memory name,
         string memory symbol
     ) internal returns (IStrategy) {
+        vm.mockCall(
+            address(config.lendingAdapter),
+            abi.encodeWithSelector(ILendingAdapter.getCollateralAsset.selector),
+            abi.encode(collateralAsset)
+        );
+        vm.mockCall(
+            address(config.lendingAdapter),
+            abi.encodeWithSelector(ILendingAdapter.getDebtAsset.selector),
+            abi.encode(debtAsset)
+        );
+
         vm.prank(caller);
         strategy = leverageManager.createNewStrategy(config, name, symbol);
         return strategy;

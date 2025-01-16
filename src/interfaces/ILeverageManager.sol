@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
+// Dependency imports
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+// Internal imports
 import {IStrategy} from "./IStrategy.sol";
 import {CollateralRatios} from "src/types/DataTypes.sol";
 import {IBeaconProxyFactory} from "./IBeaconProxyFactory.sol";
@@ -33,7 +37,9 @@ interface ILeverageManager {
     event StrategyLendingAdapterSet(IStrategy indexed strategy, address adapter);
 
     /// @notice Event emitted when new strategy is created
-    event StrategyCreated(IStrategy indexed strategy);
+    event StrategyCreated(
+        IStrategy indexed strategy, IERC20 collateralAsset, IERC20 debtAsset, Storage.StrategyConfig config
+    );
 
     /// @notice Event emitted when collateral ratios are set for a strategy
     event StrategyCollateralRatiosSet(IStrategy indexed strategy, CollateralRatios ratios);

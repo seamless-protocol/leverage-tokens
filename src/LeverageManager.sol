@@ -106,7 +106,12 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             })
         );
 
-        emit StrategyCreated(strategy);
+        emit StrategyCreated(
+            strategy,
+            strategyConfig.lendingAdapter.getCollateralAsset(),
+            strategyConfig.lendingAdapter.getDebtAsset(),
+            strategyConfig
+        );
         return strategy;
     }
 
