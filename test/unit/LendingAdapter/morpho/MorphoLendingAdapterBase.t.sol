@@ -40,4 +40,11 @@ contract MorphoLendingAdapterBaseTest is Test {
         lendingAdapter = new MorphoLendingAdapter(leverageManager, IMorpho(address(morpho)));
         MorphoLendingAdapter(address(lendingAdapter)).initialize(defaultMarketId);
     }
+
+    function test_setUp() public view {
+        assertEq(address(lendingAdapter.leverageManager()), address(leverageManager));
+        assertEq(address(lendingAdapter.morpho()), address(morpho));
+        assertEq(address(lendingAdapter.getCollateralAsset()), address(collateralToken));
+        assertEq(address(lendingAdapter.getDebtAsset()), address(debtToken));
+    }
 }
