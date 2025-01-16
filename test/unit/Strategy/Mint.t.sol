@@ -5,33 +5,29 @@ pragma solidity ^0.8.26;
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 // Internal imports
-
-import {StrategyTokenBaseTest} from "./StrategyTokenBase.t.sol";
+import {StrategyBaseTest} from "./StrategyBase.t.sol";
 import {Strategy} from "src/Strategy.sol";
 
-contract BurnTest is StrategyTokenBaseTest {
+contract MintTest is StrategyBaseTest {
     function setUp() public override {
         super.setUp();
     }
 
     /// forge-config: default.fuzz.runs = 1
-    function test_burn(address from, uint256 amount, uint256 prevBalance) public {
-        vm.assume(from != address(0));
-        vm.assume(prevBalance >= amount);
+    function test_mint(address to, uint256 amount) public {
+        vm.assume(to != address(0));
 
-        strategyToken.mint(from, prevBalance);
-        strategyToken.burn(from, amount);
-
-        assertEq(strategyToken.balanceOf(from), prevBalance - amount);
+        strategyToken.mint(to, amount);
+        assertEq(strategyToken.balanceOf(to), amount);
     }
 
     /// forge-config: default.fuzz.runs = 1
-    function test_burn_RevertIf_CallerIsNotOwner(address caller, address from, uint256 amount) public {
+    function test_mint_RevertIf_CallerIsNotOwner(address caller, address to, uint256 amount) public {
         vm.assume(caller != address(0));
 
         vm.startPrank(caller);
         vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, caller));
-        strategyToken.burn(from, amount);
+        strategyToken.mint(to, amount);
         vm.stopPrank();
     }
 }

@@ -5,12 +5,13 @@ pragma solidity ^0.8.26;
 import {Test, console} from "forge-std/Test.sol";
 
 // Dependency imports
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 
 // Internal imports
 import {Strategy} from "src/Strategy.sol";
 
-contract StrategyTokenBaseTest is Test {
+contract StrategyBaseTest is Test {
     Strategy public strategyToken;
 
     function setUp() public virtual {
@@ -26,5 +27,11 @@ contract StrategyTokenBaseTest is Test {
     function test_setUp() public view {
         assertEq(strategyToken.name(), "Test name");
         assertEq(strategyToken.symbol(), "Test symbol");
+        assertEq(strategyToken.owner(), address(this));
+    }
+
+    function test_initialize_RevertIf_AlreadyInitialized() public {
+        vm.expectRevert(abi.encodeWithSelector(Initializable.InvalidInitialization.selector));
+        strategyToken.initialize(address(this), "Test name", "Test symbol");
     }
 }
