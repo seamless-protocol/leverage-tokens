@@ -9,11 +9,13 @@ import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
 
 contract GetCollateral is MorphoLendingAdapterBaseTest {
     function test_getCollateral() public {
+        uint256 collateral = 5e6;
+
         // MorphoLib, used by MorphoLendingAdapter, calls Morpho.extSloads to get the position's collateral
         bytes32[] memory returnValue = new bytes32[](2);
-        returnValue[0] = bytes32(uint256(5e6 << 128));
+        returnValue[0] = bytes32(uint256(collateral << 128));
         vm.mockCall(address(morpho), abi.encodeWithSelector(IMorphoBase.extSloads.selector), abi.encode(returnValue));
 
-        assertEq(lendingAdapter.getCollateral(), 5e6);
+        assertEq(lendingAdapter.getCollateral(), collateral);
     }
 }

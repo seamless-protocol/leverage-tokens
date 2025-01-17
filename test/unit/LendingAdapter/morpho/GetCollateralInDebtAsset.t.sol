@@ -12,7 +12,7 @@ import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
 
 contract GetCollateralInDebtAsset is MorphoLendingAdapterBaseTest {
     function test_getCollateralInDebtAsset() public {
-        uint256 collateral = 10;
+        uint256 collateral = 5e6;
 
         // Mocking call to Morpho made in MorphoStorageLib to get the position's borrow shares and collateral
         bytes32[] memory returnValue = new bytes32[](2);

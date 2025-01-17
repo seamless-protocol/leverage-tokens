@@ -12,11 +12,11 @@ import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
 contract GetEquityInDebtAsset is MorphoLendingAdapterBaseTest {
     function test_getEquityInDebtAsset() public {
         uint128 collateral = 10;
-        uint128 debtShares = 5e6;
+        uint128 borrowShares = 5e6;
 
         // Mocking call to Morpho made in MorphoStorageLib to get the position's borrow shares and collateral
         bytes32[] memory returnValue = new bytes32[](2);
-        returnValue[0] = bytes32((uint256(collateral) << 128) | uint256(debtShares));
+        returnValue[0] = bytes32((uint256(collateral) << 128) | uint256(borrowShares));
         vm.mockCall(address(morpho), abi.encodeWithSelector(IMorphoBase.extSloads.selector), abi.encode(returnValue));
 
         // Mocking call to Morpho made in MorphoBalancesLib to get the market's total borrow assets and shares
@@ -24,7 +24,7 @@ contract GetEquityInDebtAsset is MorphoLendingAdapterBaseTest {
             totalSupplyAssets: 0, // Doesn't matter for this test
             totalSupplyShares: 0, // Doesn't matter for this test
             totalBorrowAssets: 5,
-            totalBorrowShares: 5e6,
+            totalBorrowShares: borrowShares,
             lastUpdate: uint128(block.timestamp), // Set to the current block timestamp to reduce test complexity (used for accruing interest in MorphoBalancesLib)
             fee: 0 // Set to 0 to reduce test complexity (used for accruing interest in MorphoBalancesLib)
         });

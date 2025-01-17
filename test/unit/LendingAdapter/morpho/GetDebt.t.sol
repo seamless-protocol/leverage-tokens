@@ -11,9 +11,11 @@ import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
 
 contract GetDebt is MorphoLendingAdapterBaseTest {
     function test_getDebt() public {
+        uint256 borrowShares = 10e6;
+
         // MorphoBalancesLib, used by MorphoLendingAdapter, calls Morpho.extSloads to get the lendingAdapter's amount of borrow shares
         uint256[] memory returnValue = new uint256[](1);
-        returnValue[0] = 10e6;
+        returnValue[0] = borrowShares;
         vm.mockCall(address(morpho), abi.encodeWithSelector(IMorphoBase.extSloads.selector), abi.encode(returnValue));
 
         // Mocking call to Morpho made in MorphoBalancesLib to get the market's total borrow assets and shares, which is how MorphoBalancesLib
@@ -31,7 +33,7 @@ contract GetDebt is MorphoLendingAdapterBaseTest {
         assertEq(
             lendingAdapter.getDebt(),
             // getDebt() calls MorphoBalancesLib.expectedBorrowAssets, which uses SharesMathLib.toAssetsUp with the market's total borrow assets and shares, which are mocked above
-            SharesMathLib.toAssetsUp(returnValue[0], market.totalBorrowAssets, market.totalBorrowShares)
+            SharesMathLib.toAssetsUp(borrowShares, market.totalBorrowAssets, market.totalBorrowShares)
         );
     }
 }
