@@ -99,7 +99,7 @@ contract RedeemTest is LeverageManagerBaseTest {
         vm.assume(state.targetRatio > _BASE_RATIO());
         vm.assume(state.collateralInDebt > state.debt);
 
-        _mockState_Redeem(state);
+        _mockState_MintRedeem(state);
 
         uint256 sharesAfterFee =
             leverageManager.exposed_computeFeeAdjustedShares(strategy, sharesToRedeem, IFeeManager.Action.Redeem);
@@ -112,7 +112,7 @@ contract RedeemTest is LeverageManagerBaseTest {
     }
 
     function _test_Redeem(MintRedeemState memory state, uint256 sharesToRedeem) internal {
-        _mockState_Redeem(state);
+        _mockState_MintRedeem(state);
 
         uint256 sharesAfterFee =
             leverageManager.exposed_computeFeeAdjustedShares(strategy, sharesToRedeem, IFeeManager.Action.Redeem);

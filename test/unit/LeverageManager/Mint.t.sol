@@ -92,28 +92,30 @@ contract MintTest is LeverageManagerBaseTest {
         _test_Mint(state, sharesToMint);
     }
 
-    function testFuzz_Redeem_SlippageTooHigh(MintRedeemState memory state, uint128 sharesToMint) external {
+    function testFuzz_Mint_SlippageTooHigh(MintRedeemState memory state, uint128 sharesToMint) external {
         vm.assume(state.totalShares > state.userShares);
         vm.assume(state.targetRatio > _BASE_RATIO());
         vm.assume(state.collateralInDebt > state.debt);
 
-        _mockState_Redeem(state);
+        _mockState_MintRedeem(state);
 
         uint256 sharesAfterFee =
-            leverageManager.exposed_computeFeeAdjustedShares(strategy, sharesToMint, IFeeManager.Action.Redeem);
+            leverageManager.exposed_computeFeeAdjustedShares(strategy, sharesToMint, IFeeManager.Action.Deposit);
         uint256 expectedEquity = leverageManager.exposed_convertToEquity(strategy, sharesAfterFee);
 
+        vm.assume(expectedEquity > 0);
+
         vm.expectRevert(
-            abi.encodeWithSelector(ILeverageManager.SlippageTooHigh.selector, expectedEquity, expectedEquity + 1)
+            abi.encodeWithSelector(ILeverageManager.SlippageTooHigh.selector, expectedEquity, expectedEquity - 1)
         );
-        leverageManager.redeem(strategy, sharesToMint, expectedEquity + 1);
+        leverageManager.mint(strategy, sharesToMint, expectedEquity - 1);
     }
 
     function _test_Mint(MintRedeemState memory state, uint256 sharesToMint) internal {
-        _mockState_Redeem(state);
+        _mockState_MintRedeem(state);
 
         uint256 sharesAfterFee =
-            leverageManager.exposed_computeFeeAdjustedShares(strategy, sharesToMint, IFeeManager.Action.Redeem);
+            leverageManager.exposed_computeFeeAdjustedShares(strategy, sharesToMint, IFeeManager.Action.Deposit);
         uint256 expectedEquity = leverageManager.exposed_convertToEquity(strategy, sharesAfterFee);
 
         (uint256 collateral, uint256 debtToCoverEquity) = leverageManager
