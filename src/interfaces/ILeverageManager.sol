@@ -24,11 +24,8 @@ interface ILeverageManager {
     /// @notice Error thrown when user tries to deposit into strategy more than cap
     error CollateralExceedsCap(uint256 collateral, uint256 cap);
 
-    /// @notice Error thrown when user receives less shares than requested
-    error InsufficientShares(uint256 received, uint256 expected);
-
-    /// @notice Error thrown when user receives less assets than requested
-    error InsufficientAssets(uint256 received, uint256 expected);
+    /// @notice Error thrown when slippage is too high during mint/redeem
+    error SlippageTooHigh(uint256 actual, uint256 expected);
 
     /// @notice Event emitted when strategy token factory is set
     event StrategyTokenFactorySet(address factory);
@@ -128,14 +125,10 @@ interface ILeverageManager {
 
     /// @notice Mints shares of a strategy and deposits assets into it, recipient receives shares but caller receives debt
     /// @param strategy The strategy to deposit into
-    /// @param assets The quantity of assets to deposit
-    /// @param recipient The address to receive the shares and debt
-    /// @param minShares The minimum amount of shares to receive
-    /// @return shares Actual amount of shares given to the user
-    /// @dev Must emit the Deposit event
-    function deposit(IStrategy strategy, uint256 assets, address recipient, uint256 minShares)
-        external
-        returns (uint256 shares);
+    /// @param shares The quantity of shares to mint
+    /// @param maxAssets The maximum amount of equity to take from the user denominated in debt asset
+    /// @return assets Actual amount of equity taken from the user denominated in debt asset
+    function mint(IStrategy strategy, uint256 shares, uint256 maxAssets) external returns (uint256 assets);
 
     /// @notice Redeems shares of a strategy and withdraws assets from it, sender receives assets and caller pays debt
     /// @param strategy The strategy to redeem from

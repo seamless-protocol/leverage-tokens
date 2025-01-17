@@ -11,13 +11,13 @@ import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 
 // Internal imports
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
-import {LeverageManagerBaseTest} from "../LeverageManagerBase.t.sol";
+import {LeverageManagerBaseTest} from "test/unit/LeverageManager/LeverageManagerBase.t.sol";
 import {MockLendingAdapter} from "test/unit/mock/MockLendingAdapter.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 
-contract RedeemTest is LeverageManagerBaseTest {
+contract MintTest is LeverageManagerBaseTest {
     ERC20Mock public collateralToken = new ERC20Mock();
     ERC20Mock public debtToken = new ERC20Mock();
 
@@ -42,93 +42,93 @@ contract RedeemTest is LeverageManagerBaseTest {
         );
     }
 
-    function test_Redeem_EnoughExcess() external {
-        RedeemState memory state = RedeemState({
-            collateralInDebt: 3000 ether,
+    function test_Mint_EnoughDeficit() external {
+        MintRedeemState memory state = MintRedeemState({
+            collateralInDebt: 1500 ether,
             debt: 1000 ether,
             targetRatio: uint128(2 * _BASE_RATIO()), // 2x leverage
             userShares: 10 ether,
             totalShares: 100 ether
         });
 
-        uint128 sharesToRedeem = 5 ether;
+        uint128 sharesToMint = 100 ether;
 
-        _test_Redeem(state, sharesToRedeem);
+        _test_Mint(state, sharesToMint);
     }
 
-    function test_Redeem_NotEnoughExcess_ExcessExists() external {
-        RedeemState memory state = RedeemState({
-            collateralInDebt: 3000 ether,
+    function test_Mint_NotEnoughDeficit() external {
+        MintRedeemState memory state = MintRedeemState({
+            collateralInDebt: 1500 ether,
             debt: 1000 ether,
             targetRatio: uint128(2 * _BASE_RATIO()), // 2x leverage
             userShares: 90 ether,
             totalShares: 100 ether
         });
 
-        uint128 sharesToRedeem = 80 ether;
+        uint128 sharesToMint = 200 ether; // This equals to around 1000 ether of equity so deficit is not enough for full optimization
 
-        _test_Redeem(state, sharesToRedeem);
+        _test_Mint(state, sharesToMint);
     }
 
-    function test_Redeem_NotEnoughExcess_ExcessDoesNotExists() external {
-        RedeemState memory state = RedeemState({
-            collateralInDebt: 1600 ether,
+    function test_Mint_StrategyIsOverCollateralized() external {
+        MintRedeemState memory state = MintRedeemState({
+            collateralInDebt: 2500 ether,
             debt: 1000 ether,
             targetRatio: uint128(2 * _BASE_RATIO()), // 2x leverage
             userShares: 90 ether,
             totalShares: 100 ether
         });
 
-        uint128 sharesToRedeem = 80 ether;
+        uint128 sharesToMint = 80 ether; // No optimization is possible here
 
-        _test_Redeem(state, sharesToRedeem);
+        _test_Mint(state, sharesToMint);
     }
 
-    function testFuzz_Redeem(RedeemState memory state, uint256 sharesToRedeem) external {
+    function testFuzz_Mint(MintRedeemState memory state, uint128 sharesToMint) external {
         vm.assume(state.totalShares > state.userShares);
-        vm.assume(state.userShares > sharesToRedeem);
         vm.assume(state.targetRatio > _BASE_RATIO());
         vm.assume(state.collateralInDebt > state.debt);
 
-        _test_Redeem(state, sharesToRedeem);
+        _test_Mint(state, sharesToMint);
     }
 
-    function testFuzz_Redeem_InsufficientAssets(RedeemState memory state, uint256 sharesToRedeem) external {
+    function testFuzz_Redeem_SlippageTooHigh(MintRedeemState memory state, uint128 sharesToMint) external {
         vm.assume(state.totalShares > state.userShares);
-        vm.assume(state.userShares > sharesToRedeem);
         vm.assume(state.targetRatio > _BASE_RATIO());
         vm.assume(state.collateralInDebt > state.debt);
 
         _mockState_Redeem(state);
 
         uint256 sharesAfterFee =
-            leverageManager.exposed_computeFeeAdjustedShares(strategy, sharesToRedeem, IFeeManager.Action.Redeem);
+            leverageManager.exposed_computeFeeAdjustedShares(strategy, sharesToMint, IFeeManager.Action.Redeem);
         uint256 expectedEquity = leverageManager.exposed_convertToEquity(strategy, sharesAfterFee);
 
         vm.expectRevert(
-            abi.encodeWithSelector(ILeverageManager.InsufficientAssets.selector, expectedEquity, expectedEquity + 1)
+            abi.encodeWithSelector(ILeverageManager.SlippageTooHigh.selector, expectedEquity, expectedEquity + 1)
         );
-        leverageManager.redeem(strategy, sharesToRedeem, expectedEquity + 1);
+        leverageManager.redeem(strategy, sharesToMint, expectedEquity + 1);
     }
 
-    function _test_Redeem(RedeemState memory state, uint256 sharesToRedeem) internal {
+    function _test_Mint(MintRedeemState memory state, uint256 sharesToMint) internal {
         _mockState_Redeem(state);
 
         uint256 sharesAfterFee =
-            leverageManager.exposed_computeFeeAdjustedShares(strategy, sharesToRedeem, IFeeManager.Action.Redeem);
+            leverageManager.exposed_computeFeeAdjustedShares(strategy, sharesToMint, IFeeManager.Action.Redeem);
         uint256 expectedEquity = leverageManager.exposed_convertToEquity(strategy, sharesAfterFee);
 
         (uint256 collateral, uint256 debtToCoverEquity) = leverageManager
-            .exposed_calculateCollateralAndDebtToCoverEquity(strategy, _getLendingAdapter(), expectedEquity);
+            .exposed_calculateCollateralAndDebtToCoverEquity(
+            strategy, _getLendingAdapter(), expectedEquity, IFeeManager.Action.Deposit
+        );
 
-        debtToken.mint(address(this), debtToCoverEquity);
-        debtToken.approve(address(leverageManager), debtToCoverEquity);
+        collateralToken.mint(address(this), collateral);
+        collateralToken.approve(address(leverageManager), collateral);
 
-        leverageManager.redeem(strategy, sharesToRedeem, 0);
+        leverageManager.mint(strategy, sharesToMint, type(uint256).max);
 
-        assertEq(collateralToken.balanceOf(address(this)), collateral);
-        assertEq(IERC20(strategy).balanceOf(address(this)), state.userShares - sharesToRedeem);
-        assertEq(IERC20(strategy).totalSupply(), state.totalShares - sharesToRedeem);
-        assertEq(debtToken.balanceOf(address(_getLendingAdapter())), debtToCoverEquity);
+        assertEq(collateralToken.balanceOf(address(this)), 0);
+        assertEq(IERC20(strategy).balanceOf(address(this)), state.userShares + sharesToMint);
+        assertEq(IERC20(strategy).totalSupply(), state.totalShares + sharesToMint);
+        assertEq(debtToken.balanceOf(address(this)), debtToCoverEquity);
     }
 }

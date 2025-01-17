@@ -160,7 +160,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         _mockStrategyTotalEquity(state.totalEquity);
     }
 
-    struct RedeemState {
+    struct MintRedeemState {
         uint128 collateralInDebt;
         uint128 debt;
         uint128 targetRatio;
@@ -168,7 +168,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         uint128 totalShares;
     }
 
-    function _mockState_Redeem(RedeemState memory state) internal {
+    function _mockState_Redeem(MintRedeemState memory state) internal {
         _mockState_CalculateStrategyCollateralRatioAndExcess(
             CalculateStrategyCollateralRatioAndExcessState({
                 collateralInDebt: state.collateralInDebt,
