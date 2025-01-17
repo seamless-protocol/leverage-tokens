@@ -8,9 +8,9 @@ import {ORACLE_PRICE_SCALE} from "@morpho-blue/libraries/ConstantsLib.sol";
 import {MorphoBalancesLib} from "@morpho-blue/libraries/periphery/MorphoBalancesLib.sol";
 import {MorphoLib} from "@morpho-blue/libraries/periphery/MorphoLib.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
@@ -63,14 +63,14 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
 
     /// @inheritdoc ILendingAdapter
     function convertCollateralToDebtAsset(uint256 collateral) public view returns (uint256 debt) {
-        // Morpho Oracles returns the price of 1 asset of collateral token quoted in 1 asset of loan token, scaled by ORACLE_PRICE_SCALE
+        // Morpho oracles return the price of 1 asset of collateral token quoted in 1 asset of loan token, scaled by ORACLE_PRICE_SCALE
         uint256 collateralAssetPriceInDebtAsset = IOracle(marketParams.oracle).price();
         debt = Math.mulDiv(collateral, collateralAssetPriceInDebtAsset, ORACLE_PRICE_SCALE, Math.Rounding.Floor);
     }
 
     /// @inheritdoc ILendingAdapter
     function convertDebtToCollateralAsset(uint256 debt) external view returns (uint256 collateral) {
-        // Morpho Oracles returns the price of 1 asset of collateral token quoted in 1 asset of loan token, scaled by ORACLE_PRICE_SCALE
+        // Morpho oracles return the price of 1 asset of collateral token quoted in 1 asset of loan token, scaled by ORACLE_PRICE_SCALE
         uint256 collateralAssetPriceInDebtAsset = IOracle(marketParams.oracle).price();
         collateral = Math.mulDiv(debt, ORACLE_PRICE_SCALE, collateralAssetPriceInDebtAsset, Math.Rounding.Ceil);
     }
