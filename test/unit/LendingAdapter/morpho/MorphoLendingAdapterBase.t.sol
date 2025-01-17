@@ -17,6 +17,12 @@ import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
 import {MockMorpho} from "../../mock/MockMorpho.sol";
 
 contract MorphoLendingAdapterBaseTest is Test {
+    /// @dev Virtual shares used by Morpho for exchange rate computations. See Morpho's SharesMathLib for more details
+    uint256 internal constant MORPHO_VIRTUAL_SHARES = 1e6;
+
+    /// @dev Virtual assets used by Morpho for exchange rate computations. See Morpho's SharesMathLib for more details
+    uint256 internal constant MORPHO_VIRTUAL_ASSETS = 1;
+
     MockMorpho public morpho;
     IMorphoLendingAdapter public lendingAdapter;
 
