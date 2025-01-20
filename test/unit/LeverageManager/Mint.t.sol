@@ -42,57 +42,57 @@ contract MintTest is LeverageManagerBaseTest {
         );
     }
 
-    function test_Mint_EnoughDeficit() external {
+    function test_mint_EnoughCollateralDeficit() external {
         MintRedeemState memory state = MintRedeemState({
             collateralInDebt: 1500 ether,
             debt: 1000 ether,
             targetRatio: uint128(2 * _BASE_RATIO()), // 2x leverage
-            userShares: 10 ether,
+            userShares: 10 ether, // Not important for this test
             totalShares: 100 ether
         });
 
         uint128 sharesToMint = 100 ether;
 
-        _test_Mint(state, sharesToMint);
+        _test_mint(state, sharesToMint);
     }
 
-    function test_Mint_NotEnoughDeficit() external {
+    function test_mint_NotEnoughCollateralDeficit() external {
         MintRedeemState memory state = MintRedeemState({
             collateralInDebt: 1500 ether,
             debt: 1000 ether,
             targetRatio: uint128(2 * _BASE_RATIO()), // 2x leverage
-            userShares: 90 ether,
+            userShares: 90 ether, // Not important for this test
             totalShares: 100 ether
         });
 
         uint128 sharesToMint = 200 ether; // This equals to around 1000 ether of equity so deficit is not enough for full optimization
 
-        _test_Mint(state, sharesToMint);
+        _test_mint(state, sharesToMint);
     }
 
-    function test_Mint_StrategyIsOverCollateralized() external {
+    function test_mint_StrategyIsOverCollateralized() external {
         MintRedeemState memory state = MintRedeemState({
             collateralInDebt: 2500 ether,
             debt: 1000 ether,
             targetRatio: uint128(2 * _BASE_RATIO()), // 2x leverage
-            userShares: 90 ether,
+            userShares: 90 ether, // Not important for this test
             totalShares: 100 ether
         });
 
         uint128 sharesToMint = 80 ether; // No optimization is possible here
 
-        _test_Mint(state, sharesToMint);
+        _test_mint(state, sharesToMint);
     }
 
-    function testFuzz_Mint(MintRedeemState memory state, uint128 sharesToMint) external {
+    function testFuzz_mint(MintRedeemState memory state, uint128 sharesToMint) external {
         vm.assume(state.totalShares > state.userShares);
         vm.assume(state.targetRatio > _BASE_RATIO());
         vm.assume(state.collateralInDebt > state.debt);
 
-        _test_Mint(state, sharesToMint);
+        _test_mint(state, sharesToMint);
     }
 
-    function testFuzz_Mint_SlippageTooHigh(MintRedeemState memory state, uint128 sharesToMint) external {
+    function testFuzz_mint_SlippageTooHigh(MintRedeemState memory state, uint128 sharesToMint) external {
         vm.assume(state.totalShares > state.userShares);
         vm.assume(state.targetRatio > _BASE_RATIO());
         vm.assume(state.collateralInDebt > state.debt);
@@ -111,7 +111,7 @@ contract MintTest is LeverageManagerBaseTest {
         leverageManager.mint(strategy, sharesToMint, expectedEquity - 1);
     }
 
-    function _test_Mint(MintRedeemState memory state, uint256 sharesToMint) internal {
+    function _test_mint(MintRedeemState memory state, uint256 sharesToMint) internal {
         _mockState_MintRedeem(state);
 
         uint256 sharesAfterFee =
