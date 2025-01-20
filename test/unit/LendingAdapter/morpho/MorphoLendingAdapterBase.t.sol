@@ -7,13 +7,13 @@ import {Test, console2} from "forge-std/Test.sol";
 // Dependency imports
 import {Id, MarketParams, IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 import {MarketParamsLib} from "@morpho-blue/libraries/MarketParamsLib.sol";
-import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
+import {MockERC20} from "../../mock/MockERC20.sol";
 import {MockMorpho} from "../../mock/MockMorpho.sol";
 
 contract MorphoLendingAdapterBaseTest is Test {
@@ -26,8 +26,8 @@ contract MorphoLendingAdapterBaseTest is Test {
     MockMorpho public morpho;
     IMorphoLendingAdapter public lendingAdapter;
 
-    ERC20Mock public collateralToken = new ERC20Mock();
-    ERC20Mock public debtToken = new ERC20Mock();
+    MockERC20 public collateralToken = new MockERC20();
+    MockERC20 public debtToken = new MockERC20();
 
     // Mocked ILeverageManager contract
     ILeverageManager public leverageManager = ILeverageManager(makeAddr("leverageManager"));

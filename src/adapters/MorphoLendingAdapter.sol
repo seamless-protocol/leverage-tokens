@@ -9,6 +9,7 @@ import {MorphoBalancesLib} from "@morpho-blue/libraries/periphery/MorphoBalances
 import {MorphoLib} from "@morpho-blue/libraries/periphery/MorphoLib.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
@@ -63,16 +64,51 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
 
     /// @inheritdoc ILendingAdapter
     function convertCollateralToDebtAsset(uint256 collateral) public view returns (uint256 debt) {
-        // Morpho oracles return the price of 1 asset of collateral token quoted in 1 asset of loan token, scaled by ORACLE_PRICE_SCALE
+        // Morpho oracles return the price of 1 asset of collateral token quoted in 1 asset of loan token, scaled by ORACLE_PRICE_SCALE.
+        // So, the price is quoted in `ORACLE_PRICE_SCALE + loan token decimals - collateral token decimals` decimals of precision.
         uint256 collateralAssetPriceInDebtAsset = IOracle(marketParams.oracle).price();
-        debt = Math.mulDiv(collateral, collateralAssetPriceInDebtAsset, ORACLE_PRICE_SCALE, Math.Rounding.Floor);
+
+        uint256 collateralDecimals = IERC20Metadata(marketParams.collateralToken).decimals();
+        uint256 debtDecimals = IERC20Metadata(marketParams.loanToken).decimals();
+
+        // Calculate the scaling factor based on the difference in decimals, and calculate the debt amount in the debt token's precision
+        if (collateralDecimals > debtDecimals) {
+            uint256 scalingFactor = 10 ** (collateralDecimals - debtDecimals);
+            debt = Math.mulDiv(
+                collateral, collateralAssetPriceInDebtAsset, ORACLE_PRICE_SCALE * scalingFactor, Math.Rounding.Floor
+            );
+        } else if (collateralDecimals < debtDecimals) {
+            uint256 scalingFactor = 10 ** (debtDecimals - collateralDecimals);
+            debt = Math.mulDiv(
+                collateral * scalingFactor, collateralAssetPriceInDebtAsset, ORACLE_PRICE_SCALE, Math.Rounding.Floor
+            );
+        } else {
+            debt = Math.mulDiv(collateral, collateralAssetPriceInDebtAsset, ORACLE_PRICE_SCALE, Math.Rounding.Floor);
+        }
     }
 
     /// @inheritdoc ILendingAdapter
     function convertDebtToCollateralAsset(uint256 debt) external view returns (uint256 collateral) {
-        // Morpho oracles return the price of 1 asset of collateral token quoted in 1 asset of loan token, scaled by ORACLE_PRICE_SCALE
+        // Fetch the price of 1 collateral token quoted in the debt token, scaled by ORACLE_PRICE_SCALE
         uint256 collateralAssetPriceInDebtAsset = IOracle(marketParams.oracle).price();
-        collateral = Math.mulDiv(debt, ORACLE_PRICE_SCALE, collateralAssetPriceInDebtAsset, Math.Rounding.Ceil);
+
+        uint256 collateralDecimals = IERC20Metadata(marketParams.collateralToken).decimals();
+        uint256 debtDecimals = IERC20Metadata(marketParams.loanToken).decimals();
+
+        // Calculate the scaling factor based on the difference in decimals, and calculate the collateral amount in the collateral token's precision
+        if (debtDecimals > collateralDecimals) {
+            uint256 scalingFactor = 10 ** (debtDecimals - collateralDecimals);
+            collateral = Math.mulDiv(
+                debt, ORACLE_PRICE_SCALE, collateralAssetPriceInDebtAsset * scalingFactor, Math.Rounding.Ceil
+            );
+        } else if (debtDecimals < collateralDecimals) {
+            uint256 scalingFactor = 10 ** (collateralDecimals - debtDecimals);
+            collateral = Math.mulDiv(
+                debt * scalingFactor, ORACLE_PRICE_SCALE, collateralAssetPriceInDebtAsset, Math.Rounding.Ceil
+            );
+        } else {
+            collateral = Math.mulDiv(debt, ORACLE_PRICE_SCALE, collateralAssetPriceInDebtAsset, Math.Rounding.Ceil);
+        }
     }
 
     /// @inheritdoc ILendingAdapter
