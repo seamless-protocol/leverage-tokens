@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
+import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {FeeManagerHarness} from "test/unit/FeeManager/harness/FeeManagerHarness.sol";
 import {LeverageManager} from "src/LeverageManager.sol";
@@ -21,18 +22,10 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
         _authorizeUpgrade(newImplementation);
     }
 
-    function exposed_calculateCollateralDebtAndShares(
-        IStrategy strategy,
-        ILendingAdapter lendingAdapter,
-        uint256 assets
-    ) external view returns (uint256 collateral, uint256 debt, uint256 shares) {
-        return _calculateCollateralDebtAndShares(strategy, lendingAdapter, assets);
-    }
-
     function exposed_getStrategyCollateralRatioAndExcess(IStrategy strategy, ILendingAdapter lendingAdapter)
         external
         view
-        returns (uint256 currCollateralRatio, uint256 excessCollateral)
+        returns (uint256 currCollateralRatio, int256 excessCollateral)
     {
         return _getStrategyCollateralRatioAndExcess(strategy, lendingAdapter);
     }
@@ -40,22 +33,10 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
     function exposed_calculateCollateralAndDebtToCoverEquity(
         IStrategy strategy,
         ILendingAdapter lendingAdapter,
-        uint256 equity
+        uint256 equity,
+        IFeeManager.Action action
     ) external view returns (uint256 collateral, uint256 debt) {
-        return _calculateCollateralAndDebtToCoverEquity(strategy, lendingAdapter, equity);
-    }
-
-    function exposed_computeFeeAdjustedSharesAndMintShares(
-        IStrategy strategy,
-        address recipient,
-        uint256 debt,
-        uint256 collateral
-    ) external returns (uint256) {
-        return _computeFeeAdjustedSharesAndMintShares(strategy, recipient, debt, collateral);
-    }
-
-    function exposed_convertToShares(IStrategy strategy, uint256 equity) external view returns (uint256 shares) {
-        return _convertToShares(strategy, equity);
+        return _calculateCollateralAndDebtToCoverEquity(strategy, lendingAdapter, equity, action);
     }
 
     function exposed_convertToEquity(IStrategy strategy, uint256 shares) external view returns (uint256 equity) {

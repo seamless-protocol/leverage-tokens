@@ -5,7 +5,7 @@ pragma solidity ^0.8.13;
 import {Test, console} from "forge-std/Test.sol";
 
 // Internal imports
-import {LeverageManagerBaseTest} from "../LeverageManagerBase.t.sol";
+import {LeverageManagerBaseTest} from "test/unit/LeverageManager/LeverageManagerBase.t.sol";
 
 contract ConvertToEquity is LeverageManagerBaseTest {
     function setUp() public override {

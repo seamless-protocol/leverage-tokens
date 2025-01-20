@@ -8,7 +8,7 @@ import {Test, console} from "forge-std/Test.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // Internal imports
-import {LeverageManagerBaseTest} from "../LeverageManagerBase.t.sol";
+import {LeverageManagerBaseTest} from "test/unit/LeverageManager/LeverageManagerBase.t.sol";
 
 contract GetStrategyCollateralRatioAndExcessTest is LeverageManagerBaseTest {
     function setUp() public override {
@@ -30,7 +30,7 @@ contract GetStrategyCollateralRatioAndExcessTest is LeverageManagerBaseTest {
             })
         );
 
-        (uint256 collateralRatio, uint256 excess) =
+        (uint256 collateralRatio, int256 excess) =
             leverageManager.exposed_getStrategyCollateralRatioAndExcess(strategy, _getLendingAdapter());
 
         assertEq(collateralRatio, 3 * _BASE_RATIO());
@@ -50,11 +50,11 @@ contract GetStrategyCollateralRatioAndExcessTest is LeverageManagerBaseTest {
             })
         );
 
-        (uint256 collateralRatio, uint256 excess) =
+        (uint256 collateralRatio, int256 excess) =
             leverageManager.exposed_getStrategyCollateralRatioAndExcess(strategy, _getLendingAdapter());
 
         assertEq(collateralRatio, 1_9990_0000);
-        assertEq(excess, 0);
+        assertEq(excess, int256(-1 ether));
     }
 
     function test_getStrategyCollateralRatioAndExcess_RoundedDown() public {
@@ -70,7 +70,7 @@ contract GetStrategyCollateralRatioAndExcessTest is LeverageManagerBaseTest {
             })
         );
 
-        (uint256 collateralRatio, uint256 excess) =
+        (uint256 collateralRatio, int256 excess) =
             leverageManager.exposed_getStrategyCollateralRatioAndExcess(strategy, _getLendingAdapter());
 
         assertEq(collateralRatio, 2 * _BASE_RATIO());
@@ -91,13 +91,14 @@ contract GetStrategyCollateralRatioAndExcessTest is LeverageManagerBaseTest {
 
         _mockState_CalculateStrategyCollateralRatioAndExcess(state);
 
-        (uint256 collateralRatio, uint256 excess) =
+        (uint256 collateralRatio, int256 excess) =
             leverageManager.exposed_getStrategyCollateralRatioAndExcess(strategy, _getLendingAdapter());
 
         uint256 expectedCollateralRatio = Math.mulDiv(collateralInDebt, _BASE_RATIO(), debt, Math.Rounding.Floor);
         assertEq(collateralRatio, expectedCollateralRatio);
 
-        uint256 expectedExcess = collateralInDebt - Math.mulDiv(debt, targetRatio, _BASE_RATIO(), Math.Rounding.Ceil);
+        int256 expectedExcess =
+            int256(collateralInDebt - Math.mulDiv(debt, targetRatio, _BASE_RATIO(), Math.Rounding.Ceil));
         assertEq(excess, expectedExcess);
     }
 
@@ -110,14 +111,16 @@ contract GetStrategyCollateralRatioAndExcessTest is LeverageManagerBaseTest {
 
         _mockState_CalculateStrategyCollateralRatioAndExcess(state);
 
-        (uint256 collateralRatio, uint256 excess) =
+        (uint256 collateralRatio, int256 excess) =
             leverageManager.exposed_getStrategyCollateralRatioAndExcess(strategy, _getLendingAdapter());
 
         uint256 expectedCollateralRatio =
             Math.mulDiv(state.collateralInDebt, _BASE_RATIO(), state.debt, Math.Rounding.Floor);
 
+        int256 expectedExcess = -int256((Math.mulDiv(state.debt, state.targetRatio, _BASE_RATIO(), Math.Rounding.Ceil)) - state.collateralInDebt);
+
         assertEq(collateralRatio, expectedCollateralRatio);
-        assertEq(excess, 0);
+        assertEq(excess, expectedExcess);
     }
 
     function testFuzz_getStrategyCollateralRatioAndExcess_DebtIsZero(
@@ -128,10 +131,10 @@ contract GetStrategyCollateralRatioAndExcessTest is LeverageManagerBaseTest {
 
         _mockState_CalculateStrategyCollateralRatioAndExcess(state);
 
-        (uint256 collateralRatio, uint256 excess) =
+        (uint256 collateralRatio, int256 excess) =
             leverageManager.exposed_getStrategyCollateralRatioAndExcess(strategy, _getLendingAdapter());
 
         assertEq(collateralRatio, type(uint256).max);
-        assertEq(excess, state.collateralInDebt);
+        assertEq(excess, int256(uint256(state.collateralInDebt)));
     }
 }
