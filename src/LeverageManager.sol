@@ -251,7 +251,10 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         uint256 equityToCover;
 
         // If strategy has more collateral then needed, optimization is not possible on deposit action and we need to cover all equity by following target ratio
-        // If strategy has less collateral then needed, optimization is not possible on redeem action and we need to cover all equity by following current ratio
+        // If strategy has less collateral then needed, optimization is the following:
+        //   - Deposit collateral asset without borrowing debt asset enough to cover collateral deficit
+        //   - For the rest of equity borrow debt asset based on target ratio and take collateral asset from user based on target ratio
+        //   - This way strategy will get either on target ratio (if depositing equity > collateral deficit) or will get closer to target ratio
         if (action == IFeeManager.Action.Deposit && isOverCollateralized) {
             equityToCover = equity;
             ratio = getStrategyTargetCollateralRatio(strategy);
