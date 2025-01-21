@@ -8,9 +8,10 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // Internal imports
 import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
+import {MorphoLendingAdapterHarness} from "./harness/MorphoLendingAdapterHarness.sol";
 
 contract ConvertDebtToCollateralAsset is MorphoLendingAdapterBaseTest {
-    function test_convertDebtToCollateralAsset_RoundsUp_EqualDebtAndCollateralDecimals() public {
+    function test_convertDebtToCollateralAsset_RoundsUp() public {
         // Mock the price of the collateral asset in the debt asset to be 1 less than the scaling factor of Morpho oracles to simulate rounding up:
         // collateral = debt * ORACLE_PRICE_SCALE / collateralAssetPriceInDebtAsset
         // = debt * ORACLE_PRICE_SCALE / (ORACLE_PRICE_SCALE - 1)
@@ -22,9 +23,6 @@ contract ConvertDebtToCollateralAsset is MorphoLendingAdapterBaseTest {
         vm.mockCall(
             address(defaultMarketParams.oracle), abi.encodeWithSelector(IOracle.price.selector), abi.encode(price)
         );
-
-        collateralToken.mockSetDecimals(6);
-        debtToken.mockSetDecimals(6);
 
         assertEq(lendingAdapter.convertDebtToCollateralAsset(debt), debt + 1);
     }
@@ -39,6 +37,9 @@ contract ConvertDebtToCollateralAsset is MorphoLendingAdapterBaseTest {
         vm.mockCall(
             address(defaultMarketParams.oracle), abi.encodeWithSelector(IOracle.price.selector), abi.encode(price)
         );
+
+        MorphoLendingAdapterHarness(address(lendingAdapter)).setCollateralDecimals(18);
+        MorphoLendingAdapterHarness(address(lendingAdapter)).setDebtDecimals(18);
 
         assertEq(
             lendingAdapter.convertDebtToCollateralAsset(debt),
@@ -59,8 +60,8 @@ contract ConvertDebtToCollateralAsset is MorphoLendingAdapterBaseTest {
             address(defaultMarketParams.oracle), abi.encodeWithSelector(IOracle.price.selector), abi.encode(price)
         );
 
-        collateralToken.mockSetDecimals(18);
-        debtToken.mockSetDecimals(6);
+        MorphoLendingAdapterHarness(address(lendingAdapter)).setCollateralDecimals(18);
+        MorphoLendingAdapterHarness(address(lendingAdapter)).setDebtDecimals(6);
         uint256 scalingFactor = 10 ** (18 - 6);
 
         assertEq(
@@ -82,8 +83,8 @@ contract ConvertDebtToCollateralAsset is MorphoLendingAdapterBaseTest {
             address(defaultMarketParams.oracle), abi.encodeWithSelector(IOracle.price.selector), abi.encode(price)
         );
 
-        collateralToken.mockSetDecimals(6);
-        debtToken.mockSetDecimals(18);
+        MorphoLendingAdapterHarness(address(lendingAdapter)).setCollateralDecimals(6);
+        MorphoLendingAdapterHarness(address(lendingAdapter)).setDebtDecimals(18);
         uint256 scalingFactor = 10 ** (18 - 6);
 
         assertEq(

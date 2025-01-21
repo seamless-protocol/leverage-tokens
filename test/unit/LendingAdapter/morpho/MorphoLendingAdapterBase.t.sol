@@ -13,6 +13,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
+import {MorphoLendingAdapterHarness} from "./harness/MorphoLendingAdapterHarness.sol";
 import {MockERC20} from "../../mock/MockERC20.sol";
 import {MockMorpho} from "../../mock/MockMorpho.sol";
 
@@ -45,8 +46,14 @@ contract MorphoLendingAdapterBaseTest is Test {
     function setUp() public {
         defaultMarketId = MarketParamsLib.id(defaultMarketParams);
         morpho = new MockMorpho(defaultMarketId, defaultMarketParams);
-        lendingAdapter = new MorphoLendingAdapter(leverageManager, IMorpho(address(morpho)));
+        lendingAdapter = new MorphoLendingAdapterHarness(leverageManager, IMorpho(address(morpho)));
         MorphoLendingAdapter(address(lendingAdapter)).initialize(defaultMarketId);
+
+        vm.label(address(lendingAdapter), "lendingAdapter");
+        vm.label(address(morpho), "morpho");
+        vm.label(address(leverageManager), "leverageManager");
+        vm.label(address(collateralToken), "collateralToken");
+        vm.label(address(debtToken), "debtToken");
     }
 
     function test_setUp() public view {

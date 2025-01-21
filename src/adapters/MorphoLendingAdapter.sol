@@ -31,6 +31,12 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     /// @inheritdoc IMorphoLendingAdapter
     MarketParams public marketParams;
 
+    /// @dev The amount of decimals of the collateral asset
+    uint8 internal collateralDecimals;
+
+    /// @dev The amount of decimals of the debt asset
+    uint8 internal debtDecimals;
+
     /// @dev Reverts if the caller is not the stored leverageManager address
     modifier onlyLeverageManager() {
         if (msg.sender != address(leverageManager)) revert Unauthorized();
@@ -50,6 +56,9 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     function initialize(Id _morphoMarketId) external initializer {
         morphoMarketId = _morphoMarketId;
         marketParams = morpho.idToMarketParams(_morphoMarketId);
+
+        collateralDecimals = IERC20Metadata(marketParams.collateralToken).decimals();
+        debtDecimals = IERC20Metadata(marketParams.loanToken).decimals();
     }
 
     /// @inheritdoc ILendingAdapter
@@ -65,50 +74,33 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     /// @inheritdoc ILendingAdapter
     function convertCollateralToDebtAsset(uint256 collateral) public view returns (uint256 debt) {
         // Morpho oracles return the price of 1 asset of collateral token quoted in 1 asset of loan token, scaled by ORACLE_PRICE_SCALE.
-        // So, the price is quoted in `ORACLE_PRICE_SCALE + loan token decimals - collateral token decimals` decimals of precision.
+        // More specifically, the price is quoted in `ORACLE_PRICE_SCALE + loan token decimals - collateral token decimals` decimals of precision.
         uint256 collateralAssetPriceInDebtAsset = IOracle(marketParams.oracle).price();
 
-        uint256 collateralDecimals = IERC20Metadata(marketParams.collateralToken).decimals();
-        uint256 debtDecimals = IERC20Metadata(marketParams.loanToken).decimals();
-
-        // Calculate the scaling factor based on the difference in decimals, and calculate the debt amount in the debt token's precision
-        if (collateralDecimals > debtDecimals) {
-            uint256 scalingFactor = 10 ** (collateralDecimals - debtDecimals);
-            debt = Math.mulDiv(
-                collateral, collateralAssetPriceInDebtAsset, ORACLE_PRICE_SCALE * scalingFactor, Math.Rounding.Floor
-            );
-        } else if (collateralDecimals < debtDecimals) {
-            uint256 scalingFactor = 10 ** (debtDecimals - collateralDecimals);
-            debt = Math.mulDiv(
-                collateral * scalingFactor, collateralAssetPriceInDebtAsset, ORACLE_PRICE_SCALE, Math.Rounding.Floor
-            );
-        } else {
-            debt = Math.mulDiv(collateral, collateralAssetPriceInDebtAsset, ORACLE_PRICE_SCALE, Math.Rounding.Floor);
-        }
+        debt = _multiplyAndScale(
+            collateral,
+            collateralAssetPriceInDebtAsset,
+            ORACLE_PRICE_SCALE,
+            collateralDecimals,
+            debtDecimals,
+            Math.Rounding.Floor
+        );
     }
 
     /// @inheritdoc ILendingAdapter
     function convertDebtToCollateralAsset(uint256 debt) external view returns (uint256 collateral) {
-        // Fetch the price of 1 collateral token quoted in the debt token, scaled by ORACLE_PRICE_SCALE
+        // Morpho oracles return the price of 1 asset of collateral token quoted in 1 asset of loan token, scaled by ORACLE_PRICE_SCALE.
+        // More specifically, the price is quoted in `ORACLE_PRICE_SCALE + loan token decimals - collateral token decimals` decimals of precision.
         uint256 collateralAssetPriceInDebtAsset = IOracle(marketParams.oracle).price();
 
-        uint256 collateralDecimals = IERC20Metadata(marketParams.collateralToken).decimals();
-        uint256 debtDecimals = IERC20Metadata(marketParams.loanToken).decimals();
-
-        // Calculate the scaling factor based on the difference in decimals, and calculate the collateral amount in the collateral token's precision
-        if (debtDecimals > collateralDecimals) {
-            uint256 scalingFactor = 10 ** (debtDecimals - collateralDecimals);
-            collateral = Math.mulDiv(
-                debt, ORACLE_PRICE_SCALE, collateralAssetPriceInDebtAsset * scalingFactor, Math.Rounding.Ceil
-            );
-        } else if (debtDecimals < collateralDecimals) {
-            uint256 scalingFactor = 10 ** (collateralDecimals - debtDecimals);
-            collateral = Math.mulDiv(
-                debt * scalingFactor, ORACLE_PRICE_SCALE, collateralAssetPriceInDebtAsset, Math.Rounding.Ceil
-            );
-        } else {
-            collateral = Math.mulDiv(debt, ORACLE_PRICE_SCALE, collateralAssetPriceInDebtAsset, Math.Rounding.Ceil);
-        }
+        collateral = _multiplyAndScale(
+            debt,
+            ORACLE_PRICE_SCALE,
+            collateralAssetPriceInDebtAsset,
+            debtDecimals,
+            collateralDecimals,
+            Math.Rounding.Ceil
+        );
     }
 
     /// @inheritdoc ILendingAdapter
@@ -172,5 +164,28 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
         // Repay the debt asset to the Morpho market
         IERC20(_marketParams.loanToken).approve(address(_morpho), amount);
         _morpho.repay(_marketParams, amount, 0, address(this), hex"");
+    }
+
+    /// @dev Multiplies a value by (numerator / denominator) and scales it to the output decimals
+    function _multiplyAndScale(
+        uint256 value,
+        uint256 numerator,
+        uint256 denominator,
+        uint256 inputDecimals,
+        uint256 outputDecimals,
+        Math.Rounding rounding
+    ) internal pure returns (uint256 scaledAmount) {
+        if (inputDecimals > outputDecimals) {
+            // Scale down the input value
+            uint256 scalingFactor = 10 ** (inputDecimals - outputDecimals);
+            scaledAmount = Math.mulDiv(value, numerator, denominator * scalingFactor, rounding);
+        } else if (inputDecimals < outputDecimals) {
+            // Scale up the input value
+            uint256 scalingFactor = 10 ** (outputDecimals - inputDecimals);
+            scaledAmount = Math.mulDiv(value * scalingFactor, numerator, denominator, rounding);
+        } else {
+            // No scaling needed
+            scaledAmount = Math.mulDiv(value, numerator, denominator, rounding);
+        }
     }
 }
