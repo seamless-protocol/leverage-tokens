@@ -80,11 +80,12 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     /// @inheritdoc ILeverageManager
     function getStrategyCollateralAndDebtForEquity(
         IStrategy strategy,
-        uint256 equityInDebtAsset,
+        uint256 equityInCollateralAsset,
         IFeeManager.Action action
     ) public view returns (uint256, uint256) {
+        ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
         (uint256 collateral, uint256 debt) = _calculateCollateralAndDebtToCoverEquity(
-            strategy, getStrategyLendingAdapter(strategy), equityInDebtAsset, action
+            strategy, lendingAdapter, lendingAdapter.convertCollateralToDebtAsset(equityInCollateralAsset), action
         );
 
         return (collateral, debt);
