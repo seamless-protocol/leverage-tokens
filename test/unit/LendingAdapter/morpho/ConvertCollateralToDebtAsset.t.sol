@@ -42,6 +42,21 @@ contract ConvertCollateralToDebtAsset is MorphoLendingAdapterBaseTest {
         assertEq(lendingAdapter.convertCollateralToDebtAsset(collateral), 2e18);
     }
 
+    function test_convertCollateralToDebtAsset_EqualDebtAndCollateralDecimals() public {
+        collateralToken.mockSetDecimals(18);
+        debtToken.mockSetDecimals(18);
+
+        uint256 collateral = 1e18;
+        // Mock the price of the collateral asset in the debt asset to be 1 collateral = 2 debt.
+        // 36 decimals of precision because IOracle.price() returns with `36 + loan token decimals - collateral token decimals`.
+        uint256 price = 2e36;
+        vm.mockCall(
+            address(defaultMarketParams.oracle), abi.encodeWithSelector(IOracle.price.selector), abi.encode(price)
+        );
+
+        assertEq(lendingAdapter.convertCollateralToDebtAsset(collateral), 2e18);
+    }
+
     /// @dev uint128 is used to avoid overflows in the test. Also, Morpho only supports up to type(uint128).max for debt and collateral
     function testFuzz_convertCollateralToDebtAsset_RoundsDown_EqualDebtAndCollateralDecimals(uint128 collateral)
         public

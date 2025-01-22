@@ -68,17 +68,8 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
         // More specifically, the price is quoted in `ORACLE_PRICE_SCALE + loan token decimals - collateral token decimals` decimals of precision.
         uint256 collateralAssetPriceInDebtAsset = IOracle(marketParams.oracle).price();
 
-        uint8 collateralDecimals = IERC20Metadata(marketParams.collateralToken).decimals();
-        uint8 debtDecimals = IERC20Metadata(marketParams.loanToken).decimals();
-
-        return _multiplyAndScale(
-            collateral,
-            collateralAssetPriceInDebtAsset,
-            Math.mulDiv(ORACLE_PRICE_SCALE, 10 ** debtDecimals, 10 ** collateralDecimals),
-            collateralDecimals,
-            debtDecimals,
-            Math.Rounding.Floor
-        );
+        // The result is scaled down by ORACLE_PRICE_SCALE to accommodate the oracle's decimals of precision
+        return Math.mulDiv(collateral, collateralAssetPriceInDebtAsset, ORACLE_PRICE_SCALE, Math.Rounding.Floor);
     }
 
     /// @inheritdoc ILendingAdapter
@@ -87,17 +78,8 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
         // More specifically, the price is quoted in `ORACLE_PRICE_SCALE + loan token decimals - collateral token decimals` decimals of precision.
         uint256 collateralAssetPriceInDebtAsset = IOracle(marketParams.oracle).price();
 
-        uint8 collateralDecimals = IERC20Metadata(marketParams.collateralToken).decimals();
-        uint8 debtDecimals = IERC20Metadata(marketParams.loanToken).decimals();
-
-        return _multiplyAndScale(
-            debt,
-            Math.mulDiv(ORACLE_PRICE_SCALE, 10 ** debtDecimals, 10 ** collateralDecimals),
-            collateralAssetPriceInDebtAsset,
-            debtDecimals,
-            collateralDecimals,
-            Math.Rounding.Ceil
-        );
+        // The result is scaled up by ORACLE_PRICE_SCALE to accommodate the oracle's decimals of precision
+        return Math.mulDiv(debt, ORACLE_PRICE_SCALE, collateralAssetPriceInDebtAsset, Math.Rounding.Ceil);
     }
 
     /// @inheritdoc ILendingAdapter
@@ -161,28 +143,5 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
         // Repay the debt asset to the Morpho market
         IERC20(_marketParams.loanToken).approve(address(_morpho), amount);
         _morpho.repay(_marketParams, amount, 0, address(this), hex"");
-    }
-
-    /// @dev Multiplies a value by (numerator / denominator) and scales it to the output decimals
-    function _multiplyAndScale(
-        uint256 value,
-        uint256 numerator,
-        uint256 denominator,
-        uint256 inputDecimals,
-        uint256 outputDecimals,
-        Math.Rounding rounding
-    ) internal pure returns (uint256) {
-        if (inputDecimals > outputDecimals) {
-            // Scale down the input value
-            uint256 scalingFactor = 10 ** (inputDecimals - outputDecimals);
-            return Math.mulDiv(value, numerator, denominator * scalingFactor, rounding);
-        } else if (inputDecimals < outputDecimals) {
-            // Scale up the input value
-            uint256 scalingFactor = 10 ** (outputDecimals - inputDecimals);
-            return Math.mulDiv(value * scalingFactor, numerator, denominator, rounding);
-        } else {
-            // No scaling needed
-            return Math.mulDiv(value, numerator, denominator, rounding);
-        }
     }
 }
