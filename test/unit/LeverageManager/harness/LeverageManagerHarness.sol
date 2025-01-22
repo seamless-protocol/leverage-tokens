@@ -27,7 +27,7 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
         view
         returns (uint256 currCollateralRatio, int256 excessCollateral)
     {
-        return _getStrategyCollateralRatioAndExcess(strategy, lendingAdapter);
+        return _getStrategyCollateralRatioAndExcess(strategy);
     }
 
     function exposed_calculateCollateralAndDebtToCoverEquity(
@@ -36,7 +36,7 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
         uint256 equity,
         IFeeManager.Action action
     ) external view returns (uint256 collateral, uint256 debt) {
-        return _calculateCollateralAndDebtToCoverEquity(strategy, lendingAdapter, equity, action);
+        return _calculateCollateralAndDebtToCoverEquity(strategy, equity, action);
     }
 
     function exposed_convertToEquity(IStrategy strategy, uint256 shares) external view returns (uint256 equity) {

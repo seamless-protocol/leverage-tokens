@@ -27,6 +27,18 @@ interface ILeverageManager {
     /// @notice Error thrown when slippage is too high during mint/redeem
     error SlippageTooHigh(uint256 actual, uint256 expected);
 
+    /// @notice Error thrown when strategy is not eligible for rebalance
+    error StrategyNotEligibleForRebalance(IStrategy strategy);
+
+    /// @notice Error thrown when collateral ratio after rebalance is worse than before rebalance
+    error CollateralRatioInvalid();
+
+    /// @notice Error thrown when collateral ratio after rebalance is on the opposite side of target ratio than before rebalance
+    error TooBigCollateralRatioChange();
+
+    /// @notice Error thrown when equity loss on rebalance is too big
+    error EquityLossTooBig();
+
     /// @notice Event emitted when strategy token factory is set
     event StrategyTokenFactorySet(address factory);
 

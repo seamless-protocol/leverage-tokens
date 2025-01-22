@@ -200,6 +200,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     ) internal {
         _mockStrategyCollateralInDebtAsset(state.collateralInDebt);
         _mockStrategyDebt(state.debt);
+        _mockStrategyTotalEquity(state.collateralInDebt > state.debt ? state.collateralInDebt - state.debt : 0);
         _setStrategyTargetRatio(state.targetRatio);
     }
 
