@@ -18,6 +18,8 @@ import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 
+import {console2} from "forge-std/console2.sol";
+
 contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     /// @inheritdoc IMorphoLendingAdapter
     ILeverageManager public immutable leverageManager;
@@ -30,12 +32,6 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
 
     /// @inheritdoc IMorphoLendingAdapter
     MarketParams public marketParams;
-
-    /// @dev The amount of decimals of the collateral asset
-    uint8 internal collateralDecimals;
-
-    /// @dev The amount of decimals of the debt asset
-    uint8 internal debtDecimals;
 
     /// @dev Reverts if the caller is not the stored leverageManager address
     modifier onlyLeverageManager() {
@@ -56,9 +52,6 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     function initialize(Id _morphoMarketId) external initializer {
         morphoMarketId = _morphoMarketId;
         marketParams = morpho.idToMarketParams(_morphoMarketId);
-
-        collateralDecimals = IERC20Metadata(marketParams.collateralToken).decimals();
-        debtDecimals = IERC20Metadata(marketParams.loanToken).decimals();
     }
 
     /// @inheritdoc ILendingAdapter
@@ -77,10 +70,13 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
         // More specifically, the price is quoted in `ORACLE_PRICE_SCALE + loan token decimals - collateral token decimals` decimals of precision.
         uint256 collateralAssetPriceInDebtAsset = IOracle(marketParams.oracle).price();
 
+        uint8 collateralDecimals = IERC20Metadata(marketParams.collateralToken).decimals();
+        uint8 debtDecimals = IERC20Metadata(marketParams.loanToken).decimals();
+
         return _multiplyAndScale(
             collateral,
             collateralAssetPriceInDebtAsset,
-            ORACLE_PRICE_SCALE,
+            Math.mulDiv(ORACLE_PRICE_SCALE, 10 ** debtDecimals, 10 ** collateralDecimals),
             collateralDecimals,
             debtDecimals,
             Math.Rounding.Floor
@@ -93,9 +89,12 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
         // More specifically, the price is quoted in `ORACLE_PRICE_SCALE + loan token decimals - collateral token decimals` decimals of precision.
         uint256 collateralAssetPriceInDebtAsset = IOracle(marketParams.oracle).price();
 
+        uint8 collateralDecimals = IERC20Metadata(marketParams.collateralToken).decimals();
+        uint8 debtDecimals = IERC20Metadata(marketParams.loanToken).decimals();
+
         return _multiplyAndScale(
             debt,
-            ORACLE_PRICE_SCALE,
+            Math.mulDiv(ORACLE_PRICE_SCALE, 10 ** debtDecimals, 10 ** collateralDecimals),
             collateralAssetPriceInDebtAsset,
             debtDecimals,
             collateralDecimals,
