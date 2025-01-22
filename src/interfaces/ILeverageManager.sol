@@ -107,15 +107,17 @@ interface ILeverageManager {
     /// @return debtAsset Debt asset for the strategy
     function getStrategyDebtAsset(IStrategy strategy) external view returns (IERC20 debtAsset);
 
-    /// @notice Returns collateral amount for a given equity in debt asset, based on current strategy collateral ratio
-    /// @param strategy Strategy to get collateral for
-    /// @param equityInDebtAsset Equity in debt asset to get collateral for
-    /// @param action Action to get collateral for
+    /// @notice Returns collateral and debt amount for a given equity, based on current strategy collateral ratio
+    /// @param strategy Strategy to get collateral and debt for
+    /// @param equityInDebtAsset Equity in debt asset to get collateral and debt for
+    /// @param action Action to get collateral and debt for
     /// @return collateral Collateral for the equity
-    function getStrategyCollateralForEquity(IStrategy strategy, uint256 equityInDebtAsset, IFeeManager.Action action)
-        external
-        view
-        returns (uint256 collateral);
+    /// @return debt Debt for the equity
+    function getStrategyCollateralAndDebtForEquity(
+        IStrategy strategy,
+        uint256 equityInDebtAsset,
+        IFeeManager.Action action
+    ) external view returns (uint256 collateral, uint256 debt);
 
     /// @notice Sets factory for creating new strategy tokens
     /// @param factory Factory to set

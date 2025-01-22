@@ -19,18 +19,9 @@ interface ISwapper {
     /// @notice Swap tokens using a provider
     /// @param provider Provider to use for the swap
     /// @param from Token to swap from
-    /// @param to Token to swap to
-    /// @param fromAmount Amount of `from` tokens to swap
-    /// @param beneficiary Address to receive the swapped tokens
-    /// @param minReturnAmount Minimum amount of `to` tokens to receive
+    /// @param fromAmount Amount of tokens to swap
     /// @param providerSwapData Swap data to use for the swap using the provider
-    function swap(
-        Provider provider,
-        IERC20 from,
-        IERC20 to,
-        uint256 fromAmount,
-        address payable beneficiary,
-        uint256 minReturnAmount,
-        bytes calldata providerSwapData
-    ) external returns (uint256 toAmount);
+    function swap(Provider provider, IERC20 from, uint256 fromAmount, bytes calldata providerSwapData)
+        external
+        returns (uint256 toAmount);
 }

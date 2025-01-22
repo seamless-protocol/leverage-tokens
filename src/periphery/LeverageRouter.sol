@@ -6,6 +6,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
+import {OneInchSwapDescription} from "src/interfaces/IOneInchAggregationRouterV6.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {ISwapper} from "src/interfaces/ISwapper.sol";
 
@@ -22,13 +23,13 @@ contract LeverageRouter {
 
     struct DepositParams {
         IStrategy strategy;
-        ILeverageManager leverageManager;
         address collateralAsset;
         address debtAsset;
         uint256 equityInCollateralAsset;
         uint256 requiredCollateral;
-        bytes providerSwapData;
+        uint256 requiredDebt;
         address receiver;
+        bytes providerSwapData;
     }
 
     constructor(ILeverageManager _leverageManager, IMorpho _morpho, ISwapper _swapper, ISwapper.Provider _provider) {
@@ -36,6 +37,25 @@ contract LeverageRouter {
         morpho = _morpho;
         swapper = _swapper;
         provider = _provider;
+    }
+
+    /// @notice Preview total collateral and debt required for a deposit of equity into a strategy
+    /// @dev This function is useful for generating swap aggregator data required for a deposit.
+    ///      For example, if the LeverageRouter is using 1inch for swaps, the caller needs to pass in the 1inch executor,
+    ///      description, and swap tx data, obtained off-chain by the 1inch API. This requires knowledge of the amount of
+    ///      debt to swap to the collateral asset for repaying the flash loan used to deposit the equity into the strategy.
+    /// @param strategy Strategy to preview collateral and debt for
+    /// @param equityInCollateralAsset Equity in collateral asset to preview collateral and debt for
+    /// @return collateral Collateral required
+    /// @return debt Debt required
+    function previewCollateralAndDebtRequiredForDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
+        external
+        view
+        returns (uint256 collateral, uint256 debt)
+    {
+        return leverageManager.getStrategyCollateralAndDebtForEquity(
+            strategy, equityInCollateralAsset, IFeeManager.Action.Deposit
+        );
     }
 
     function setProvider(ISwapper.Provider _provider) external {
@@ -55,7 +75,7 @@ contract LeverageRouter {
         collateralAsset.transferFrom(msg.sender, address(this), equityInCollateralAsset);
 
         // Get required collateral amount for the equity amount being deposited into the strategy
-        uint256 requiredCollateral = _leverageManager.getStrategyCollateralForEquity(
+        (uint256 requiredCollateral, uint256 requiredDebt) = _leverageManager.getStrategyCollateralAndDebtForEquity(
             strategy, equityInCollateralAsset, IFeeManager.Action.Deposit
         );
 
@@ -67,13 +87,13 @@ contract LeverageRouter {
                 abi.encode(
                     DepositParams({
                         strategy: strategy,
-                        leverageManager: _leverageManager,
                         collateralAsset: address(collateralAsset),
                         debtAsset: address(_leverageManager.getStrategyDebtAsset(strategy)),
                         equityInCollateralAsset: equityInCollateralAsset,
                         requiredCollateral: requiredCollateral,
-                        providerSwapData: providerSwapData,
-                        receiver: msg.sender
+                        requiredDebt: requiredDebt,
+                        receiver: msg.sender,
+                        providerSwapData: providerSwapData
                     })
                 )
             );
@@ -86,13 +106,13 @@ contract LeverageRouter {
 
     /// @notice Callback function for morpho flash loan
     /// @dev This function is called by morpho when a flash loan is taken. It is expected to repay the flash loan
-    /// @param loanAmount Amount of the flash loan
+    /// @param loanAmount Amount of asset flash loaned
     /// @param data Encoded data passed to `morpho.flashLoan`. In this case, it contains `DepositParams`
     function onMorphoFlashLoan(uint256 loanAmount, bytes calldata data) external {
         if (msg.sender != address(morpho)) revert Unauthorized();
 
         DepositParams memory params = abi.decode(data, (DepositParams));
-        ILeverageManager _leverageManager = params.leverageManager;
+        ILeverageManager _leverageManager = leverageManager;
 
         // Convert equity to expected strategy shares
         uint256 minShares = _leverageManager.convertEquityToShares(params.strategy, params.equityInCollateralAsset);
@@ -103,15 +123,9 @@ contract LeverageRouter {
         IERC20(address(params.strategy)).transfer(params.receiver, sharesReceived);
 
         // Swap debt asset received from the deposit to the collateral asset, to repay the flash loan
-        uint256 toAmount = swapper.swap(
-            provider,
-            IERC20(params.debtAsset),
-            IERC20(params.collateralAsset),
-            loanAmount,
-            payable(address(this)),
-            params.requiredCollateral - params.equityInCollateralAsset,
-            params.providerSwapData
-        );
+        IERC20(params.debtAsset).approve(address(swapper), params.requiredDebt);
+        uint256 toAmount =
+            swapper.swap(provider, IERC20(params.debtAsset), params.requiredDebt, params.providerSwapData);
 
         // Approve morpho to transfer assets received from the swap to repay the flash loan
         IERC20(params.collateralAsset).approve(address(morpho), loanAmount);

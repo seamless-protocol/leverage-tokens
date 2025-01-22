@@ -77,16 +77,17 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         return getStrategyLendingAdapter(strategy).getDebtAsset();
     }
 
-    function getStrategyCollateralForEquity(IStrategy strategy, uint256 equityInDebtAsset, IFeeManager.Action action)
-        public
-        view
-        returns (uint256)
-    {
-        (uint256 collateral,) = _calculateCollateralAndDebtToCoverEquity(
+    /// @inheritdoc ILeverageManager
+    function getStrategyCollateralAndDebtForEquity(
+        IStrategy strategy,
+        uint256 equityInDebtAsset,
+        IFeeManager.Action action
+    ) public view returns (uint256, uint256) {
+        (uint256 collateral, uint256 debt) = _calculateCollateralAndDebtToCoverEquity(
             strategy, getStrategyLendingAdapter(strategy), equityInDebtAsset, action
         );
 
-        return collateral;
+        return (collateral, debt);
     }
 
     /// @inheritdoc ILeverageManager
