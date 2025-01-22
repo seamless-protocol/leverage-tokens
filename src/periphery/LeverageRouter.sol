@@ -67,7 +67,7 @@ contract LeverageRouter {
     /// @notice Deposit equity into a strategy
     /// @param strategy Strategy to deposit equity into
     /// @param equityInCollateralAsset Equity in collateral asset to deposit
-    /// @param providerSwapData Swap data to use for the swap using the provider
+    /// @param providerSwapData Swap data to use for the swap using the set provider
     function deposit(IStrategy strategy, uint256 equityInCollateralAsset, bytes calldata providerSwapData) external {
         ILeverageManager _leverageManager = leverageManager;
         IERC20 collateralAsset = _leverageManager.getStrategyCollateralAsset(strategy);
@@ -125,7 +125,7 @@ contract LeverageRouter {
         // Swap debt asset received from the deposit to the collateral asset, to repay the flash loan
         IERC20(params.debtAsset).approve(address(swapper), params.requiredDebt);
         uint256 toAmount =
-            swapper.swap(provider, IERC20(params.debtAsset), params.requiredDebt, params.providerSwapData);
+            swapper.swap(provider, IERC20(params.debtAsset), params.requiredDebt, loanAmount, params.providerSwapData);
 
         // Approve morpho to transfer assets received from the swap to repay the flash loan
         IERC20(params.collateralAsset).approve(address(morpho), loanAmount);

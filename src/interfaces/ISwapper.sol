@@ -16,12 +16,17 @@ interface ISwapper {
     /// @notice Error thrown when the return amount is less than the minimum expected return amount
     error SlippageTooHigh(uint256 actualReturnAmount, uint256 minExpectedReturnAmount);
 
-    /// @notice Swap tokens using a provider
+    /// @notice Swap tokens using a swap provider
     /// @param provider Provider to use for the swap
     /// @param from Token to swap from
     /// @param fromAmount Amount of tokens to swap
-    /// @param providerSwapData Swap data to use for the swap using the provider
-    function swap(Provider provider, IERC20 from, uint256 fromAmount, bytes calldata providerSwapData)
-        external
-        returns (uint256 toAmount);
+    /// @param minToAmount Minimum expected amount of tokens to receive
+    /// @param providerSwapData Encoded swap data to use for the swap using the provider
+    function swap(
+        Provider provider,
+        IERC20 from,
+        uint256 fromAmount,
+        uint256 minToAmount,
+        bytes calldata providerSwapData
+    ) external returns (uint256 toAmount);
 }
