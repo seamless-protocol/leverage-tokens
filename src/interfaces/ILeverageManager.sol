@@ -5,6 +5,7 @@ pragma solidity ^0.8.26;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
+import {IFeeManager} from "./IFeeManager.sol";
 import {IStrategy} from "./IStrategy.sol";
 import {CollateralRatios} from "src/types/DataTypes.sol";
 import {IBeaconProxyFactory} from "./IBeaconProxyFactory.sol";
@@ -52,6 +53,15 @@ interface ILeverageManager {
     /// @notice Event emitted when user redeems assets from strategy
     event Redeem(IStrategy indexed strategy, address indexed from, uint256 shares, uint256 collateral, uint256 debt);
 
+    /// @notice Converts equity in collateral asset to shares
+    /// @param strategy Strategy to convert equity to shares for
+    /// @param equityInCollateralAsset Equity in collateral asset to convert to shares
+    /// @return shares Equity in shares
+    function convertEquityToShares(IStrategy strategy, uint256 equityInCollateralAsset)
+        external
+        view
+        returns (uint256 shares);
+
     /// @notice Returns factory for creating new strategy tokens
     /// @return factory Factory for creating new strategy tokens
     function getStrategyTokenFactory() external view returns (IBeaconProxyFactory factory);
@@ -86,6 +96,26 @@ interface ILeverageManager {
     /// @param strategy Address of the strategy to get config for
     /// @return config Strategy configuration
     function getStrategyConfig(IStrategy strategy) external returns (Storage.StrategyConfig memory config);
+
+    /// @notice Returns collateral asset for a strategy
+    /// @param strategy Strategy to get collateral asset for
+    /// @return collateralAsset Collateral asset for the strategy
+    function getStrategyCollateralAsset(IStrategy strategy) external view returns (IERC20 collateralAsset);
+
+    /// @notice Returns debt asset for a strategy
+    /// @param strategy Strategy to get debt asset for
+    /// @return debtAsset Debt asset for the strategy
+    function getStrategyDebtAsset(IStrategy strategy) external view returns (IERC20 debtAsset);
+
+    /// @notice Returns collateral amount for a given equity in debt asset, based on current strategy collateral ratio
+    /// @param strategy Strategy to get collateral for
+    /// @param equityInDebtAsset Equity in debt asset to get collateral for
+    /// @param action Action to get collateral for
+    /// @return collateral Collateral for the equity
+    function getStrategyCollateralForEquity(IStrategy strategy, uint256 equityInDebtAsset, IFeeManager.Action action)
+        external
+        view
+        returns (uint256 collateral);
 
     /// @notice Sets factory for creating new strategy tokens
     /// @param factory Factory to set
@@ -122,6 +152,15 @@ interface ILeverageManager {
     /// @dev Cap for strategy is leveraged amount in collateral asset
     /// @dev Only address with MANAGER role can call this function
     function setStrategyCollateralCap(IStrategy strategy, uint256 collateralCap) external;
+
+    /// @notice Mints shares of a strategy and deposits assets into it, recipient receives shares but caller receives debt
+    /// @param strategy The strategy to deposit into
+    /// @param equityInCollateralAsset The quantity of equity to deposit, denominated in the collateral asset of the strategy
+    /// @param minShares The minimum amount of shares to receive
+    /// @return shares Actual amount of shares given to the user
+    function deposit(IStrategy strategy, uint256 equityInCollateralAsset, uint256 minShares)
+        external
+        returns (uint256 shares);
 
     /// @notice Mints shares of a strategy and deposits assets into it, recipient receives shares but caller receives debt
     /// @param strategy The strategy to deposit into

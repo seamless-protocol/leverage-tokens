@@ -40,6 +40,14 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}
 
+    function convertEquityToShares(IStrategy strategy, uint256 equityInCollateralAsset)
+        public
+        view
+        returns (uint256 shares)
+    {
+        // TODO: Implement
+    }
+
     /// @inheritdoc ILeverageManager
     function getStrategyTokenFactory() public view returns (IBeaconProxyFactory factory) {
         return Storage.layout().strategyTokenFactory;
@@ -57,6 +65,28 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     /// @inheritdoc ILeverageManager
     function getStrategyLendingAdapter(IStrategy strategy) public view returns (ILendingAdapter adapter) {
         return Storage.layout().config[strategy].lendingAdapter;
+    }
+
+    /// @inheritdoc ILeverageManager
+    function getStrategyCollateralAsset(IStrategy strategy) public view returns (IERC20 collateralAsset) {
+        return getStrategyLendingAdapter(strategy).getCollateralAsset();
+    }
+
+    /// @inheritdoc ILeverageManager
+    function getStrategyDebtAsset(IStrategy strategy) public view returns (IERC20 debtAsset) {
+        return getStrategyLendingAdapter(strategy).getDebtAsset();
+    }
+
+    function getStrategyCollateralForEquity(IStrategy strategy, uint256 equityInDebtAsset, IFeeManager.Action action)
+        public
+        view
+        returns (uint256)
+    {
+        (uint256 collateral,) = _calculateCollateralAndDebtToCoverEquity(
+            strategy, getStrategyLendingAdapter(strategy), equityInDebtAsset, action
+        );
+
+        return collateral;
     }
 
     /// @inheritdoc ILeverageManager
@@ -162,6 +192,13 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     function setStrategyCollateralCap(IStrategy strategy, uint256 collateralCap) public onlyRole(MANAGER_ROLE) {
         Storage.layout().config[strategy].collateralCap = collateralCap;
         emit StrategyCollateralCapSet(strategy, collateralCap);
+    }
+
+    function deposit(IStrategy strategy, uint256 equityInCollateralAsset, uint256 minShares)
+        external
+        returns (uint256 shares)
+    {
+        // TODO: Implement
     }
 
     /// @inheritdoc ILeverageManager
