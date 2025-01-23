@@ -1,17 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
+// Dependency imports
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {
-    IOneInchAggregationExecutor,
-    IOneInchAggregationRouterV6,
-    OneInchSwapDescription
-} from "src/interfaces/IOneInchAggregationRouterV6.sol";
+
+// Internal imports
 import {ISwapper} from "src/interfaces/ISwapper.sol";
 
-// TODO: This contract should be upgradeable
+// TODO: This contract should be upgradeable, so we have the option to add support for other providers in the future
 contract Swapper is ISwapper {
     /// @notice Provider used for swaps
     Provider public provider;

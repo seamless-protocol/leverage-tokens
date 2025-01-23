@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-import {IMorpho} from "src/interfaces/IMorpho.sol";
+// Dependency imports
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+// Internal imports
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {OneInchSwapDescription} from "src/interfaces/IOneInchAggregationRouterV6.sol";
+import {IMorpho} from "src/interfaces/IMorpho.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {ISwapper} from "src/interfaces/ISwapper.sol";
 
