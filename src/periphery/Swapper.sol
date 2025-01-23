@@ -10,7 +10,7 @@ import {ISwapper} from "src/interfaces/ISwapper.sol";
 
 // TODO: This contract should be upgradeable, so we have the option to add support for other providers in the future
 contract Swapper is ISwapper {
-    /// @notice Provider used for swaps
+    /// @inheritdoc ISwapper
     Provider public provider;
 
     /// @notice LiFi Diamond Proxy protocol contract address

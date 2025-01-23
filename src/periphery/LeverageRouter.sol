@@ -38,11 +38,17 @@ contract LeverageRouter {
         swapper = _swapper;
     }
 
+    /// @notice Get the current swap provider
+    /// @return provider Current swap provider
+    function getSwapProvider() external view returns (ISwapper.Provider) {
+        return swapper.provider();
+    }
+
     /// @notice Preview total collateral and debt required for a deposit of equity into a strategy
-    /// @dev This function is useful for generating swap aggregator data required for a deposit.
-    ///      For example, if the LeverageRouter is using 1inch for swaps, the caller needs to pass in the 1inch executor,
-    ///      description, and swap tx data, obtained off-chain by the 1inch API. This requires knowledge of the amount of
-    ///      debt to swap to the collateral asset for repaying the flash loan used to deposit the equity into the strategy.
+    /// @dev This function is useful for generating swap aggregator calldata required for a deposit.
+    ///      For example, if the LeverageRouter's Swapper is using LiFi for swaps, the caller needs to pass in calldata for the LiFi
+    ///      swap. This calldata is obtained off-chain by the LiFi API, which requires knowledge of the amount of debt to swap
+    ///      to the collateral asset for repaying the flash loan used to deposit the equity into the strategy.
     /// @param strategy Strategy to preview collateral and debt for
     /// @param equityInCollateralAsset Equity in collateral asset to preview collateral and debt for
     /// @return collateral Collateral required

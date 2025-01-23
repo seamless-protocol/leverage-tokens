@@ -19,6 +19,10 @@ interface ISwapper {
     /// @notice Error thrown when the return amount is less than the minimum expected return amount
     error SlippageTooHigh(uint256 actualReturnAmount, uint256 minExpectedReturnAmount);
 
+    /// @notice Get the current swap provider
+    /// @return provider Current swap provider
+    function provider() external view returns (Provider);
+
     /// @notice Swap tokens using a swap provider
     /// @param fromToken Token to swap from
     /// @param toToken Token to swap to
