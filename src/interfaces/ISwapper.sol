@@ -7,24 +7,27 @@ import {IStrategy} from "./IStrategy.sol";
 
 interface ISwapper {
     enum Provider {
-        OneInch
+        LiFi
     }
 
     /// @notice Error thrown when an invalid provider is used
     error InvalidProvider();
 
+    /// @notice Error thrown when a swap uses a low-level call and fails
+    error SwapFailed();
+
     /// @notice Error thrown when the return amount is less than the minimum expected return amount
     error SlippageTooHigh(uint256 actualReturnAmount, uint256 minExpectedReturnAmount);
 
     /// @notice Swap tokens using a swap provider
-    /// @param provider Provider to use for the swap
-    /// @param from Token to swap from
+    /// @param fromToken Token to swap from
+    /// @param toToken Token to swap to
     /// @param fromAmount Amount of tokens to swap
     /// @param minToAmount Minimum expected amount of tokens to receive
     /// @param providerSwapData Encoded swap data to use for the swap using the provider
     function swap(
-        Provider provider,
-        IERC20 from,
+        IERC20 fromToken,
+        IERC20 toToken,
         uint256 fromAmount,
         uint256 minToAmount,
         bytes calldata providerSwapData

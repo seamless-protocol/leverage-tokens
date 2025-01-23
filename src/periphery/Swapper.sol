@@ -11,42 +11,57 @@ import {
 } from "src/interfaces/IOneInchAggregationRouterV6.sol";
 import {ISwapper} from "src/interfaces/ISwapper.sol";
 
+// TODO: This contract should be upgradeable
 contract Swapper is ISwapper {
-    IOneInchAggregationRouterV6 public oneInchAggregationRouter;
+    /// @notice Provider used for swaps
+    Provider public provider;
 
-    constructor(IOneInchAggregationRouterV6 _oneInchAggregationRouter) {
-        oneInchAggregationRouter = _oneInchAggregationRouter;
+    /// @notice LiFi Diamond Proxy protocol contract address
+    address public lifi;
+
+    constructor(Provider _provider, address _lifi) {
+        provider = _provider;
+        lifi = _lifi;
+    }
+
+    function setProvider(ISwapper.Provider _provider) external {
+        // TODO: Only authed role allowed to set provider
+        provider = _provider;
     }
 
     function swap(
-        Provider provider,
-        IERC20 from,
+        IERC20 fromToken,
+        IERC20 toToken,
         uint256 fromAmount,
         uint256 minToAmount,
         bytes calldata providerSwapData
     ) external returns (uint256) {
-        SafeERC20.safeTransferFrom(from, msg.sender, address(this), fromAmount);
+        SafeERC20.safeTransferFrom(fromToken, msg.sender, address(this), fromAmount);
 
-        if (provider == Provider.OneInch) {
-            return _swapOneInch(from, fromAmount, minToAmount, providerSwapData);
+        if (provider == Provider.LiFi) {
+            return _swapLiFi(fromToken, toToken, fromAmount, minToAmount, providerSwapData);
         } else {
             revert InvalidProvider();
         }
     }
 
-    function _swapOneInch(IERC20 from, uint256 fromAmount, uint256 minToAmount, bytes calldata providerSwapData)
-        internal
-        returns (uint256)
-    {
-        IOneInchAggregationRouterV6 _oneInchAggregationRouter = oneInchAggregationRouter;
+    function _swapLiFi(
+        IERC20 fromToken,
+        IERC20 toToken,
+        uint256 fromAmount,
+        uint256 minToAmount,
+        bytes calldata providerSwapData
+    ) internal returns (uint256) {
+        SafeERC20.safeTransferFrom(fromToken, msg.sender, address(this), fromAmount);
+        fromToken.approve(lifi, fromAmount);
 
-        // providerSwapData should include the 1inch executor, description, and the swap tx data, obtained off-chain by the 1inch API
-        (IOneInchAggregationExecutor executor, OneInchSwapDescription memory description, bytes memory swapData) =
-            abi.decode(providerSwapData, (IOneInchAggregationExecutor, OneInchSwapDescription, bytes));
+        (bool success,) = lifi.call{value: msg.value}(providerSwapData);
 
-        from.approve(address(_oneInchAggregationRouter), fromAmount);
-        (uint256 toAmount,) = _oneInchAggregationRouter.swap(executor, description, swapData);
+        if (!success) {
+            revert SwapFailed();
+        }
 
+        uint256 toAmount = toToken.balanceOf(address(this));
         if (toAmount < minToAmount) {
             revert SlippageTooHigh(toAmount, minToAmount);
         } else {
