@@ -68,12 +68,12 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function getStrategyCollateralAsset(IStrategy strategy) public view returns (IERC20 collateralAsset) {
+    function getStrategyCollateralAsset(IStrategy strategy) external view returns (IERC20 collateralAsset) {
         return getStrategyLendingAdapter(strategy).getCollateralAsset();
     }
 
     /// @inheritdoc ILeverageManager
-    function getStrategyDebtAsset(IStrategy strategy) public view returns (IERC20 debtAsset) {
+    function getStrategyDebtAsset(IStrategy strategy) external view returns (IERC20 debtAsset) {
         return getStrategyLendingAdapter(strategy).getDebtAsset();
     }
 
