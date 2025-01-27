@@ -9,6 +9,9 @@ import {ILendingAdapter} from "./ILendingAdapter.sol";
 import {ILeverageManager} from "./ILeverageManager.sol";
 
 interface IMorphoLendingAdapter is ILendingAdapter {
+    /// @notice Error thrown when an invalid market ID is provided for initialization
+    error InvalidMarketId();
+
     /// @notice The Seamless ilm-v2 LeverageManager contract
     /// @return leverageManager The Seamless ilm-v2 LeverageManager contract
     function leverageManager() external view returns (ILeverageManager leverageManager);

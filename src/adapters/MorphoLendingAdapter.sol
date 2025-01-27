@@ -48,8 +48,13 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     /// @notice Initializes the Morpho lending adapter
     /// @param _morphoMarketId The Morpho market ID
     function initialize(Id _morphoMarketId) external initializer {
+        MarketParams memory _marketParams = morpho.idToMarketParams(_morphoMarketId);
+        if (_marketParams.loanToken == address(0) || _marketParams.collateralToken == address(0)) {
+            revert InvalidMarketId();
+        }
+
         morphoMarketId = _morphoMarketId;
-        marketParams = morpho.idToMarketParams(_morphoMarketId);
+        marketParams = _marketParams;
     }
 
     /// @inheritdoc ILendingAdapter
