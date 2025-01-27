@@ -3,9 +3,14 @@ pragma solidity ^0.8.26;
 
 // Dependency imports
 import {Id, IMorpho, MarketParams} from "@morpho-blue/interfaces/IMorpho.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IOracle} from "@morpho-blue/interfaces/IOracle.sol";
+import {ORACLE_PRICE_SCALE} from "@morpho-blue/libraries/ConstantsLib.sol";
+import {MorphoBalancesLib} from "@morpho-blue/libraries/periphery/MorphoBalancesLib.sol";
+import {MorphoLib} from "@morpho-blue/libraries/periphery/MorphoLib.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
@@ -18,6 +23,9 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
 
     /// @inheritdoc IMorphoLendingAdapter
     IMorpho public immutable morpho;
+
+    /// @inheritdoc IMorphoLendingAdapter
+    Id public morphoMarketId;
 
     /// @inheritdoc IMorphoLendingAdapter
     MarketParams public marketParams;
@@ -37,55 +45,63 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     }
 
     /// @notice Initializes the Morpho lending adapter
-    /// @param morphoMarketId The Morpho market ID
-    function initialize(Id morphoMarketId) external initializer {
-        marketParams = morpho.idToMarketParams(morphoMarketId);
+    /// @param _morphoMarketId The Morpho market ID
+    function initialize(Id _morphoMarketId) external initializer {
+        morphoMarketId = _morphoMarketId;
+        marketParams = morpho.idToMarketParams(_morphoMarketId);
     }
 
     /// @inheritdoc ILendingAdapter
-    function getCollateralAsset() external view returns (IERC20 collateralAsset) {
+    function getCollateralAsset() external view returns (IERC20) {
         return IERC20(marketParams.collateralToken);
     }
 
     /// @inheritdoc ILendingAdapter
-    function getDebtAsset() external view returns (IERC20 debtAsset) {
+    function getDebtAsset() external view returns (IERC20) {
         return IERC20(marketParams.loanToken);
     }
 
     /// @inheritdoc ILendingAdapter
-    function convertCollateralToDebtAsset(uint256 /* collateral */ ) external view returns (uint256 debt) {
-        // TODO: Implement this
-        return block.timestamp;
+    function convertCollateralToDebtAsset(uint256 collateral) public view returns (uint256) {
+        // Morpho oracles return the price of 1 asset of collateral token quoted in 1 asset of loan token, scaled by ORACLE_PRICE_SCALE.
+        // More specifically, the price is quoted in `ORACLE_PRICE_SCALE + loan token decimals - collateral token decimals` decimals of precision.
+        uint256 collateralAssetPriceInDebtAsset = IOracle(marketParams.oracle).price();
+
+        // The result is scaled down by ORACLE_PRICE_SCALE to accommodate the oracle's decimals of precision
+        return Math.mulDiv(collateral, collateralAssetPriceInDebtAsset, ORACLE_PRICE_SCALE, Math.Rounding.Floor);
     }
 
     /// @inheritdoc ILendingAdapter
-    function convertDebtToCollateralAsset(uint256 /* debt */ ) external view returns (uint256 collateral) {
-        // TODO: Implement this
-        return block.timestamp;
+    function convertDebtToCollateralAsset(uint256 debt) external view returns (uint256) {
+        // Morpho oracles return the price of 1 asset of collateral token quoted in 1 asset of loan token, scaled by ORACLE_PRICE_SCALE.
+        // More specifically, the price is quoted in `ORACLE_PRICE_SCALE + loan token decimals - collateral token decimals` decimals of precision.
+        uint256 collateralAssetPriceInDebtAsset = IOracle(marketParams.oracle).price();
+
+        // The result is scaled up by ORACLE_PRICE_SCALE to accommodate the oracle's decimals of precision
+        return Math.mulDiv(debt, ORACLE_PRICE_SCALE, collateralAssetPriceInDebtAsset, Math.Rounding.Ceil);
     }
 
     /// @inheritdoc ILendingAdapter
-    function getCollateral() external view returns (uint256 collateral) {
-        // TODO: Implement this
-        return block.timestamp;
+    function getCollateral() public view returns (uint256) {
+        return MorphoLib.collateral(morpho, morphoMarketId, address(this));
     }
 
     /// @inheritdoc ILendingAdapter
-    function getCollateralInDebtAsset() external view returns (uint256 collateral) {
-        // TODO: Implement this
-        return block.timestamp;
+    function getCollateralInDebtAsset() public view returns (uint256) {
+        return convertCollateralToDebtAsset(getCollateral());
     }
 
     /// @inheritdoc ILendingAdapter
-    function getDebt() external view returns (uint256 debt) {
-        // TODO: Implement this
-        return block.timestamp;
+    function getDebt() public view returns (uint256) {
+        return MorphoBalancesLib.expectedBorrowAssets(morpho, marketParams, address(this));
     }
 
     /// @inheritdoc ILendingAdapter
-    function getEquityInDebtAsset() external view returns (uint256 equity) {
-        // TODO: Implement this
-        return block.timestamp;
+    function getEquityInDebtAsset() external view returns (uint256) {
+        uint256 collateralInDebtAsset = getCollateralInDebtAsset();
+        uint256 debt = getDebt();
+
+        return collateralInDebtAsset > debt ? collateralInDebtAsset - debt : 0;
     }
 
     /// @inheritdoc ILendingAdapter

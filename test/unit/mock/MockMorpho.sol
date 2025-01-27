@@ -2,14 +2,28 @@
 pragma solidity ^0.8.26;
 
 // Dependency imports
-import {MarketParams, Id} from "@morpho-blue/interfaces/IMorpho.sol";
+import {Id, IMorphoBase, Market, MarketParams} from "@morpho-blue/interfaces/IMorpho.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {console2} from "forge-std/console2.sol";
 
 contract MockMorpho {
     mapping(Id => MarketParams) public idToMarketParams;
 
+    mapping(Id => Market) public idToMarket;
+
     constructor(Id marketId, MarketParams memory marketParams) {
         idToMarketParams[marketId] = marketParams;
+    }
+
+    /// @dev This function is used by Morpho periphery libraries to fetch storage variables from Morpho. In unit tests, its return value should be mocked
+    function extSloads(bytes32[] memory slot) external view returns (bytes32[] memory data) {}
+
+    function market(Id id) external view returns (Market memory) {
+        return idToMarket[id];
+    }
+
+    function mockSetMarket(Id id, Market memory _market) external {
+        idToMarket[id] = _market;
     }
 
     function mockSetMarketParams(Id marketId, MarketParams memory marketParams) external {

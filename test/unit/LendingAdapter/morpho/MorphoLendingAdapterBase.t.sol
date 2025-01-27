@@ -6,27 +6,34 @@ import {Test, console2} from "forge-std/Test.sol";
 
 // Dependency imports
 import {Id, MarketParams, IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
-import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
+import {MarketParamsLib} from "@morpho-blue/libraries/MarketParamsLib.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
+import {MockERC20} from "../../mock/MockERC20.sol";
 import {MockMorpho} from "../../mock/MockMorpho.sol";
 
 contract MorphoLendingAdapterBaseTest is Test {
+    /// @dev Virtual shares used by Morpho for exchange rate computations. See Morpho's SharesMathLib for more details
+    uint256 internal constant MORPHO_VIRTUAL_SHARES = 1e6;
+
+    /// @dev Virtual assets used by Morpho for exchange rate computations. See Morpho's SharesMathLib for more details
+    uint256 internal constant MORPHO_VIRTUAL_ASSETS = 1;
+
     MockMorpho public morpho;
     IMorphoLendingAdapter public lendingAdapter;
 
-    ERC20Mock public collateralToken = new ERC20Mock();
-    ERC20Mock public debtToken = new ERC20Mock();
+    MockERC20 public collateralToken = new MockERC20();
+    MockERC20 public debtToken = new MockERC20();
 
     // Mocked ILeverageManager contract
     ILeverageManager public leverageManager = ILeverageManager(makeAddr("leverageManager"));
 
     // Mocked Morpho protocol is setup with a market with id 1 and some default market params
-    Id public defaultMarketId = Id.wrap(bytes32("1"));
+    Id public defaultMarketId;
     MarketParams public defaultMarketParams = MarketParams({
         loanToken: address(debtToken),
         collateralToken: address(collateralToken),
@@ -36,9 +43,16 @@ contract MorphoLendingAdapterBaseTest is Test {
     });
 
     function setUp() public {
+        defaultMarketId = MarketParamsLib.id(defaultMarketParams);
         morpho = new MockMorpho(defaultMarketId, defaultMarketParams);
         lendingAdapter = new MorphoLendingAdapter(leverageManager, IMorpho(address(morpho)));
         MorphoLendingAdapter(address(lendingAdapter)).initialize(defaultMarketId);
+
+        vm.label(address(lendingAdapter), "lendingAdapter");
+        vm.label(address(morpho), "morpho");
+        vm.label(address(leverageManager), "leverageManager");
+        vm.label(address(collateralToken), "collateralToken");
+        vm.label(address(debtToken), "debtToken");
     }
 
     function test_setUp() public view {

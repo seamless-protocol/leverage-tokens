@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-// Dependency Imports
+// Dependency imports
 import {IMorphoBase} from "@morpho-blue/interfaces/IMorpho.sol";
 
 // Internal imports
