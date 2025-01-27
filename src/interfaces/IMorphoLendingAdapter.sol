@@ -1,14 +1,21 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
+// Dependency imports
+import {Id, IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
+
+// Internal imports
 import {ILendingAdapter} from "./ILendingAdapter.sol";
 import {ILeverageManager} from "./ILeverageManager.sol";
-import {IMorpho, MarketParams} from "./IMorpho.sol";
 
 interface IMorphoLendingAdapter is ILendingAdapter {
     /// @notice The Seamless ilm-v2 LeverageManager contract
     /// @return leverageManager The Seamless ilm-v2 LeverageManager contract
     function leverageManager() external view returns (ILeverageManager leverageManager);
+
+    /// @notice The ID of the Morpho market that the lending adapter manages a position in
+    /// @return morphoMarketId The ID of the Morpho market that the lending adapter manages a position in
+    function morphoMarketId() external view returns (Id morphoMarketId);
 
     /// @notice The market parameters of the Morpho lending pool
     /// @return loanToken The loan token of the Morpho lending pool

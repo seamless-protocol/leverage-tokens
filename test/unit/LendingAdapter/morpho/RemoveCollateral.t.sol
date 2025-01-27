@@ -2,10 +2,10 @@
 pragma solidity ^0.8.26;
 
 // Dependency imports
+import {IMorphoBase} from "@morpho-blue/interfaces/IMorpho.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
-import {IMorpho, IMorphoBase} from "src/interfaces/IMorpho.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
 

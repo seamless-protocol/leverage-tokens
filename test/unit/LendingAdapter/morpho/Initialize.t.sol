@@ -5,14 +5,15 @@ pragma solidity ^0.8.26;
 import {Test} from "forge-std/Test.sol";
 
 // Dependency imports
+import {Id, MarketParams, IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 // Internal imports
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
-import {Id, MarketParams, IMorpho} from "src/interfaces/IMorpho.sol";
 import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
 import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
 import {MockMorpho} from "../../mock/MockMorpho.sol";
@@ -21,6 +22,17 @@ contract MorphoLendingAdapterInitializeTest is MorphoLendingAdapterBaseTest {
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_initialize(Id marketId, MarketParams memory marketParams) public {
         morpho.mockSetMarketParams(marketId, marketParams);
+
+        // Mock the calls to get the decimals of the loan token and collateral token in the initialize function. Not important
+        // for the test, but reverts if not mocked
+        vm.mockCall(
+            address(marketParams.loanToken), abi.encodeWithSelector(IERC20Metadata.decimals.selector), abi.encode(18)
+        );
+        vm.mockCall(
+            address(marketParams.collateralToken),
+            abi.encodeWithSelector(IERC20Metadata.decimals.selector),
+            abi.encode(18)
+        );
 
         MorphoLendingAdapter _lendingAdapter = new MorphoLendingAdapter(leverageManager, IMorpho(address(morpho)));
         assertEq(address(_lendingAdapter.leverageManager()), address(leverageManager));
@@ -54,6 +66,19 @@ contract MorphoLendingAdapterInitializeTest is MorphoLendingAdapterBaseTest {
         UpgradeableBeacon morphoLendingAdapterBeacon = new UpgradeableBeacon(address(lendingAdapter), address(this));
         assertEq(address(morphoLendingAdapterBeacon.implementation()), address(lendingAdapter));
 
+        // Mock the calls to get the decimals of the loan token and collateral token in the initialize function. Not important
+        // for the test, but reverts if not mocked
+        vm.mockCall(
+            address(defaultMarketParams.loanToken),
+            abi.encodeWithSelector(IERC20Metadata.decimals.selector),
+            abi.encode(18)
+        );
+        vm.mockCall(
+            address(defaultMarketParams.collateralToken),
+            abi.encodeWithSelector(IERC20Metadata.decimals.selector),
+            abi.encode(18)
+        );
+
         // Create a beacon proxy and assert that the market params are set correctly but the immutable leverage manager
         // and morpho addresses are the same as the beacon
         IMorphoLendingAdapter morphoLendingAdapterProxy = IMorphoLendingAdapter(
@@ -85,6 +110,19 @@ contract MorphoLendingAdapterInitializeTest is MorphoLendingAdapterBaseTest {
             lltv: 10000
         });
         morpho.mockSetMarketParams(marketId, otherMarketParams);
+
+        // Mock the calls to get the decimals of the loan token and collateral token in the initialize function. Not important
+        // for the test, but reverts if not mocked
+        vm.mockCall(
+            address(otherMarketParams.loanToken),
+            abi.encodeWithSelector(IERC20Metadata.decimals.selector),
+            abi.encode(18)
+        );
+        vm.mockCall(
+            address(otherMarketParams.collateralToken),
+            abi.encodeWithSelector(IERC20Metadata.decimals.selector),
+            abi.encode(18)
+        );
         morphoLendingAdapterProxy = IMorphoLendingAdapter(
             address(
                 new BeaconProxy(
