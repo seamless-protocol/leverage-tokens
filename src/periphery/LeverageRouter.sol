@@ -64,9 +64,7 @@ contract LeverageRouter {
         bytes calldata providerSwapData
     ) external {
         if (maxSenderSuppliedCollateralAssets < equityInCollateralAsset) revert InsufficientCollateral();
-
-        ILeverageManager _leverageManager = leverageManager;
-        IERC20 collateralAsset = _leverageManager.getStrategyCollateralAsset(strategy);
+        IERC20 collateralAsset = leverageManager.getStrategyCollateralAsset(strategy);
 
         collateralAsset.transferFrom(msg.sender, address(this), maxSenderSuppliedCollateralAssets);
 
@@ -74,7 +72,7 @@ contract LeverageRouter {
         (, uint256 requiredCollateral, uint256 requiredDebt) =
             leverageManager.previewDeposit(strategy, equityInCollateralAsset);
 
-        IERC20 debtAsset = _leverageManager.getStrategyDebtAsset(strategy);
+        IERC20 debtAsset = leverageManager.getStrategyDebtAsset(strategy);
 
         // Flash loan any additional required collateral from morpho
         if (requiredCollateral > equityInCollateralAsset) {
@@ -97,8 +95,8 @@ contract LeverageRouter {
                 )
             );
         } else {
-            collateralAsset.approve(address(_leverageManager), requiredCollateral);
-            uint256 sharesReceived = _leverageManager.deposit(strategy, equityInCollateralAsset, minShares);
+            collateralAsset.approve(address(leverageManager), requiredCollateral);
+            uint256 sharesReceived = leverageManager.deposit(strategy, equityInCollateralAsset, minShares);
 
             SafeERC20.safeTransfer(strategy, msg.sender, sharesReceived);
             SafeERC20.safeTransfer(debtAsset, msg.sender, requiredDebt);
@@ -110,8 +108,6 @@ contract LeverageRouter {
         }
     }
 
-    function mint(IStrategy strategy, uint256 shares, uint256 minEquityInDebtAsset) external {}
-
     /// @notice Morpho flash loan callback function
     /// @dev Deposits equity into a strategy to receive debt assets to swap to the collateral asset to repay the flash loan
     /// @param collateralLoanAmount Amount of collateral asset flash loaned
@@ -120,12 +116,11 @@ contract LeverageRouter {
         if (msg.sender != address(morpho)) revert Unauthorized();
 
         DepositParams memory params = abi.decode(data, (DepositParams));
-        ILeverageManager _leverageManager = leverageManager;
 
         // Deposit equity into strategy and give receiver the minted shares and debt assets
-        params.collateralAsset.approve(address(_leverageManager), params.requiredCollateral);
+        params.collateralAsset.approve(address(leverageManager), params.requiredCollateral);
         uint256 sharesReceived =
-            _leverageManager.deposit(params.strategy, params.equityInCollateralAsset, params.minShares);
+            leverageManager.deposit(params.strategy, params.equityInCollateralAsset, params.minShares);
 
         // Swap debt asset received from the deposit to the collateral asset, to repay the flash loan
         params.debtAsset.approve(address(swapper), params.requiredDebt);
