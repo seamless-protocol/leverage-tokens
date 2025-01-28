@@ -80,7 +80,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         (uint256 collateral, uint256 debt) =
             _calculateCollateralAndDebtToCoverEquity(strategy, equityInDebtAsset, IFeeManager.Action.Deposit);
 
-        uint256 feeAdjustedShares = _convertEquityToShares(strategy, equityInCollateralAsset);
+        uint256 feeAdjustedShares = _convertToShares(strategy, equityInDebtAsset);
         uint256 shares = _computeSharesBeforeFeeAdjustment(strategy, feeAdjustedShares, IFeeManager.Action.Deposit);
 
         return (shares, collateral, debt);
@@ -207,7 +207,9 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         external
         returns (uint256)
     {
-        uint256 feeAdjustedShares = _convertEquityToShares(strategy, equityInCollateralAsset);
+        uint256 equityInDebtAsset =
+            getStrategyLendingAdapter(strategy).convertCollateralToDebtAsset(equityInCollateralAsset);
+        uint256 feeAdjustedShares = _convertToShares(strategy, equityInDebtAsset);
         uint256 shares = _computeSharesBeforeFeeAdjustment(strategy, feeAdjustedShares, IFeeManager.Action.Deposit);
 
         // The shares before the fee adjustment is what is minted to the user. The fee adjusted shares is used to calculate the required collateral and debt
@@ -215,23 +217,20 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             revert SlippageTooHigh(shares, minShares);
         }
 
-        uint256 equityInDebtAsset =
-            getStrategyLendingAdapter(strategy).convertCollateralToDebtAsset(equityInCollateralAsset);
-
         mint(strategy, shares, equityInDebtAsset);
 
         return shares;
     }
 
     /// @inheritdoc ILeverageManager
-    function mint(IStrategy strategy, uint256 shares, uint256 maxAssets) public returns (uint256 assets) {
+    function mint(IStrategy strategy, uint256 shares, uint256 maxEquityInDebtAsset) public returns (uint256) {
         ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
 
         // Charge strategy fee. Fee is not sent to treasury but burned which increases overall share value
         (uint256 equityInDebtAsset, uint256 collateral, uint256 debt) = previewMint(strategy, shares);
 
-        if (equityInDebtAsset > maxAssets) {
-            revert SlippageTooHigh(equityInDebtAsset, maxAssets);
+        if (equityInDebtAsset > maxEquityInDebtAsset) {
+            revert SlippageTooHigh(equityInDebtAsset, maxEquityInDebtAsset);
         }
 
         // Take asset from sender and supply it as collateral
@@ -354,21 +353,17 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         return (currCollateralRatio, excessCollateral);
     }
 
-    /// @notice Converts equity denominated in collateral asset to shares
+    /// @notice Converts equity denominated in debt asset to shares
     /// @param strategy Strategy to convert equity to shares for
-    /// @param equityInCollateralAsset Equity denominated in collateral asset to convert to shares
+    /// @param equityInDebtAsset Equity denominated in debt asset to convert to shares
     /// @return shares Equity in shares
-    function _convertEquityToShares(IStrategy strategy, uint256 equityInCollateralAsset)
-        internal
-        view
-        returns (uint256)
-    {
+    function _convertToShares(IStrategy strategy, uint256 equityInDebtAsset) internal view returns (uint256) {
         ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
 
         return Math.mulDiv(
-            equityInCollateralAsset,
+            equityInDebtAsset,
             strategy.totalSupply() + 10 ** DECIMALS_OFFSET,
-            lendingAdapter.getEquityInCollateralAsset() + 1,
+            lendingAdapter.getEquityInDebtAsset() + 1,
             Math.Rounding.Floor
         );
     }
