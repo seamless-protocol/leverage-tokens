@@ -32,8 +32,8 @@ contract LeverageRouter {
         IStrategy strategy;
         IERC20 collateralAsset;
         IERC20 debtAsset;
+        uint256 collateralFromSender;
         uint256 equityInCollateralAsset;
-        uint256 maxSenderSuppliedCollateralAssets;
         uint256 requiredCollateral;
         uint256 requiredDebt;
         uint256 minShares;
@@ -54,26 +54,26 @@ contract LeverageRouter {
     }
 
     /// @notice Deposit equity into a strategy
-    /// @dev The LeverageRouter must be approved to spend `maxSenderSuppliedCollateralAssets` of the strategy's collateral asset
-    /// @dev `maxSenderSuppliedCollateralAssets` should be greater than equityInCollateralAsset to facilitate the deposit in the case that
-    ///      the deposit requires additional collateral to cover swap slippage when converting debt to collateral to repay the flash loan
+    /// @dev The LeverageRouter must be approved to spend `collateralFromSender` of the strategy's collateral asset
+    /// @dev `collateralFromSender` should be greater than `equityInCollateralAsset` to facilitate the deposit in the case that
+    ///      the deposit requires additional collateral to cover swap slippage when converting debt to collateral to repay the flash loan.
+    ///      Otherwise, it should be equal to `equityInCollateralAsset`
     /// @param strategy Strategy to deposit equity into
-    /// @param equityInCollateralAsset Equity amount in collateral asset to deposit
-    /// @param maxSenderSuppliedCollateralAssets The maximum amount of collateral assets to transfer to this contract from
-    /// the sender to facilitate the deposit of `equityInCollateralAsset` into the strategy
+    /// @param collateralFromSender The amount of collateral asset to deposit from the sender
+    /// @param equityInCollateralAsset The min amount of equity in the collateral asset to deposit into the strategy
     /// @param minShares Minimum shares to receive from the deposit
     /// @param providerSwapData Swap data to use for the swap using the set provider
     function deposit(
         IStrategy strategy,
+        uint256 collateralFromSender,
         uint256 equityInCollateralAsset,
-        uint256 maxSenderSuppliedCollateralAssets,
         uint256 minShares,
         bytes calldata providerSwapData
     ) external {
-        if (maxSenderSuppliedCollateralAssets < equityInCollateralAsset) revert InsufficientCollateral();
-        IERC20 collateralAsset = leverageManager.getStrategyCollateralAsset(strategy);
+        if (collateralFromSender < equityInCollateralAsset) revert InsufficientCollateral();
 
-        collateralAsset.transferFrom(msg.sender, address(this), maxSenderSuppliedCollateralAssets);
+        IERC20 collateralAsset = leverageManager.getStrategyCollateralAsset(strategy);
+        collateralAsset.transferFrom(msg.sender, address(this), collateralFromSender);
 
         // Get required collateral amount for the equity amount being deposited into the strategy
         (, uint256 requiredCollateral, uint256 requiredDebt) =
@@ -94,8 +94,8 @@ contract LeverageRouter {
                                 strategy: strategy,
                                 collateralAsset: collateralAsset,
                                 debtAsset: debtAsset,
+                                collateralFromSender: collateralFromSender,
                                 equityInCollateralAsset: equityInCollateralAsset,
-                                maxSenderSuppliedCollateralAssets: maxSenderSuppliedCollateralAssets,
                                 requiredCollateral: requiredCollateral,
                                 requiredDebt: requiredDebt,
                                 minShares: minShares,
@@ -113,7 +113,7 @@ contract LeverageRouter {
             SafeERC20.safeTransfer(strategy, msg.sender, sharesReceived);
             SafeERC20.safeTransfer(debtAsset, msg.sender, requiredDebt);
 
-            uint256 collateralAssetSurplus = maxSenderSuppliedCollateralAssets - equityInCollateralAsset;
+            uint256 collateralAssetSurplus = collateralFromSender - equityInCollateralAsset;
             if (collateralAssetSurplus > 0) {
                 SafeERC20.safeTransfer(collateralAsset, msg.sender, collateralAssetSurplus);
             }
@@ -152,8 +152,7 @@ contract LeverageRouter {
 
         // The remaining sender supplied collateral is the amount of collateral that was not used to deposit the equity into the strategy,
         // which is the portion that is equal to the deposited equity amount. The rest of the collateral used for the deposit was from the flash loan
-        uint256 remainingSenderSuppliedCollateral =
-            params.maxSenderSuppliedCollateralAssets - params.equityInCollateralAsset;
+        uint256 remainingSenderSuppliedCollateral = params.collateralFromSender - params.equityInCollateralAsset;
         uint256 collateralAssetSurplus = toAmount + remainingSenderSuppliedCollateral - collateralLoanAmount;
 
         // Return any surplus collateral asset not used to repay the flash loan to the deposit receiver
