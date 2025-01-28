@@ -49,7 +49,9 @@ contract LeverageRouter {
     }
 
     /// @notice Deposit equity into a strategy
-    /// @dev The LeverageRouter must be approved to spend `maxCollateralAssets` of the strategy's collateral asset
+    /// @dev The LeverageRouter must be approved to spend `maxSenderSuppliedCollateralAssets` of the strategy's collateral asset
+    /// @dev `maxSenderSuppliedCollateralAssets` should be greater than equityInCollateralAsset to facilitate the deposit in the case that
+    ///      the deposit requires additional collateral to cover swap slippage when converting debt to collateral to repay the flash loan
     /// @param strategy Strategy to deposit equity into
     /// @param equityInCollateralAsset Equity amount in collateral asset to deposit
     /// @param maxSenderSuppliedCollateralAssets The maximum amount of collateral assets to transfer to this contract from
