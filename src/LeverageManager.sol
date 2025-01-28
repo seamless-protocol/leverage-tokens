@@ -75,29 +75,26 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         view
         returns (uint256, uint256, uint256)
     {
-        uint256 sharesAfterFeeAdjustment = _convertEquityToShares(strategy, equityInCollateralAsset);
-
-        uint256 equityInDebtAsset =
-            getStrategyLendingAdapter(strategy).convertCollateralToDebtAsset(equityInCollateralAsset);
-
-        (uint256 requiredCollateral, uint256 requiredDebt) =
+        ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
+        uint256 equityInDebtAsset = lendingAdapter.convertCollateralToDebtAsset(equityInCollateralAsset);
+        (uint256 collateral, uint256 debt) =
             calculateCollateralAndDebtToCoverEquity(strategy, equityInDebtAsset, IFeeManager.Action.Deposit);
 
-        uint256 sharesBeforeFeeAdjustment =
-            _computeSharesBeforeFeeAdjustment(strategy, sharesAfterFeeAdjustment, IFeeManager.Action.Deposit);
+        uint256 feeAdjustedShares = _convertEquityToShares(strategy, equityInCollateralAsset);
+        uint256 shares = _computeSharesBeforeFeeAdjustment(strategy, feeAdjustedShares, IFeeManager.Action.Deposit);
 
-        return (sharesBeforeFeeAdjustment, requiredCollateral, requiredDebt);
+        return (shares, collateral, debt);
     }
 
     /// @inheritdoc ILeverageManager
     function previewMint(IStrategy strategy, uint256 shares) public view returns (uint256, uint256, uint256) {
-        uint256 sharesAfterFee = _computeFeeAdjustedShares(strategy, shares, IFeeManager.Action.Deposit);
-        uint256 equityInDebtAsset = _convertToEquity(strategy, sharesAfterFee);
+        uint256 feeAdjustedShares = _computeFeeAdjustedShares(strategy, shares, IFeeManager.Action.Deposit);
+        uint256 equityInDebtAsset = _convertToEquity(strategy, feeAdjustedShares);
 
-        (uint256 requiredCollateral, uint256 requiredDebt) =
+        (uint256 collateral, uint256 debt) =
             calculateCollateralAndDebtToCoverEquity(strategy, equityInDebtAsset, IFeeManager.Action.Deposit);
 
-        return (equityInDebtAsset, requiredCollateral, requiredDebt);
+        return (equityInDebtAsset, collateral, debt);
     }
 
     /// @inheritdoc ILeverageManager
@@ -208,23 +205,22 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     /// @inheritdoc ILeverageManager
     function deposit(IStrategy strategy, uint256 equityInCollateralAsset, uint256 minShares)
         external
-        returns (uint256 shares)
+        returns (uint256)
     {
-        uint256 sharesAfterFeeAdjustment = _convertEquityToShares(strategy, equityInCollateralAsset);
-        uint256 sharesBeforeFeeAdjustment =
-            _computeSharesBeforeFeeAdjustment(strategy, sharesAfterFeeAdjustment, IFeeManager.Action.Deposit);
+        uint256 feeAdjustedShares = _convertEquityToShares(strategy, equityInCollateralAsset);
+        uint256 shares = _computeSharesBeforeFeeAdjustment(strategy, feeAdjustedShares, IFeeManager.Action.Deposit);
 
         // The shares before the fee adjustment is what is minted to the user. The fee adjusted shares is used to calculate the required collateral and debt
-        if (sharesBeforeFeeAdjustment < minShares) {
-            revert SlippageTooHigh(sharesAfterFeeAdjustment, minShares);
+        if (shares < minShares) {
+            revert SlippageTooHigh(shares, minShares);
         }
 
         uint256 equityInDebtAsset =
             getStrategyLendingAdapter(strategy).convertCollateralToDebtAsset(equityInCollateralAsset);
 
-        mint(strategy, sharesBeforeFeeAdjustment, equityInDebtAsset);
+        mint(strategy, shares, equityInDebtAsset);
 
-        return sharesBeforeFeeAdjustment;
+        return shares;
     }
 
     /// @inheritdoc ILeverageManager
@@ -232,8 +228,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
 
         // Charge strategy fee. Fee is not sent to treasury but burned which increases overall share value
-        uint256 sharesAfterFee = _computeFeeAdjustedShares(strategy, shares, IFeeManager.Action.Deposit);
-        (uint256 equityInDebtAsset, uint256 collateral, uint256 debt) = previewMint(strategy, sharesAfterFee);
+        (uint256 equityInDebtAsset, uint256 collateral, uint256 debt) = previewMint(strategy, shares);
 
         if (equityInDebtAsset > maxAssets) {
             revert SlippageTooHigh(equityInDebtAsset, maxAssets);
