@@ -110,6 +110,8 @@ contract LeverageRouter {
         }
     }
 
+    function mint(IStrategy strategy, uint256 shares, uint256 minEquityInDebtAsset) external {}
+
     /// @notice Morpho flash loan callback function
     /// @dev Deposits equity into a strategy to receive debt assets to swap to the collateral asset to repay the flash loan
     /// @param collateralLoanAmount Amount of collateral asset flash loaned

@@ -76,17 +76,24 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         returns (uint256, uint256, uint256)
     {
         uint256 sharesAfterFeeAdjustment = _convertEquityToShares(strategy, equityInCollateralAsset);
+
         uint256 equityInDebtAsset =
             getStrategyLendingAdapter(strategy).convertCollateralToDebtAsset(equityInCollateralAsset);
+
         (uint256 requiredCollateral, uint256 requiredDebt) =
             calculateCollateralAndDebtToCoverEquity(strategy, equityInDebtAsset, IFeeManager.Action.Deposit);
 
-        return (sharesAfterFeeAdjustment, requiredCollateral, requiredDebt);
+        uint256 sharesBeforeFeeAdjustment =
+            _computeSharesBeforeFeeAdjustment(strategy, sharesAfterFeeAdjustment, IFeeManager.Action.Deposit);
+
+        return (sharesBeforeFeeAdjustment, requiredCollateral, requiredDebt);
     }
 
     /// @inheritdoc ILeverageManager
     function previewMint(IStrategy strategy, uint256 shares) public view returns (uint256, uint256, uint256) {
-        uint256 equityInDebtAsset = _convertToEquity(strategy, shares);
+        uint256 sharesAfterFee = _computeFeeAdjustedShares(strategy, shares, IFeeManager.Action.Deposit);
+        uint256 equityInDebtAsset = _convertToEquity(strategy, sharesAfterFee);
+
         (uint256 requiredCollateral, uint256 requiredDebt) =
             calculateCollateralAndDebtToCoverEquity(strategy, equityInDebtAsset, IFeeManager.Action.Deposit);
 
@@ -204,19 +211,20 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         returns (uint256 shares)
     {
         uint256 sharesAfterFeeAdjustment = _convertEquityToShares(strategy, equityInCollateralAsset);
+        uint256 sharesBeforeFeeAdjustment =
+            _computeSharesBeforeFeeAdjustment(strategy, sharesAfterFeeAdjustment, IFeeManager.Action.Deposit);
 
-        if (sharesAfterFeeAdjustment < minShares) {
+        // The shares before the fee adjustment is what is minted to the user. The fee adjusted shares is used to calculate the required collateral and debt
+        if (sharesBeforeFeeAdjustment < minShares) {
             revert SlippageTooHigh(sharesAfterFeeAdjustment, minShares);
         }
 
-        uint256 sharesBeforeFeeAdjustment =
-            _computeSharesBeforeFeeAdjustment(strategy, sharesAfterFeeAdjustment, IFeeManager.Action.Deposit);
         uint256 equityInDebtAsset =
             getStrategyLendingAdapter(strategy).convertCollateralToDebtAsset(equityInCollateralAsset);
 
         mint(strategy, sharesBeforeFeeAdjustment, equityInDebtAsset);
 
-        return sharesAfterFeeAdjustment;
+        return sharesBeforeFeeAdjustment;
     }
 
     /// @inheritdoc ILeverageManager

@@ -21,9 +21,6 @@ interface IFeeManager {
     /// @notice Emitted when fee is set for strategy for specific action
     event StrategyActionFeeSet(IStrategy strategy, IFeeManager.Action action, uint256 fee);
 
-    /// @notice Event emitted when fee is charged on any action on strategy
-    event FeeCharged(IStrategy indexed strategy, Action indexed action, uint256 amount, uint256 feeAmount);
-
     /// @notice Returns address of the treasury
     /// @return treasury Address of the treasury
     function getTreasury() external view returns (address treasury);

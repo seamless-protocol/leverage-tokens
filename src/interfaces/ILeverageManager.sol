@@ -114,20 +114,23 @@ interface ILeverageManager {
     /// @param strategy Strategy to preview deposit for
     /// @param equityInCollateralAsset Equity amount in collateral asset to deposit
     /// @return shares Shares received from the deposit
-    /// @return requiredCollateral Collateral required for the deposit
-    /// @return requiredDebt Debt required for the deposit
+    /// @return collateral Collateral required for the deposit
+    /// @return debt Debt required for the deposit
     function previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
         external
         view
-        returns (uint256, uint256, uint256);
+        returns (uint256 shares, uint256 collateral, uint256 debt);
 
     /// @notice Preview the required collateral and debt for a mint of shares into a strategy and the amount of equity added denominated in debt asset
     /// @param strategy Strategy to preview mint for
     /// @param shares Shares to mint
     /// @return equityInDebtAsset Equity in debt asset to mint shares for
-    /// @return requiredCollateral Collateral required for the mint
-    /// @return requiredDebt Debt required for the mint
-    function previewMint(IStrategy strategy, uint256 shares) external view returns (uint256, uint256, uint256);
+    /// @return collateral Collateral required for the mint
+    /// @return debt Debt required for the mint
+    function previewMint(IStrategy strategy, uint256 shares)
+        external
+        view
+        returns (uint256 equityInDebtAsset, uint256 collateral, uint256 debt);
 
     /// @notice Sets factory for creating new strategy tokens
     /// @param factory Factory to set
