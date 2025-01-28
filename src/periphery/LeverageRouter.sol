@@ -20,8 +20,13 @@ contract LeverageRouter {
     ISwapper public immutable swapper;
 
     error InsufficientCollateral();
-
+    error InvalidAction();
     error Unauthorized();
+
+    struct MorphoCallbackData {
+        IFeeManager.Action action;
+        bytes actionData;
+    }
 
     struct DepositParams {
         IStrategy strategy;
@@ -82,17 +87,22 @@ contract LeverageRouter {
                 address(collateralAsset),
                 requiredCollateral - equityInCollateralAsset,
                 abi.encode(
-                    DepositParams({
-                        strategy: strategy,
-                        collateralAsset: collateralAsset,
-                        debtAsset: debtAsset,
-                        equityInCollateralAsset: equityInCollateralAsset,
-                        maxSenderSuppliedCollateralAssets: maxSenderSuppliedCollateralAssets,
-                        requiredCollateral: requiredCollateral,
-                        requiredDebt: requiredDebt,
-                        minShares: minShares,
-                        receiver: msg.sender,
-                        providerSwapData: providerSwapData
+                    MorphoCallbackData({
+                        action: IFeeManager.Action.Deposit,
+                        actionData: abi.encode(
+                            DepositParams({
+                                strategy: strategy,
+                                collateralAsset: collateralAsset,
+                                debtAsset: debtAsset,
+                                equityInCollateralAsset: equityInCollateralAsset,
+                                maxSenderSuppliedCollateralAssets: maxSenderSuppliedCollateralAssets,
+                                requiredCollateral: requiredCollateral,
+                                requiredDebt: requiredDebt,
+                                minShares: minShares,
+                                receiver: msg.sender,
+                                providerSwapData: providerSwapData
+                            })
+                        )
                     })
                 )
             );
@@ -117,8 +127,18 @@ contract LeverageRouter {
     function onMorphoFlashLoan(uint256 collateralLoanAmount, bytes calldata data) external {
         if (msg.sender != address(morpho)) revert Unauthorized();
 
-        DepositParams memory params = abi.decode(data, (DepositParams));
+        MorphoCallbackData memory callbackData = abi.decode(data, (MorphoCallbackData));
 
+        if (callbackData.action == IFeeManager.Action.Deposit) {
+            DepositParams memory params = abi.decode(callbackData.actionData, (DepositParams));
+            _depositAndRepayMorphoFlashLoan(params, collateralLoanAmount);
+        } else {
+            revert InvalidAction();
+        }
+    }
+
+    // Handles the deposit of equity into a strategy and the swap of debt assets to the collateral asset to repay the flash loan
+    function _depositAndRepayMorphoFlashLoan(DepositParams memory params, uint256 collateralLoanAmount) internal {
         // Deposit equity into strategy and give receiver the minted shares and debt assets
         params.collateralAsset.approve(address(leverageManager), params.requiredCollateral);
         uint256 sharesReceived =
