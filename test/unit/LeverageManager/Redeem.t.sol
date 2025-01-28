@@ -118,8 +118,8 @@ contract RedeemTest is LeverageManagerBaseTest {
             leverageManager.exposed_computeFeeAdjustedShares(strategy, sharesToRedeem, IFeeManager.Action.Redeem);
         uint256 expectedEquity = leverageManager.exposed_convertToEquity(strategy, sharesAfterFee);
 
-        (uint256 collateral, uint256 debtToCoverEquity) =
-            leverageManager.calculateCollateralAndDebtToCoverEquity(strategy, expectedEquity, IFeeManager.Action.Redeem);
+        (uint256 collateral, uint256 debtToCoverEquity) = leverageManager
+            .exposed_calculateCollateralAndDebtToCoverEquity(strategy, expectedEquity, IFeeManager.Action.Redeem);
 
         debtToken.mint(address(this), debtToCoverEquity);
         debtToken.approve(address(leverageManager), debtToCoverEquity);

@@ -78,7 +78,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
         uint256 equityInDebtAsset = lendingAdapter.convertCollateralToDebtAsset(equityInCollateralAsset);
         (uint256 collateral, uint256 debt) =
-            calculateCollateralAndDebtToCoverEquity(strategy, equityInDebtAsset, IFeeManager.Action.Deposit);
+            _calculateCollateralAndDebtToCoverEquity(strategy, equityInDebtAsset, IFeeManager.Action.Deposit);
 
         uint256 feeAdjustedShares = _convertEquityToShares(strategy, equityInCollateralAsset);
         uint256 shares = _computeSharesBeforeFeeAdjustment(strategy, feeAdjustedShares, IFeeManager.Action.Deposit);
@@ -92,7 +92,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         uint256 equityInDebtAsset = _convertToEquity(strategy, feeAdjustedShares);
 
         (uint256 collateral, uint256 debt) =
-            calculateCollateralAndDebtToCoverEquity(strategy, equityInDebtAsset, IFeeManager.Action.Deposit);
+            _calculateCollateralAndDebtToCoverEquity(strategy, equityInDebtAsset, IFeeManager.Action.Deposit);
 
         return (equityInDebtAsset, collateral, debt);
     }
@@ -266,7 +266,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         }
 
         (uint256 collateral, uint256 debt) =
-            calculateCollateralAndDebtToCoverEquity(strategy, equity, IFeeManager.Action.Redeem);
+            _calculateCollateralAndDebtToCoverEquity(strategy, equity, IFeeManager.Action.Redeem);
 
         // Burn shares from user and total supply
         strategy.burn(msg.sender, shares);
@@ -287,8 +287,8 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         return collateral;
     }
 
-    /// @inheritdoc ILeverageManager
-    function calculateCollateralAndDebtToCoverEquity(
+    // Calculates how much debt should user repay to cover equity (denominated in debt asset) they want to redeem
+    function _calculateCollateralAndDebtToCoverEquity(
         IStrategy strategy,
         uint256 equityInDebtAsset,
         IFeeManager.Action action

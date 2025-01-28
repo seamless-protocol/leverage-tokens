@@ -98,18 +98,6 @@ interface ILeverageManager {
     /// @return debtAsset Debt asset for the strategy
     function getStrategyDebtAsset(IStrategy strategy) external view returns (IERC20 debtAsset);
 
-    /// @notice Calculates collateral and debt required to cover equity in a strategy
-    /// @param strategy Strategy to calculate collateral and debt for
-    /// @param equityInDebtAsset Equity to cover denominated in debt asset
-    /// @param action Action to calculate collateral and debt for
-    /// @return collateral Collateral required to cover equity
-    /// @return debt Debt required to cover equity
-    function calculateCollateralAndDebtToCoverEquity(
-        IStrategy strategy,
-        uint256 equityInDebtAsset,
-        IFeeManager.Action action
-    ) external view returns (uint256 collateral, uint256 debt);
-
     /// @notice Preview the required collateral and debt for a deposit of equity into a strategy and the shares received
     /// @param strategy Strategy to preview deposit for
     /// @param equityInCollateralAsset Equity amount in collateral asset to deposit
