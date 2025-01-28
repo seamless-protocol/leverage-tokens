@@ -72,7 +72,7 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     }
 
     /// @inheritdoc ILendingAdapter
-    function convertDebtToCollateralAsset(uint256 debt) external view returns (uint256) {
+    function convertDebtToCollateralAsset(uint256 debt) public view returns (uint256) {
         // Morpho oracles return the price of 1 asset of collateral token quoted in 1 asset of loan token, scaled by ORACLE_PRICE_SCALE.
         // More specifically, the price is quoted in `ORACLE_PRICE_SCALE + loan token decimals - collateral token decimals` decimals of precision.
         uint256 collateralAssetPriceInDebtAsset = IOracle(marketParams.oracle).price();
@@ -94,6 +94,14 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     /// @inheritdoc ILendingAdapter
     function getDebt() public view returns (uint256) {
         return MorphoBalancesLib.expectedBorrowAssets(morpho, marketParams, address(this));
+    }
+
+    /// @inheritdoc ILendingAdapter
+    function getEquityInCollateralAsset() external view returns (uint256) {
+        uint256 debtInCollateralAsset = convertDebtToCollateralAsset(getDebt());
+        uint256 collateral = getCollateral();
+
+        return debtInCollateralAsset > collateral ? debtInCollateralAsset - collateral : 0;
     }
 
     /// @inheritdoc ILendingAdapter

@@ -53,15 +53,6 @@ interface ILeverageManager {
     /// @notice Event emitted when user redeems assets from strategy
     event Redeem(IStrategy indexed strategy, address indexed from, uint256 shares, uint256 collateral, uint256 debt);
 
-    /// @notice Converts equity in collateral asset to shares
-    /// @param strategy Strategy to convert equity to shares for
-    /// @param equityInCollateralAsset Equity in collateral asset to convert to shares
-    /// @return shares Equity in shares
-    function convertEquityToShares(IStrategy strategy, uint256 equityInCollateralAsset)
-        external
-        view
-        returns (uint256 shares);
-
     /// @notice Returns factory for creating new strategy tokens
     /// @return factory Factory for creating new strategy tokens
     function getStrategyTokenFactory() external view returns (IBeaconProxyFactory factory);
@@ -107,17 +98,36 @@ interface ILeverageManager {
     /// @return debtAsset Debt asset for the strategy
     function getStrategyDebtAsset(IStrategy strategy) external view returns (IERC20 debtAsset);
 
-    /// @notice Returns collateral and debt amount required for a given equity amount and action, based on current strategy collateral ratio
-    /// @param strategy Strategy to get collateral and debt for
-    /// @param equityInCollateralAsset Equity in collateral asset to get collateral and debt for
-    /// @param action Action to get collateral and debt for
-    /// @return collateral Collateral for the equity
-    /// @return debt Debt for the equity
-    function getStrategyCollateralAndDebtForEquity(
+    /// @notice Calculates collateral and debt required to cover equity in a strategy
+    /// @param strategy Strategy to calculate collateral and debt for
+    /// @param equityInDebtAsset Equity to cover denominated in debt asset
+    /// @param action Action to calculate collateral and debt for
+    /// @return collateral Collateral required to cover equity
+    /// @return debt Debt required to cover equity
+    function calculateCollateralAndDebtToCoverEquity(
         IStrategy strategy,
-        uint256 equityInCollateralAsset,
+        uint256 equityInDebtAsset,
         IFeeManager.Action action
     ) external view returns (uint256 collateral, uint256 debt);
+
+    /// @notice Preview the required collateral and debt for a deposit of equity into a strategy and the shares received
+    /// @param strategy Strategy to preview deposit for
+    /// @param equityInCollateralAsset Equity amount in collateral asset to deposit
+    /// @return shares Shares received from the deposit
+    /// @return requiredCollateral Collateral required for the deposit
+    /// @return requiredDebt Debt required for the deposit
+    function previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
+        external
+        view
+        returns (uint256, uint256, uint256);
+
+    /// @notice Preview the required collateral and debt for a mint of shares into a strategy and the amount of equity added denominated in debt asset
+    /// @param strategy Strategy to preview mint for
+    /// @param shares Shares to mint
+    /// @return equityInDebtAsset Equity in debt asset to mint shares for
+    /// @return requiredCollateral Collateral required for the mint
+    /// @return requiredDebt Debt required for the mint
+    function previewMint(IStrategy strategy, uint256 shares) external view returns (uint256, uint256, uint256);
 
     /// @notice Sets factory for creating new strategy tokens
     /// @param factory Factory to set

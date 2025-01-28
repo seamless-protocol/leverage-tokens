@@ -30,15 +30,6 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
         return _getStrategyCollateralRatioAndExcess(strategy, lendingAdapter);
     }
 
-    function exposed_calculateCollateralAndDebtToCoverEquity(
-        IStrategy strategy,
-        ILendingAdapter lendingAdapter,
-        uint256 equity,
-        IFeeManager.Action action
-    ) external view returns (uint256 collateral, uint256 debt) {
-        return _calculateCollateralAndDebtToCoverEquity(strategy, lendingAdapter, equity, action);
-    }
-
     function exposed_convertToEquity(IStrategy strategy, uint256 shares) external view returns (uint256 equity) {
         return _convertToEquity(strategy, shares);
     }

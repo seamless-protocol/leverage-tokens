@@ -118,9 +118,8 @@ contract MintTest is LeverageManagerBaseTest {
             leverageManager.exposed_computeFeeAdjustedShares(strategy, sharesToMint, IFeeManager.Action.Deposit);
         uint256 expectedEquity = leverageManager.exposed_convertToEquity(strategy, sharesAfterFee);
 
-        (uint256 collateral, uint256 debtToCoverEquity) = leverageManager
-            .exposed_calculateCollateralAndDebtToCoverEquity(
-            strategy, _getLendingAdapter(), expectedEquity, IFeeManager.Action.Deposit
+        (uint256 collateral, uint256 debtToCoverEquity) = leverageManager.calculateCollateralAndDebtToCoverEquity(
+            strategy, expectedEquity, IFeeManager.Action.Deposit
         );
 
         collateralToken.mint(address(this), collateral);

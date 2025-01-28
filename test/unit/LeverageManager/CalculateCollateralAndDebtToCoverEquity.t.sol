@@ -42,10 +42,8 @@ contract CalculateCollateralAndDebtToCoverEquityTest is LeverageManagerBaseTest 
         // Mocks exchange rate. Not important for this test bu it is important that call to lending adapter is mocked with correct call parameters
         _mockConvertDebt(expectedCollateral, debtToCollateral);
 
-        (uint256 collateral, uint256 debtToCoverEquity) = leverageManager
-            .exposed_calculateCollateralAndDebtToCoverEquity(
-            strategy, _getLendingAdapter(), equity, IFeeManager.Action.Deposit
-        );
+        (uint256 collateral, uint256 debtToCoverEquity) =
+            leverageManager.calculateCollateralAndDebtToCoverEquity(strategy, equity, IFeeManager.Action.Deposit);
 
         assertEq(collateral, debtToCollateral);
         assertEq(debtToCoverEquity, expectedDebt);
@@ -70,10 +68,8 @@ contract CalculateCollateralAndDebtToCoverEquityTest is LeverageManagerBaseTest 
         uint256 debtToCollateral = 3 ether;
         _mockConvertDebt(equity, debtToCollateral);
 
-        (uint256 collateral, uint256 debtToCoverEquity) = leverageManager
-            .exposed_calculateCollateralAndDebtToCoverEquity(
-            strategy, _getLendingAdapter(), equity, IFeeManager.Action.Deposit
-        );
+        (uint256 collateral, uint256 debtToCoverEquity) =
+            leverageManager.calculateCollateralAndDebtToCoverEquity(strategy, equity, IFeeManager.Action.Deposit);
 
         assertEq(debtToCoverEquity, 0);
         assertEq(collateral, debtToCollateral);
@@ -103,10 +99,8 @@ contract CalculateCollateralAndDebtToCoverEquityTest is LeverageManagerBaseTest 
         uint256 debtToCollateral = 3 ether;
         _mockConvertDebt(expectedCollateral, debtToCollateral);
 
-        (uint256 collateral, uint256 debtToCoverEquity) = leverageManager
-            .exposed_calculateCollateralAndDebtToCoverEquity(
-            strategy, _getLendingAdapter(), equity, IFeeManager.Action.Deposit
-        );
+        (uint256 collateral, uint256 debtToCoverEquity) =
+            leverageManager.calculateCollateralAndDebtToCoverEquity(strategy, equity, IFeeManager.Action.Deposit);
 
         assertEq(debtToCoverEquity, expectedDebt);
         assertEq(collateral, debtToCollateral);
@@ -131,10 +125,8 @@ contract CalculateCollateralAndDebtToCoverEquityTest is LeverageManagerBaseTest 
         uint256 debtToCollateral = 3 ether;
         _mockConvertDebt(equity, debtToCollateral);
 
-        (uint256 collateral, uint256 debtToCoverEquity) = leverageManager
-            .exposed_calculateCollateralAndDebtToCoverEquity(
-            strategy, _getLendingAdapter(), equity, IFeeManager.Action.Redeem
-        );
+        (uint256 collateral, uint256 debtToCoverEquity) =
+            leverageManager.calculateCollateralAndDebtToCoverEquity(strategy, equity, IFeeManager.Action.Redeem);
 
         assertEq(debtToCoverEquity, 0);
         assertEq(collateral, debtToCollateral);
@@ -162,10 +154,8 @@ contract CalculateCollateralAndDebtToCoverEquityTest is LeverageManagerBaseTest 
         uint256 debtToCollateral = 3 ether;
         _mockConvertDebt(expectedCollateral, debtToCollateral);
 
-        (uint256 collateral, uint256 debtToCoverEquity) = leverageManager
-            .exposed_calculateCollateralAndDebtToCoverEquity(
-            strategy, _getLendingAdapter(), equity, IFeeManager.Action.Redeem
-        );
+        (uint256 collateral, uint256 debtToCoverEquity) =
+            leverageManager.calculateCollateralAndDebtToCoverEquity(strategy, equity, IFeeManager.Action.Redeem);
 
         assertEq(debtToCoverEquity, expectedDebt);
         assertEq(collateral, debtToCollateral);
@@ -193,10 +183,8 @@ contract CalculateCollateralAndDebtToCoverEquityTest is LeverageManagerBaseTest 
         uint256 debtToCollateral = 3 ether;
         _mockConvertDebt(expectedCollateral, debtToCollateral);
 
-        (uint256 collateral, uint256 debtToCoverEquity) = leverageManager
-            .exposed_calculateCollateralAndDebtToCoverEquity(
-            strategy, _getLendingAdapter(), equity, IFeeManager.Action.Redeem
-        );
+        (uint256 collateral, uint256 debtToCoverEquity) =
+            leverageManager.calculateCollateralAndDebtToCoverEquity(strategy, equity, IFeeManager.Action.Redeem);
 
         assertEq(debtToCoverEquity, expectedDebt);
         assertEq(collateral, debtToCollateral);

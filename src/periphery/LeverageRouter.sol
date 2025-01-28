@@ -48,30 +48,12 @@ contract LeverageRouter {
         return swapper.provider();
     }
 
-    /// @notice Preview total collateral and debt required for a deposit of equity into a strategy
-    /// @dev This function is useful for generating swap aggregator calldata required for a deposit.
-    ///      For example, if the LeverageRouter's Swapper is using LiFi for swaps, the caller needs to pass in calldata for the LiFi
-    ///      swap. This calldata is obtained off-chain by the LiFi API, which requires knowledge of the amount of collateral needed
-    ///      from swapping the debt asset to repay the flash loan used to deposit the equity into the strategy.
-    /// @param strategy Strategy to preview collateral and debt for
-    /// @param equityInCollateralAsset Equity in collateral asset to preview collateral and debt for
-    /// @return collateral Collateral required
-    /// @return debt Debt required
-    function previewCollateralAndDebtRequiredForDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
-        public
-        view
-        returns (uint256 collateral, uint256 debt)
-    {
-        return leverageManager.getStrategyCollateralAndDebtForEquity(
-            strategy, equityInCollateralAsset, IFeeManager.Action.Deposit
-        );
-    }
-
     /// @notice Deposit equity into a strategy
     /// @dev The LeverageRouter must be approved to spend `maxCollateralAssets` of the strategy's collateral asset
     /// @param strategy Strategy to deposit equity into
     /// @param equityInCollateralAsset Equity amount in collateral asset to deposit
-    /// @param maxSenderSuppliedCollateralAssets The maximum amount of collateral assets to transfer to this contract from the sender to facilitate the deposit of `equityInCollateralAsset` into the strategy
+    /// @param maxSenderSuppliedCollateralAssets The maximum amount of collateral assets to transfer to this contract from
+    /// the sender to facilitate the deposit of `equityInCollateralAsset` into the strategy
     /// @param minShares Minimum shares to receive from the deposit
     /// @param providerSwapData Swap data to use for the swap using the set provider
     function deposit(
@@ -89,8 +71,8 @@ contract LeverageRouter {
         collateralAsset.transferFrom(msg.sender, address(this), maxSenderSuppliedCollateralAssets);
 
         // Get required collateral amount for the equity amount being deposited into the strategy
-        (uint256 requiredCollateral, uint256 requiredDebt) =
-            previewCollateralAndDebtRequiredForDeposit(strategy, equityInCollateralAsset);
+        (, uint256 requiredCollateral, uint256 requiredDebt) =
+            leverageManager.previewDeposit(strategy, equityInCollateralAsset);
 
         IERC20 debtAsset = _leverageManager.getStrategyDebtAsset(strategy);
 

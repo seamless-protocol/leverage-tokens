@@ -40,14 +40,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}
 
-    function convertEquityToShares(IStrategy strategy, uint256 equityInCollateralAsset)
-        public
-        view
-        returns (uint256 shares)
-    {
-        // TODO: Implement
-    }
-
     /// @inheritdoc ILeverageManager
     function getStrategyTokenFactory() public view returns (IBeaconProxyFactory factory) {
         return Storage.layout().strategyTokenFactory;
@@ -78,17 +70,27 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function getStrategyCollateralAndDebtForEquity(
-        IStrategy strategy,
-        uint256 equityInCollateralAsset,
-        IFeeManager.Action action
-    ) public view returns (uint256, uint256) {
-        ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
-        (uint256 collateral, uint256 debt) = _calculateCollateralAndDebtToCoverEquity(
-            strategy, lendingAdapter, lendingAdapter.convertCollateralToDebtAsset(equityInCollateralAsset), action
-        );
+    function previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
+        public
+        view
+        returns (uint256, uint256, uint256)
+    {
+        uint256 sharesAfterFeeAdjustment = _convertEquityToShares(strategy, equityInCollateralAsset);
+        uint256 equityInDebtAsset =
+            getStrategyLendingAdapter(strategy).convertCollateralToDebtAsset(equityInCollateralAsset);
+        (uint256 requiredCollateral, uint256 requiredDebt) =
+            calculateCollateralAndDebtToCoverEquity(strategy, equityInDebtAsset, IFeeManager.Action.Deposit);
 
-        return (collateral, debt);
+        return (sharesAfterFeeAdjustment, requiredCollateral, requiredDebt);
+    }
+
+    /// @inheritdoc ILeverageManager
+    function previewMint(IStrategy strategy, uint256 shares) public view returns (uint256, uint256, uint256) {
+        uint256 equityInDebtAsset = _convertToEquity(strategy, shares);
+        (uint256 requiredCollateral, uint256 requiredDebt) =
+            calculateCollateralAndDebtToCoverEquity(strategy, equityInDebtAsset, IFeeManager.Action.Deposit);
+
+        return (equityInDebtAsset, requiredCollateral, requiredDebt);
     }
 
     /// @inheritdoc ILeverageManager
@@ -196,27 +198,38 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         emit StrategyCollateralCapSet(strategy, collateralCap);
     }
 
+    /// @inheritdoc ILeverageManager
     function deposit(IStrategy strategy, uint256 equityInCollateralAsset, uint256 minShares)
         external
         returns (uint256 shares)
     {
-        // TODO: Implement
+        uint256 sharesAfterFeeAdjustment = _convertEquityToShares(strategy, equityInCollateralAsset);
+
+        if (sharesAfterFeeAdjustment < minShares) {
+            revert SlippageTooHigh(sharesAfterFeeAdjustment, minShares);
+        }
+
+        uint256 sharesBeforeFeeAdjustment =
+            _computeSharesBeforeFeeAdjustment(strategy, sharesAfterFeeAdjustment, IFeeManager.Action.Deposit);
+        uint256 equityInDebtAsset =
+            getStrategyLendingAdapter(strategy).convertCollateralToDebtAsset(equityInCollateralAsset);
+
+        mint(strategy, sharesBeforeFeeAdjustment, equityInDebtAsset);
+
+        return sharesAfterFeeAdjustment;
     }
 
     /// @inheritdoc ILeverageManager
-    function mint(IStrategy strategy, uint256 shares, uint256 maxAssets) external returns (uint256 assets) {
+    function mint(IStrategy strategy, uint256 shares, uint256 maxAssets) public returns (uint256 assets) {
         ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
 
         // Charge strategy fee. Fee is not sent to treasury but burned which increases overall share value
         uint256 sharesAfterFee = _computeFeeAdjustedShares(strategy, shares, IFeeManager.Action.Deposit);
-        uint256 equity = _convertToEquity(strategy, sharesAfterFee);
+        (uint256 equityInDebtAsset, uint256 collateral, uint256 debt) = previewMint(strategy, sharesAfterFee);
 
-        if (equity > maxAssets) {
-            revert SlippageTooHigh(equity, maxAssets);
+        if (equityInDebtAsset > maxAssets) {
+            revert SlippageTooHigh(equityInDebtAsset, maxAssets);
         }
-
-        (uint256 collateral, uint256 debt) =
-            _calculateCollateralAndDebtToCoverEquity(strategy, lendingAdapter, equity, IFeeManager.Action.Deposit);
 
         // Take asset from sender and supply it as collateral
         IERC20 collateralAsset = lendingAdapter.getCollateralAsset();
@@ -232,8 +245,8 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         // Mint shares to user
         strategy.mint(msg.sender, shares);
 
-        emit Deposit(strategy, msg.sender, msg.sender, equity, shares);
-        return equity;
+        emit Deposit(strategy, msg.sender, msg.sender, equityInDebtAsset, shares);
+        return equityInDebtAsset;
     }
 
     /// @inheritdoc ILeverageManager
@@ -250,7 +263,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         }
 
         (uint256 collateral, uint256 debt) =
-            _calculateCollateralAndDebtToCoverEquity(strategy, lendingAdapter, equity, IFeeManager.Action.Redeem);
+            calculateCollateralAndDebtToCoverEquity(strategy, equity, IFeeManager.Action.Redeem);
 
         // Burn shares from user and total supply
         strategy.burn(msg.sender, shares);
@@ -271,13 +284,14 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         return collateral;
     }
 
-    // Calculates how much debt should user repay to cover equity they want to redeem
-    function _calculateCollateralAndDebtToCoverEquity(
+    /// @inheritdoc ILeverageManager
+    function calculateCollateralAndDebtToCoverEquity(
         IStrategy strategy,
-        ILendingAdapter lendingAdapter,
-        uint256 equity,
+        uint256 equityInDebtAsset,
         IFeeManager.Action action
-    ) internal view returns (uint256 collateral, uint256 debt) {
+    ) public view returns (uint256 collateral, uint256 debt) {
+        ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
+
         // Get current collateral ratio and excess excess collateral in debt asset. Excess of collateral can be redeemed without repaying the debt
         (uint256 currCollateralRatio, int256 excessCollateral) =
             _getStrategyCollateralRatioAndExcess(strategy, lendingAdapter);
@@ -296,18 +310,18 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         // As a result, the strategy will be at healthier state - either at the target ratio (if depositing equity > collateral deficit) or closer to the target ratio.
         // Note: The same optimization can be done in reverse for withdraw actions.
         if (action == IFeeManager.Action.Deposit && isOverCollateralized) {
-            equityToCover = equity;
+            equityToCover = equityInDebtAsset;
             ratio = getStrategyTargetCollateralRatio(strategy);
         } else if (action == IFeeManager.Action.Redeem && !isOverCollateralized) {
-            equityToCover = equity;
+            equityToCover = equityInDebtAsset;
             ratio = currCollateralRatio;
         } else {
-            equityToCover = equity > excessCollateralAbs ? equity - excessCollateralAbs : 0;
+            equityToCover = equityInDebtAsset > excessCollateralAbs ? equityInDebtAsset - excessCollateralAbs : 0;
             ratio = getStrategyTargetCollateralRatio(strategy);
         }
 
         debt = Math.mulDiv(equityToCover, BASE_RATIO, ratio - BASE_RATIO);
-        collateral = lendingAdapter.convertDebtToCollateralAsset(debt + equity);
+        collateral = lendingAdapter.convertDebtToCollateralAsset(debt + equityInDebtAsset);
 
         return (collateral, debt);
     }
@@ -335,6 +349,25 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         currCollateralRatio = Math.mulDiv(collateral, BASE_RATIO, debt, Math.Rounding.Floor);
 
         return (currCollateralRatio, excessCollateral);
+    }
+
+    /// @notice Converts equity denominated in collateral asset to shares
+    /// @param strategy Strategy to convert equity to shares for
+    /// @param equityInCollateralAsset Equity denominated in collateral asset to convert to shares
+    /// @return shares Equity in shares
+    function _convertEquityToShares(IStrategy strategy, uint256 equityInCollateralAsset)
+        internal
+        view
+        returns (uint256)
+    {
+        ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
+
+        return Math.mulDiv(
+            equityInCollateralAsset,
+            strategy.totalSupply() + 10 ** DECIMALS_OFFSET,
+            lendingAdapter.getEquityInCollateralAsset() + 1,
+            Math.Rounding.Floor
+        );
     }
 
     /// @notice Function that converts user's shares to strategy equity, equity will be denominated in debt asset
