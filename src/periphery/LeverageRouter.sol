@@ -139,12 +139,12 @@ contract LeverageRouter {
 
     // Handles the deposit of equity into a strategy and the swap of debt assets to the collateral asset to repay the flash loan
     function _depositAndRepayMorphoFlashLoan(DepositParams memory params, uint256 collateralLoanAmount) internal {
-        // Deposit equity into strategy and give receiver the minted shares and debt assets
+        // Deposit equity into strategy using the flash loaned collateral and sender supplied equity
         params.collateralAsset.approve(address(leverageManager), params.requiredCollateral);
         uint256 sharesReceived =
             leverageManager.deposit(params.strategy, params.equityInCollateralAsset, params.minShares);
 
-        // Swap debt asset received from the deposit to the collateral asset, to repay the flash loan
+        // Swap the debt asset received from the deposit to the collateral asset, used to repay the flash loan
         params.debtAsset.approve(address(swapper), params.requiredDebt);
         uint256 toAmount = swapper.swap(
             params.debtAsset, params.collateralAsset, params.requiredDebt, collateralLoanAmount, params.providerSwapData
