@@ -7,8 +7,6 @@ import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {LendingRouterBaseTest} from "../LendingRouter/LendingRouterBase.t.sol";
 import {MockLeverageManager} from "../mock/MockLeverageManager.sol";
 
-import {console2} from "forge-std/console2.sol";
-
 contract DepositTest is LendingRouterBaseTest {
     function testFuzz_deposit_DebtSwapEqualsRequiredFlashLoanRepaymentCollateral(
         uint128 equityInCollateralAsset,
