@@ -51,28 +51,20 @@ contract LeverageRouter is ILeverageRouter {
 
         // Flash loan any additional required collateral from morpho
         if (requiredCollateral > equityInCollateralAsset) {
-            morpho.flashLoan(
-                address(collateralAsset),
-                requiredCollateral - equityInCollateralAsset,
-                abi.encode(
-                    MorphoCallbackData({
-                        action: IFeeManager.Action.Deposit,
-                        actionData: abi.encode(
-                            DepositParams({
-                                strategy: strategy,
-                                collateralAsset: collateralAsset,
-                                debtAsset: debtAsset,
-                                collateralFromSender: collateralFromSender,
-                                equityInCollateralAsset: equityInCollateralAsset,
-                                requiredCollateral: requiredCollateral,
-                                requiredDebt: requiredDebt,
-                                minShares: minShares,
-                                receiver: msg.sender,
-                                providerSwapData: providerSwapData
-                            })
-                        )
-                    })
-                )
+            _morphoFlashLoanForDeposit(
+                DepositParams({
+                    strategy: strategy,
+                    collateralAsset: collateralAsset,
+                    debtAsset: debtAsset,
+                    collateralFromSender: collateralFromSender,
+                    equityInCollateralAsset: equityInCollateralAsset,
+                    requiredCollateral: requiredCollateral,
+                    requiredDebt: requiredDebt,
+                    minShares: minShares,
+                    receiver: msg.sender,
+                    providerSwapData: providerSwapData
+                }),
+                requiredCollateral - equityInCollateralAsset
             );
         } else {
             collateralAsset.approve(address(leverageManager), requiredCollateral);
@@ -135,5 +127,33 @@ contract LeverageRouter is ILeverageRouter {
 
         // Approve morpho to transfer assets received from the swap to repay the flash loan
         params.collateralAsset.approve(address(morpho), collateralLoanAmount);
+    }
+
+    // Obtains a flash loan from Morpho for a deposit. Morpho will call back into the LeverageRouter with the deposit params to execute the deposit
+    // and swap the debt asset to the collateral asset to repay the flash loan
+    function _morphoFlashLoanForDeposit(DepositParams memory params, uint256 collateralLoanAmount) internal {
+        morpho.flashLoan(
+            address(params.collateralAsset),
+            collateralLoanAmount,
+            abi.encode(
+                MorphoCallbackData({
+                    action: IFeeManager.Action.Deposit,
+                    actionData: abi.encode(
+                        DepositParams({
+                            strategy: params.strategy,
+                            collateralAsset: params.collateralAsset,
+                            debtAsset: params.debtAsset,
+                            collateralFromSender: params.collateralFromSender,
+                            equityInCollateralAsset: params.equityInCollateralAsset,
+                            requiredCollateral: params.requiredCollateral,
+                            requiredDebt: params.requiredDebt,
+                            minShares: params.minShares,
+                            receiver: params.receiver,
+                            providerSwapData: params.providerSwapData
+                        })
+                    )
+                })
+            )
+        );
     }
 }
