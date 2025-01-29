@@ -74,7 +74,8 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
                     minCollateralRatio: _BASE_RATIO(),
                     maxCollateralRatio: _BASE_RATIO() + 2,
                     targetCollateralRatio: _BASE_RATIO() + 1,
-                    collateralCap: type(uint256).max
+                    collateralCap: type(uint256).max,
+                    rebalanceReward: 0
                 }),
                 address(0),
                 address(0),

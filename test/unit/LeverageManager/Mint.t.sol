@@ -33,7 +33,8 @@ contract MintTest is LeverageManagerBaseTest {
                 minCollateralRatio: _BASE_RATIO(),
                 maxCollateralRatio: _BASE_RATIO() + 2,
                 targetCollateralRatio: _BASE_RATIO() + 1,
-                collateralCap: type(uint256).max
+                collateralCap: type(uint256).max,
+                rebalanceReward: 0
             }),
             address(collateralToken),
             address(debtToken),

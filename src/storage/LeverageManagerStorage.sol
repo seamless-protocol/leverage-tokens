@@ -20,6 +20,8 @@ library LeverageManagerStorage {
         uint256 maxCollateralRatio;
         /// @dev Target collateral ratio of the strategy on 8 decimals
         uint256 targetCollateralRatio;
+        /// @dev Percentage of reward that goes to rebalance caller on 3 decimals. Reward is calculated based on debt change
+        uint256 rebalanceReward;
     }
 
     /// @dev Struct containing all state for the LeverageManager contract

@@ -58,6 +58,10 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         return getStrategyLendingAdapter(strategy).getDebtAsset();
     }
 
+    function getStrategyRebalanceReward(IStrategy strategy) public view returns (uint256 reward) {
+        return Storage.layout().config[strategy].rebalanceReward;
+    }
+
     /// @inheritdoc ILeverageManager
     function getStrategyConfig(IStrategy strategy) external view returns (Storage.StrategyConfig memory config) {
         return Storage.layout().config[strategy];
@@ -171,6 +175,11 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     function setStrategyCollateralCap(IStrategy strategy, uint256 collateralCap) public onlyRole(MANAGER_ROLE) {
         Storage.layout().config[strategy].collateralCap = collateralCap;
         emit StrategyCollateralCapSet(strategy, collateralCap);
+    }
+
+    function setStrategyRebalanceReward(IStrategy strategy, uint256 reward) public onlyRole(MANAGER_ROLE) {
+        Storage.layout().config[strategy].rebalanceReward = reward;
+        emit StrategyRebalanceRewardSet(strategy, reward);
     }
 
     /// @inheritdoc ILeverageManager
@@ -350,7 +359,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         StrategyState memory stateAfter = _getStrategyState(strategy);
 
         // Validate equity change
-        _validateEquityChange(stateBefore.equity, stateAfter.equity, stateBefore.debt, stateAfter.debt);
+        _validateEquityChange(strategy, stateBefore, stateAfter);
 
         // Validate collateral ratio change
         _validateCollateralRatioAfterRebalance(strategy, stateBefore.collateralRatio, stateAfter.collateralRatio);
@@ -382,16 +391,20 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @notice Validates that strategy has enough equity after rebalance action
-    /// @param equityBefore Equity value denominated in debt asset before rebalance
-    /// @param equityAfter Equity value denominated in debt asset after rebalance
-    /// @param debtBefore Debt before rebalance
-    /// @param debtAfter Debt after rebalance
-    function _validateEquityChange(uint256 equityBefore, uint256 equityAfter, uint256 debtBefore, uint256 debtAfter)
-        internal
-        pure
-    {
-        uint256 debtChange = (debtAfter > debtBefore) ? debtAfter - debtBefore : debtBefore - debtAfter;
-        uint256 reward = (debtChange * REBALANCE_REWARD) / 100_000;
+    /// @param stateBefore State of the strategy before rebalance
+    /// @param stateAfter State of the strategy after rebalance
+    function _validateEquityChange(
+        IStrategy strategy,
+        StrategyState memory stateBefore,
+        StrategyState memory stateAfter
+    ) internal view {
+        uint256 equityBefore = stateBefore.equity;
+        uint256 equityAfter = stateAfter.equity;
+        uint256 debtBefore = stateBefore.debt;
+        uint256 debtAfter = stateAfter.debt;
+
+        uint256 debtChange = (debtAfter.toInt256() - debtBefore.toInt256()).abs();
+        uint256 reward = (debtChange * getStrategyRebalanceReward(strategy)) / 100_000;
 
         if (equityAfter < equityBefore - reward) {
             revert EquityLossTooBig();

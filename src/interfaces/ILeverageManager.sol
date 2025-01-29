@@ -56,6 +56,9 @@ interface ILeverageManager {
     /// @notice Event emitted when collateral caps are set/changed for a strategy
     event StrategyCollateralCapSet(IStrategy indexed strategy, uint256 collateralCap);
 
+    /// @notice Event emitted when rebalance reward is set for a strategy
+    event StrategyRebalanceRewardSet(IStrategy indexed strategy, uint256 reward);
+
     /// @notice Event emitted when user deposits assets into strategy
     event Deposit(
         IStrategy indexed strategy, address indexed from, address indexed to, uint256 assets, uint256 sharesMinted

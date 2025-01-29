@@ -7,6 +7,7 @@ import {FeeManagerHarness} from "test/unit/FeeManager/harness/FeeManagerHarness.
 import {LeverageManager} from "src/LeverageManager.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
+import {ActionType, RebalanceAction, TokenTransfer, StrategyState} from "src/types/DataTypes.sol";
 
 /// @notice Wrapper contract that exposes all internal functions of LeverageManager
 contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
@@ -37,6 +38,46 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
         IFeeManager.Action action
     ) external view returns (uint256 collateral, uint256 debt) {
         return _calculateCollateralAndDebtToCoverEquity(strategy, equity, action);
+    }
+
+    function exposed_validateRebalanceEligibility(IStrategy strategy, uint256 currRatio) external {
+        _validateRebalanceEligibility(strategy, currRatio);
+    }
+
+    function exposed_validateCollateralRatioAfterRebalance(
+        IStrategy strategy,
+        uint256 collateralRatioBefore,
+        uint256 collateralRatioAfter
+    ) external {
+        _validateCollateralRatioAfterRebalance(strategy, collateralRatioBefore, collateralRatioAfter);
+    }
+
+    function exposed_validateEquityChange(
+        IStrategy strategy,
+        StrategyState memory stateBefore,
+        StrategyState memory stateAfter
+    ) external {
+        _validateEquityChange(strategy, stateBefore, stateAfter);
+    }
+
+    function exposed_getStrategyState(IStrategy strategy) external view returns (StrategyState memory strategyState) {
+        return _getStrategyState(strategy);
+    }
+
+    function exposed_isElementInSlice(RebalanceAction[] calldata actions, IStrategy strategy, uint256 untilIndex)
+        external
+        pure
+        returns (bool)
+    {
+        return _isElementInSlice(actions, strategy, untilIndex);
+    }
+
+    function exposed_transferTokens(TokenTransfer[] calldata transfers, address from, address to) external {
+        _transferTokens(transfers, from, to);
+    }
+
+    function exposed_executeAction(IStrategy strategy, ActionType actionType, uint256 amount) external {
+        _executeAction(strategy, actionType, amount);
     }
 
     function exposed_convertToEquity(IStrategy strategy, uint256 shares) external view returns (uint256 equity) {
