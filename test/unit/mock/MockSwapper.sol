@@ -24,7 +24,7 @@ contract MockSwapper is Test {
         IERC20 fromToken,
         IERC20 toToken,
         uint256 fromAmount,
-        uint256 minToAmount,
+        uint256, /* minToAmount */
         bytes calldata /* providerSwapData */
     ) external returns (uint256) {
         SafeERC20.safeTransferFrom(fromToken, msg.sender, address(this), fromAmount);
@@ -37,15 +37,14 @@ contract MockSwapper is Test {
                 // Deal the toToken to the sender
                 deal(address(toToken), msg.sender, toToken.balanceOf(msg.sender) + mockedSwap.toAmount);
 
-                // Set the swap to not be set
+                // Set the swap as executed
                 mockedSwaps[i].isExecuted = true;
 
                 return mockedSwap.toAmount;
             }
         }
 
-        // If no mocked swap is set, deal and return the minToAmount
-        deal(address(toToken), msg.sender, minToAmount);
-        return minToAmount;
+        // If no mocked swap is set, revert by default
+        revert("MockSwapper: No mocked swap set");
     }
 }
