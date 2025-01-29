@@ -61,8 +61,14 @@ contract LendingRouterBaseTest is Test {
             ILeverageManager(address(leverageManager)), IMorpho(address(morpho)), ISwapper(address(swapper))
         );
 
-        // Setup the tokens
+        // Setup the mock tokens
         collateralToken.mockSetDecimals(18);
         debtToken.mockSetDecimals(6);
+    }
+
+    function test_setUp() public view {
+        assertEq(address(leverageRouter.leverageManager()), address(leverageManager));
+        assertEq(address(leverageRouter.morpho()), address(morpho));
+        assertEq(address(leverageRouter.swapper()), address(swapper));
     }
 }

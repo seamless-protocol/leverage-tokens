@@ -18,19 +18,16 @@ contract LeverageRouter is ILeverageRouter {
     /// @inheritdoc ILeverageRouter
     ILeverageManager public immutable leverageManager;
 
+    /// @inheritdoc ILeverageRouter
     IMorpho public immutable morpho;
 
+    /// @inheritdoc ILeverageRouter
     ISwapper public immutable swapper;
 
     constructor(ILeverageManager _leverageManager, IMorpho _morpho, ISwapper _swapper) {
         leverageManager = _leverageManager;
         morpho = _morpho;
         swapper = _swapper;
-    }
-
-    /// @inheritdoc ILeverageRouter
-    function getSwapProvider() external view returns (ISwapper.Provider) {
-        return swapper.provider();
     }
 
     /// @inheritdoc ILeverageRouter

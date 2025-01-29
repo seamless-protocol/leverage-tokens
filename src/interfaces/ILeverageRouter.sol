@@ -22,10 +22,6 @@ interface ILeverageRouter {
     /// @notice Error thrown when the caller is not authorized to call a function
     error Unauthorized();
 
-    /// @notice Get the current swap provider
-    /// @return provider Current swap provider
-    function getSwapProvider() external view returns (ISwapper.Provider);
-
     /// @notice The Seamless ilm-v2 LeverageManager contract
     /// @return leverageManager The Seamless ilm-v2 LeverageManager contract
     function leverageManager() external view returns (ILeverageManager leverageManager);
