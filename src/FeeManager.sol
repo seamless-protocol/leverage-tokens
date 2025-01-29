@@ -57,17 +57,6 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
         emit StrategyActionFeeSet(strategy, action, fee);
     }
 
-    // Calculates shares before fee adjustment
-    function _computeSharesBeforeFeeAdjustment(IStrategy strategy, uint256 feeAdjustedShares, IFeeManager.Action action)
-        internal
-        view
-        returns (uint256 sharesBeforeFeeAdjustment)
-    {
-        return Math.mulDiv(
-            feeAdjustedShares, MAX_FEE, MAX_FEE - getStrategyActionFee(strategy, action), Math.Rounding.Ceil
-        );
-    }
-
     // Calculates and charges fee based on action type
     function _computeFeeAdjustedShares(IStrategy strategy, uint256 amount, IFeeManager.Action action)
         internal
@@ -78,5 +67,16 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
         uint256 feeAmount = Math.mulDiv(amount, getStrategyActionFee(strategy, action), MAX_FEE, Math.Rounding.Ceil);
 
         return amount - feeAmount;
+    }
+
+    // Calculates shares before fee adjustment
+    function _computeSharesBeforeFeeAdjustment(IStrategy strategy, uint256 feeAdjustedShares, IFeeManager.Action action)
+        internal
+        view
+        returns (uint256 sharesBeforeFeeAdjustment)
+    {
+        return Math.mulDiv(
+            feeAdjustedShares, MAX_FEE, MAX_FEE - getStrategyActionFee(strategy, action), Math.Rounding.Floor
+        );
     }
 }

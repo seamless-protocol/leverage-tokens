@@ -43,4 +43,39 @@ contract SetStrategyActionFeeTest is FeeManagerBaseTest {
 
         assertEq(amountAfterFee, expectedAmountAfterFee);
     }
+
+    function test_computeSharesBeforeFeeAdjustment_SharesRoundedDown() public {
+        IStrategy strategy = IStrategy(makeAddr("strategy"));
+        uint256 amountAfterFee = 1;
+        uint256 fee = 1;
+
+        for (uint256 i = 0; i < uint256(type(IFeeManager.Action).max) + 1; i++) {
+            _setStrategyActionFee(feeManagerRole, strategy, IFeeManager.Action(i), fee);
+
+            uint256 sharesBeforeFeeAdjustment =
+                feeManager.exposed_computeSharesBeforeFeeAdjustment(strategy, amountAfterFee, IFeeManager.Action(i));
+            assertEq(sharesBeforeFeeAdjustment, 1);
+        }
+    }
+
+    function testFuzz_computeSharesBeforeFeeAdjustment(
+        IStrategy strategy,
+        uint256 amountAfterFee,
+        uint256 actionNum,
+        uint256 fee
+    ) public {
+        IFeeManager.Action action = IFeeManager.Action(bound(actionNum, 0, 2));
+        amountAfterFee = bound(amountAfterFee, 0, type(uint256).max / feeManager.MAX_FEE());
+        fee = bound(fee, 0, feeManager.MAX_FEE() - 1);
+
+        _setStrategyActionFee(feeManagerRole, strategy, action, fee);
+
+        uint256 expectedSharesBeforeFeeAdjustment =
+            Math.mulDiv(amountAfterFee, feeManager.MAX_FEE(), feeManager.MAX_FEE() - fee, Math.Rounding.Floor);
+
+        uint256 sharesBeforeFeeAdjustment =
+            feeManager.exposed_computeSharesBeforeFeeAdjustment(strategy, amountAfterFee, action);
+
+        assertEq(sharesBeforeFeeAdjustment, expectedSharesBeforeFeeAdjustment);
+    }
 }
