@@ -7,39 +7,22 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // Internal imports
-import {IFeeManager} from "src/interfaces/IFeeManager.sol";
-import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {IStrategy} from "src/interfaces/IStrategy.sol";
-import {ISwapper} from "src/interfaces/ISwapper.sol";
+import {IFeeManager} from "../interfaces/IFeeManager.sol";
+import {ILeverageManager} from "../interfaces/ILeverageManager.sol";
+import {IStrategy} from "../interfaces/IStrategy.sol";
+import {ISwapper} from "../interfaces/ISwapper.sol";
+import {ILeverageRouter} from "../interfaces/ILeverageRouter.sol";
+import {DepositParams, MorphoCallbackData} from "../types/DataTypes.sol";
 
-contract LeverageRouter {
+contract LeverageRouter is ILeverageRouter {
+    /// @inheritdoc ILeverageRouter
     ILeverageManager public immutable leverageManager;
 
+    /// @inheritdoc ILeverageRouter
     IMorpho public immutable morpho;
 
+    /// @inheritdoc ILeverageRouter
     ISwapper public immutable swapper;
-
-    error InsufficientCollateral();
-    error InvalidAction();
-    error Unauthorized();
-
-    struct MorphoCallbackData {
-        IFeeManager.Action action;
-        bytes actionData;
-    }
-
-    struct DepositParams {
-        IStrategy strategy;
-        IERC20 collateralAsset;
-        IERC20 debtAsset;
-        uint256 collateralFromSender;
-        uint256 equityInCollateralAsset;
-        uint256 requiredCollateral;
-        uint256 requiredDebt;
-        uint256 minShares;
-        address receiver;
-        bytes providerSwapData;
-    }
 
     constructor(ILeverageManager _leverageManager, IMorpho _morpho, ISwapper _swapper) {
         leverageManager = _leverageManager;
@@ -47,22 +30,12 @@ contract LeverageRouter {
         swapper = _swapper;
     }
 
-    /// @notice Get the current swap provider
-    /// @return provider Current swap provider
+    /// @inheritdoc ILeverageRouter
     function getSwapProvider() external view returns (ISwapper.Provider) {
         return swapper.provider();
     }
 
-    /// @notice Deposit equity into a strategy
-    /// @dev The LeverageRouter must be approved to spend `collateralFromSender` of the strategy's collateral asset
-    /// @dev `collateralFromSender` should be greater than `equityInCollateralAsset` to facilitate the deposit in the case that
-    ///      the deposit requires additional collateral to cover swap slippage when converting debt to collateral to repay the flash loan.
-    ///      Otherwise, it should be equal to `equityInCollateralAsset`
-    /// @param strategy Strategy to deposit equity into
-    /// @param collateralFromSender The amount of collateral asset to deposit from the sender
-    /// @param equityInCollateralAsset The min amount of equity in the collateral asset to deposit into the strategy
-    /// @param minShares Minimum shares to receive from the deposit
-    /// @param providerSwapData Swap data to use for the swap using the set provider
+    /// @inheritdoc ILeverageRouter
     function deposit(
         IStrategy strategy,
         uint256 collateralFromSender,

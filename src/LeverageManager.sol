@@ -70,6 +70,27 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
+    function getStrategyCollateralRatios(IStrategy strategy) external view returns (CollateralRatios memory ratios) {
+        Storage.StrategyConfig storage config = Storage.layout().config[strategy];
+
+        return CollateralRatios({
+            minCollateralRatio: config.minCollateralRatio,
+            maxCollateralRatio: config.maxCollateralRatio,
+            targetCollateralRatio: config.targetCollateralRatio
+        });
+    }
+
+    /// @inheritdoc ILeverageManager
+    function getStrategyCollateralCap(IStrategy strategy) public view returns (uint256 collateralCap) {
+        return Storage.layout().config[strategy].collateralCap;
+    }
+
+    /// @inheritdoc ILeverageManager
+    function getStrategyTargetCollateralRatio(IStrategy strategy) public view returns (uint256 targetCollateralRatio) {
+        return Storage.layout().config[strategy].targetCollateralRatio;
+    }
+
+    /// @inheritdoc ILeverageManager
     function previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
         public
         view
@@ -95,27 +116,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             _calculateCollateralAndDebtToCoverEquity(strategy, equityInDebtAsset, IFeeManager.Action.Deposit);
 
         return (equityInDebtAsset, collateral, debt);
-    }
-
-    /// @inheritdoc ILeverageManager
-    function getStrategyCollateralRatios(IStrategy strategy) external view returns (CollateralRatios memory ratios) {
-        Storage.StrategyConfig storage config = Storage.layout().config[strategy];
-
-        return CollateralRatios({
-            minCollateralRatio: config.minCollateralRatio,
-            maxCollateralRatio: config.maxCollateralRatio,
-            targetCollateralRatio: config.targetCollateralRatio
-        });
-    }
-
-    /// @inheritdoc ILeverageManager
-    function getStrategyCollateralCap(IStrategy strategy) public view returns (uint256 collateralCap) {
-        return Storage.layout().config[strategy].collateralCap;
-    }
-
-    /// @inheritdoc ILeverageManager
-    function getStrategyTargetCollateralRatio(IStrategy strategy) public view returns (uint256 targetCollateralRatio) {
-        return Storage.layout().config[strategy].targetCollateralRatio;
     }
 
     /// @inheritdoc ILeverageManager
