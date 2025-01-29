@@ -32,7 +32,7 @@ contract MorphoLendingAdapterBaseTest is Test {
     // Mocked ILeverageManager contract
     ILeverageManager public leverageManager = ILeverageManager(makeAddr("leverageManager"));
 
-    // Mocked Morpho protocol is setup with a market with id 1 and some default market params
+    // Mocked Morpho protocol is setup with a market with some default market params
     Id public defaultMarketId;
     MarketParams public defaultMarketParams = MarketParams({
         loanToken: address(debtToken),
