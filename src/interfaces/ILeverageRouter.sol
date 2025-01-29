@@ -16,9 +16,6 @@ interface ILeverageRouter {
     /// @notice Error thrown when the collateral provided plus the swapped debt is less than the required collateral to repay the flash loan
     error InsufficientCollateralToRepayFlashLoan();
 
-    /// @notice Error thrown when an invalid action is provided
-    error InvalidAction();
-
     /// @notice Error thrown when the caller is not authorized to call a function
     error Unauthorized();
 

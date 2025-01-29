@@ -102,8 +102,6 @@ contract LeverageRouter is ILeverageRouter {
         if (callbackData.action == IFeeManager.Action.Deposit) {
             DepositParams memory params = abi.decode(callbackData.actionData, (DepositParams));
             _depositAndRepayMorphoFlashLoan(params, collateralLoanAmount);
-        } else {
-            revert InvalidAction();
         }
     }
 

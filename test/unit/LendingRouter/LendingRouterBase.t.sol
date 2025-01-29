@@ -9,11 +9,13 @@ import {Id, MarketParams, IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 import {MarketParamsLib} from "@morpho-blue/libraries/MarketParamsLib.sol";
 
 // Internal imports
+import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILeverageRouter} from "src/interfaces/ILeverageRouter.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {ISwapper} from "src/interfaces/ISwapper.sol";
 import {LeverageRouter} from "src/periphery/LeverageRouter.sol";
+import {MorphoCallbackData} from "src/types/DataTypes.sol";
 import {MockERC20} from "../mock/MockERC20.sol";
 import {MockLendingAdapter} from "../mock/MockLendingAdapter.sol";
 import {MockLeverageManager} from "../mock/MockLeverageManager.sol";
@@ -70,5 +72,12 @@ contract LendingRouterBaseTest is Test {
         assertEq(address(leverageRouter.leverageManager()), address(leverageManager));
         assertEq(address(leverageRouter.morpho()), address(morpho));
         assertEq(address(leverageRouter.swapper()), address(swapper));
+    }
+
+    /// forge-config: default.fuzz.runs = 1
+    function testFuzz_onMorphoFlashLoan_RevertIf_Unauthorized(address caller) public {
+        vm.assume(caller != address(morpho));
+        vm.expectRevert(ILeverageRouter.Unauthorized.selector);
+        LeverageRouter(address(leverageRouter)).onMorphoFlashLoan(0, "");
     }
 }

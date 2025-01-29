@@ -8,84 +8,7 @@ import {LendingRouterBaseTest} from "../LendingRouter/LendingRouterBase.t.sol";
 import {MockLeverageManager} from "../mock/MockLeverageManager.sol";
 
 contract DepositTest is LendingRouterBaseTest {
-    function testFuzz_deposit_DebtSwapEqualsRequiredFlashLoanRepaymentCollateral(
-        uint128 equityInCollateralAsset,
-        uint256 requiredCollateral,
-        uint256 collateralFromSender
-    ) public {
-        // Mock total collateral required to deposit the equity to be greater than the equity being added to the strategy so that
-        // a flash loan is required
-        requiredCollateral = bound(requiredCollateral, uint256(equityInCollateralAsset) + 1, type(uint256).max);
-        // LeverageRouter will need to flash loan the difference between the required collateral and the equity being added to the strategy
-        uint256 requiredFlashLoan = requiredCollateral - equityInCollateralAsset;
-        // Mock collateral received from the debt swap to be equal to the required flash loan repayment
-        uint256 collateralReceivedFromDebtSwap = requiredFlashLoan;
-        // User sends at least the collateral required to cover the equity. We bound the max value so that the flash loaned collateral + the
-        // collateral from the sender is less than the max uint256 value to avoid reverts due to overflows
-        collateralFromSender =
-            bound(collateralFromSender, equityInCollateralAsset, type(uint256).max - requiredFlashLoan);
-
-        // Mocked debt required to deposit the equity (Doesn't matter for this test as the debt swap is mocked)
-        uint256 requiredDebt = 100e6;
-        // Mocked exchange rate of shares (Doesn't matter for this test as the shares received and previewed are mocked)
-        uint256 shares = 10 ether;
-
-        // Mock the swap of the debt asset to the collateral asset
-        swapper.mockNextSwap(debtToken, collateralToken, collateralReceivedFromDebtSwap);
-
-        // Mock the LeverageManager deposit preview
-        leverageManager.setMockPreviewDepositData(
-            MockLeverageManager.PreviewDepositParams({
-                strategy: strategyToken,
-                equityInCollateralAsset: equityInCollateralAsset
-            }),
-            MockLeverageManager.MockPreviewDepositData({
-                shares: shares,
-                requiredCollateral: requiredCollateral,
-                requiredDebt: requiredDebt
-            })
-        );
-
-        // Mock the LeverageManager deposit
-        leverageManager.setMockDepositData(
-            MockLeverageManager.DepositParams({
-                strategy: strategyToken,
-                equityInCollateralAsset: equityInCollateralAsset,
-                minShares: shares
-            }),
-            MockLeverageManager.MockDepositData({
-                requiredCollateral: requiredCollateral,
-                requiredDebt: requiredDebt,
-                shares: shares,
-                isExecuted: false
-            })
-        );
-
-        // Execute the deposit
-        deal(address(collateralToken), address(this), collateralFromSender);
-        collateralToken.approve(address(leverageRouter), collateralFromSender);
-        uint256 sharesReceived =
-            leverageRouter.deposit(strategyToken, collateralFromSender, equityInCollateralAsset, shares, "");
-
-        // LeverageRouter.deposit returns the shares that LeverageManager.deposit returns
-        assertEq(sharesReceived, shares);
-
-        // Sender receives the minted shares
-        assertEq(strategyToken.balanceOf(address(this)), shares);
-        assertEq(strategyToken.balanceOf(address(leverageRouter)), 0);
-
-        // The LeverageRouter has the required collateral to repay the flash loan and Morpho is approved to spend it
-        assertEq(collateralToken.balanceOf(address(leverageRouter)), requiredFlashLoan);
-        assertEq(collateralToken.allowance(address(leverageRouter), address(morpho)), requiredFlashLoan);
-
-        // Sender receives the surplus collateral asset leftover after the flash loan is repaid
-        assertEq(
-            collateralToken.balanceOf(address(this)),
-            collateralFromSender - (requiredCollateral - collateralReceivedFromDebtSwap)
-        );
-    }
-
-    function testFuzz_deposit_DebtSwapGreaterThanRequiredFlashLoanRepaymentCollateral(
+    function testFuzz_deposit_DebtSwapGteRequiredFlashLoanRepaymentCollateral(
         uint256 equityInCollateralAsset,
         uint256 requiredCollateral,
         uint256 collateralReceivedFromDebtSwap,
@@ -101,7 +24,7 @@ contract DepositTest is LendingRouterBaseTest {
         // LeverageRouter will need to flash loan the difference between the required collateral and the equity being added to the strategy
         uint256 requiredFlashLoan = requiredCollateral - equityInCollateralAsset;
         // Mock collateral received from the debt swap to be >= the required flash loan repayment
-        collateralReceivedFromDebtSwap = bound(collateralReceivedFromDebtSwap, requiredFlashLoan + 1, type(uint136).max);
+        collateralReceivedFromDebtSwap = bound(collateralReceivedFromDebtSwap, requiredFlashLoan, type(uint136).max);
         // User sends at least the equity for the deposit
         collateralFromSender =
             bound(collateralFromSender, equityInCollateralAsset, type(uint256).max - collateralReceivedFromDebtSwap);
@@ -159,7 +82,7 @@ contract DepositTest is LendingRouterBaseTest {
         assertEq(collateralToken.balanceOf(address(leverageRouter)), requiredFlashLoan);
         assertEq(collateralToken.allowance(address(leverageRouter), address(morpho)), requiredFlashLoan);
 
-        // Sender receives the surplus collateral asset leftover after the flash loan is repaid
+        // Sender receives any surplus collateral asset leftover after the flash loan is repaid
         assertEq(
             collateralToken.balanceOf(address(this)),
             (collateralReceivedFromDebtSwap - requiredFlashLoan) + (collateralFromSender - equityInCollateralAsset)
@@ -246,7 +169,7 @@ contract DepositTest is LendingRouterBaseTest {
         assertEq(collateralToken.balanceOf(address(leverageRouter)), requiredFlashLoan);
         assertEq(collateralToken.allowance(address(leverageRouter), address(morpho)), requiredFlashLoan);
 
-        // Sender receives the surplus collateral asset leftover after the flash loan is repaid
+        // Sender receives any surplus collateral asset leftover after the flash loan is repaid
         assertEq(
             collateralToken.balanceOf(address(this)),
             collateralFromSender - (requiredCollateral - collateralReceivedFromDebtSwap)
@@ -388,7 +311,7 @@ contract DepositTest is LendingRouterBaseTest {
         assertEq(collateralToken.balanceOf(address(leverageRouter)), requiredFlashLoan);
         assertEq(collateralToken.allowance(address(leverageRouter), address(morpho)), requiredFlashLoan);
 
-        // Sender receives the surplus collateral asset
+        // Sender receives any surplus collateral asset leftover after the deposit of equity into the strategy
         assertEq(collateralToken.balanceOf(address(this)), collateralFromSender - requiredCollateral);
     }
 
