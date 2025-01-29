@@ -84,7 +84,7 @@ contract LeverageRouter is ILeverageRouter {
             SafeERC20.safeTransfer(strategy, msg.sender, shares);
             SafeERC20.safeTransfer(debtAsset, msg.sender, requiredDebt);
 
-            uint256 collateralAssetSurplus = collateralFromSender - equityInCollateralAsset;
+            uint256 collateralAssetSurplus = collateralFromSender - requiredCollateral;
             if (collateralAssetSurplus > 0) {
                 SafeERC20.safeTransfer(collateralAsset, msg.sender, collateralAssetSurplus);
             }

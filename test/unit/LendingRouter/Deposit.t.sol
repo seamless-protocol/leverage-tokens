@@ -25,10 +25,10 @@ contract DepositTest is LendingRouterBaseTest {
         // Mocked exchange rate of shares
         uint256 shares = 10 ether;
 
-        // Mock the swap of the debt asset to the collateral asset to be equal to the required flash loan repayment
+        // Mock the swap of the debt asset to the collateral asset
         swapper.mockNextSwap(debtToken, collateralToken, collateralReceivedFromDebtSwap);
 
-        // Mock the deposit preview to match the mocked values
+        // Mock the LeverageManager deposit preview
         leverageManager.setMockPreviewDepositData(
             MockLeverageManager.PreviewDepositParams({
                 strategy: strategyToken,
@@ -41,7 +41,7 @@ contract DepositTest is LendingRouterBaseTest {
             })
         );
 
-        // Mock the deposit to match the mocked values
+        // Mock the LeverageManager deposit
         leverageManager.setMockDepositData(
             MockLeverageManager.DepositParams({
                 strategy: strategyToken,
@@ -91,10 +91,10 @@ contract DepositTest is LendingRouterBaseTest {
         // Mocked exchange rate of shares
         uint256 shares = 10 ether;
 
-        // Mock the swap of the debt asset to the collateral asset to be equal to the required flash loan repayment
+        // Mock the swap of the debt asset to the collateral asset
         swapper.mockNextSwap(debtToken, collateralToken, collateralReceivedFromDebtSwap);
 
-        // Mock the deposit preview to match the mocked values
+        // Mock the LeverageManager deposit preview
         leverageManager.setMockPreviewDepositData(
             MockLeverageManager.PreviewDepositParams({
                 strategy: strategyToken,
@@ -107,7 +107,7 @@ contract DepositTest is LendingRouterBaseTest {
             })
         );
 
-        // Mock the deposit to match the mocked values
+        // Mock the LeverageManager deposit
         leverageManager.setMockDepositData(
             MockLeverageManager.DepositParams({
                 strategy: strategyToken,
@@ -141,17 +141,17 @@ contract DepositTest is LendingRouterBaseTest {
         uint256 requiredDebt = 100e6;
         // LeverageRouter will need to flash loan the difference between the required collateral and the equity being added to the strategy
         uint256 requiredFlashLoan = requiredCollateral - equityInCollateralAsset;
-        // Mocked collateral received from the debt swap to be less than the required flash loan repayment
+        // Mock collateral received from the debt swap to be less than the required flash loan repayment
         uint256 collateralReceivedFromDebtSwap = requiredFlashLoan - 1;
-        // User sends only the collateral to cover the equity plus additional collateral since the debt swap is less than the required flash loan repayment
+        // User sends the collateral to cover the equity plus additional collateral to help with flash loan repayment, since the debt swap is not enough to cover it
         uint256 collateralFromSender = equityInCollateralAsset + 1;
         // Mocked exchange rate of shares
         uint256 shares = 10 ether;
 
-        // Mock the swap of the debt asset to the collateral asset to be equal to the required flash loan repayment
+        // Mock the swap of the debt asset to the collateral asset
         swapper.mockNextSwap(debtToken, collateralToken, collateralReceivedFromDebtSwap);
 
-        // Mock the deposit preview to match the mocked values
+        // Mock the LeverageManager deposit preview
         leverageManager.setMockPreviewDepositData(
             MockLeverageManager.PreviewDepositParams({
                 strategy: strategyToken,
@@ -164,7 +164,7 @@ contract DepositTest is LendingRouterBaseTest {
             })
         );
 
-        // Mock the deposit to match the mocked values
+        // Mock the LeverageManager deposit
         leverageManager.setMockDepositData(
             MockLeverageManager.DepositParams({
                 strategy: strategyToken,
@@ -215,10 +215,10 @@ contract DepositTest is LendingRouterBaseTest {
         // Mocked exchange rate of shares
         uint256 shares = 10 ether;
 
-        // Mock the swap of the debt asset to the collateral asset to be equal to the required flash loan repayment
+        // Mock the swap of the debt asset to the collateral asset
         swapper.mockNextSwap(debtToken, collateralToken, collateralReceivedFromDebtSwap);
 
-        // Mock the deposit preview to match the mocked values
+        // Mock the LeverageManager deposit preview
         leverageManager.setMockPreviewDepositData(
             MockLeverageManager.PreviewDepositParams({
                 strategy: strategyToken,
@@ -231,7 +231,7 @@ contract DepositTest is LendingRouterBaseTest {
             })
         );
 
-        // Mock the deposit to match the mocked values
+        // Mock the LeverageManager deposit
         leverageManager.setMockDepositData(
             MockLeverageManager.DepositParams({
                 strategy: strategyToken,
@@ -270,10 +270,10 @@ contract DepositTest is LendingRouterBaseTest {
         // Mocked exchange rate of shares
         uint256 shares = 10 ether;
 
-        // Mock the swap of the debt asset to the collateral asset to be equal to the required flash loan repayment
+        // Mock the swap of the debt asset to the collateral asset
         swapper.mockNextSwap(debtToken, collateralToken, collateralReceivedFromDebtSwap);
 
-        // Mock the deposit preview to match the mocked values
+        // Mock the LeverageManager deposit preview
         leverageManager.setMockPreviewDepositData(
             MockLeverageManager.PreviewDepositParams({
                 strategy: strategyToken,
@@ -286,7 +286,7 @@ contract DepositTest is LendingRouterBaseTest {
             })
         );
 
-        // Mock the deposit to match the mocked values
+        // Mock the LeverageManager deposit
         leverageManager.setMockDepositData(
             MockLeverageManager.DepositParams({
                 strategy: strategyToken,
@@ -331,7 +331,7 @@ contract DepositTest is LendingRouterBaseTest {
         leverageRouter.deposit(strategyToken, collateralFromSender, equityInCollateralAsset, shares, "");
     }
 
-    function test_deposit_FlashLoanNotRequired() public {
+    function test_deposit_FlashLoanNotRequired_RequiredCollateralEqualsEquityInCollateralAsset() public {
         // Equity to deposit
         uint256 equityInCollateralAsset = 5 ether;
 
@@ -346,7 +346,7 @@ contract DepositTest is LendingRouterBaseTest {
         // Mocked exchange rate of shares
         uint256 shares = 10 ether;
 
-        // Mock the deposit preview to match the mocked values
+        // Mock the LeverageManager deposit preview
         leverageManager.setMockPreviewDepositData(
             MockLeverageManager.PreviewDepositParams({
                 strategy: strategyToken,
@@ -359,7 +359,7 @@ contract DepositTest is LendingRouterBaseTest {
             })
         );
 
-        // Mock the deposit to match the mocked values
+        // Mock the LeverageManager deposit
         leverageManager.setMockDepositData(
             MockLeverageManager.DepositParams({
                 strategy: strategyToken,
@@ -390,5 +390,69 @@ contract DepositTest is LendingRouterBaseTest {
         // The LeverageRouter has zero balance of collateral since no flash loan was required
         assertEq(collateralToken.balanceOf(address(leverageRouter)), requiredFlashLoan);
         assertEq(collateralToken.allowance(address(leverageRouter), address(morpho)), requiredFlashLoan);
+    }
+
+    function test_deposit_FlashLoanNotRequired_RequiredCollateralLessThanEquityInCollateralAsset() public {
+        // Equity to deposit
+        uint256 equityInCollateralAsset = 5 ether;
+
+        // Mocked total collateral required to deposit the equity is less than the equity being added to the strategy
+        uint256 requiredCollateral = equityInCollateralAsset - 1;
+        // Mocked debt required to deposit the equity
+        uint256 requiredDebt = 100e6;
+        // LeverageRouter will need to flash loan the difference between the required collateral and the equity being added to the strategy, which is 0
+        uint256 requiredFlashLoan = 0;
+        // User sends greater than the required collateral to cover the equity, so a flash loan is not required.
+        uint256 collateralFromSender = requiredCollateral + 1;
+        // Mocked exchange rate of shares
+        uint256 shares = 10 ether;
+
+        // Mock the LeverageManager deposit preview
+        leverageManager.setMockPreviewDepositData(
+            MockLeverageManager.PreviewDepositParams({
+                strategy: strategyToken,
+                equityInCollateralAsset: equityInCollateralAsset
+            }),
+            MockLeverageManager.MockPreviewDepositData({
+                shares: shares,
+                requiredCollateral: requiredCollateral,
+                requiredDebt: requiredDebt
+            })
+        );
+
+        // Mock the LeverageManager deposit
+        leverageManager.setMockDepositData(
+            MockLeverageManager.DepositParams({
+                strategy: strategyToken,
+                equityInCollateralAsset: equityInCollateralAsset,
+                minShares: shares
+            }),
+            MockLeverageManager.MockDepositData({
+                requiredCollateral: requiredCollateral,
+                requiredDebt: requiredDebt,
+                shares: shares,
+                isExecuted: false
+            })
+        );
+
+        // Execute the deposit
+        deal(address(collateralToken), address(this), collateralFromSender);
+        collateralToken.approve(address(leverageRouter), collateralFromSender);
+        uint256 sharesReceived =
+            leverageRouter.deposit(strategyToken, collateralFromSender, equityInCollateralAsset, shares, "");
+
+        // LeverageRouter.deposit returns the shares that LeverageManager.deposit returns
+        assertEq(sharesReceived, shares);
+
+        // Sender receives the minted shares
+        assertEq(strategyToken.balanceOf(address(this)), shares);
+        assertEq(strategyToken.balanceOf(address(leverageRouter)), 0);
+
+        // The LeverageRouter has zero balance of collateral since no flash loan was required
+        assertEq(collateralToken.balanceOf(address(leverageRouter)), requiredFlashLoan);
+        assertEq(collateralToken.allowance(address(leverageRouter), address(morpho)), requiredFlashLoan);
+
+        // Sender receives the surplus collateral asset
+        assertEq(collateralToken.balanceOf(address(this)), 1);
     }
 }
