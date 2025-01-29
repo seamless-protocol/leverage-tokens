@@ -18,10 +18,8 @@ contract LeverageRouter is ILeverageRouter {
     /// @inheritdoc ILeverageRouter
     ILeverageManager public immutable leverageManager;
 
-    /// @inheritdoc ILeverageRouter
     IMorpho public immutable morpho;
 
-    /// @inheritdoc ILeverageRouter
     ISwapper public immutable swapper;
 
     constructor(ILeverageManager _leverageManager, IMorpho _morpho, ISwapper _swapper) {
@@ -42,14 +40,14 @@ contract LeverageRouter is ILeverageRouter {
         uint256 equityInCollateralAsset,
         uint256 minShares,
         bytes calldata providerSwapData
-    ) external {
+    ) external returns (uint256 sharesReceived) {
         if (collateralFromSender < equityInCollateralAsset) revert InsufficientCollateral();
 
         IERC20 collateralAsset = leverageManager.getStrategyCollateralAsset(strategy);
         collateralAsset.transferFrom(msg.sender, address(this), collateralFromSender);
 
         // Get required collateral amount for the equity amount being deposited into the strategy
-        (, uint256 requiredCollateral, uint256 requiredDebt) =
+        (uint256 shares, uint256 requiredCollateral, uint256 requiredDebt) =
             leverageManager.previewDeposit(strategy, equityInCollateralAsset);
 
         IERC20 debtAsset = leverageManager.getStrategyDebtAsset(strategy);
@@ -81,9 +79,9 @@ contract LeverageRouter is ILeverageRouter {
             );
         } else {
             collateralAsset.approve(address(leverageManager), requiredCollateral);
-            uint256 sharesReceived = leverageManager.deposit(strategy, equityInCollateralAsset, minShares);
+            leverageManager.deposit(strategy, equityInCollateralAsset, minShares);
 
-            SafeERC20.safeTransfer(strategy, msg.sender, sharesReceived);
+            SafeERC20.safeTransfer(strategy, msg.sender, shares);
             SafeERC20.safeTransfer(debtAsset, msg.sender, requiredDebt);
 
             uint256 collateralAssetSurplus = collateralFromSender - equityInCollateralAsset;
@@ -91,6 +89,8 @@ contract LeverageRouter is ILeverageRouter {
                 SafeERC20.safeTransfer(collateralAsset, msg.sender, collateralAssetSurplus);
             }
         }
+
+        return shares;
     }
 
     /// @notice Morpho flash loan callback function
@@ -126,9 +126,11 @@ contract LeverageRouter is ILeverageRouter {
         // The remaining sender supplied collateral is the amount of collateral that was not used to deposit the equity into the strategy,
         // which is the portion that is equal to the deposited equity amount. The rest of the collateral used for the deposit was from the flash loan
         uint256 remainingSenderSuppliedCollateral = params.collateralFromSender - params.equityInCollateralAsset;
-        uint256 collateralAssetSurplus = toAmount + remainingSenderSuppliedCollateral - collateralLoanAmount;
+        uint256 collateralAvailableToRepayFlashLoan = toAmount + remainingSenderSuppliedCollateral;
+        if (collateralAvailableToRepayFlashLoan < collateralLoanAmount) revert InsufficientCollateralToRepayFlashLoan();
 
         // Return any surplus collateral asset not used to repay the flash loan to the deposit receiver
+        uint256 collateralAssetSurplus = collateralAvailableToRepayFlashLoan - collateralLoanAmount;
         if (collateralAssetSurplus > 0) {
             SafeERC20.safeTransfer(params.collateralAsset, params.receiver, collateralAssetSurplus);
         }

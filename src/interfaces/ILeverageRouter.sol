@@ -13,6 +13,9 @@ interface ILeverageRouter {
     /// @notice Error thrown when insufficient collateral is provided for an action
     error InsufficientCollateral();
 
+    /// @notice Error thrown when the collateral provided plus the swapped debt is less than the required collateral to repay the flash loan
+    error InsufficientCollateralToRepayFlashLoan();
+
     /// @notice Error thrown when an invalid action is provided
     error InvalidAction();
 
@@ -43,11 +46,12 @@ interface ILeverageRouter {
     /// @param equityInCollateralAsset The min amount of equity in the collateral asset to deposit into the strategy
     /// @param minShares Minimum shares to receive from the deposit
     /// @param providerSwapData Swap data to use for the swap using the set provider
+    /// @return sharesReceived The amount of shares received from the deposit
     function deposit(
         IStrategy strategy,
         uint256 collateralFromSender,
         uint256 equityInCollateralAsset,
         uint256 minShares,
         bytes calldata providerSwapData
-    ) external;
+    ) external returns (uint256 sharesReceived);
 }
