@@ -10,6 +10,7 @@ import {CollateralRatios} from "src/types/DataTypes.sol";
 import {IBeaconProxyFactory} from "./IBeaconProxyFactory.sol";
 import {ILendingAdapter} from "./ILendingAdapter.sol";
 import {LeverageManagerStorage as Storage} from "../storage/LeverageManagerStorage.sol";
+import {RebalanceAction, TokenTransfer} from "src/types/DataTypes.sol";
 
 interface ILeverageManager {
     /// @notice Error thrown when someone tries to create strategy with lending adapter that already exists
@@ -37,7 +38,7 @@ interface ILeverageManager {
     error CollateralRatioInvalid();
 
     /// @notice Error thrown when collateral ratio after rebalance is on the opposite side of target ratio than before rebalance
-    error TooBigCollateralRatioChange();
+    error ExposureDirectionChanged();
 
     /// @notice Error thrown when equity loss on rebalance is too big
     error EquityLossTooBig();
@@ -175,4 +176,17 @@ interface ILeverageManager {
     /// @param minAssets The minimum amount of collateral to receive
     /// @return assets Actual amount of assets given to the user
     function redeem(IStrategy strategy, uint256 shares, uint256 minAssets) external returns (uint256 assets);
+
+    /// @notice Rebalances strategies based on provided actions
+    /// @param actions Array of rebalance actions to execute (add collateral, remove collateral, borrow or repay)
+    /// @param tokensIn Array of tokens to transfer in. Transfer from caller to leverage manager contract
+    /// @param tokensOut Array of tokens to transfer out. Transfer from leverage manager contract to caller
+    /// @dev Anyone can call this function. At the end function will just check if all effected strategies are in the
+    ///      better state than before rebalance. Caller needs to calculate and to provide tokens for rebalancing and he needs
+    ///      to specify tokens that he wants to receive
+    function rebalance(
+        RebalanceAction[] calldata actions,
+        TokenTransfer[] calldata tokensIn,
+        TokenTransfer[] calldata tokensOut
+    ) external;
 }

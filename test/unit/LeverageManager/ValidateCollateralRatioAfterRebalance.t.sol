@@ -54,7 +54,7 @@ contract ValidateCollateralRatioAfterRebalance is LeverageManagerBaseTest {
         uint256 ratioBefore = 3 * _BASE_RATIO();
         uint256 ratioAfter = 2 * _BASE_RATIO() - 1;
 
-        vm.expectRevert(ILeverageManager.TooBigCollateralRatioChange.selector);
+        vm.expectRevert(ILeverageManager.ExposureDirectionChanged.selector);
         leverageManager.exposed_validateCollateralRatioAfterRebalance(strategy, ratioBefore, ratioAfter);
     }
 }

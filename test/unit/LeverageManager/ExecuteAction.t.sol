@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-// Forge imports
-import {Test, console} from "forge-std/Test.sol";
-
 // Dependency imports
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
@@ -33,7 +30,7 @@ contract ExecuteActionTest is LeverageManagerBaseTest {
                 maxCollateralRatio: _BASE_RATIO() + 2,
                 targetCollateralRatio: _BASE_RATIO() + 1,
                 collateralCap: type(uint256).max,
-                rebalanceReward: 0
+                rebalanceRewardPercentage: 0
             }),
             address(collateralToken),
             address(debtToken),
@@ -43,34 +40,34 @@ contract ExecuteActionTest is LeverageManagerBaseTest {
     }
 
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_executeAction_AddCollateral(uint256 amount) public {
+    function testFuzz_executeLendingAdapterAction_AddCollateral(uint256 amount) public {
         collateralToken.mint(address(leverageManager), amount);
-        leverageManager.exposed_executeAction(strategy, ActionType.AddCollateral, amount);
+        leverageManager.exposed_executeLendingAdapterAction(strategy, ActionType.AddCollateral, amount);
 
         assertEq(collateralToken.balanceOf(address(leverageManager)), 0);
         assertEq(collateralToken.balanceOf(address(leverageManager.getStrategyLendingAdapter(strategy))), amount);
     }
 
     /// forge-config: default.fuzz.runs = 1
-    function tesFuzz_executeAction_RemoveCollateral(uint256 amount) public {
-        leverageManager.exposed_executeAction(strategy, ActionType.RemoveCollateral, amount);
+    function tesFuzz_executeLendingAdapterAction_RemoveCollateral(uint256 amount) public {
+        leverageManager.exposed_executeLendingAdapterAction(strategy, ActionType.RemoveCollateral, amount);
 
         assertEq(collateralToken.balanceOf(address(leverageManager)), amount);
         assertEq(collateralToken.balanceOf(address(leverageManager.getStrategyLendingAdapter(strategy))), 0);
     }
 
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_executeAction_Repay(uint256 amount) public {
+    function testFuzz_executeLendingAdapterAction_Repay(uint256 amount) public {
         debtToken.mint(address(leverageManager), amount);
-        leverageManager.exposed_executeAction(strategy, ActionType.Repay, amount);
+        leverageManager.exposed_executeLendingAdapterAction(strategy, ActionType.Repay, amount);
 
         assertEq(debtToken.balanceOf(address(leverageManager)), 0);
         assertEq(debtToken.balanceOf(address(leverageManager.getStrategyLendingAdapter(strategy))), amount);
     }
 
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_executeAction_Borrow(uint256 amount) public {
-        leverageManager.exposed_executeAction(strategy, ActionType.Borrow, amount);
+    function testFuzz_executeLendingAdapterAction_Borrow(uint256 amount) public {
+        leverageManager.exposed_executeLendingAdapterAction(strategy, ActionType.Borrow, amount);
 
         assertEq(debtToken.balanceOf(address(leverageManager)), amount);
         assertEq(debtToken.balanceOf(address(leverageManager.getStrategyLendingAdapter(strategy))), 0);

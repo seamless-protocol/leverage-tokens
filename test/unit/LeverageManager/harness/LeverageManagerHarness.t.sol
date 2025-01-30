@@ -76,8 +76,8 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
         _transferTokens(transfers, from, to);
     }
 
-    function exposed_executeAction(IStrategy strategy, ActionType actionType, uint256 amount) external {
-        _executeAction(strategy, actionType, amount);
+    function exposed_executeLendingAdapterAction(IStrategy strategy, ActionType actionType, uint256 amount) external {
+        _executeLendingAdapterAction(strategy, actionType, amount);
     }
 
     function exposed_convertToEquity(IStrategy strategy, uint256 shares) external view returns (uint256 equity) {
