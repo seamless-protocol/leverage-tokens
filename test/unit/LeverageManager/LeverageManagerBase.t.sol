@@ -6,6 +6,7 @@ import {Test, console} from "forge-std/Test.sol";
 
 // Dependency imports
 import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
@@ -96,12 +97,12 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         vm.mockCall(
             address(config.lendingAdapter),
             abi.encodeWithSelector(ILendingAdapter.getCollateralAsset.selector),
-            abi.encode(collateralAsset)
+            abi.encode(IERC20(collateralAsset))
         );
         vm.mockCall(
             address(config.lendingAdapter),
             abi.encodeWithSelector(ILendingAdapter.getDebtAsset.selector),
-            abi.encode(debtAsset)
+            abi.encode(IERC20(debtAsset))
         );
 
         vm.startPrank(caller);
