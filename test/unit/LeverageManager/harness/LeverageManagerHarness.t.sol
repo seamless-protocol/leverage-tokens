@@ -23,7 +23,7 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
         _authorizeUpgrade(newImplementation);
     }
 
-    function exposed_getStrategyCollateralRatioAndExcess(IStrategy strategy, ILendingAdapter lendingAdapter)
+    function exposed_getStrategyCollateralRatioAndExcess(IStrategy strategy, ILendingAdapter)
         external
         view
         returns (uint256 currCollateralRatio, int256 excessCollateral)
@@ -33,14 +33,14 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
 
     function exposed_calculateCollateralAndDebtToCoverEquity(
         IStrategy strategy,
-        ILendingAdapter lendingAdapter,
+        ILendingAdapter,
         uint256 equity,
         IFeeManager.Action action
     ) external view returns (uint256 collateral, uint256 debt) {
         return _calculateCollateralAndDebtToCoverEquity(strategy, equity, action);
     }
 
-    function exposed_validateRebalanceEligibility(IStrategy strategy, uint256 currRatio) external {
+    function exposed_validateRebalanceEligibility(IStrategy strategy, uint256 currRatio) external view {
         _validateRebalanceEligibility(strategy, currRatio);
     }
 
@@ -48,7 +48,7 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
         IStrategy strategy,
         uint256 collateralRatioBefore,
         uint256 collateralRatioAfter
-    ) external {
+    ) external view {
         _validateCollateralRatioAfterRebalance(strategy, collateralRatioBefore, collateralRatioAfter);
     }
 
@@ -56,7 +56,7 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
         IStrategy strategy,
         StrategyState memory stateBefore,
         StrategyState memory stateAfter
-    ) external {
+    ) external view {
         _validateEquityChange(strategy, stateBefore, stateAfter);
     }
 
