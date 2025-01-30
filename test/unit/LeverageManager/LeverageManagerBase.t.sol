@@ -180,13 +180,6 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
 
         _mintShares(address(this), state.userShares);
         _mintShares(address(1), state.totalShares - state.userShares);
-
-        // Mock convert rate in _calculateCollateralAndDebtToCoverEquity function. Not important for redeem test
-        vm.mockCall(
-            address(leverageManager.getStrategyLendingAdapter(strategy)),
-            abi.encodeWithSelector(ILendingAdapter.convertDebtToCollateralAsset.selector),
-            abi.encode(4 ether)
-        );
     }
 
     struct CalculateStrategyCollateralRatioAndExcessState {

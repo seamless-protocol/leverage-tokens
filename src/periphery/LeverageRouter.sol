@@ -24,6 +24,10 @@ contract LeverageRouter is ILeverageRouter {
     /// @inheritdoc ILeverageRouter
     ISwapper public immutable swapper;
 
+    /// @notice Creates a new LeverageRouter
+    /// @param _leverageManager The Seamless ilm-v2 LeverageManager contract
+    /// @param _morpho The Morpho core protocol contract
+    /// @param _swapper The Swapper contract
     constructor(ILeverageManager _leverageManager, IMorpho _morpho, ISwapper _swapper) {
         leverageManager = _leverageManager;
         morpho = _morpho;
@@ -97,7 +101,9 @@ contract LeverageRouter is ILeverageRouter {
         }
     }
 
-    // Handles the deposit of equity into a strategy and the swap of debt assets to the collateral asset to repay the flash loan
+    /// @dev Executes the deposit of equity into a strategy and the swap of debt assets to the collateral asset to repay the flash loan from Morpho
+    /// @param params Params for the deposit of equity into a strategy
+    /// @param collateralLoanAmount Amount of collateral asset flash loaned
     function _depositAndRepayMorphoFlashLoan(DepositParams memory params, uint256 collateralLoanAmount) internal {
         // Deposit equity into strategy using the flash loaned collateral and sender supplied equity
         params.collateralAsset.approve(address(leverageManager), params.requiredCollateral);
@@ -129,8 +135,10 @@ contract LeverageRouter is ILeverageRouter {
         params.collateralAsset.approve(address(morpho), collateralLoanAmount);
     }
 
-    // Obtains a flash loan from Morpho for a deposit. Morpho will call back into the LeverageRouter with the deposit params to execute the deposit
-    // and swap the debt asset to the collateral asset to repay the flash loan
+    /// @dev Obtains a flash loan from Morpho for a deposit. Morpho will call back into the LeverageRouter via `onMorphoFlashLoan` with the deposit params
+    /// to execute the deposit and swap the debt asset to the collateral asset to repay the flash loan
+    /// @param params Params for the deposit of equity into a strategy
+    /// @param collateralLoanAmount Amount of collateral asset flash loaned
     function _morphoFlashLoanForDeposit(DepositParams memory params, uint256 collateralLoanAmount) internal {
         morpho.flashLoan(
             address(params.collateralAsset),

@@ -11,27 +11,27 @@ contract ConvertToEquity is LeverageManagerBaseTest {
         _createDummyStrategy();
     }
 
-    function test_convertToEquity_RoundedDown() public {
-        uint128 shares = 1;
-        uint128 totalEquity = 99;
-        uint128 sharesTotalSupply = 100;
+    function test_convertToShares_RoundedDown() public {
+        uint128 equity = 1;
+        uint128 sharesTotalSupply = 99;
+        uint128 totalEquity = 100;
 
         _mockState_ConvertToShareOrEquity(
             ConvertToSharesState({totalEquity: totalEquity, sharesTotalSupply: sharesTotalSupply})
         );
 
-        uint256 equity = leverageManager.exposed_convertToEquity(strategy, shares);
-        assertEq(equity, 0);
+        uint256 shares = leverageManager.exposed_convertToShares(strategy, equity);
+        assertEq(shares, 0);
     }
 
-    function testFuzz_convertToEquity(uint128 shares, uint128 totalEquity, uint128 sharesTotalSupply) public {
+    function testFuzz_convertToShares(uint128 equity, uint128 totalEquity, uint128 sharesTotalSupply) public {
         _mockState_ConvertToShareOrEquity(
             ConvertToSharesState({totalEquity: totalEquity, sharesTotalSupply: sharesTotalSupply})
         );
 
-        uint256 equity = leverageManager.exposed_convertToEquity(strategy, shares);
-        uint256 expectedEquity = shares * (uint256(totalEquity) + 1) / (uint256(sharesTotalSupply) + 1);
+        uint256 shares = leverageManager.exposed_convertToShares(strategy, equity);
+        uint256 expectedShares = equity * (uint256(sharesTotalSupply) + 1) / (uint256(totalEquity) + 1);
 
-        assertEq(equity, expectedEquity);
+        assertEq(shares, expectedShares);
     }
 }

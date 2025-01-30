@@ -115,10 +115,11 @@ interface ILeverageManager {
     /// @return equityInDebtAsset Equity in debt asset to mint shares for
     /// @return collateral Collateral required for the mint
     /// @return debt Debt required for the mint
+    /// @return sharesReceived Shares received from the mint
     function previewMint(IStrategy strategy, uint256 shares)
         external
         view
-        returns (uint256 equityInDebtAsset, uint256 collateral, uint256 debt);
+        returns (uint256 equityInDebtAsset, uint256 collateral, uint256 debt, uint256 sharesReceived);
 
     /// @notice Sets factory for creating new strategy tokens
     /// @param factory Factory to set
