@@ -26,7 +26,7 @@ contract SetStrategyRewardPercentage is LeverageManagerBaseTest {
     }
 
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_setStrategyRebalanceReward_RevertIf_InvalidPercentage(address caller, uint256 reward) public {
+    function testFuzz_setStrategyRebalanceReward_RevertIf_InvalidPercentage(uint256 reward) public {
         vm.assume(reward > leverageManager.BASE_REWARD_PERCENTAGE());
 
         vm.expectRevert(abi.encodeWithSelector(ILeverageManager.InvalidRewardPercentage.selector, reward));

@@ -32,7 +32,7 @@ contract ValidateCollateralRatioAfterRebalance is LeverageManagerBaseTest {
         vm.stopPrank();
     }
 
-    function test_validateCollateralRatioAfterRebalance() public {
+    function test_validateCollateralRatioAfterRebalance() public view {
         uint256 ratioBefore = 3 * _BASE_RATIO();
         uint256 ratioAfter = 3 * _BASE_RATIO() - 1;
 

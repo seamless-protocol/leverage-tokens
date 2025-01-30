@@ -24,7 +24,7 @@ contract ValidateEquityChangeTest is LeverageManagerBaseTest {
         leverageManager.setStrategyRebalanceReward(strategy, 10_000); // 10%
     }
 
-    function test_validateEquityChange() public {
+    function test_validateEquityChange() public view {
         StrategyState memory stateBefore = StrategyState({
             collateral: 100 ether, // not important for this test
             debt: 50 ether,
