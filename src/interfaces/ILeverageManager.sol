@@ -21,6 +21,9 @@ interface ILeverageManager {
     /// @notice Error thrown when collateral ratios are invalid
     error InvalidCollateralRatios();
 
+    /// @notice Error thrown when manager tries to set invalid reward percentage
+    error InvalidRewardPercentage(uint256 reward);
+
     /// @notice Error thrown when user tries to deposit into strategy more than cap
     error CollateralExceedsCap(uint256 collateral, uint256 cap);
 
@@ -81,6 +84,21 @@ interface ILeverageManager {
     /// @return adapter Lending adapter for the strategy
     function getStrategyLendingAdapter(IStrategy strategy) external view returns (ILendingAdapter adapter);
 
+    /// @notice Returns collateral asset for the strategy
+    /// @param strategy Strategy to get collateral asset for
+    /// @return collateralAsset Collateral asset for the strategy
+    function getStrategyCollateralAsset(IStrategy strategy) external view returns (IERC20 collateralAsset);
+
+    /// @notice Returns debt asset for the strategy
+    /// @param strategy Strategy to get debt asset for
+    /// @return debtAsset Debt asset for the strategy
+    function getStrategyDebtAsset(IStrategy strategy) external view returns (IERC20 debtAsset);
+
+    /// @notice Returns reward for rebalancing strategy
+    /// @param strategy Strategy to get reward for
+    /// @return reward Reward for rebalancing strategy, percentage of debt change where 100_00 = 100%
+    function getStrategyRebalanceReward(IStrategy strategy) external view returns (uint256 reward);
+
     /// @notice Returns strategy cap in collateral asset
     /// @param strategy Strategy to get cap for
     /// @return cap Strategy cap
@@ -137,6 +155,12 @@ interface ILeverageManager {
     /// @dev Cap for strategy is leveraged amount in collateral asset
     /// @dev Only address with MANAGER role can call this function
     function setStrategyCollateralCap(IStrategy strategy, uint256 collateralCap) external;
+
+    /// @notice Sets reward for rebalancing strategy
+    /// @param strategy Strategy to set reward for
+    /// @param reward Reward for rebalancing strategy, percentage of debt change where 100_00 = 100%
+    /// @dev Only address with MANAGER role can call this function
+    function setStrategyRebalanceReward(IStrategy strategy, uint256 reward) external;
 
     /// @notice Mints shares of a strategy and deposits assets into it, recipient receives shares but caller receives debt
     /// @param strategy The strategy to deposit into

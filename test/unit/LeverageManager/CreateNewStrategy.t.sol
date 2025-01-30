@@ -37,6 +37,7 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
             targetCollateralRatio > _BASE_RATIO() && minCollateralRatio <= targetCollateralRatio
                 && targetCollateralRatio <= maxCollateralRatio
         );
+        vm.assume(config.rebalanceReward <= leverageManager.BASE_REWARD_PERCENTAGE());
 
         address expectedStrategyAddress = strategyTokenFactory.computeProxyAddress(
             address(leverageManager),
@@ -65,6 +66,9 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
         assertEq(ratios.minCollateralRatio, config.minCollateralRatio);
         assertEq(ratios.maxCollateralRatio, config.maxCollateralRatio);
         assertEq(ratios.targetCollateralRatio, config.targetCollateralRatio);
+
+        assertEq(address(leverageManager.getStrategyCollateralAsset(strategy)), collateralAsset);
+        assertEq(address(leverageManager.getStrategyDebtAsset(strategy)), debtAsset);
     }
 
     /// forge-config: default.fuzz.runs = 1

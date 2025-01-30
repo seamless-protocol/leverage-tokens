@@ -121,6 +121,11 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         leverageManager.setStrategyCollateralCap(strategy, cap);
     }
 
+    function _setStrategyRebalanceReward(address caller, uint256 reward) internal {
+        vm.prank(caller);
+        leverageManager.setStrategyRebalanceReward(strategy, reward);
+    }
+
     function _mintShares(address recipient, uint256 amount) internal {
         vm.prank(address(leverageManager));
         strategy.mint(recipient, amount);

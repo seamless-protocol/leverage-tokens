@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-import {console} from "forge-std/console.sol";
-
 // Dependency imports
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
@@ -33,6 +31,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
     // Base collateral ratio constant, 1e8 means that collateral / debt ratio is 1:1
     uint256 public constant BASE_RATIO = 1e8;
+    uint256 public constant BASE_REWARD_PERCENTAGE = 100_000;
     uint256 public constant DECIMALS_OFFSET = 0;
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
@@ -48,18 +47,22 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         return Storage.layout().strategyTokenFactory;
     }
 
+    /// @inheritdoc ILeverageManager
     function getIsLendingAdapterUsed(address lendingAdapter) public view returns (bool isUsed) {
         return Storage.layout().isLendingAdapterUsed[lendingAdapter];
     }
 
+    /// @inheritdoc ILeverageManager
     function getStrategyCollateralAsset(IStrategy strategy) public view returns (IERC20 collateralAsset) {
         return getStrategyLendingAdapter(strategy).getCollateralAsset();
     }
 
+    /// @inheritdoc ILeverageManager
     function getStrategyDebtAsset(IStrategy strategy) public view returns (IERC20 debtAsset) {
         return getStrategyLendingAdapter(strategy).getDebtAsset();
     }
 
+    /// @inheritdoc ILeverageManager
     function getStrategyRebalanceReward(IStrategy strategy) public view returns (uint256 reward) {
         return Storage.layout().config[strategy].rebalanceReward;
     }
@@ -180,7 +183,12 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         emit StrategyCollateralCapSet(strategy, collateralCap);
     }
 
+    /// @inheritdoc ILeverageManager
     function setStrategyRebalanceReward(IStrategy strategy, uint256 reward) public onlyRole(MANAGER_ROLE) {
+        if (reward > BASE_REWARD_PERCENTAGE) {
+            revert InvalidRewardPercentage(reward);
+        }
+
         Storage.layout().config[strategy].rebalanceReward = reward;
         emit StrategyRebalanceRewardSet(strategy, reward);
     }
@@ -191,11 +199,9 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         uint256 sharesAfterFee = _computeFeeAdjustedShares(strategy, shares, IFeeManager.Action.Deposit);
         uint256 equity = _convertToEquity(strategy, sharesAfterFee);
 
-        require(equity <= maxAssets, SlippageTooHigh(equity, maxAssets));
-
-        // if (equity > maxAssets) {
-        //     revert SlippageTooHigh(equity, maxAssets);
-        // }
+        if (equity > maxAssets) {
+            revert SlippageTooHigh(equity, maxAssets);
+        }
 
         (uint256 collateral, uint256 debt) =
             _calculateCollateralAndDebtToCoverEquity(strategy, equity, IFeeManager.Action.Deposit);
@@ -263,18 +269,14 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
                 StrategyState memory state = _getStrategyState(strategy);
                 strategiesStateBefore[i] = state;
 
-                console.log("First time");
-
                 _validateRebalanceEligibility(strategy, state.collateralRatio);
             }
-            console.log("Second time");
 
             _executeAction(strategy, actions[i].actionType, actions[i].amount);
         }
 
         for (uint256 i = 0; i < actions.length; i++) {
             if (!_isElementInSlice(actions, actions[i].strategy, i)) {
-                console.log("First time");
                 _validateStrategyStateAfterRebalance(actions[i].strategy, strategiesStateBefore[i]);
             }
         }
@@ -412,18 +414,10 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         uint256 debtBefore = stateBefore.debt;
         uint256 debtAfter = stateAfter.debt;
 
-        console.log("Equity before: %s", equityBefore);
-        console.log("Equity after: %s", equityAfter);
-        console.log("Debt before: %s", debtBefore);
-        console.log("Debt after: %s", debtAfter);
-
         uint256 debtChange = (debtAfter.toInt256() - debtBefore.toInt256()).abs();
-        console.log("Debt change: %s", debtChange);
-        uint256 reward = (debtChange * getStrategyRebalanceReward(strategy)) / 100_000;
-        console.log("Reward: %s", reward);
+        uint256 reward = (debtChange * getStrategyRebalanceReward(strategy)) / BASE_REWARD_PERCENTAGE;
 
         if (equityAfter < equityBefore - reward) {
-            console.log(equityBefore - reward);
             revert EquityLossTooBig();
         }
     }
