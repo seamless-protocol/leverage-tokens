@@ -16,13 +16,21 @@ interface ISwapper {
     /// @notice Error thrown when the return amount is less than the minimum expected return amount
     error SlippageTooHigh(uint256 actualReturnAmount, uint256 minExpectedReturnAmount);
 
+    /// @notice LiFi Diamond Proxy protocol contract address
+    /// @return lifi LiFi Diamond Proxy protocol contract address
+    function getLifi() external view returns (address lifi);
+
     /// @notice Get the current swap provider
     /// @return provider Current swap provider
-    function provider() external view returns (Provider);
+    function getProvider() external view returns (Provider provider);
 
-    /// @notice Set the swap provider
-    /// @param _provider Provider to set
-    function setProvider(Provider _provider) external;
+    /// @notice Set the LiFi Diamond Proxy protocol contract address
+    /// @param lifi LiFi Diamond Proxy protocol contract address
+    function setLifi(address lifi) external;
+
+    /// @notice Set the swap provider to use for swaps
+    /// @param provider Provider to set
+    function setProvider(Provider provider) external;
 
     /// @notice Swap tokens using the set swap provider
     /// @param fromToken Token to swap from

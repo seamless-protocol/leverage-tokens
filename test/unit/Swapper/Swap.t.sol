@@ -10,9 +10,11 @@ import {SwapperBaseTest} from "./SwapperBase.t.sol";
 import {MockLiFi} from "../mock/MockLiFi.sol";
 import {MockERC20} from "../mock/MockERC20.sol";
 
-contract Swap is SwapperBaseTest {
+contract SwapTest is SwapperBaseTest {
     function setUp() public override {
         super.setUp();
+
+        vm.prank(manager);
         swapper.setProvider(ISwapper.Provider.LiFi);
     }
 

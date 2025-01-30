@@ -45,7 +45,7 @@ contract LeverageRouter is ILeverageRouter {
         if (collateralFromSender < equityInCollateralAsset) revert InsufficientCollateral();
 
         IERC20 collateralAsset = leverageManager.getStrategyCollateralAsset(strategy);
-        collateralAsset.transferFrom(msg.sender, address(this), collateralFromSender);
+        SafeERC20.safeTransferFrom(collateralAsset, msg.sender, address(this), collateralFromSender);
 
         // Get required collateral amount for the equity amount being deposited into the strategy
         (uint256 shares, uint256 requiredCollateral, uint256 requiredDebt) =
