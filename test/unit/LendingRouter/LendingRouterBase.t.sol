@@ -28,10 +28,9 @@ contract LendingRouterBaseTest is Test {
     MockERC20 public debtToken = new MockERC20();
     IStrategy public strategyToken = IStrategy(address(new MockERC20()));
 
-    // Mocked Morpho protocol
     MockMorpho public morpho;
 
-    // Mocked Morpho protocol is setup with a market with id 1 and some default market params
+    // Mocked Morpho protocol is setup with a market with some default market params
     Id public defaultMarketId;
     MarketParams public defaultMarketParams = MarketParams({
         loanToken: address(debtToken),

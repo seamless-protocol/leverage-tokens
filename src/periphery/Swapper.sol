@@ -21,11 +21,13 @@ contract Swapper is ISwapper {
         lifi = _lifi;
     }
 
+    /// @inheritdoc ISwapper
     function setProvider(ISwapper.Provider _provider) external {
         // TODO: Only authed role allowed to set provider
         provider = _provider;
     }
 
+    /// @inheritdoc ISwapper
     function swap(
         IERC20 fromToken,
         IERC20 toToken,
@@ -37,6 +39,12 @@ contract Swapper is ISwapper {
         return _swapLiFi(fromToken, toToken, fromAmount, minToAmount, providerSwapData);
     }
 
+    /// @notice Swap tokens using LiFi
+    /// @param fromToken Token to swap from
+    /// @param toToken Token to swap to
+    /// @param fromAmount Amount of tokens to swap
+    /// @param minToAmount Minimum expected amount of tokens to receive
+    /// @param providerSwapData Encoded swap data to use for the swap using the provider
     function _swapLiFi(
         IERC20 fromToken,
         IERC20 toToken,

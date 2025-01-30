@@ -157,21 +157,21 @@ interface ILeverageManager {
     /// @dev Only address with MANAGER role can call this function
     function setStrategyCollateralCap(IStrategy strategy, uint256 collateralCap) external;
 
-    /// @notice Mints shares of a strategy and deposits assets into it, recipient receives shares but caller receives debt
+    /// @notice Mints shares of a strategy and deposits collateral assets into it, sender receives shares and debt
     /// @param strategy The strategy to deposit into
     /// @param equityInCollateralAsset The quantity of equity to deposit, denominated in the collateral asset of the strategy
-    /// @param minShares The minimum amount of shares to receive
-    /// @return shares Actual amount of shares given to the user
+    /// @param minShares The minimum amount of shares the sender should receive
+    /// @return shares Actual amount of shares received by the sender
     function deposit(IStrategy strategy, uint256 equityInCollateralAsset, uint256 minShares)
         external
         returns (uint256 shares);
 
-    /// @notice Mints shares of a strategy and deposits assets into it, recipient receives shares but caller receives debt
+    /// @notice Mints shares of a strategy and deposits collateral assets into it, sender receives shares and debt
     /// @param strategy The strategy to deposit into
     /// @param shares The quantity of shares to mint
-    /// @param maxAssets The maximum amount of equity to take from the user denominated in debt asset
-    /// @return assets Actual amount of equity taken from the user denominated in debt asset
-    function mint(IStrategy strategy, uint256 shares, uint256 maxAssets) external returns (uint256 assets);
+    /// @param maxEquityInDebtAsset The maximum amount of equity to take from the sender denominated in debt asset
+    /// @return assets Actual amount of equity taken from the sender denominated in debt asset
+    function mint(IStrategy strategy, uint256 shares, uint256 maxEquityInDebtAsset) external returns (uint256 assets);
 
     /// @notice Redeems shares of a strategy and withdraws assets from it, sender receives assets and caller pays debt
     /// @param strategy The strategy to redeem from

@@ -34,4 +34,9 @@ contract SwapperBaseTest is Test {
         assertEq(uint256(swapper.provider()), uint256(ISwapper.Provider.LiFi));
         assertEq(swapper.lifi(), address(lifi));
     }
+
+    function test_setProvider() public {
+        swapper.setProvider(ISwapper.Provider.LiFi);
+        assertEq(uint256(swapper.provider()), uint256(ISwapper.Provider.LiFi));
+    }
 }

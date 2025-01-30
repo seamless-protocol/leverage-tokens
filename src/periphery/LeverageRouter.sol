@@ -101,7 +101,7 @@ contract LeverageRouter is ILeverageRouter {
         }
     }
 
-    /// @dev Executes the deposit of equity into a strategy and the swap of debt assets to the collateral asset to repay the flash loan from Morpho
+    /// @notice Executes the deposit of equity into a strategy and the swap of debt assets to the collateral asset to repay the flash loan from Morpho
     /// @param params Params for the deposit of equity into a strategy
     /// @param collateralLoanAmount Amount of collateral asset flash loaned
     function _depositAndRepayMorphoFlashLoan(DepositParams memory params, uint256 collateralLoanAmount) internal {
@@ -135,7 +135,7 @@ contract LeverageRouter is ILeverageRouter {
         params.collateralAsset.approve(address(morpho), collateralLoanAmount);
     }
 
-    /// @dev Obtains a flash loan from Morpho for a deposit. Morpho will call back into the LeverageRouter via `onMorphoFlashLoan` with the deposit params
+    /// @notice Obtains a flash loan from Morpho for a deposit. Morpho will call back into the LeverageRouter via `onMorphoFlashLoan` with the deposit params
     /// to execute the deposit and swap the debt asset to the collateral asset to repay the flash loan
     /// @param params Params for the deposit of equity into a strategy
     /// @param collateralLoanAmount Amount of collateral asset flash loaned
@@ -143,25 +143,7 @@ contract LeverageRouter is ILeverageRouter {
         morpho.flashLoan(
             address(params.collateralAsset),
             collateralLoanAmount,
-            abi.encode(
-                MorphoCallbackData({
-                    action: IFeeManager.Action.Deposit,
-                    actionData: abi.encode(
-                        DepositParams({
-                            strategy: params.strategy,
-                            collateralAsset: params.collateralAsset,
-                            debtAsset: params.debtAsset,
-                            collateralFromSender: params.collateralFromSender,
-                            equityInCollateralAsset: params.equityInCollateralAsset,
-                            requiredCollateral: params.requiredCollateral,
-                            requiredDebt: params.requiredDebt,
-                            minShares: params.minShares,
-                            receiver: params.receiver,
-                            providerSwapData: params.providerSwapData
-                        })
-                    )
-                })
-            )
+            abi.encode(MorphoCallbackData({action: IFeeManager.Action.Deposit, actionData: abi.encode(params)}))
         );
     }
 }

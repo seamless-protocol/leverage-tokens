@@ -102,7 +102,6 @@ contract MockLeverageManager is Test {
     {
         StrategyData storage strategyData = strategies[strategy];
 
-        // Encode the params to bytes32
         bytes32 mockDepositDataKey = keccak256(abi.encode(strategy, equityInCollateralAsset, minShares));
         MockDepositData[] memory mockDepositDataArray = mockDepositData[mockDepositDataKey];
 

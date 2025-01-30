@@ -61,7 +61,7 @@ contract DepositTest is LeverageManagerBaseTest {
             totalShares: 100 ether
         });
 
-        // 1000 ether of equity, so the deficit is not enough for full optimization
+        // 1000 ether of equity (exchange rate 1:1), so the deficit is not enough for full optimization
         uint128 equityInCollateralAsset = 1000 ether;
 
         _test_deposit(state, equityInCollateralAsset);

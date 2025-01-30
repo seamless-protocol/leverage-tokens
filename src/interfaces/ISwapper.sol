@@ -10,9 +10,6 @@ interface ISwapper {
         LiFi
     }
 
-    /// @notice Error thrown when an invalid provider is used
-    error InvalidProvider();
-
     /// @notice Error thrown when a swap uses a low-level call and fails
     error SwapFailed();
 
@@ -23,7 +20,11 @@ interface ISwapper {
     /// @return provider Current swap provider
     function provider() external view returns (Provider);
 
-    /// @notice Swap tokens using a swap provider
+    /// @notice Set the swap provider
+    /// @param _provider Provider to set
+    function setProvider(Provider _provider) external;
+
+    /// @notice Swap tokens using the set swap provider
     /// @param fromToken Token to swap from
     /// @param toToken Token to swap to
     /// @param fromAmount Amount of tokens to swap

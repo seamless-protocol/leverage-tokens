@@ -315,7 +315,6 @@ contract DepositTest is LendingRouterBaseTest {
         assertEq(collateralToken.balanceOf(address(this)), collateralFromSender - requiredCollateral);
     }
 
-    /// forge-config: default.fuzz.runs = 1
     function testFuzz_deposit_RevertIf_CollateralFromSenderLessThanEquityInCollateralAsset(
         uint256 equityInCollateralAsset,
         uint256 collateralFromSender
