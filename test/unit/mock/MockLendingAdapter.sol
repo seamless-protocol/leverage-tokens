@@ -11,7 +11,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 
 contract MockLendingAdapter {
-    uint256 public constant EXCHANGE_RATE_PRECISION = 1e4;
+    uint256 public constant BASE_EXCHANGE_RATE = 1e8;
 
     ERC20Mock public collateralAsset;
     ERC20Mock public debtAsset;
@@ -34,13 +34,13 @@ contract MockLendingAdapter {
 
     function convertCollateralToDebtAsset(uint256 amount) external view returns (uint256) {
         return collateralToDebtAssetExchangeRate > 0
-            ? Math.mulDiv(amount, collateralToDebtAssetExchangeRate, EXCHANGE_RATE_PRECISION, Math.Rounding.Floor)
+            ? Math.mulDiv(amount, collateralToDebtAssetExchangeRate, BASE_EXCHANGE_RATE, Math.Rounding.Floor)
             : amount;
     }
 
     function convertDebtToCollateralAsset(uint256 amount) external view returns (uint256) {
         return collateralToDebtAssetExchangeRate > 0
-            ? Math.mulDiv(amount, EXCHANGE_RATE_PRECISION, collateralToDebtAssetExchangeRate, Math.Rounding.Ceil)
+            ? Math.mulDiv(amount, BASE_EXCHANGE_RATE, collateralToDebtAssetExchangeRate, Math.Rounding.Ceil)
             : amount;
     }
 
