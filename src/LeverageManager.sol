@@ -289,7 +289,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         IStrategy strategy,
         uint256 equityInDebtAsset,
         IFeeManager.Action action
-    ) public view returns (uint256 collateral, uint256 debt) {
+    ) internal view returns (uint256 collateral, uint256 debt) {
         ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
 
         // Get current collateral ratio and excess excess collateral in debt asset. Excess of collateral can be redeemed without repaying the debt
