@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
+import {console} from "forge-std/console.sol";
+
 // Dependency imports
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
@@ -116,6 +118,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
         setStrategyLendingAdapter(strategy, address(strategyConfig.lendingAdapter));
         setStrategyCollateralCap(strategy, strategyConfig.collateralCap);
+        setStrategyRebalanceReward(strategy, strategyConfig.rebalanceReward);
         setStrategyCollateralRatios(
             strategy,
             CollateralRatios({
@@ -188,9 +191,11 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         uint256 sharesAfterFee = _computeFeeAdjustedShares(strategy, shares, IFeeManager.Action.Deposit);
         uint256 equity = _convertToEquity(strategy, sharesAfterFee);
 
-        if (equity > maxAssets) {
-            revert SlippageTooHigh(equity, maxAssets);
-        }
+        require(equity <= maxAssets, SlippageTooHigh(equity, maxAssets));
+
+        // if (equity > maxAssets) {
+        //     revert SlippageTooHigh(equity, maxAssets);
+        // }
 
         (uint256 collateral, uint256 debt) =
             _calculateCollateralAndDebtToCoverEquity(strategy, equity, IFeeManager.Action.Deposit);
@@ -254,18 +259,22 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         for (uint256 i = 0; i < actions.length; i++) {
             IStrategy strategy = actions[i].strategy;
 
-            if (_isElementInSlice(actions, strategy, i)) {
+            if (!_isElementInSlice(actions, strategy, i)) {
                 StrategyState memory state = _getStrategyState(strategy);
                 strategiesStateBefore[i] = state;
 
+                console.log("First time");
+
                 _validateRebalanceEligibility(strategy, state.collateralRatio);
             }
+            console.log("Second time");
 
             _executeAction(strategy, actions[i].actionType, actions[i].amount);
         }
 
         for (uint256 i = 0; i < actions.length; i++) {
-            if (_isElementInSlice(actions, actions[i].strategy, i)) {
+            if (!_isElementInSlice(actions, actions[i].strategy, i)) {
+                console.log("First time");
                 _validateStrategyStateAfterRebalance(actions[i].strategy, strategiesStateBefore[i]);
             }
         }
@@ -403,10 +412,18 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         uint256 debtBefore = stateBefore.debt;
         uint256 debtAfter = stateAfter.debt;
 
+        console.log("Equity before: %s", equityBefore);
+        console.log("Equity after: %s", equityAfter);
+        console.log("Debt before: %s", debtBefore);
+        console.log("Debt after: %s", debtAfter);
+
         uint256 debtChange = (debtAfter.toInt256() - debtBefore.toInt256()).abs();
+        console.log("Debt change: %s", debtChange);
         uint256 reward = (debtChange * getStrategyRebalanceReward(strategy)) / 100_000;
+        console.log("Reward: %s", reward);
 
         if (equityAfter < equityBefore - reward) {
+            console.log(equityBefore - reward);
             revert EquityLossTooBig();
         }
     }

@@ -104,8 +104,10 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
             abi.encode(debtAsset)
         );
 
-        vm.prank(caller);
+        vm.startPrank(caller);
         strategy = leverageManager.createNewStrategy(config, name, symbol);
+        vm.stopPrank();
+
         return strategy;
     }
 
