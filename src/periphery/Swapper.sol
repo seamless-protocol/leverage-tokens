@@ -32,14 +32,9 @@ contract Swapper is ISwapper {
         uint256 fromAmount,
         uint256 minToAmount,
         bytes calldata providerSwapData
-    ) external returns (uint256) {
+    ) external returns (uint256 toAmount) {
         SafeERC20.safeTransferFrom(fromToken, msg.sender, address(this), fromAmount);
-
-        if (provider == Provider.LiFi) {
-            return _swapLiFi(fromToken, toToken, fromAmount, minToAmount, providerSwapData);
-        } else {
-            revert InvalidProvider();
-        }
+        return _swapLiFi(fromToken, toToken, fromAmount, minToAmount, providerSwapData);
     }
 
     function _swapLiFi(
@@ -49,9 +44,7 @@ contract Swapper is ISwapper {
         uint256 minToAmount,
         bytes calldata providerSwapData
     ) internal returns (uint256) {
-        SafeERC20.safeTransferFrom(fromToken, msg.sender, address(this), fromAmount);
         fromToken.approve(lifi, fromAmount);
-
         (bool success,) = lifi.call{value: msg.value}(providerSwapData);
 
         if (!success) {
