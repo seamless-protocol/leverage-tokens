@@ -53,7 +53,11 @@ contract MintTest is LeverageManagerBaseTest {
 
         uint128 sharesToMint = 100 ether;
 
-        _test_mint(state, sharesToMint);
+        (uint256 collateral, uint256 debt) = _test_mint(state, sharesToMint);
+
+        // Optimized
+        assertEq(collateral, 499999999999999999996);
+        assertEq(debt, 0);
     }
 
     function test_mint_NotEnoughCollateralDeficit() external {
@@ -67,7 +71,11 @@ contract MintTest is LeverageManagerBaseTest {
 
         uint128 sharesToMint = 200 ether; // This equals to around 1000 ether of equity so deficit is not enough for full optimization
 
-        _test_mint(state, sharesToMint);
+        (uint256 collateral, uint256 debt) = _test_mint(state, sharesToMint);
+
+        // Partially optimized
+        assertEq(collateral, 1499999999999999999984);
+        assertEq(debt, 499999999999999999992);
     }
 
     function test_mint_StrategyIsOverCollateralized() external {
@@ -81,7 +89,11 @@ contract MintTest is LeverageManagerBaseTest {
 
         uint128 sharesToMint = 80 ether; // No optimization is possible here
 
-        _test_mint(state, sharesToMint);
+        (uint256 collateral, uint256 debt) = _test_mint(state, sharesToMint);
+
+        // Not optimized
+        assertEq(collateral, 2399999999999999999976);
+        assertEq(debt, 1199999999999999999988);
     }
 
     function testFuzz_mint(MintRedeemState memory state, uint128 sharesToMint) external {
@@ -111,14 +123,17 @@ contract MintTest is LeverageManagerBaseTest {
         leverageManager.mint(strategy, sharesToMint, expectedEquity - 1);
     }
 
-    function _test_mint(MintRedeemState memory state, uint256 sharesToMint) internal {
+    function _test_mint(MintRedeemState memory state, uint256 sharesToMint)
+        internal
+        returns (uint256 collateral, uint256 debt)
+    {
         _mockState_MintRedeem(state);
 
-        (, uint256 collateral, uint256 debtToCoverEquity, uint256 expectedShares) =
+        (, uint256 requiredCollateral, uint256 debtToCoverEquity, uint256 expectedShares) =
             leverageManager.previewMint(strategy, sharesToMint);
 
-        collateralToken.mint(address(this), collateral);
-        collateralToken.approve(address(leverageManager), collateral);
+        collateralToken.mint(address(this), requiredCollateral);
+        collateralToken.approve(address(leverageManager), requiredCollateral);
 
         leverageManager.mint(strategy, sharesToMint, type(uint256).max);
 
@@ -126,5 +141,7 @@ contract MintTest is LeverageManagerBaseTest {
         assertEq(IERC20(strategy).balanceOf(address(this)), state.userShares + expectedShares);
         assertEq(IERC20(strategy).totalSupply(), state.totalShares + expectedShares);
         assertEq(debtToken.balanceOf(address(this)), debtToCoverEquity);
+
+        return (requiredCollateral, debtToCoverEquity);
     }
 }
