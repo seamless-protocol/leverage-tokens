@@ -49,7 +49,11 @@ contract DepositTest is LeverageManagerBaseTest {
 
         uint256 equityInCollateralAsset = 100 ether;
 
-        _test_deposit(state, equityInCollateralAsset);
+        (uint256 collateralRequired, uint256 debtToCoverEquity) = _test_deposit(state, equityInCollateralAsset);
+
+        // Optimized
+        assertEq(collateralRequired, 100 ether);
+        assertEq(debtToCoverEquity, 0);
     }
 
     function test_deposit_NotEnoughCollateralDeficit() external {
@@ -64,7 +68,11 @@ contract DepositTest is LeverageManagerBaseTest {
         // 1000 ether of equity (exchange rate 1:1), so the deficit is not enough for full optimization
         uint128 equityInCollateralAsset = 1000 ether;
 
-        _test_deposit(state, equityInCollateralAsset);
+        (uint256 collateralRequired, uint256 debtToCoverEquity) = _test_deposit(state, equityInCollateralAsset);
+
+        // Partially optimized
+        assertEq(collateralRequired, 1500 ether);
+        assertEq(debtToCoverEquity, 500 ether);
     }
 
     function test_deposit_StrategyIsOverCollateralized() external {
@@ -78,7 +86,11 @@ contract DepositTest is LeverageManagerBaseTest {
 
         uint128 equityInCollateralAsset = 80 ether; // No optimization is possible here
 
-        _test_deposit(state, equityInCollateralAsset);
+        (uint256 collateralRequired, uint256 debtToCoverEquity) = _test_deposit(state, equityInCollateralAsset);
+
+        // Not optimized
+        assertEq(collateralRequired, 160 ether);
+        assertEq(debtToCoverEquity, 80 ether);
     }
 
     function testFuzz_deposit(MintRedeemState memory state, uint128 equityInCollateralAsset) external {
@@ -109,14 +121,17 @@ contract DepositTest is LeverageManagerBaseTest {
         leverageManager.deposit(strategy, equityInCollateralAsset, expectedShares + 1);
     }
 
-    function _test_deposit(MintRedeemState memory state, uint256 equityInCollateralAsset) internal {
+    function _test_deposit(MintRedeemState memory state, uint256 equityInCollateralAsset)
+        internal
+        returns (uint256 collateral, uint256 debt)
+    {
         _mockState_MintRedeem(state);
 
-        (uint256 sharesToMint, uint256 collateral, uint256 debtToCoverEquity) =
+        (uint256 sharesToMint, uint256 collateralRequired, uint256 debtToCoverEquity) =
             leverageManager.previewDeposit(strategy, equityInCollateralAsset);
 
-        collateralToken.mint(address(this), collateral);
-        collateralToken.approve(address(leverageManager), collateral);
+        collateralToken.mint(address(this), collateralRequired);
+        collateralToken.approve(address(leverageManager), collateralRequired);
 
         uint256 sharesReceived = leverageManager.deposit(strategy, equityInCollateralAsset, sharesToMint);
 
@@ -125,5 +140,7 @@ contract DepositTest is LeverageManagerBaseTest {
         assertEq(IERC20(strategy).balanceOf(address(this)), state.userShares + sharesReceived);
         assertEq(IERC20(strategy).totalSupply(), state.totalShares + sharesReceived);
         assertEq(debtToken.balanceOf(address(this)), debtToCoverEquity);
+
+        return (collateralRequired, debtToCoverEquity);
     }
 }
