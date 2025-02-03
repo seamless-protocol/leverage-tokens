@@ -194,31 +194,44 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function mint(IStrategy strategy, uint256 shares, uint256 maxAssets) external returns (uint256 assets) {
-        // Charge strategy fee. Fee is not sent to treasury but burned which increases overall share value
-        uint256 sharesAfterFee = _computeFeeAdjustedShares(strategy, shares, IFeeManager.Action.Deposit);
-        uint256 equity = _convertToEquity(strategy, sharesAfterFee);
-
-        if (equity > maxAssets) {
-            revert SlippageTooHigh(equity, maxAssets);
-        }
-
-        (uint256 collateral, uint256 debt) =
-            _calculateCollateralAndDebtToCoverEquity(strategy, equity, IFeeManager.Action.Deposit);
+    function deposit(IStrategy strategy, uint256 collateralToAdd, uint256 debtToBorrow, uint256 minShares)
+        external
+        returns (uint256)
+    {
+        // Store strategy state before deposit
+        StrategyState memory stateBefore = _getStrategyState(strategy);
 
         // Take asset from sender and supply it as collateral
-        SafeERC20.safeTransferFrom(getStrategyCollateralAsset(strategy), msg.sender, address(this), collateral);
-        _executeLendingAdapterAction(strategy, ActionType.AddCollateral, collateral);
+        SafeERC20.safeTransferFrom(getStrategyCollateralAsset(strategy), msg.sender, address(this), collateralToAdd);
+        _executeLendingAdapterAction(strategy, ActionType.AddCollateral, collateralToAdd);
 
         // Borrow and send debt assets to caller
-        _executeLendingAdapterAction(strategy, ActionType.Borrow, debt);
-        SafeERC20.safeTransfer(getStrategyDebtAsset(strategy), msg.sender, debt);
+        _executeLendingAdapterAction(strategy, ActionType.Borrow, debtToBorrow);
+        SafeERC20.safeTransfer(getStrategyDebtAsset(strategy), msg.sender, debtToBorrow);
+
+        // Calculate equity
+        uint256 equity =
+            getStrategyLendingAdapter(strategy).convertCollateralToDebtAsset(collateralToAdd) - debtToBorrow;
+
+        // Get new strategy state
+        StrategyState memory stateAfter = _getStrategyState(strategy);
+
+        // Validate state after deposit
+        _validateCollateralRatioAfterAction(strategy, stateBefore.collateralRatio, stateAfter.collateralRatio);
+
+        uint256 shares = _convertToShares(strategy, equity);
+        uint256 sharesAfterFee = _computeFeeAdjustedShares(strategy, shares, IFeeManager.Action.Deposit);
+
+        if (sharesAfterFee < minShares) {
+            revert SlippageTooHigh(sharesAfterFee, minShares);
+        }
 
         // Mint shares to user
-        strategy.mint(msg.sender, shares);
+        strategy.mint(msg.sender, sharesAfterFee);
 
-        emit Deposit(strategy, msg.sender, msg.sender, equity, shares);
-        return equity;
+        // Emit event and explicit return statement
+        emit Deposit(strategy, msg.sender, collateralToAdd, debtToBorrow, sharesAfterFee);
+        return sharesAfterFee;
     }
 
     /// @inheritdoc ILeverageManager
@@ -374,7 +387,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         _validateEquityChange(strategy, stateBefore, stateAfter);
 
         // Validate collateral ratio change
-        _validateCollateralRatioAfterRebalance(strategy, stateBefore.collateralRatio, stateAfter.collateralRatio);
+        _validateCollateralRatioAfterAction(strategy, stateBefore.collateralRatio, stateAfter.collateralRatio);
     }
 
     /// @notice Validates collateral ratio after rebalance
@@ -383,7 +396,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     /// @param collateralRatioAfter Collateral ratio after rebalance
     /// @dev Collateral ratio after rebalance needs to be closer to target ratio than before rebalance. Also both collateral ratios
     ///      need to be on the same side. This means if strategy was overexposed before rebalance it can not be underexposed not and vice verse.
-    function _validateCollateralRatioAfterRebalance(
+    function _validateCollateralRatioAfterAction(
         IStrategy strategy,
         uint256 collateralRatioBefore,
         uint256 collateralRatioAfter
@@ -425,6 +438,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
     /// @notice Returns all data required to describe current strategy state - collateral, debt, equity and collateral ratio
     /// @param strategy Strategy to query state for
+
     function _getStrategyState(IStrategy strategy) internal view returns (StrategyState memory) {
         ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
 
@@ -451,6 +465,22 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             shares,
             lendingAdapter.getEquityInDebtAsset() + 1,
             strategy.totalSupply() + 10 ** DECIMALS_OFFSET,
+            Math.Rounding.Floor
+        );
+    }
+
+    /// @notice Function that converts user's equity to shares, equity will be denominated in debt asset
+    /// @notice Function uses OZ formula for calculating shares
+    /// @param strategy Strategy to convert equity for
+    /// @param equity Equity to convert to shares, equity is denominated in debt asset
+    /// @dev Function should be used to calculate how much shares user should receive for their equity
+    function _convertToShares(IStrategy strategy, uint256 equity) internal view returns (uint256 shares) {
+        ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
+
+        return Math.mulDiv(
+            equity,
+            strategy.totalSupply() + 10 ** DECIMALS_OFFSET,
+            lendingAdapter.getEquityInDebtAsset() + 1,
             Math.Rounding.Floor
         );
     }

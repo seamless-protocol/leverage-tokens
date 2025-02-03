@@ -44,12 +44,12 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
         _validateRebalanceEligibility(strategy, currRatio);
     }
 
-    function exposed_validateCollateralRatioAfterRebalance(
+    function exposed_validateCollateralRatioAfterAction(
         IStrategy strategy,
         uint256 collateralRatioBefore,
         uint256 collateralRatioAfter
     ) external view {
-        _validateCollateralRatioAfterRebalance(strategy, collateralRatioBefore, collateralRatioAfter);
+        _validateCollateralRatioAfterAction(strategy, collateralRatioBefore, collateralRatioAfter);
     }
 
     function exposed_validateEquityChange(
@@ -82,5 +82,9 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
 
     function exposed_convertToEquity(IStrategy strategy, uint256 shares) external view returns (uint256 equity) {
         return _convertToEquity(strategy, shares);
+    }
+
+    function exposed_convertToShares(IStrategy strategy, uint256 equity) external view returns (uint256 shares) {
+        return _convertToShares(strategy, equity);
     }
 }

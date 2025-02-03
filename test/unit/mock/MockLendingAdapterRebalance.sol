@@ -72,4 +72,8 @@ contract MockLendingAdapterRebalance {
     function getEquityInDebtAsset() external view returns (uint256) {
         return getCollateralInDebtAsset() - getDebt();
     }
+
+    function convertCollateralToDebtAsset(uint256 collateral) external view returns (uint256) {
+        return collateral * collateralToDebtExchangeRate / BASE_EXCHANGE_RATE;
+    }
 }
