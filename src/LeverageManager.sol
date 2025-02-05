@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
+import {console} from "forge-std/console.sol";
 // Dependency imports
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
@@ -198,6 +199,17 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         external
         returns (uint256)
     {
+        // Calculate equity
+        uint256 equity =
+            getStrategyLendingAdapter(strategy).convertCollateralToDebtAsset(collateralToAdd) - debtToBorrow;
+
+        uint256 shares = _convertToShares(strategy, equity);
+        uint256 sharesAfterFee = _computeFeeAdjustedShares(strategy, shares, IFeeManager.Action.Deposit);
+
+        if (sharesAfterFee < minShares) {
+            revert SlippageTooHigh(sharesAfterFee, minShares);
+        }
+
         // Store strategy state before deposit
         StrategyState memory stateBefore = _getStrategyState(strategy);
 
@@ -209,22 +221,11 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         _executeLendingAdapterAction(strategy, ActionType.Borrow, debtToBorrow);
         SafeERC20.safeTransfer(getStrategyDebtAsset(strategy), msg.sender, debtToBorrow);
 
-        // Calculate equity
-        uint256 equity =
-            getStrategyLendingAdapter(strategy).convertCollateralToDebtAsset(collateralToAdd) - debtToBorrow;
-
         // Get new strategy state
         StrategyState memory stateAfter = _getStrategyState(strategy);
 
         // Validate state after deposit
         _validateCollateralRatioAfterAction(strategy, stateBefore.collateralRatio, stateAfter.collateralRatio);
-
-        uint256 shares = _convertToShares(strategy, equity);
-        uint256 sharesAfterFee = _computeFeeAdjustedShares(strategy, shares, IFeeManager.Action.Deposit);
-
-        if (sharesAfterFee < minShares) {
-            revert SlippageTooHigh(sharesAfterFee, minShares);
-        }
 
         // Mint shares to user
         strategy.mint(msg.sender, sharesAfterFee);
@@ -390,12 +391,12 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         _validateCollateralRatioAfterAction(strategy, stateBefore.collateralRatio, stateAfter.collateralRatio);
     }
 
-    /// @notice Validates collateral ratio after rebalance
+    /// @notice Validates collateral ratio after action (Deposit, Withdraw, Rebalance)
     /// @param strategy Strategy to validate ratio for
-    /// @param collateralRatioBefore Collateral ratio before rebalance
-    /// @param collateralRatioAfter Collateral ratio after rebalance
-    /// @dev Collateral ratio after rebalance needs to be closer to target ratio than before rebalance. Also both collateral ratios
-    ///      need to be on the same side. This means if strategy was overexposed before rebalance it can not be underexposed not and vice verse.
+    /// @param collateralRatioBefore Collateral ratio before action
+    /// @param collateralRatioAfter Collateral ratio after action
+    /// @dev Collateral ratio after action needs to be closer to target ratio than before action. Also both collateral ratios
+    ///      need to be on the same side. This means if strategy was overexposed before action it can not be underexposed not and vice verse.
     function _validateCollateralRatioAfterAction(
         IStrategy strategy,
         uint256 collateralRatioBefore,

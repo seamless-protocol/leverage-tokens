@@ -65,7 +65,7 @@ interface ILeverageManager {
 
     /// @notice Event emitted when user deposits assets into strategy
     event Deposit(
-        IStrategy indexed strategy, address indexed user, uint256 collateral, uint256 debt, uint256 sharesMinted
+        IStrategy indexed strategy, address indexed sender, uint256 collateral, uint256 debt, uint256 sharesMinted
     );
 
     /// @notice Event emitted when user redeems assets from strategy
@@ -163,7 +163,7 @@ interface ILeverageManager {
     /// @dev Only address with MANAGER role can call this function
     function setStrategyRebalanceReward(IStrategy strategy, uint256 reward) external;
 
-    /// @notice Deposits collateral into the strategy and borrows debt, sender receives shares and caller receives debt
+    /// @notice Deposits collateral into the strategy and borrows debt, sender receives shares and debt
     /// @param strategy The strategy to deposit into
     /// @param collateralToAdd The quantity of collateral to deposit
     /// @param debtToAdd The quantity of debt to borrow

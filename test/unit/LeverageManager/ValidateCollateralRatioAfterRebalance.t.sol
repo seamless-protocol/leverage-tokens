@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: UNLICENSED
-/*
 pragma solidity ^0.8.26;
 
 // Forge imports
@@ -17,7 +16,7 @@ import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStor
 import {LeverageManagerBaseTest} from "./LeverageManagerBase.t.sol";
 import {CollateralRatios} from "src/types/DataTypes.sol";
 
-contract ValidateCollateralRatioAfterRebalance is LeverageManagerBaseTest {
+contract ValidateCollateralRatioAfterAction is LeverageManagerBaseTest {
     function setUp() public override {
         super.setUp();
 
@@ -43,7 +42,7 @@ contract ValidateCollateralRatioAfterRebalance is LeverageManagerBaseTest {
         );
     }
 
-    function test_validateCollateralRatioAfterAction_RevertIf_RatioInWorstState() public {
+    function test_validateCollateralRatioAfterAction_RevertIf_RatioInWorseState() public {
         uint256 ratioBefore = 3 * _BASE_RATIO();
         uint256 ratioAfter = 3 * _BASE_RATIO() + 1;
 
@@ -59,5 +58,3 @@ contract ValidateCollateralRatioAfterRebalance is LeverageManagerBaseTest {
         leverageManager.exposed_validateCollateralRatioAfterAction(strategy, ratioBefore, ratioAfter);
     }
 }
-
-*/

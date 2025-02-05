@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-// Forge imports
-import {Test, console} from "forge-std/Test.sol";
-
 // Dependency imports
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -16,10 +13,10 @@ import {MockLendingAdapter} from "test/unit/mock/MockLendingAdapter.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
-
 import {MockLendingAdapterRebalance} from "test/unit/mock/MockLendingAdapterRebalance.sol";
+import {StrategyState} from "src/types/DataTypes.sol";
 
-contract MintTest is LeverageManagerBaseTest {
+contract DepositTest is LeverageManagerBaseTest {
     ERC20Mock public weth = new ERC20Mock();
     ERC20Mock public usdc = new ERC20Mock();
 
@@ -45,6 +42,10 @@ contract MintTest is LeverageManagerBaseTest {
             "dummy name",
             "dummy symbol"
         );
+
+        // Mint some shares to test with
+        vm.prank(address(leverageManager));
+        strategy.mint(address(1), 100 ether);
     }
 
     function test_deposit_BringStrategyInBetterState_UnderCollateralized() external {
@@ -54,7 +55,7 @@ contract MintTest is LeverageManagerBaseTest {
 
         _prepareStateForDeposit(currentCollateral, currentDebt, ethPrice);
 
-        // Should allow to deposit collateral and to take debt it strategy goes towards better collateral ratio
+        // Should allow to deposit collateral and to take debt if strategy goes towards better collateral ratio
         uint256 collateralToDeposit = 2 ether; // 4,000 USDC
         uint256 debtToTake = 2_000 ether; // 2,000 USDC
 
@@ -63,13 +64,16 @@ contract MintTest is LeverageManagerBaseTest {
         weth.mint(address(this), collateralToDeposit);
         weth.approve(address(leverageManager), collateralToDeposit);
 
-        // After this deposit strategy will have 12,000 USDC collateral and 6,000 USDC debt so action should pass properly
+        // After this deposit strategy will have 14,000 USDC collateral and 8,000 USDC debt so action should pass properly
         uint256 returnValue = leverageManager.deposit(strategy, collateralToDeposit, debtToTake, expectedShares);
+
+        StrategyState memory state = leverageManager.exposed_getStrategyState(strategy);
 
         assertEq(returnValue, expectedShares);
         assertEq(strategy.balanceOf(address(this)), expectedShares);
         assertEq(weth.balanceOf(address(this)), 0);
         assertEq(usdc.balanceOf(address(this)), debtToTake);
+        assertEq(state.collateralRatio, 1_7500_0000); // 1,75x
     }
 
     function test_deposit_BringStrategyInBetterState_OverCollateralized() external {
@@ -88,44 +92,21 @@ contract MintTest is LeverageManagerBaseTest {
         weth.mint(address(this), collateralToDeposit);
         weth.approve(address(leverageManager), collateralToDeposit);
 
-        // After this deposit strategy will have 12,000 USDC collateral and 6,000 USDC debt so action should pass properly
+        // After this deposit strategy will have 14,000 USDC collateral and 7,000 USDC debt so action should pass properly
         uint256 returnValue = leverageManager.deposit(strategy, collateralToDeposit, debtToTake, expectedShares);
+        StrategyState memory state = leverageManager.exposed_getStrategyState(strategy);
 
         assertEq(returnValue, expectedShares);
         assertEq(strategy.balanceOf(address(this)), expectedShares);
         assertEq(weth.balanceOf(address(this)), 0);
         assertEq(usdc.balanceOf(address(this)), debtToTake);
+        assertEq(state.collateralRatio, 2_0000_0000); // 2x
     }
 
     function test_deposit_FollowCurrentRatio_UnderCollateralized() public {
         uint256 ethPrice = 2000_00000000; // 2000 USDC
         uint256 currentCollateral = 5 ether; // 10,000 USDC
         uint256 currentDebt = 6_000 ether; // 6,000 USDC
-
-        _prepareStateForDeposit(currentCollateral, currentDebt, ethPrice);
-
-        // Should allow to deposit collateral and to take debt it strategy goes towards better collateral ratio
-        uint256 collateralToDeposit = 2.5 ether; // 5,000 USDC
-        uint256 debtToTake = 3_000 ether; // 3,000 USDC
-
-        uint256 expectedShares = leverageManager.exposed_convertToShares(strategy, 2000 ether);
-
-        weth.mint(address(this), collateralToDeposit);
-        weth.approve(address(leverageManager), collateralToDeposit);
-
-        // After this deposit strategy will have 12,000 USDC collateral and 6,000 USDC debt so action should pass properly
-        uint256 returnValue = leverageManager.deposit(strategy, collateralToDeposit, debtToTake, expectedShares);
-
-        assertEq(returnValue, expectedShares);
-        assertEq(strategy.balanceOf(address(this)), expectedShares);
-        assertEq(weth.balanceOf(address(this)), 0);
-        assertEq(usdc.balanceOf(address(this)), debtToTake);
-    }
-
-    function test_deposit_FollowCurrentRatio_OverCollateralized() public {
-        uint256 ethPrice = 2000_00000000; // 2000 USDC
-        uint256 currentCollateral = 5 ether; // 10,000 USDC
-        uint256 currentDebt = 4_000 ether; // 4,000 USDC
 
         _prepareStateForDeposit(currentCollateral, currentDebt, ethPrice);
 
@@ -138,13 +119,42 @@ contract MintTest is LeverageManagerBaseTest {
         weth.mint(address(this), collateralToDeposit);
         weth.approve(address(leverageManager), collateralToDeposit);
 
-        // After this deposit strategy will have 12,000 USDC collateral and 6,000 USDC debt so action should pass properly
+        // After this deposit strategy will have 15,000 USDC collateral and 8,000 USDC debt so action should pass properly
         uint256 returnValue = leverageManager.deposit(strategy, collateralToDeposit, debtToTake, expectedShares);
+        StrategyState memory state = leverageManager.exposed_getStrategyState(strategy);
 
         assertEq(returnValue, expectedShares);
         assertEq(strategy.balanceOf(address(this)), expectedShares);
         assertEq(weth.balanceOf(address(this)), 0);
         assertEq(usdc.balanceOf(address(this)), debtToTake);
+        assertEq(state.collateralRatio, 1_8750_0000); // 1,875x
+    }
+
+    function test_deposit_FollowCurrentRatio_OverCollateralized() public {
+        uint256 ethPrice = 2000_00000000; // 2000 USDC
+        uint256 currentCollateral = 5 ether; // 10,000 USDC
+        uint256 currentDebt = 4_000 ether; // 4,000 USDC
+
+        _prepareStateForDeposit(currentCollateral, currentDebt, ethPrice);
+
+        // Should allow to deposit collateral and to take debt it strategy goes towards better collateral ratio
+        uint256 collateralToDeposit = 2 ether; // 4,000 USDC
+        uint256 debtToTake = 2_000 ether; // 2,000 USDC
+
+        uint256 expectedShares = leverageManager.exposed_convertToShares(strategy, 2000 ether);
+
+        weth.mint(address(this), collateralToDeposit);
+        weth.approve(address(leverageManager), collateralToDeposit);
+
+        // After this deposit strategy will have 14,000 USDC collateral and 6,000 USDC debt so action should pass properly
+        uint256 returnValue = leverageManager.deposit(strategy, collateralToDeposit, debtToTake, expectedShares);
+        StrategyState memory state = leverageManager.exposed_getStrategyState(strategy);
+
+        assertEq(returnValue, expectedShares);
+        assertEq(strategy.balanceOf(address(this)), expectedShares);
+        assertEq(weth.balanceOf(address(this)), 0);
+        assertEq(usdc.balanceOf(address(this)), debtToTake);
+        assertEq(state.collateralRatio, 2_3333_3333); // 2x
     }
 
     function test_deposit_RevertIf_WorseCollateralRatio_UnderCollateralized() external {
@@ -172,7 +182,7 @@ contract MintTest is LeverageManagerBaseTest {
 
         _prepareStateForDeposit(currentCollateral, currentDebt, ethPrice);
 
-        // Should allow to deposit collateral and to take debt it strategy goes towards better collateral ratio
+        // Should allow to deposit collateral and to take debt if strategy goes towards better collateral ratio
         uint256 collateralToDeposit = 2.5 ether; // 5,000 USDC
         uint256 debtToTake = 4_000 ether; // 4,000 USDC
 
