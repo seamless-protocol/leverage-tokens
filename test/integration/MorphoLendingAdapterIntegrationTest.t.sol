@@ -98,7 +98,11 @@ contract MorphoLendingAdapterIntegrationTest is IntegrationBase {
 
     function testFork_convertCollateralToDebtAsset() public view {
         uint256 debt = lendingAdapterWethUsdc.convertCollateralToDebtAsset(1 ether);
-        assertEq(debt, 3_392_292_471, "Expected debt to be 3392292471 (3392.292471 USDC) at the current block");
+        assertEq(
+            debt,
+            3_392_292_471,
+            "Expected 1 ether debt (1 WETH) to be 3392292471 collateral (3392.292471 USDC) at the current block"
+        );
     }
 
     function testFork_convertDebtToCollateralAsset() public view {
@@ -106,7 +110,7 @@ contract MorphoLendingAdapterIntegrationTest is IntegrationBase {
         assertEq(
             collateral,
             0.294785903153823706e18,
-            "Expected collateral to be 0.294785903153823706e18 (~0.2947 WETH) at the current block"
+            "Expected 1000e6 collateral (1000 USDC) to be 0.294785903153823706e18 debt (~0.2947 WETH) at the current block"
         );
     }
 
@@ -141,9 +145,6 @@ contract MorphoLendingAdapterIntegrationTest is IntegrationBase {
         uint256 debt = lendingAdapterWethUsdc.getDebt();
         // The amount of assets returned by MorphoBalancesLib is calculated by rounding the exchange rate of shares to assets up.
         assertEq(debt, borrowAmount + 1);
-
-        // The sender (leverageManager) should have received the borrowed assets
-        assertEq(usdc.balanceOf(address(leverageManager)), borrowAmount);
     }
 
     function testFork_getEquityInDebtAsset_NoEquity() public view {
@@ -198,18 +199,12 @@ contract MorphoLendingAdapterIntegrationTest is IntegrationBase {
     function testFork_borrow() public {
         uint256 borrowAmount = 1e6;
 
-        uint256 requiredCollateralInDebtAsset = Math.mulDiv(
-            borrowAmount + 1, // Add 1 because borrow amount must result in < the market's LLTV
-            1e18,
-            lendingAdapterWethUsdcMarketParams.lltv,
-            Math.Rounding.Ceil // Use Rounding.Up to ensure sufficient collateral
-        );
-        uint256 requiredCollateral = lendingAdapterWethUsdc.convertDebtToCollateralAsset(requiredCollateralInDebtAsset);
-
-        _addCollateral(requiredCollateral);
+        _addCollateral(1 ether); // Sufficient collateral to borrow 1e6 USDC
 
         vm.prank(address(leverageManager));
         lendingAdapterWethUsdc.borrow(borrowAmount);
+
+        assertEq(usdc.balanceOf(address(leverageManager)), borrowAmount);
     }
 
     function testForkFuzz_borrow(uint48 borrowAmount) public {
@@ -227,5 +222,54 @@ contract MorphoLendingAdapterIntegrationTest is IntegrationBase {
 
         vm.prank(address(leverageManager));
         lendingAdapterWethUsdc.borrow(borrowAmount);
+
+        assertEq(usdc.balanceOf(address(leverageManager)), borrowAmount);
+    }
+
+    function testFork_repay() public {
+        uint256 borrowAmount = 1e6;
+
+        uint256 collateralAmount = 1 ether; // Sufficient collateral to borrow 1e6 USDC
+        _addCollateral(collateralAmount);
+
+        vm.startPrank(address(leverageManager));
+
+        lendingAdapterWethUsdc.borrow(borrowAmount);
+        usdc.approve(address(lendingAdapterWethUsdc), borrowAmount);
+        lendingAdapterWethUsdc.repay(borrowAmount);
+
+        vm.stopPrank();
+
+        uint256 debt = lendingAdapterWethUsdc.getDebt();
+        // getDebt uses MorphoBalancesLib.expectedBorrowAssets which rounds the calculation of borrow shares to assets up
+        assertEq(debt, 1);
+    }
+
+    function testForkFuzz_repay(uint48 borrowAmount, uint48 repayAmount) public {
+        borrowAmount = uint48(bound(borrowAmount, 1, WETH_USDC_MARKET_TOTAL_BORROW_ASSETS_AVAILABLE));
+        uint256 requiredCollateralInDebtAsset = Math.mulDiv(
+            uint256(borrowAmount) + 1, // Add 1 because borrow amount must result in < the market's LLTV
+            1e18,
+            lendingAdapterWethUsdcMarketParams.lltv,
+            Math.Rounding.Ceil // Use Rounding.Up to ensure sufficient collateral
+        );
+        uint256 requiredCollateral = lendingAdapterWethUsdc.convertDebtToCollateralAsset(requiredCollateralInDebtAsset);
+        repayAmount = uint48(bound(repayAmount, 1, borrowAmount));
+
+        _addCollateral(requiredCollateral);
+
+        vm.startPrank(address(leverageManager));
+
+        lendingAdapterWethUsdc.borrow(borrowAmount);
+        usdc.approve(address(lendingAdapterWethUsdc), repayAmount);
+        lendingAdapterWethUsdc.repay(repayAmount);
+
+        vm.stopPrank();
+
+        uint256 debt = lendingAdapterWethUsdc.getDebt();
+        // getDebt uses MorphoBalancesLib.expectedBorrowAssets which rounds the calculation of borrow shares to assets up
+        assertTrue(debt == borrowAmount - repayAmount || debt == borrowAmount - repayAmount + 1);
+
+        assertEq(usdc.balanceOf(address(leverageManager)), borrowAmount - repayAmount);
     }
 }
