@@ -38,6 +38,7 @@ interface ILendingAdapter {
     function getCollateralInDebtAsset() external view returns (uint256 collateral);
 
     /// @notice Returns total debt of the position held by the lending adapter
+    /// @dev The expected balance is rounded up, so it may be greater than the expected total borrow assets.
     /// @return debt Total debt of the position held by the lending adapter
     function getDebt() external view returns (uint256 debt);
 
