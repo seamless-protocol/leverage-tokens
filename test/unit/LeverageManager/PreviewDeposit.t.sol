@@ -39,11 +39,11 @@ contract PreviewDepositTest is LeverageManagerBaseTest {
 
     function test_previewDeposit_WithFee() public {
         _setStrategyActionFee(strategy, IFeeManager.Action.Deposit, 0.05e4); // 5% fee
-        _mockLendingAdapterExchangeRate(1e8); // 1:1
+        _mockLendingAdapterExchangeRate(2e8); // 1:2
 
         MockLeverageManagerStateForPreviewDeposit memory beforeState = MockLeverageManagerStateForPreviewDeposit({
             collateral: 100 ether,
-            debt: 50 ether,
+            debt: 100 ether,
             sharesTotalSupply: 100 ether
         });
 
@@ -54,8 +54,8 @@ contract PreviewDepositTest is LeverageManagerBaseTest {
             leverageManager.previewDeposit(strategy, equityToAdd);
 
         assertEq(collateralToAdd, 20 ether);
-        assertEq(debtToBorrow, 10 ether);
-        assertEq(expectedShares, 19 ether - 1); // 20 ether - 1 ether fee (5%), - 1 because of equity offset in convertToShares
+        assertEq(debtToBorrow, 20 ether);
+        assertEq(expectedShares, 19 ether);
         assertEq(sharesFee, 1 ether);
     }
 
