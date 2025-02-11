@@ -39,9 +39,6 @@ contract SetStrategyActionFeeTest is FeeManagerBaseTest {
 
         uint256 expectedAmountAfterFee = Math.mulDiv(amount, feeManager.MAX_FEE() - fee, feeManager.MAX_FEE());
 
-        vm.expectEmit(true, true, true, true);
-        emit IFeeManager.FeeCharged(strategy, action, amount, amount - expectedAmountAfterFee);
-
         uint256 amountAfterFee = feeManager.exposed_computeFeeAdjustedShares(strategy, amount, action);
 
         assertEq(amountAfterFee, expectedAmountAfterFee);

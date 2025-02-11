@@ -1,13 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
-
-// Forge imports
-import {Test, console} from "forge-std/Test.sol";
+pragma solidity ^0.8.26;
 
 // Internal imports
 import {LeverageManagerBaseTest} from "test/unit/LeverageManager/LeverageManagerBase.t.sol";
 
-contract ConvertToEquity is LeverageManagerBaseTest {
+contract ConvertToEquityTest is LeverageManagerBaseTest {
     function setUp() public override {
         super.setUp();
 

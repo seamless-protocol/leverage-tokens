@@ -6,8 +6,10 @@ import {Test, console} from "forge-std/Test.sol";
 
 // Dependency imports
 import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
+import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 
 // Internal imports
+import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
@@ -18,12 +20,17 @@ import {FeeManagerHarness} from "test/unit/FeeManager/harness/FeeManagerHarness.
 import {CollateralRatios} from "src/types/DataTypes.sol";
 import {BeaconProxyFactory} from "src/BeaconProxyFactory.sol";
 import {Strategy} from "src/Strategy.sol";
+import {MockLendingAdapter} from "test/unit/mock/MockLendingAdapter.sol";
 
 contract LeverageManagerBaseTest is FeeManagerBaseTest {
     IStrategy public strategy;
-    address public lendingAdapter = makeAddr("lendingAdapter");
     address public defaultAdmin = makeAddr("defaultAdmin");
     address public manager = makeAddr("manager");
+
+    ERC20Mock public collateralToken = new ERC20Mock();
+    ERC20Mock public debtToken = new ERC20Mock();
+
+    MockLendingAdapter public lendingAdapter;
 
     address public strategyTokenImplementation;
     BeaconProxyFactory public strategyTokenFactory;
@@ -32,6 +39,8 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     function setUp() public virtual override {
         strategyTokenImplementation = address(new Strategy());
         strategyTokenFactory = new BeaconProxyFactory(strategyTokenImplementation, address(this));
+
+        lendingAdapter = new MockLendingAdapter(address(collateralToken), address(debtToken));
 
         address leverageManagerImplementation = address(new LeverageManagerHarness());
         address leverageManagerProxy = UnsafeUpgrades.deployUUPSProxy(
@@ -139,7 +148,13 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
 
         _mockStrategyCollateral(state.strategyCollateral);
         _mockConvertCollateral(state.depositAmount, state.depositAmountInDebtAsset);
-        _setStrategyTargetRatio(state.targetRatio);
+        _setStrategyCollateralRatios(
+            CollateralRatios({
+                minCollateralRatio: 0,
+                targetCollateralRatio: state.targetRatio,
+                maxCollateralRatio: type(uint256).max
+            })
+        );
     }
 
     function _mockStrategyCollateral(uint256 collateral) internal {
@@ -176,6 +191,8 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
                 targetRatio: state.targetRatio
             })
         );
+        lendingAdapter.mockDebt(state.debt);
+        lendingAdapter.mockCollateral(state.collateralInDebt);
         _mockStrategyTotalEquity(state.collateralInDebt - state.debt);
 
         _mintShares(address(this), state.userShares);
@@ -200,7 +217,13 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     ) internal {
         _mockStrategyCollateralInDebtAsset(state.collateralInDebt);
         _mockStrategyDebt(state.debt);
-        _setStrategyTargetRatio(state.targetRatio);
+        _setStrategyCollateralRatios(
+            CollateralRatios({
+                minCollateralRatio: 0,
+                targetCollateralRatio: state.targetRatio,
+                maxCollateralRatio: type(uint256).max
+            })
+        );
     }
 
     function _mockConvertCollateral(uint256 collateral, uint256 debt) internal {
@@ -227,16 +250,14 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         );
     }
 
-    function _setStrategyTargetRatio(uint256 targetRatio) internal {
+    function _setStrategyActionFee(IStrategy _strategy, IFeeManager.Action action, uint256 fee) internal {
+        vm.prank(feeManagerRole);
+        leverageManager.setStrategyActionFee(_strategy, action, fee);
+    }
+
+    function _setStrategyCollateralRatios(CollateralRatios memory ratios) internal {
         vm.prank(manager);
-        leverageManager.setStrategyCollateralRatios(
-            strategy,
-            CollateralRatios({
-                minCollateralRatio: 0,
-                targetCollateralRatio: targetRatio,
-                maxCollateralRatio: type(uint256).max
-            })
-        );
+        leverageManager.setStrategyCollateralRatios(strategy, ratios);
     }
 
     function _mockStrategyDebt(uint256 debt) internal {
@@ -253,5 +274,10 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
             abi.encodeWithSelector(ILendingAdapter.getCollateralInDebtAsset.selector),
             abi.encode(collateral)
         );
+    }
+
+    function _mockLendingAdapterExchangeRate(uint256 exchangeRate) internal {
+        lendingAdapter.mockConvertCollateralToDebtAssetExchangeRate(exchangeRate);
+        lendingAdapter.mockConvertDebtAssetToCollateralExchangeRate(exchangeRate);
     }
 }

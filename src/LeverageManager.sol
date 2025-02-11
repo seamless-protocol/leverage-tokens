@@ -20,7 +20,7 @@ import {FeeManager} from "src/FeeManager.sol";
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
-import {CollateralRatios} from "src/types/DataTypes.sol";
+import {CollateralRatios, StrategyState} from "src/types/DataTypes.sol";
 import {Strategy} from "src/Strategy.sol";
 
 contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManager, UUPSUpgradeable {
@@ -60,7 +60,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function getStrategyCollateralRatios(IStrategy strategy) external view returns (CollateralRatios memory ratios) {
+    function getStrategyCollateralRatios(IStrategy strategy) public view returns (CollateralRatios memory ratios) {
         Storage.StrategyConfig storage config = Storage.layout().config[strategy];
 
         return CollateralRatios({
@@ -78,6 +78,33 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     /// @inheritdoc ILeverageManager
     function getStrategyTargetCollateralRatio(IStrategy strategy) public view returns (uint256 targetCollateralRatio) {
         return Storage.layout().config[strategy].targetCollateralRatio;
+    }
+
+    /// @inheritdoc ILeverageManager
+    function previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
+        public
+        view
+        returns (uint256, uint256, uint256, uint256)
+    {
+        return _previewDeposit(strategy, equityInCollateralAsset, _getStrategyState(strategy).collateralRatio);
+    }
+
+    function _previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset, uint256 currentCollateralRatio)
+        internal
+        view
+        returns (uint256, uint256, uint256, uint256)
+    {
+        ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
+
+        uint256 equityInDebtAsset = lendingAdapter.convertCollateralToDebtAsset(equityInCollateralAsset);
+
+        uint256 sharesBeforeFee = _convertToShares(strategy, equityInDebtAsset);
+        uint256 sharesAfterFee = _computeFeeAdjustedShares(strategy, sharesBeforeFee, IFeeManager.Action.Deposit);
+
+        uint256 debtToBorrow = equityInDebtAsset * BASE_RATIO / (currentCollateralRatio - BASE_RATIO);
+        uint256 collateralToAdd = equityInCollateralAsset + lendingAdapter.convertDebtToCollateralAsset(debtToBorrow);
+
+        return (collateralToAdd, debtToBorrow, sharesAfterFee, sharesBeforeFee - sharesAfterFee);
     }
 
     /// @inheritdoc ILeverageManager
@@ -165,36 +192,58 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function mint(IStrategy strategy, uint256 shares, uint256 maxAssets) external returns (uint256 assets) {
+    function deposit(IStrategy strategy, uint256 equityInCollateralAsset, uint256 minShares)
+        external
+        returns (uint256)
+    {
         ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
+        StrategyState memory beforeState = _getStrategyState(strategy);
 
-        // Charge strategy fee. Fee is not sent to treasury but burned which increases overall share value
-        uint256 sharesAfterFee = _computeFeeAdjustedShares(strategy, shares, IFeeManager.Action.Deposit);
-        uint256 equity = _convertToEquity(strategy, sharesAfterFee);
-
-        if (equity > maxAssets) {
-            revert SlippageTooHigh(equity, maxAssets);
+        CollateralRatios memory ratios = getStrategyCollateralRatios(strategy);
+        if (
+            beforeState.collateralRatio < ratios.minCollateralRatio
+                || beforeState.collateralRatio > ratios.maxCollateralRatio
+        ) {
+            // Cannot deposit if the strategy is not within the configured collateral ratio range. Must wait
+            // for a rebalance or price action to bring the strategy back to within the range
+            revert CollateralRatioOutsideRange(beforeState.collateralRatio);
         }
 
-        (uint256 collateral, uint256 debt) =
-            _calculateCollateralAndDebtToCoverEquity(strategy, lendingAdapter, equity, IFeeManager.Action.Deposit);
+        (uint256 collateralToAdd, uint256 debtToBorrow, uint256 sharesAfterFee, uint256 sharesFee) =
+            _previewDeposit(strategy, equityInCollateralAsset, beforeState.collateralRatio);
+
+        // DebtToBorrow can be zero in cases where the equity being added to the strategy is too low wrt the current collateral ratio.
+        // In cases where the strategy has little collateral, the relative change in collateral ratio will be high if only collateral is added
+        if (debtToBorrow == 0) {
+            revert InvalidBorrowForDeposit();
+        }
+
+        if (sharesAfterFee < minShares) {
+            revert SlippageTooHigh(sharesAfterFee, minShares);
+        }
+
+        if (collateralToAdd + beforeState.collateral > getStrategyCollateralCap(strategy)) {
+            revert CollateralCapExceeded(collateralToAdd + beforeState.collateral, getStrategyCollateralCap(strategy));
+        }
 
         // Take asset from sender and supply it as collateral
         IERC20 collateralAsset = lendingAdapter.getCollateralAsset();
-        SafeERC20.safeTransferFrom(collateralAsset, msg.sender, address(this), collateral);
-
-        collateralAsset.approve(address(lendingAdapter), collateral);
-        lendingAdapter.addCollateral(collateral);
+        SafeERC20.safeTransferFrom(collateralAsset, msg.sender, address(this), collateralToAdd);
+        collateralAsset.approve(address(lendingAdapter), collateralToAdd);
+        lendingAdapter.addCollateral(collateralToAdd);
 
         // Borrow and send debt assets to caller
-        lendingAdapter.borrow(debt);
-        SafeERC20.safeTransfer(lendingAdapter.getDebtAsset(), msg.sender, debt);
+        lendingAdapter.borrow(debtToBorrow);
+        SafeERC20.safeTransfer(lendingAdapter.getDebtAsset(), msg.sender, debtToBorrow);
 
         // Mint shares to user
-        strategy.mint(msg.sender, shares);
+        strategy.mint(msg.sender, sharesAfterFee);
 
-        emit Deposit(strategy, msg.sender, msg.sender, equity, shares);
-        return equity;
+        // Emit event and explicit return statement
+        emit Deposit(
+            strategy, msg.sender, collateralToAdd, debtToBorrow, equityInCollateralAsset, sharesAfterFee, sharesFee
+        );
+        return sharesAfterFee;
     }
 
     /// @inheritdoc ILeverageManager
@@ -313,5 +362,36 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             strategy.totalSupply() + 10 ** DECIMALS_OFFSET,
             Math.Rounding.Floor
         );
+    }
+
+    /// @notice Function that converts user's equity to shares, equity will be denominated in debt asset
+    /// @notice Function uses OZ formula for calculating shares
+    /// @param strategy Strategy to convert equity for
+    /// @param equity Equity to convert to shares, equity is denominated in debt asset
+    /// @dev Function should be used to calculate how much shares user should receive for their equity
+    function _convertToShares(IStrategy strategy, uint256 equity) internal view returns (uint256 shares) {
+        ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
+
+        return Math.mulDiv(
+            equity,
+            strategy.totalSupply() + 10 ** DECIMALS_OFFSET,
+            lendingAdapter.getEquityInDebtAsset() + 1,
+            Math.Rounding.Floor
+        );
+    }
+
+    /// @notice Returns all data required to describe current strategy state - collateral, debt, equity and collateral ratio
+    /// @param strategy Strategy to query state for
+    function _getStrategyState(IStrategy strategy) internal view returns (StrategyState memory) {
+        ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
+
+        uint256 collateral = lendingAdapter.getCollateralInDebtAsset();
+        uint256 debt = lendingAdapter.getDebt();
+        uint256 equity = lendingAdapter.getEquityInDebtAsset();
+
+        uint256 collateralRatio =
+            debt > 0 ? Math.mulDiv(collateral, BASE_RATIO, debt, Math.Rounding.Floor) : type(uint256).max;
+
+        return StrategyState({collateral: collateral, debt: debt, equity: equity, collateralRatio: collateralRatio});
     }
 }

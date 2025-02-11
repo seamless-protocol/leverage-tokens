@@ -7,6 +7,7 @@ import {FeeManagerHarness} from "test/unit/FeeManager/harness/FeeManagerHarness.
 import {LeverageManager} from "src/LeverageManager.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
+import {StrategyState} from "src/types/DataTypes.sol";
 
 /// @notice Wrapper contract that exposes all internal functions of LeverageManager
 contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
@@ -41,5 +42,13 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
 
     function exposed_convertToEquity(IStrategy strategy, uint256 shares) external view returns (uint256 equity) {
         return _convertToEquity(strategy, shares);
+    }
+
+    function exposed_convertToShares(IStrategy strategy, uint256 equity) external view returns (uint256 shares) {
+        return _convertToShares(strategy, equity);
+    }
+
+    function exposed_getStrategyState(IStrategy strategy) external view returns (StrategyState memory) {
+        return _getStrategyState(strategy);
     }
 }

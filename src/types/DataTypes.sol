@@ -6,3 +6,10 @@ struct CollateralRatios {
     uint256 maxCollateralRatio;
     uint256 targetCollateralRatio;
 }
+
+struct StrategyState {
+    uint256 collateral;
+    uint256 debt;
+    uint256 equity;
+    uint256 collateralRatio;
+}

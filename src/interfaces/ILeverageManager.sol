@@ -5,15 +5,19 @@ pragma solidity ^0.8.26;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
+import {IFeeManager} from "./IFeeManager.sol";
 import {IStrategy} from "./IStrategy.sol";
 import {CollateralRatios} from "src/types/DataTypes.sol";
 import {IBeaconProxyFactory} from "./IBeaconProxyFactory.sol";
 import {ILendingAdapter} from "./ILendingAdapter.sol";
 import {LeverageManagerStorage as Storage} from "../storage/LeverageManagerStorage.sol";
 
-interface ILeverageManager {
+interface ILeverageManager is IFeeManager {
     /// @notice Error thrown when someone tries to create strategy with lending adapter that already exists
     error LendingAdapterAlreadyInUse(address adapter);
+
+    /// @notice Error thrown when someone tries to deposit with an invalid borrow amount
+    error InvalidBorrowForDeposit();
 
     /// @notice Error thrown when someone tries to set zero address for collateral or debt asset when creating strategy
     error InvalidStrategyAssets();
@@ -22,7 +26,10 @@ interface ILeverageManager {
     error InvalidCollateralRatios();
 
     /// @notice Error thrown when user tries to deposit into strategy more than cap
-    error CollateralExceedsCap(uint256 collateral, uint256 cap);
+    error CollateralCapExceeded(uint256 collateral, uint256 cap);
+
+    /// @notice Error thrown when collateral ratio is outside of min/max range to disallow an action
+    error CollateralRatioOutsideRange(uint256 collateralRatio);
 
     /// @notice Error thrown when slippage is too high during mint/redeem
     error SlippageTooHigh(uint256 actual, uint256 expected);
@@ -46,7 +53,13 @@ interface ILeverageManager {
 
     /// @notice Event emitted when user deposits assets into strategy
     event Deposit(
-        IStrategy indexed strategy, address indexed from, address indexed to, uint256 assets, uint256 sharesMinted
+        IStrategy indexed strategy,
+        address indexed sender,
+        uint256 collateralToAdd,
+        uint256 debtToBorrow,
+        uint256 equityInCollateralAsset,
+        uint256 sharesMinted,
+        uint256 sharesFee
     );
 
     /// @notice Event emitted when user redeems assets from strategy
@@ -81,6 +94,18 @@ interface ILeverageManager {
     /// @param strategy Strategy to get target ratio for
     /// @return targetRatio Target ratio
     function getStrategyTargetCollateralRatio(IStrategy strategy) external view returns (uint256 targetRatio);
+
+    /// @notice Returns a preview for a deposit into a strategy
+    /// @param strategy Strategy to preview deposit for
+    /// @param equityInCollateralAsset Amount of equity in collateral asset
+    /// @return collateralToAdd Amount of collateral to add
+    /// @return debtToBorrow Amount of debt to borrow
+    /// @return shares Amount of shares to mint
+    /// @return sharesFee Share fee for deposit
+    function previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
+        external
+        view
+        returns (uint256 collateralToAdd, uint256 debtToBorrow, uint256 shares, uint256 sharesFee);
 
     /// @notice Returns entire configuration for given strategy
     /// @param strategy Address of the strategy to get config for
@@ -123,12 +148,12 @@ interface ILeverageManager {
     /// @dev Only address with MANAGER role can call this function
     function setStrategyCollateralCap(IStrategy strategy, uint256 collateralCap) external;
 
-    /// @notice Mints shares of a strategy and deposits assets into it, recipient receives shares but caller receives debt
+    /// @notice Deposits equity into a strategy and mints shares to the sender
     /// @param strategy The strategy to deposit into
-    /// @param shares The quantity of shares to mint
-    /// @param maxAssets The maximum amount of equity to take from the user denominated in debt asset
-    /// @return assets Actual amount of equity taken from the user denominated in debt asset
-    function mint(IStrategy strategy, uint256 shares, uint256 maxAssets) external returns (uint256 assets);
+    /// @param equityInDebtAsset The amount of equity to deposit denominated in debt asset
+    /// @param minShares The minimum amount of shares to mint
+    /// @return sharesMinted The actual amount of shares minted
+    function deposit(IStrategy strategy, uint256 equityInDebtAsset, uint256 minShares) external returns (uint256);
 
     /// @notice Redeems shares of a strategy and withdraws assets from it, sender receives assets and caller pays debt
     /// @param strategy The strategy to redeem from

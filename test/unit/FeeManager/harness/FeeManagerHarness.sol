@@ -18,6 +18,7 @@ contract FeeManagerHarness is FeeManager {
 
     function exposed_computeFeeAdjustedShares(IStrategy strategy, uint256 amount, IFeeManager.Action action)
         external
+        view
         returns (uint256 amountAfterFee)
     {
         return _computeFeeAdjustedShares(strategy, amount, action);

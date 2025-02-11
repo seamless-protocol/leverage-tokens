@@ -18,13 +18,8 @@ import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 
 contract RedeemTest is LeverageManagerBaseTest {
-    ERC20Mock public collateralToken = new ERC20Mock();
-    ERC20Mock public debtToken = new ERC20Mock();
-
     function setUp() public override {
         super.setUp();
-
-        MockLendingAdapter lendingAdapter = new MockLendingAdapter(address(collateralToken), address(debtToken));
 
         _createNewStrategy(
             manager,
