@@ -62,7 +62,8 @@ contract DepositTest is LeverageManagerBaseTest {
         //     debtToBorrow = equityToAdd * BASE_RATIO / (currentCollateralRatio - BASE_RATIO)
         // Using > 1 because the maximum collateral ratio in this test is 3x, so values <= 1 will result in
         // debtToBorrow = 0. If debtToBorrow = 0, then the collateral ratio will change more significantly
-        // after deposit than expected with smaller values of collateral and debt in the strategy.
+        // after deposit than expected with smaller values of collateral and debt in the strategy. So, we
+        // actually revert in LeverageManager.deposit if debtToBorrow = 0.
         vm.assume(equityToAddInCollateralAsset > 1);
 
         _mockLendingAdapterExchangeRate(2e8); // 1:2 exchange rate
