@@ -10,6 +10,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 
 // Internal imports
+import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {LeverageManagerBaseTest} from "test/unit/LeverageManager/LeverageManagerBase.t.sol";
@@ -37,7 +38,8 @@ contract RebalanceTest is LeverageManagerBaseTest {
                 maxCollateralRatio: 25 * _BASE_RATIO() / 10, // 2.5x leverage
                 targetCollateralRatio: 2 * _BASE_RATIO(), // 2x leverage
                 collateralCap: type(uint256).max,
-                rebalanceRewardPercentage: 10_000 // 10% reward
+                rebalanceRewardPercentage: 10_000, // 10% reward
+                rebalanceWhitelist: IRebalanceWhitelist(address(0))
             }),
             address(WETH),
             address(USDC),
@@ -74,9 +76,10 @@ contract RebalanceTest is LeverageManagerBaseTest {
 
         StrategyState memory state = leverageManager.exposed_getStrategyState(strategy);
         assertEq(state.collateral, 30_000 ether); // 15 ETH = 30,000 USDC
-        assertEq(state.debt, 15_000 ether); // 10,000 USDC
+        assertEq(state.debt, 15_000 ether); // 15,000 USDC
         assertEq(state.equity, 15_000 ether); // 15,000 USDC
         assertEq(state.collateralRatio, 2 * _BASE_RATIO()); // Back to 2x leverage
+        assertEq(USDC.balanceOf(address(this)), amountToBorrow); // Rebalancer took debt
     }
 
     function test_Rebalance_SimpleRebalanceSingleStrategy_RebalancerTakesReward_Overcollateralized() public {
@@ -110,6 +113,7 @@ contract RebalanceTest is LeverageManagerBaseTest {
         assertEq(state.debt, 10_000 ether); // 10,000 USDC
         assertEq(state.equity, 14_500 ether); // 14,500 USDC, 10% reward
         assertEq(state.collateralRatio, 245 * _BASE_RATIO() / 100); // Back to 2.45x leverage which is better than 4x
+        assertEq(USDC.balanceOf(address(this)), amountToBorrow); // Rebalancer took debt
     }
 
     function test_Rebalance_SimpleRebalanceSingleStrategy_RebalancerTakesReward_Undercollateralized() public {
@@ -144,6 +148,7 @@ contract RebalanceTest is LeverageManagerBaseTest {
         assertEq(state.debt, 5_000 ether); // 5,000 USDC
         assertEq(state.equity, 4_000 ether); // 4,500 USDC, 10% reward
         assertEq(state.collateralRatio, 180 * _BASE_RATIO() / 100); // Back to 1,8x leverage which is better than 1,333x
+        assertEq(WETH.balanceOf(address(this)), amountToWithdraw); // Rebalancer took collateral
     }
 
     function test_Rebalance_MultipleStrategies_MoveFundsAcrossStrategies() public {
@@ -159,7 +164,8 @@ contract RebalanceTest is LeverageManagerBaseTest {
                 maxCollateralRatio: 16 * _BASE_RATIO() / 10, // 3.5x leverage
                 targetCollateralRatio: 15 * _BASE_RATIO() / 10, // 3x leverage which means 2x price exposure
                 collateralCap: type(uint256).max,
-                rebalanceRewardPercentage: 10_000 // 10% reward
+                rebalanceRewardPercentage: 10_000, // 10% reward
+                rebalanceWhitelist: IRebalanceWhitelist(address(0))
             }),
             "ETH Short 2x",
             "ETHS2x"
@@ -207,12 +213,15 @@ contract RebalanceTest is LeverageManagerBaseTest {
         assertEq(stateLong.collateral, 24_500 ether);
         assertEq(stateLong.debt, 10_000 ether);
         assertEq(stateLong.equity, 14_500 ether);
-        // assertEq(stateLong.collateralRatio, 2 * _BASE_RATIO());
+        assertEq(stateLong.collateralRatio, 2_45 * _BASE_RATIO() / 100); // 2,45 leverage
 
         StrategyState memory stateShort = leverageManager.exposed_getStrategyState(ethShort);
         assertEq(stateShort.collateral, 9.75 ether); // 9,75 ETH = 19,500 USDC
         assertEq(stateShort.debt, 5 ether); // 5,000 ETH = 10,000 USDC
         assertEq(stateShort.equity, 4.75 ether); // 4,750 ETH = 9,500 USDC
-            // assertEq(stateLong.collateralRatio, 2 * _BASE_RATIO());
+        assertEq(stateShort.collateralRatio, 1_95 * _BASE_RATIO() / 100); // 1,95 leverage
+
+        assertEq(USDC.balanceOf(address(this)), usdcToTake);
+        assertEq(WETH.balanceOf(address(this)), wethToTake);
     }
 }

@@ -5,6 +5,7 @@ pragma solidity ^0.8.26;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
+import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
 import {IStrategy} from "./IStrategy.sol";
 import {CollateralRatios} from "src/types/DataTypes.sol";
 import {IBeaconProxyFactory} from "./IBeaconProxyFactory.sol";
@@ -30,6 +31,9 @@ interface ILeverageManager {
 
     /// @notice Error thrown when slippage is too high during mint/redeem
     error SlippageTooHigh(uint256 actual, uint256 expected);
+
+    /// @notice Error thrown when caller is whitelisted for rebalance action
+    error NotRebalancer(IStrategy strategy, address caller);
 
     /// @notice Error thrown when strategy is not eligible for rebalance
     error StrategyNotEligibleForRebalance(IStrategy strategy);
@@ -62,6 +66,9 @@ interface ILeverageManager {
 
     /// @notice Event emitted when rebalance reward is set for a strategy
     event StrategyRebalanceRewardSet(IStrategy indexed strategy, uint256 reward);
+
+    /// @notice Event emitted when rebalance whitelist is set for a strategy
+    event StrategyRebalanceWhitelistSet(IStrategy indexed strategy, IRebalanceWhitelist whitelist);
 
     /// @notice Event emitted when user deposits assets into strategy
     event Deposit(
@@ -99,6 +106,11 @@ interface ILeverageManager {
     /// @param strategy Strategy to get reward for
     /// @return reward Reward for rebalancing strategy, percentage of debt change where 100_00 = 100%
     function getStrategyRebalanceReward(IStrategy strategy) external view returns (uint256 reward);
+
+    /// @notice Returns rebalance whitelist module for strategy
+    /// @param strategy Strategy to get rebalance whitelist for
+    /// @param whitelist Rebalance whitelist module
+    function getStrategyRebalanceWhitelist(IStrategy strategy) external view returns (IRebalanceWhitelist whitelist);
 
     /// @notice Returns strategy cap in collateral asset
     /// @param strategy Strategy to get cap for
@@ -162,6 +174,12 @@ interface ILeverageManager {
     /// @param reward Reward for rebalancing strategy, percentage of debt change where 100_00 = 100%
     /// @dev Only address with MANAGER role can call this function
     function setStrategyRebalanceReward(IStrategy strategy, uint256 reward) external;
+
+    /// @notice Sets rebalance whitelist module for strategy
+    /// @param strategy Strategy to set rebalance whitelist for
+    /// @param whitelist Rebalance whitelist module
+    /// @dev Only address with MANAGER role can call this function
+    function setStrategyRebalanceWhitelist(IStrategy strategy, IRebalanceWhitelist whitelist) external;
 
     /// @notice Mints shares of a strategy and deposits assets into it, recipient receives shares but caller receives debt
     /// @param strategy The strategy to deposit into

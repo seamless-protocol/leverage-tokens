@@ -9,6 +9,7 @@ import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
+import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
@@ -76,7 +77,8 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
                     maxCollateralRatio: _BASE_RATIO() + 2,
                     targetCollateralRatio: _BASE_RATIO() + 1,
                     collateralCap: type(uint256).max,
-                    rebalanceRewardPercentage: 0
+                    rebalanceRewardPercentage: 0,
+                    rebalanceWhitelist: IRebalanceWhitelist(address(0))
                 }),
                 address(0),
                 address(0),
@@ -235,6 +237,11 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
             abi.encodeWithSelector(ILendingAdapter.getEquityInDebtAsset.selector),
             abi.encode(totalEquity)
         );
+    }
+
+    function _setStrategyRebalanceWhitelist(address caller, IRebalanceWhitelist whitelist) internal {
+        vm.prank(caller);
+        leverageManager.setStrategyRebalanceWhitelist(strategy, whitelist);
     }
 
     function _setStrategyTargetRatio(uint256 targetRatio) internal {

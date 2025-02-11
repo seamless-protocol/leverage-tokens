@@ -40,6 +40,10 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
         return _calculateCollateralAndDebtToCoverEquity(strategy, equity, action);
     }
 
+    function exposed_validateIsAllowedToRebalance(IStrategy strategy) external view {
+        _validateIsAllowedToRebalance(strategy);
+    }
+
     function exposed_validateRebalanceEligibility(IStrategy strategy, uint256 currRatio) external view {
         _validateRebalanceEligibility(strategy, currRatio);
     }

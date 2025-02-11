@@ -13,6 +13,7 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {SignedMath} from "@openzeppelin/contracts/utils/math/SignedMath.sol";
 
 // Internal imports
+import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {IBeaconProxyFactory} from "src/interfaces/IBeaconProxyFactory.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
@@ -65,6 +66,10 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     /// @inheritdoc ILeverageManager
     function getStrategyRebalanceReward(IStrategy strategy) public view returns (uint256 reward) {
         return Storage.layout().config[strategy].rebalanceRewardPercentage;
+    }
+
+    function getStrategyRebalanceWhitelist(IStrategy strategy) public view returns (IRebalanceWhitelist whitelist) {
+        return Storage.layout().config[strategy].rebalanceWhitelist;
     }
 
     /// @inheritdoc ILeverageManager
@@ -194,6 +199,15 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
+    function setStrategyRebalanceWhitelist(IStrategy strategy, IRebalanceWhitelist whitelist)
+        external
+        onlyRole(MANAGER_ROLE)
+    {
+        Storage.layout().config[strategy].rebalanceWhitelist = whitelist;
+        emit StrategyRebalanceWhitelistSet(strategy, whitelist);
+    }
+
+    /// @inheritdoc ILeverageManager
     function mint(IStrategy strategy, uint256 shares, uint256 maxAssets) external returns (uint256 assets) {
         // Charge strategy fee. Fee is not sent to treasury but burned which increases overall share value
         uint256 sharesAfterFee = _computeFeeAdjustedShares(strategy, shares, IFeeManager.Action.Deposit);
@@ -251,7 +265,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         return collateral;
     }
 
-    // @inheritdoc ILeverageManager
+    /// @inheritdoc ILeverageManager
     function rebalance(
         RebalanceAction[] calldata actions,
         TokenTransfer[] calldata tokensIn,
@@ -269,6 +283,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
                 StrategyState memory state = _getStrategyState(strategy);
                 strategiesStateBefore[i] = state;
 
+                _validateIsAllowedToRebalance(strategy);
                 _validateRebalanceEligibility(strategy, state.collateralRatio);
             }
 
@@ -347,6 +362,17 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         return (state.collateralRatio, excessCollateral);
     }
 
+    /// @notice Validates if caller is allowed to rebalance strategy
+    /// @param strategy Strategy to validate caller for
+    /// @dev Caller is not allowed to rebalance strategy if they are not whitelisted in the strategy's rebalance whitelist module
+    function _validateIsAllowedToRebalance(IStrategy strategy) internal view {
+        IRebalanceWhitelist whitelist = getStrategyRebalanceWhitelist(strategy);
+
+        if (address(whitelist) != address(0) && !whitelist.isAllowedToRebalance(address(strategy), msg.sender)) {
+            revert NotRebalancer(strategy, msg.sender);
+        }
+    }
+
     /// @notice Validates if strategy should be rebalanced
     /// @param strategy Strategy to validate
     /// @param currCollateralRatio Current collateral ratio of the strategy
@@ -416,7 +442,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         uint256 debtAfter = stateAfter.debt;
 
         uint256 debtChange = (debtAfter.toInt256() - debtBefore.toInt256()).abs();
-        uint256 reward = (debtChange * getStrategyRebalanceReward(strategy)) / BASE_REWARD_PERCENTAGE;
+        uint256 reward = Math.mulDiv(debtChange, getStrategyRebalanceReward(strategy), BASE_REWARD_PERCENTAGE);
 
         if (equityAfter < equityBefore - reward) {
             revert EquityLossTooBig();
