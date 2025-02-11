@@ -101,7 +101,11 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         uint256 sharesBeforeFee = _convertToShares(strategy, equityInDebtAsset);
         uint256 sharesAfterFee = _computeFeeAdjustedShares(strategy, sharesBeforeFee, IFeeManager.Action.Deposit);
 
-        uint256 debtToBorrow = equityInDebtAsset * BASE_RATIO / (currentCollateralRatio - BASE_RATIO);
+        uint256 depositCollateralRatio = currentCollateralRatio == type(uint256).max
+            ? getStrategyTargetCollateralRatio(strategy)
+            : currentCollateralRatio;
+
+        uint256 debtToBorrow = equityInDebtAsset * BASE_RATIO / (depositCollateralRatio - BASE_RATIO);
         uint256 collateralToAdd = equityInCollateralAsset + lendingAdapter.convertDebtToCollateralAsset(debtToBorrow);
 
         return (collateralToAdd, debtToBorrow, sharesAfterFee, sharesBeforeFee - sharesAfterFee);
@@ -196,23 +200,23 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         external
         returns (uint256)
     {
-        ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
         StrategyState memory beforeState = _getStrategyState(strategy);
-
         CollateralRatios memory ratios = getStrategyCollateralRatios(strategy);
-        if (
-            beforeState.collateralRatio < ratios.minCollateralRatio
-                || beforeState.collateralRatio > ratios.maxCollateralRatio
-        ) {
-            // Cannot deposit if the strategy is not within the configured collateral ratio range. Must wait
-            // for a rebalance or price action to bring the strategy back to within the range
-            revert CollateralRatioOutsideRange(beforeState.collateralRatio);
+
+        {
+            bool isWithinCollateralRatioRange = beforeState.collateralRatio >= ratios.minCollateralRatio
+                && beforeState.collateralRatio <= ratios.maxCollateralRatio;
+            if (!isWithinCollateralRatioRange && beforeState.collateralRatio != type(uint256).max) {
+                // Cannot deposit if the strategy is not within the configured collateral ratio range and
+                // is not at max collateral ratio. Must wait for a rebalance or price action to bring the strategy back to within the range
+                revert CollateralRatioOutsideRange(beforeState.collateralRatio);
+            }
         }
 
         (uint256 collateralToAdd, uint256 debtToBorrow, uint256 sharesAfterFee, uint256 sharesFee) =
             _previewDeposit(strategy, equityInCollateralAsset, beforeState.collateralRatio);
 
-        // DebtToBorrow can be zero in cases where the equity being added to the strategy is too low wrt the current collateral ratio.
+        // `debtToBorrow` can be zero in cases where the equity being added to the strategy is too low wrt the current collateral ratio.
         // In cases where the strategy has little collateral, the relative change in collateral ratio will be high if only collateral is added
         if (debtToBorrow == 0) {
             revert InvalidBorrowForDeposit();
@@ -225,6 +229,8 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         if (collateralToAdd + beforeState.collateral > getStrategyCollateralCap(strategy)) {
             revert CollateralCapExceeded(collateralToAdd + beforeState.collateral, getStrategyCollateralCap(strategy));
         }
+
+        ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
 
         // Take asset from sender and supply it as collateral
         IERC20 collateralAsset = lendingAdapter.getCollateralAsset();

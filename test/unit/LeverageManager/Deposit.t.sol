@@ -108,15 +108,15 @@ contract DepositTest is LeverageManagerBaseTest {
             MockLeverageManagerStateForDeposit({collateral: 1000 ether, debt: 100 ether, sharesTotalSupply: 100 ether})
         );
 
-        uint256 equityToAdd = 10 ether;
-        (uint256 collateralToAdd,,,) = leverageManager.previewDeposit(strategy, equityToAdd);
+        uint256 equityToAddInCollateralAsset = 10 ether;
+        (uint256 collateralToAdd,,,) = leverageManager.previewDeposit(strategy, equityToAddInCollateralAsset);
 
         deal(address(collateralToken), address(this), collateralToAdd);
         collateralToken.approve(address(leverageManager), collateralToAdd);
 
         // CR is 10x, but the max is 3x
         vm.expectRevert(abi.encodeWithSelector(ILeverageManager.CollateralRatioOutsideRange.selector, 10e8));
-        leverageManager.deposit(strategy, equityToAdd, 0);
+        leverageManager.deposit(strategy, equityToAddInCollateralAsset, 0);
     }
 
     function test_deposit_RevertIf_CurrentCollateralRatioTooLow() public {
@@ -131,14 +131,14 @@ contract DepositTest is LeverageManagerBaseTest {
             MockLeverageManagerStateForDeposit({collateral: 150 ether, debt: 100 ether, sharesTotalSupply: 100 ether})
         );
 
-        uint256 equityToAdd = 10 ether;
-        (uint256 collateralToAdd,,,) = leverageManager.previewDeposit(strategy, equityToAdd);
+        uint256 equityToAddInCollateralAsset = 10 ether;
+        (uint256 collateralToAdd,,,) = leverageManager.previewDeposit(strategy, equityToAddInCollateralAsset);
 
         deal(address(collateralToken), address(this), collateralToAdd);
         collateralToken.approve(address(leverageManager), collateralToAdd);
 
         vm.expectRevert(abi.encodeWithSelector(ILeverageManager.CollateralRatioOutsideRange.selector, 1.5e8));
-        leverageManager.deposit(strategy, equityToAdd, 0);
+        leverageManager.deposit(strategy, equityToAddInCollateralAsset, 0);
     }
 
     function test_deposit_RevertIf_DebtToBorrowIsZero() public {
@@ -156,14 +156,15 @@ contract DepositTest is LeverageManagerBaseTest {
         // In these cases we should revert, as the collateral ratio will change significantly in this scenario:
         //     newCollateralRatio = (collateral + collateralToAdd) / (debt + debtToBorrow)
         //     newCollateralRatio = (9 + 1) / (3 + 0) ~= 3.3333e8 (approx 10 percentage change)
-        uint256 equityToAdd = 1;
-        (uint256 collateralToAdd, uint256 debtToBorrow,,) = leverageManager.previewDeposit(strategy, equityToAdd);
+        uint256 equityToAddInCollateralAsset = 1;
+        (uint256 collateralToAdd, uint256 debtToBorrow,,) =
+            leverageManager.previewDeposit(strategy, equityToAddInCollateralAsset);
 
         assertEq(collateralToAdd, 1);
         assertEq(debtToBorrow, 0);
 
         vm.expectRevert(ILeverageManager.InvalidBorrowForDeposit.selector);
-        leverageManager.deposit(strategy, equityToAdd, 0);
+        leverageManager.deposit(strategy, equityToAddInCollateralAsset, 0);
     }
 
     /// forge-config: default.fuzz.runs = 1
@@ -176,8 +177,9 @@ contract DepositTest is LeverageManagerBaseTest {
             MockLeverageManagerStateForDeposit({collateral: 100 ether, debt: 50 ether, sharesTotalSupply: 10 ether})
         );
 
-        uint256 equityToAdd = 10 ether;
-        (uint256 collateralToAdd,, uint256 shares,) = leverageManager.previewDeposit(strategy, equityToAdd);
+        uint256 equityToAddInCollateralAsset = 10 ether;
+        (uint256 collateralToAdd,, uint256 shares,) =
+            leverageManager.previewDeposit(strategy, equityToAddInCollateralAsset);
 
         deal(address(collateralToken), address(this), collateralToAdd);
         collateralToken.approve(address(leverageManager), collateralToAdd);
@@ -185,7 +187,7 @@ contract DepositTest is LeverageManagerBaseTest {
         uint256 minShares = shares + sharesSlippage; // More than previewed
 
         vm.expectRevert(abi.encodeWithSelector(ILeverageManager.SlippageTooHigh.selector, shares, minShares));
-        leverageManager.deposit(strategy, equityToAdd, minShares);
+        leverageManager.deposit(strategy, equityToAddInCollateralAsset, minShares);
     }
 
     /// forge-config: default.fuzz.runs = 1
@@ -206,8 +208,8 @@ contract DepositTest is LeverageManagerBaseTest {
         _setStrategyCollateralCap(manager, 110 ether);
 
         // Strategy is at 2x ratio, so adding 5 ether will require 10 ether of collateral which will bring the strategy to the cap.
-        uint256 equityToAdd = 5 ether + excessCollateral;
-        (uint256 collateralToAdd,,,) = leverageManager.previewDeposit(strategy, equityToAdd);
+        uint256 equityToAddInCollateralAsset = 5 ether + excessCollateral;
+        (uint256 collateralToAdd,,,) = leverageManager.previewDeposit(strategy, equityToAddInCollateralAsset);
 
         deal(address(collateralToken), address(this), collateralToAdd);
         collateralToken.approve(address(leverageManager), collateralToAdd);
@@ -217,7 +219,30 @@ contract DepositTest is LeverageManagerBaseTest {
                 ILeverageManager.CollateralCapExceeded.selector, collateralBefore + collateralToAdd, 110 ether
             )
         );
-        leverageManager.deposit(strategy, equityToAdd, 0);
+        leverageManager.deposit(strategy, equityToAddInCollateralAsset, 0);
+    }
+
+    function test_deposit_CurrentCollateralRatioIsMax() public {
+        _mockLendingAdapterExchangeRate(1e8); // 1:1
+
+        MockLeverageManagerStateForDeposit memory beforeState =
+            MockLeverageManagerStateForDeposit({collateral: 100 ether, debt: 0, sharesTotalSupply: 100 ether});
+
+        _prepareLeverageManagerStateForDeposit(beforeState);
+
+        uint256 equityToAddInCollateralAsset = 10 ether;
+        (uint256 collateralToAdd, uint256 debtToBorrow, uint256 shares,) =
+            leverageManager.previewDeposit(strategy, equityToAddInCollateralAsset);
+
+        deal(address(collateralToken), address(this), collateralToAdd);
+        collateralToken.approve(address(leverageManager), collateralToAdd);
+
+        // Does not revert
+        leverageManager.deposit(strategy, equityToAddInCollateralAsset, shares);
+
+        StrategyState memory afterState = leverageManager.exposed_getStrategyState(strategy);
+        assertEq(afterState.collateral, beforeState.collateral + collateralToAdd, "Collateral mismatch");
+        assertEq(afterState.debt, beforeState.debt + debtToBorrow, "Debt mismatch");
     }
 
     function _prepareLeverageManagerStateForDeposit(MockLeverageManagerStateForDeposit memory state) internal {
@@ -248,6 +273,7 @@ contract DepositTest is LeverageManagerBaseTest {
         uint256 sharesReceived = leverageManager.deposit(strategy, equityToAddInCollateralAsset, shares);
 
         assertEq(sharesReceived, shares);
+        assertEq(strategy.balanceOf(address(this)), sharesReceived);
 
         StrategyState memory afterState = leverageManager.exposed_getStrategyState(strategy);
         assertEq(afterState.collateral, beforeState.collateral + collateralToAdd, "Collateral mismatch");

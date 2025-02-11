@@ -128,6 +128,25 @@ contract PreviewDepositTest is LeverageManagerBaseTest {
         assertEq(shares, sharesBeforeFee - sharesFee);
     }
 
+    function test_previewDeposit_CurrentCollateralRatioIsMax() public {
+        _mockLendingAdapterExchangeRate(1e8); // 1:1
+
+        MockLeverageManagerStateForPreviewDeposit memory beforeState =
+            MockLeverageManagerStateForPreviewDeposit({collateral: 100 ether, debt: 0, sharesTotalSupply: 100 ether});
+
+        _prepareLeverageManagerStateForPreviewDeposit(beforeState);
+
+        uint256 equityToAddInCollateralAsset = 10 ether;
+        (uint256 collateralToAdd, uint256 debtToBorrow, uint256 shares, uint256 sharesFee) =
+            leverageManager.previewDeposit(strategy, equityToAddInCollateralAsset);
+
+        // Current collateral ratio is max, so the target ratio is used (2x)
+        assertEq(debtToBorrow, 10 ether);
+        assertEq(collateralToAdd, 20 ether);
+        assertEq(shares, 10 ether);
+        assertEq(sharesFee, 0);
+    }
+
     function _prepareLeverageManagerStateForPreviewDeposit(MockLeverageManagerStateForPreviewDeposit memory state)
         internal
     {
