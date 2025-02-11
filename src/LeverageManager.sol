@@ -385,12 +385,13 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     function _getStrategyState(IStrategy strategy) internal view returns (StrategyState memory) {
         ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
 
-        uint256 collateral = lendingAdapter.getCollateralInDebtAsset();
+        uint256 collateral = lendingAdapter.getCollateral();
+        uint256 collateralInDebtAsset = lendingAdapter.getCollateralInDebtAsset();
         uint256 debt = lendingAdapter.getDebt();
         uint256 equity = lendingAdapter.getEquityInDebtAsset();
 
         uint256 collateralRatio =
-            debt > 0 ? Math.mulDiv(collateral, BASE_RATIO, debt, Math.Rounding.Floor) : type(uint256).max;
+            debt > 0 ? Math.mulDiv(collateralInDebtAsset, BASE_RATIO, debt, Math.Rounding.Floor) : type(uint256).max;
 
         return StrategyState({collateral: collateral, debt: debt, equity: equity, collateralRatio: collateralRatio});
     }

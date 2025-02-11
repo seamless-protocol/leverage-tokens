@@ -54,6 +54,10 @@ contract MockLendingAdapter {
         return getCollateralInDebtAsset() - getDebt();
     }
 
+    function getCollateral() external view returns (uint256) {
+        return collateralAsset.balanceOf(address(this));
+    }
+
     function getDebt() public view returns (uint256) {
         return debt;
     }
