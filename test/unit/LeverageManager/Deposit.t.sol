@@ -98,6 +98,7 @@ contract DepositTest is LeverageManagerBaseTest {
             })
         );
 
+        // There is a small collateral ratio delta after the deposit due to rounding down in previewDeposit when calculating debtToBorrow
         _testDeposit(equityToAddInCollateralAsset, 0.001e18);
     }
 
