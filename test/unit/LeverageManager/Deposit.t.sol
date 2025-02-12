@@ -227,6 +227,7 @@ contract DepositTest is LeverageManagerBaseTest {
     function test_deposit_CurrentCollateralRatioIsMax() public {
         _mockLendingAdapterExchangeRate(1e8); // 1:1
 
+        // Zero debt means that the strategy has a collateral ratio of type(uint256).max
         MockLeverageManagerStateForDeposit memory beforeState =
             MockLeverageManagerStateForDeposit({collateral: 100 ether, debt: 0, sharesTotalSupply: 100 ether});
 
