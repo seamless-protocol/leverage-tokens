@@ -82,7 +82,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
     /// @inheritdoc ILeverageManager
     function previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
-        public
+        external
         view
         returns (uint256, uint256, uint256, uint256)
     {
