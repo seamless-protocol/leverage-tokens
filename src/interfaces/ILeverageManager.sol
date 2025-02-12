@@ -16,8 +16,8 @@ interface ILeverageManager is IFeeManager {
     /// @notice Error thrown when someone tries to create strategy with lending adapter that already exists
     error LendingAdapterAlreadyInUse(address adapter);
 
-    /// @notice Error thrown when someone tries to deposit with an invalid borrow amount
-    error InvalidBorrowForDeposit();
+    /// @notice Error thrown when someone tries to deposit an amount of equity that would result in a debt amount of zero
+    error InvalidDebtForDeposit();
 
     /// @notice Error thrown when someone tries to set zero address for collateral or debt asset when creating strategy
     error InvalidStrategyAssets();
@@ -150,10 +150,12 @@ interface ILeverageManager is IFeeManager {
 
     /// @notice Deposits equity into a strategy and mints shares to the sender
     /// @param strategy The strategy to deposit into
-    /// @param equityInDebtAsset The amount of equity to deposit denominated in debt asset
+    /// @param equityInCollateralAsset The amount of equity to deposit denominated in the collateral asset of the strategy
     /// @param minShares The minimum amount of shares to mint
     /// @return sharesMinted The actual amount of shares minted
-    function deposit(IStrategy strategy, uint256 equityInDebtAsset, uint256 minShares) external returns (uint256);
+    function deposit(IStrategy strategy, uint256 equityInCollateralAsset, uint256 minShares)
+        external
+        returns (uint256);
 
     /// @notice Redeems shares of a strategy and withdraws assets from it, sender receives assets and caller pays debt
     /// @param strategy The strategy to redeem from

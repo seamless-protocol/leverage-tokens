@@ -197,7 +197,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         // `debtToBorrow` can be zero in cases where the equity being added to the strategy is too low wrt the current collateral ratio.
         // In cases where the strategy has little collateral, the relative change in collateral ratio will be high if only collateral is added
         if (debtToBorrow == 0) {
-            revert InvalidBorrowForDeposit();
+            revert InvalidDebtForDeposit();
         }
 
         if (sharesAfterFee < minShares) {
@@ -348,16 +348,16 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         );
     }
 
-    /// @notice Function that converts user's equity to shares, equity will be denominated in debt asset
+    /// @notice Function that converts user's equity to shares
     /// @notice Function uses OZ formula for calculating shares
     /// @param strategy Strategy to convert equity for
-    /// @param equity Equity to convert to shares, equity is denominated in debt asset
+    /// @param equityInDebtAsset Equity to convert to shares, denominated in debt asset
     /// @dev Function should be used to calculate how much shares user should receive for their equity
-    function _convertToShares(IStrategy strategy, uint256 equity) internal view returns (uint256 shares) {
+    function _convertToShares(IStrategy strategy, uint256 equityInDebtAsset) internal view returns (uint256 shares) {
         ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
 
         return Math.mulDiv(
-            equity,
+            equityInDebtAsset,
             strategy.totalSupply() + 10 ** DECIMALS_OFFSET,
             lendingAdapter.getEquityInDebtAsset() + 1,
             Math.Rounding.Floor

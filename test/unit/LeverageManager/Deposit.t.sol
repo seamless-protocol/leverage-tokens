@@ -38,7 +38,7 @@ contract DepositTest is LeverageManagerBaseTest {
         );
     }
 
-    function test_deposit_StrategyOnTargetCollateralRatio() public {
+    function test_deposit() public {
         _mockLendingAdapterExchangeRate(0.5e8); // 2:1
 
         MockLeverageManagerStateForDeposit memory beforeState =
@@ -70,12 +70,12 @@ contract DepositTest is LeverageManagerBaseTest {
 
         // Debt should be an amount that results in a CR between min and max collateral ratio
         // For maxDebtBeforeRebalance, we round down because the collateral ratio is calculated as collateral / debt,
-        // and we want to ensure that the collateral ratio is less than the max collateral ratio
+        // and we want to ensure that the collateral ratio is less than or equal to the max collateral ratio
         uint256 maxDebtBeforeRebalanceInCollateralAsset = Math.mulDiv(
             initialEquityInCollateralAsset, _BASE_RATIO(), _BASE_RATIO() + 1 - _BASE_RATIO(), Math.Rounding.Floor
         );
         // For minDebtBeforeRebalance, we round up because the collateral ratio is calculated as collateral / debt,
-        // and we want to ensure that the collateral ratio is greater than the min collateral ratio
+        // and we want to ensure that the collateral ratio is greater than or equal to the min collateral ratio
         uint256 minDebtBeforeRebalanceInCollateralAsset = Math.mulDiv(
             initialEquityInCollateralAsset, _BASE_RATIO(), 3 * _BASE_RATIO() - _BASE_RATIO(), Math.Rounding.Ceil
         );
@@ -87,7 +87,7 @@ contract DepositTest is LeverageManagerBaseTest {
             maxDebtBeforeRebalanceInCollateralAsset
         );
 
-        // Collateral should be the sum of the equity in collateral asset and the debt asset
+        // Collateral should be the sum of the equity and the debt asset (denominated in collateral asset)
         uint256 initialCollateral = initialEquityInCollateralAsset + initialDebtInCollateralAsset;
 
         _prepareLeverageManagerStateForDeposit(
@@ -98,7 +98,7 @@ contract DepositTest is LeverageManagerBaseTest {
             })
         );
 
-        // There is a small collateral ratio delta after the deposit due to rounding down in previewDeposit when calculating debtToBorrow
+        // There can be a  small collateral ratio delta after the deposit due to rounding down in previewDeposit when calculating debtToBorrow
         _testDeposit(equityToAddInCollateralAsset, 0.001e18);
     }
 
@@ -165,7 +165,7 @@ contract DepositTest is LeverageManagerBaseTest {
         assertEq(collateralToAdd, 1);
         assertEq(debtToBorrow, 0);
 
-        vm.expectRevert(ILeverageManager.InvalidBorrowForDeposit.selector);
+        vm.expectRevert(ILeverageManager.InvalidDebtForDeposit.selector);
         leverageManager.deposit(strategy, equityToAddInCollateralAsset, 0);
     }
 
@@ -275,16 +275,21 @@ contract DepositTest is LeverageManagerBaseTest {
         uint256 sharesReceived = leverageManager.deposit(strategy, equityToAddInCollateralAsset, shares);
 
         assertEq(sharesReceived, shares);
-        assertEq(strategy.balanceOf(address(this)), sharesReceived);
+        assertEq(strategy.balanceOf(address(this)), sharesReceived, "Shares received mismatch");
 
         StrategyState memory afterState = leverageManager.exposed_getStrategyState(strategy);
-        assertEq(afterState.collateral, beforeState.collateral + collateralToAdd, "Collateral mismatch");
-        assertEq(afterState.debt, beforeState.debt + debtToBorrow, "Debt mismatch");
+        assertEq(
+            afterState.collateral,
+            beforeState.collateral + collateralToAdd,
+            "Collateral in strategy after deposit mismatch"
+        );
+        assertEq(afterState.debt, beforeState.debt + debtToBorrow, "Debt in strategy after deposit mismatch");
+        assertEq(debtToken.balanceOf(address(this)), debtToBorrow, "Debt tokens received mismatch");
         assertApproxEqRel(
             afterState.collateralRatio,
             beforeState.collateralRatio,
             collateralRatioDeltaRelative,
-            "Collateral ratio mismatch"
+            "Collateral ratio after deposit mismatch"
         );
     }
 }
