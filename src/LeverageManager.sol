@@ -89,28 +89,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         return _previewDeposit(strategy, equityInCollateralAsset, _getStrategyState(strategy).collateralRatio);
     }
 
-    function _previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset, uint256 currentCollateralRatio)
-        internal
-        view
-        returns (uint256, uint256, uint256, uint256)
-    {
-        ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
-
-        uint256 equityInDebtAsset = lendingAdapter.convertCollateralToDebtAsset(equityInCollateralAsset);
-
-        uint256 sharesBeforeFee = _convertToShares(strategy, equityInDebtAsset);
-        uint256 sharesAfterFee = _computeFeeAdjustedShares(strategy, sharesBeforeFee, IFeeManager.Action.Deposit);
-
-        uint256 depositCollateralRatio = currentCollateralRatio == type(uint256).max
-            ? getStrategyTargetCollateralRatio(strategy)
-            : currentCollateralRatio;
-
-        uint256 debtToBorrow = equityInDebtAsset * BASE_RATIO / (depositCollateralRatio - BASE_RATIO);
-        uint256 collateralToAdd = equityInCollateralAsset + lendingAdapter.convertDebtToCollateralAsset(debtToBorrow);
-
-        return (collateralToAdd, debtToBorrow, sharesAfterFee, sharesBeforeFee - sharesAfterFee);
-    }
-
     /// @inheritdoc ILeverageManager
     function setStrategyTokenFactory(address factory) external onlyRole(DEFAULT_ADMIN_ROLE) {
         Storage.layout().strategyTokenFactory = IBeaconProxyFactory(factory);
@@ -201,9 +179,9 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         returns (uint256)
     {
         StrategyState memory beforeState = _getStrategyState(strategy);
-        CollateralRatios memory ratios = getStrategyCollateralRatios(strategy);
 
         {
+            CollateralRatios memory ratios = getStrategyCollateralRatios(strategy);
             bool isWithinCollateralRatioRange = beforeState.collateralRatio >= ratios.minCollateralRatio
                 && beforeState.collateralRatio <= ratios.maxCollateralRatio;
             if (!isWithinCollateralRatioRange && beforeState.collateralRatio != type(uint256).max) {
@@ -400,5 +378,32 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             debt > 0 ? Math.mulDiv(collateralInDebtAsset, BASE_RATIO, debt, Math.Rounding.Floor) : type(uint256).max;
 
         return StrategyState({collateral: collateral, debt: debt, equity: equity, collateralRatio: collateralRatio});
+    }
+
+    /// @notice Previews parameters related to a deposit action
+    /// @param strategy Strategy to preview deposit for
+    /// @param equityInCollateralAsset Equity to deposit, denominated in collateral asset
+    /// @param currentCollateralRatio Current collateral ratio of the strategy
+    /// @return (collateralToAdd, debtToBorrow, sharesAfterFee, sharesFee)
+    function _previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset, uint256 currentCollateralRatio)
+        internal
+        view
+        returns (uint256, uint256, uint256, uint256)
+    {
+        ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
+
+        uint256 equityInDebtAsset = lendingAdapter.convertCollateralToDebtAsset(equityInCollateralAsset);
+
+        uint256 sharesBeforeFee = _convertToShares(strategy, equityInDebtAsset);
+        uint256 sharesAfterFee = _computeFeeAdjustedShares(strategy, sharesBeforeFee, IFeeManager.Action.Deposit);
+
+        uint256 depositCollateralRatio = currentCollateralRatio == type(uint256).max
+            ? getStrategyTargetCollateralRatio(strategy)
+            : currentCollateralRatio;
+
+        uint256 debtToBorrow = equityInDebtAsset * BASE_RATIO / (depositCollateralRatio - BASE_RATIO);
+        uint256 collateralToAdd = equityInCollateralAsset + lendingAdapter.convertDebtToCollateralAsset(debtToBorrow);
+
+        return (collateralToAdd, debtToBorrow, sharesAfterFee, sharesBeforeFee - sharesAfterFee);
     }
 }
