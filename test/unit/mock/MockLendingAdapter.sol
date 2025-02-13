@@ -42,26 +42,34 @@ contract MockLendingAdapter {
             : amount;
     }
 
-    function convertDebtToCollateralAsset(uint256 amount) external view returns (uint256) {
+    function convertDebtToCollateralAsset(uint256 amount) public view returns (uint256) {
         return collateralToDebtAssetExchangeRate > 0
             ? Math.mulDiv(amount, BASE_EXCHANGE_RATE, collateralToDebtAssetExchangeRate, Math.Rounding.Ceil)
             : amount;
     }
 
-    function getCollateralInDebtAsset() public view returns (uint256) {
-        return collateralAsset.balanceOf(address(this)) * collateralToDebtAssetExchangeRate / BASE_EXCHANGE_RATE;
+    function getEquityInCollateralAsset() external view returns (uint256) {
+        return getCollateral() - getDebtInCollateralAsset();
     }
 
     function getEquityInDebtAsset() external view returns (uint256) {
         return getCollateralInDebtAsset() - getDebt();
     }
 
-    function getCollateral() external view returns (uint256) {
+    function getCollateral() public view returns (uint256) {
         return collateralAsset.balanceOf(address(this));
+    }
+
+    function getCollateralInDebtAsset() public view returns (uint256) {
+        return collateralAsset.balanceOf(address(this)) * collateralToDebtAssetExchangeRate / BASE_EXCHANGE_RATE;
     }
 
     function getDebt() public view returns (uint256) {
         return debt;
+    }
+
+    function getDebtInCollateralAsset() public view returns (uint256) {
+        return convertDebtToCollateralAsset(getDebt());
     }
 
     function addCollateral(uint256 amount) external {

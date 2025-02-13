@@ -57,7 +57,7 @@ contract PreviewDepositTest is LeverageManagerBaseTest {
 
         assertEq(collateralToAdd, 20 ether);
         assertEq(debtToBorrow, 20 ether);
-        assertEq(expectedShares, 19 ether);
+        assertEq(expectedShares, 19 ether - 1); // - 1 because of equity offset in convertToShares denominator
         assertEq(sharesFee, 1 ether);
     }
 
@@ -150,9 +150,9 @@ contract PreviewDepositTest is LeverageManagerBaseTest {
         lendingAdapter.mockDebt(state.debt);
         lendingAdapter.mockCollateral(state.collateral);
 
-        _mockState_ConvertToShareOrEquity(
+        _mockState_ConvertToShares(
             ConvertToSharesState({
-                totalEquity: lendingAdapter.convertCollateralToDebtAsset(state.collateral) - state.debt,
+                totalEquity: state.collateral - lendingAdapter.convertDebtToCollateralAsset(state.debt),
                 sharesTotalSupply: state.sharesTotalSupply
             })
         );

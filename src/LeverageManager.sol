@@ -351,15 +351,19 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     /// @notice Function that converts user's equity to shares
     /// @notice Function uses OZ formula for calculating shares
     /// @param strategy Strategy to convert equity for
-    /// @param equityInDebtAsset Equity to convert to shares, denominated in debt asset
+    /// @param equityInCollateralAsset Equity to convert to shares, denominated in collateral asset
     /// @dev Function should be used to calculate how much shares user should receive for their equity
-    function _convertToShares(IStrategy strategy, uint256 equityInDebtAsset) internal view returns (uint256 shares) {
+    function _convertToShares(IStrategy strategy, uint256 equityInCollateralAsset)
+        internal
+        view
+        returns (uint256 shares)
+    {
         ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
 
         return Math.mulDiv(
-            equityInDebtAsset,
+            equityInCollateralAsset,
             strategy.totalSupply() + 10 ** DECIMALS_OFFSET,
-            lendingAdapter.getEquityInDebtAsset() + 1,
+            lendingAdapter.getEquityInCollateralAsset() + 1,
             Math.Rounding.Floor
         );
     }
@@ -392,17 +396,18 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     {
         ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
 
-        uint256 equityInDebtAsset = lendingAdapter.convertCollateralToDebtAsset(equityInCollateralAsset);
-
-        uint256 sharesBeforeFee = _convertToShares(strategy, equityInDebtAsset);
+        uint256 sharesBeforeFee = _convertToShares(strategy, equityInCollateralAsset);
         uint256 sharesAfterFee = _computeFeeAdjustedShares(strategy, sharesBeforeFee, IFeeManager.Action.Deposit);
 
         uint256 depositCollateralRatio = currentCollateralRatio == type(uint256).max
             ? getStrategyTargetCollateralRatio(strategy)
             : currentCollateralRatio;
 
-        uint256 debtToBorrow = equityInDebtAsset * BASE_RATIO / (depositCollateralRatio - BASE_RATIO);
-        uint256 collateralToAdd = equityInCollateralAsset + lendingAdapter.convertDebtToCollateralAsset(debtToBorrow);
+        uint256 collateralToAdd =
+            (equityInCollateralAsset * depositCollateralRatio) / (depositCollateralRatio - BASE_RATIO);
+
+        uint256 debtToBorrowInCollateral = collateralToAdd - equityInCollateralAsset;
+        uint256 debtToBorrow = lendingAdapter.convertCollateralToDebtAsset(debtToBorrowInCollateral);
 
         return (collateralToAdd, debtToBorrow, sharesAfterFee, sharesBeforeFee - sharesAfterFee);
     }

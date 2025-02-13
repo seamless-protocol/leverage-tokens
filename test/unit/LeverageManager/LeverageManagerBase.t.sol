@@ -142,7 +142,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     }
 
     function _mockState_CalculateDebtAndShares(CalculateDebtAndSharesState memory state) internal {
-        _mockState_ConvertToShareOrEquity(
+        _mockState_ConvertToEquity(
             ConvertToSharesState({totalEquity: state.totalEquity, sharesTotalSupply: state.strategyTotalShares})
         );
 
@@ -170,9 +170,14 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         uint256 sharesTotalSupply;
     }
 
-    function _mockState_ConvertToShareOrEquity(ConvertToSharesState memory state) internal {
+    function _mockState_ConvertToShares(ConvertToSharesState memory state) internal {
         _mintShares(address(1), state.sharesTotalSupply);
-        _mockStrategyTotalEquity(state.totalEquity);
+        _mockStrategyTotalEquityInCollateralAsset(state.totalEquity);
+    }
+
+    function _mockState_ConvertToEquity(ConvertToSharesState memory state) internal {
+        _mintShares(address(1), state.sharesTotalSupply);
+        _mockStrategyTotalEquityInDebtAsset(state.totalEquity);
     }
 
     struct MintRedeemState {
@@ -193,7 +198,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         );
         lendingAdapter.mockDebt(state.debt);
         lendingAdapter.mockCollateral(state.collateralInDebt);
-        _mockStrategyTotalEquity(state.collateralInDebt - state.debt);
+        _mockStrategyTotalEquityInDebtAsset(state.collateralInDebt - state.debt);
 
         _mintShares(address(this), state.userShares);
         _mintShares(address(1), state.totalShares - state.userShares);
@@ -242,11 +247,19 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         );
     }
 
-    function _mockStrategyTotalEquity(uint256 totalEquity) internal {
+    function _mockStrategyTotalEquityInDebtAsset(uint256 equity) internal {
         vm.mockCall(
             address(leverageManager.getStrategyLendingAdapter(strategy)),
             abi.encodeWithSelector(ILendingAdapter.getEquityInDebtAsset.selector),
-            abi.encode(totalEquity)
+            abi.encode(equity)
+        );
+    }
+
+    function _mockStrategyTotalEquityInCollateralAsset(uint256 equity) internal {
+        vm.mockCall(
+            address(leverageManager.getStrategyLendingAdapter(strategy)),
+            abi.encodeWithSelector(ILendingAdapter.getEquityInCollateralAsset.selector),
+            abi.encode(equity)
         );
     }
 

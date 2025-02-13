@@ -3,14 +3,15 @@ pragma solidity ^0.8.26;
 
 // Dependency imports
 import {IMorphoBase, Market} from "@morpho-blue/interfaces/IMorpho.sol";
-import {SharesMathLib} from "@morpho-blue/libraries/SharesMathLib.sol";
+import {IOracle} from "@morpho-blue/interfaces/IOracle.sol";
+import {ORACLE_PRICE_SCALE} from "@morpho-blue/libraries/ConstantsLib.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // Internal imports
 import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
 
-contract GetDebt is MorphoLendingAdapterBaseTest {
-    function test_getDebt() public {
+contract GetDebtInCollateralAsset is MorphoLendingAdapterBaseTest {
+    function test_getDebtInCollateralAsset() public {
         uint256 borrowShares = 10e6;
 
         // MorphoBalancesLib, used by MorphoLendingAdapter, calls Morpho.extSloads to get the lendingAdapter's amount of borrow shares
@@ -30,11 +31,19 @@ contract GetDebt is MorphoLendingAdapterBaseTest {
         });
         morpho.mockSetMarket(defaultMarketId, market);
 
+        // Mock the price of the collateral asset in the debt asset to be 2:1
+        vm.mockCall(
+            address(defaultMarketParams.oracle),
+            abi.encodeWithSelector(IOracle.price.selector),
+            abi.encode(ORACLE_PRICE_SCALE / 2)
+        );
+
         assertEq(
-            lendingAdapter.getDebt(),
+            lendingAdapter.getDebtInCollateralAsset(),
             // getDebt() calls MorphoBalancesLib.expectedBorrowAssets, which uses SharesMathLib.toAssetsUp, which uses
             // the market's total borrow assets and shares and virtual offsets
             Math.mulDiv(borrowShares, market.totalBorrowAssets + 1, market.totalBorrowShares + 1e6, Math.Rounding.Ceil)
+                * 2
         );
     }
 }
