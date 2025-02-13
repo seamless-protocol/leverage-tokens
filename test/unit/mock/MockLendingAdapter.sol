@@ -17,13 +17,15 @@ contract MockLendingAdapter {
     ERC20Mock public debtAsset;
 
     uint256 public collateralToDebtAssetExchangeRate;
-    uint256 public debtAssetToCollateralExchangeRate;
 
     uint256 public debt;
 
     constructor(address _collateralAsset, address _debtAsset) {
         collateralAsset = ERC20Mock(_collateralAsset);
         debtAsset = ERC20Mock(_debtAsset);
+
+        // collateral:debt is 1:1 by default
+        collateralToDebtAssetExchangeRate = BASE_EXCHANGE_RATE;
     }
 
     function getCollateralAsset() external view returns (IERC20) {
@@ -90,9 +92,5 @@ contract MockLendingAdapter {
 
     function mockConvertCollateralToDebtAssetExchangeRate(uint256 exchangeRate) external {
         collateralToDebtAssetExchangeRate = exchangeRate;
-    }
-
-    function mockConvertDebtAssetToCollateralExchangeRate(uint256 exchangeRate) external {
-        debtAssetToCollateralExchangeRate = exchangeRate;
     }
 }

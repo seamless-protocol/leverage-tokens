@@ -6,7 +6,6 @@ import {Test, console} from "forge-std/Test.sol";
 
 // Dependency imports
 import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
-import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 
 // Internal imports
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
@@ -20,6 +19,7 @@ import {FeeManagerHarness} from "test/unit/FeeManager/harness/FeeManagerHarness.
 import {CollateralRatios} from "src/types/DataTypes.sol";
 import {BeaconProxyFactory} from "src/BeaconProxyFactory.sol";
 import {Strategy} from "src/Strategy.sol";
+import {MockERC20} from "test/unit/mock/MockERC20.sol";
 import {MockLendingAdapter} from "test/unit/mock/MockLendingAdapter.sol";
 
 contract LeverageManagerBaseTest is FeeManagerBaseTest {
@@ -27,8 +27,8 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     address public defaultAdmin = makeAddr("defaultAdmin");
     address public manager = makeAddr("manager");
 
-    ERC20Mock public collateralToken = new ERC20Mock();
-    ERC20Mock public debtToken = new ERC20Mock();
+    MockERC20 public collateralToken = new MockERC20();
+    MockERC20 public debtToken = new MockERC20();
 
     MockLendingAdapter public lendingAdapter;
 
@@ -274,10 +274,5 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
             abi.encodeWithSelector(ILendingAdapter.getCollateralInDebtAsset.selector),
             abi.encode(collateral)
         );
-    }
-
-    function _mockLendingAdapterExchangeRate(uint256 exchangeRate) internal {
-        lendingAdapter.mockConvertCollateralToDebtAssetExchangeRate(exchangeRate);
-        lendingAdapter.mockConvertDebtAssetToCollateralExchangeRate(exchangeRate);
     }
 }

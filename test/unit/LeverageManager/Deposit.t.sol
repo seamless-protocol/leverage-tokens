@@ -39,7 +39,8 @@ contract DepositTest is LeverageManagerBaseTest {
     }
 
     function test_deposit() public {
-        _mockLendingAdapterExchangeRate(0.5e8); // 2:1
+        // collateral:debt is 2:1
+        lendingAdapter.mockConvertCollateralToDebtAssetExchangeRate(0.5e8);
 
         MockLeverageManagerStateForDeposit memory beforeState =
             MockLeverageManagerStateForDeposit({collateral: 200 ether, debt: 50 ether, sharesTotalSupply: 100 ether});
@@ -66,7 +67,8 @@ contract DepositTest is LeverageManagerBaseTest {
         // actually revert in LeverageManager.deposit if debtToBorrow = 0.
         vm.assume(equityToAddInCollateralAsset > 1);
 
-        _mockLendingAdapterExchangeRate(2e8); // 1:2 exchange rate
+        // collateral:debt is 1:2
+        lendingAdapter.mockConvertCollateralToDebtAssetExchangeRate(2e8);
 
         // Debt should be an amount that results in a CR between min and max collateral ratio
         // For maxDebtBeforeRebalance, we round down because the collateral ratio is calculated as collateral / debt,
@@ -103,8 +105,6 @@ contract DepositTest is LeverageManagerBaseTest {
     }
 
     function test_deposit_RevertIf_CurrentCollateralRatioTooHigh() public {
-        _mockLendingAdapterExchangeRate(1e8); // 1:1
-
         // CR is 10x
         _prepareLeverageManagerStateForDeposit(
             MockLeverageManagerStateForDeposit({collateral: 1000 ether, debt: 100 ether, sharesTotalSupply: 100 ether})
@@ -122,8 +122,6 @@ contract DepositTest is LeverageManagerBaseTest {
     }
 
     function test_deposit_RevertIf_CurrentCollateralRatioTooLow() public {
-        _mockLendingAdapterExchangeRate(1e8); // 1:1
-
         _setStrategyCollateralRatios(
             CollateralRatios({minCollateralRatio: 2e8, targetCollateralRatio: 3e8, maxCollateralRatio: 4e8})
         );
@@ -144,8 +142,6 @@ contract DepositTest is LeverageManagerBaseTest {
     }
 
     function test_deposit_RevertIf_DebtToBorrowIsZero() public {
-        _mockLendingAdapterExchangeRate(1e8); // 1:1
-
         // CR is 3x
         _prepareLeverageManagerStateForDeposit(
             MockLeverageManagerStateForDeposit({collateral: 9, debt: 3, sharesTotalSupply: 3})
@@ -173,8 +169,6 @@ contract DepositTest is LeverageManagerBaseTest {
     function testFuzz_deposit_RevertIf_SlippageIsTooHigh(uint128 sharesSlippage) public {
         vm.assume(sharesSlippage > 0);
 
-        _mockLendingAdapterExchangeRate(1e8); // 1:1
-
         _prepareLeverageManagerStateForDeposit(
             MockLeverageManagerStateForDeposit({collateral: 100 ether, debt: 50 ether, sharesTotalSupply: 10 ether})
         );
@@ -195,8 +189,6 @@ contract DepositTest is LeverageManagerBaseTest {
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_deposit_RevertIf_CollateralCapExceeded(uint128 excessCollateral) public {
         vm.assume(excessCollateral > 0);
-
-        _mockLendingAdapterExchangeRate(1e8); // 1:1
 
         uint256 collateralBefore = 100 ether;
         _prepareLeverageManagerStateForDeposit(
@@ -225,8 +217,6 @@ contract DepositTest is LeverageManagerBaseTest {
     }
 
     function test_deposit_CurrentCollateralRatioIsMax() public {
-        _mockLendingAdapterExchangeRate(1e8); // 1:1
-
         // Zero debt means that the strategy has a collateral ratio of type(uint256).max
         MockLeverageManagerStateForDeposit memory beforeState =
             MockLeverageManagerStateForDeposit({collateral: 100 ether, debt: 0, sharesTotalSupply: 100 ether});

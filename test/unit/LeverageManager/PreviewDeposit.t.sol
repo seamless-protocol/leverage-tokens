@@ -39,7 +39,9 @@ contract PreviewDepositTest is LeverageManagerBaseTest {
 
     function test_previewDeposit_WithFee() public {
         _setStrategyActionFee(strategy, IFeeManager.Action.Deposit, 0.05e4); // 5% fee
-        _mockLendingAdapterExchangeRate(2e8); // 1:2
+
+        // 1:2 exchange rate
+        lendingAdapter.mockConvertCollateralToDebtAssetExchangeRate(2e8);
 
         MockLeverageManagerStateForPreviewDeposit memory beforeState = MockLeverageManagerStateForPreviewDeposit({
             collateral: 100 ether,
@@ -60,8 +62,6 @@ contract PreviewDepositTest is LeverageManagerBaseTest {
     }
 
     function test_previewDeposit_WithoutFee() public {
-        _mockLendingAdapterExchangeRate(1e8); // 1:1
-
         MockLeverageManagerStateForPreviewDeposit memory beforeState = MockLeverageManagerStateForPreviewDeposit({
             collateral: 100 ether,
             debt: 50 ether,
@@ -89,7 +89,6 @@ contract PreviewDepositTest is LeverageManagerBaseTest {
     ) public {
         // Ensures that the strategy has a collateral ratio < type(uint256).max by being greater than zero
         vm.assume(initialEquity > 0);
-        _mockLendingAdapterExchangeRate(1e8); // 1:1 exchange rate for simplicity
 
         fee = uint16(bound(fee, 0, 1e4)); // 0% to 100% fee
         _setStrategyActionFee(strategy, IFeeManager.Action.Deposit, fee);
@@ -129,8 +128,6 @@ contract PreviewDepositTest is LeverageManagerBaseTest {
     }
 
     function test_previewDeposit_CurrentCollateralRatioIsMax() public {
-        _mockLendingAdapterExchangeRate(1e8); // 1:1
-
         MockLeverageManagerStateForPreviewDeposit memory beforeState =
             MockLeverageManagerStateForPreviewDeposit({collateral: 100 ether, debt: 0, sharesTotalSupply: 100 ether});
 
