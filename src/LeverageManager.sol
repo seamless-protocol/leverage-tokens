@@ -182,23 +182,21 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
         {
             CollateralRatios memory ratios = getStrategyCollateralRatios(strategy);
+
             bool isWithinCollateralRatioRange = beforeState.collateralRatio >= ratios.minCollateralRatio
                 && beforeState.collateralRatio <= ratios.maxCollateralRatio;
-            if (!isWithinCollateralRatioRange && beforeState.collateralRatio != type(uint256).max) {
+            bool isStrategyEmpty = beforeState.collateral == 0 && beforeState.debt == 0;
+
+            if (!isWithinCollateralRatioRange && !isStrategyEmpty) {
                 // Cannot deposit if the strategy is not within the configured collateral ratio range and
-                // is not at max collateral ratio. Must wait for a rebalance or price action to bring the strategy back to within the range
+                // it holds any collateral or debt. Must wait for a rebalance or price action to
+                // bring the strategy back to within the range
                 revert CollateralRatioOutsideRange(beforeState.collateralRatio);
             }
         }
 
         (uint256 collateralToAdd, uint256 debtToBorrow, uint256 sharesAfterFee, uint256 sharesFee) =
             _previewDeposit(strategy, equityInCollateralAsset, beforeState.collateralRatio);
-
-        // `debtToBorrow` can be zero in cases where the equity being added to the strategy is too low wrt the current collateral ratio.
-        // In cases where the strategy has little collateral, the relative change in collateral ratio will be high if only collateral is added
-        if (debtToBorrow == 0) {
-            revert InvalidDebtForDeposit();
-        }
 
         if (sharesAfterFee < minShares) {
             revert SlippageTooHigh(sharesAfterFee, minShares);
@@ -403,8 +401,9 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             ? getStrategyTargetCollateralRatio(strategy)
             : currentCollateralRatio;
 
-        uint256 collateralToAdd =
-            (equityInCollateralAsset * depositCollateralRatio) / (depositCollateralRatio - BASE_RATIO);
+        uint256 collateralToAdd = Math.mulDiv(
+            equityInCollateralAsset, depositCollateralRatio, depositCollateralRatio - BASE_RATIO, Math.Rounding.Ceil
+        );
 
         uint256 debtToBorrowInCollateral = collateralToAdd - equityInCollateralAsset;
         uint256 debtToBorrow = lendingAdapter.convertCollateralToDebtAsset(debtToBorrowInCollateral);
