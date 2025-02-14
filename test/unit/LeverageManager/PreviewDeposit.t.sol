@@ -49,6 +49,17 @@ contract PreviewDepositTest is DepositTest {
         assertEq(sharesFee, 0);
     }
 
+    function test_previewDeposit_ZeroEquityToAdd() public view {
+        uint256 equityToAdd = 0;
+        (uint256 collateralToAdd, uint256 debtToBorrow, uint256 expectedShares, uint256 sharesFee) =
+            leverageManager.previewDeposit(strategy, equityToAdd);
+
+        assertEq(collateralToAdd, 0);
+        assertEq(debtToBorrow, 0);
+        assertEq(expectedShares, 0);
+        assertEq(sharesFee, 0);
+    }
+
     function testFuzz_previewDeposit(
         uint128 initialCollateral,
         uint128 initialDebtInCollateralAsset,

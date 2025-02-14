@@ -146,7 +146,7 @@ contract DepositTest is LeverageManagerBaseTest {
         assertEq(collateralToAdd, 0);
         assertEq(debtToBorrow, 0);
 
-        _testDeposit(equityToAddInCollateralAsset, _getAllowedCollateralRatioSlippage(0));
+        _testDeposit(equityToAddInCollateralAsset, 0);
     }
 
     /// forge-config: default.fuzz.runs = 1
