@@ -256,7 +256,7 @@ contract DepositTest is LeverageManagerBaseTest {
         uint256 i = Math.log10(initialCollateral);
 
         // This is the maximum slippage that we can support due to the precision of the collateral ratio being
-        // 1e8 (1e18 - 1e18 = 0.00000001e18 = 1e10)
+        // 1e8 (1e18 / 1e8 = 1e10 = 0.00000001e18)
         if (i > 8) return 0.00000001e18;
 
         // If i <= 1, that means initialCollateral < 100, thus slippage = 1e18
