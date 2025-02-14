@@ -244,22 +244,22 @@ contract DepositTest is LeverageManagerBaseTest {
     ///
     /// Note: We can at maximum support up to 0.00000001e18 (0.000001% slippage) due to the base collateral ratio
     ///       being 1e8
-    function _getAllowedCollateralRatioSlippage(uint256 collateral)
+    function _getAllowedCollateralRatioSlippage(uint256 initialCollateral)
         internal
         pure
         returns (uint256 allowedSlippagePercentage)
     {
-        if (collateral == 0) {
+        if (initialCollateral == 0) {
             return 0;
         }
 
-        uint256 i = Math.log10(collateral);
+        uint256 i = Math.log10(initialCollateral);
 
         // This is the maximum slippage that we can support due to the precision of the collateral ratio being
         // 1e8 (1e18 - 1e18 = 0.00000001e18 = 1e10)
         if (i > 8) return 0.00000001e18;
 
-        // If i <= 1, that means n < 100, thus slippage = 1e18
+        // If i <= 1, that means initialCollateral < 100, thus slippage = 1e18
         // Otherwise slippage = 1e18 / (10^(i - 1))
         return (i <= 1) ? 1e18 : (1e18 / (10 ** (i - 1)));
     }
