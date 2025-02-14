@@ -397,6 +397,9 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         uint256 sharesBeforeFee = _convertToShares(strategy, equityInCollateralAsset);
         uint256 sharesAfterFee = _computeFeeAdjustedShares(strategy, sharesBeforeFee, IFeeManager.Action.Deposit);
 
+        // If the strategy currently has no debt (and thus collateral ratio is `type(uint256).max`), then the deposit
+        // preview should use the target ratio of the strategy for determining how much collateral to add and how
+        // much debt to borrow
         uint256 depositCollateralRatio = currentCollateralRatio == type(uint256).max
             ? getStrategyTargetCollateralRatio(strategy)
             : currentCollateralRatio;
