@@ -222,8 +222,9 @@ contract DepositTest is LeverageManagerBaseTest {
         assertEq(afterState.collateralRatio, 2 * _BASE_RATIO(), "Collateral ratio mismatch");
     }
 
-    /// @dev The allowed slippage for a deposit should scale with the size of the initial collateral in the strategy,
-    /// as smaller strategies may incur a higher collateral ratio delta after the deposit due to rounding.
+    /// @dev The allowed slippage in collateral ratio of the strategy after a deposit should scale with the size of the
+    /// initial collateral in the strategy, as smaller strategies may incur a higher collateral ratio delta after the
+    /// deposit due to rounding.
     ///
     /// For example, if the initial collateral is 3 and the initial debt is 1 (with collateral and debt normalized) then the
     /// collateral ratio is 300000000. If a deposit of 1 equity is made, then the required collateral is 2 and the required
