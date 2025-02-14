@@ -56,6 +56,8 @@ contract PreviewDepositTest is DepositTest {
         uint128 equityToAddInCollateralAsset,
         uint16 fee
     ) public {
+        equityToAddInCollateralAsset = uint128(bound(equityToAddInCollateralAsset, 1, type(uint128).max));
+
         fee = uint16(bound(fee, 0, 1e4)); // 0% to 100% fee
         _setStrategyActionFee(strategy, IFeeManager.Action.Deposit, fee);
 
@@ -85,8 +87,6 @@ contract PreviewDepositTest is DepositTest {
                 sharesTotalSupply: sharesTotalSupply
             })
         );
-
-        equityToAddInCollateralAsset = uint128(bound(equityToAddInCollateralAsset, 1, type(uint64).max));
 
         (uint256 collateralToAdd, uint256 debtToBorrow, uint256 shares, uint256 sharesFee) =
             leverageManager.previewDeposit(strategy, equityToAddInCollateralAsset);

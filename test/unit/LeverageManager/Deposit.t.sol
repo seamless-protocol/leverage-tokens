@@ -59,8 +59,16 @@ contract DepositTest is LeverageManagerBaseTest {
     ) public {
         // If the initial collateral is 1, the amount of debt in the strategy will be calculated as either 0 or 1 if we
         // calculate the initial debt to respect the min and max collateral ratios, as we do in this test. That would
-        // result in an initial collateral ratio of either type(uint256).max or 1e8, which would revert the deposit.
+        // result in an initial collateral ratio of either type(uint256).max or 1e8, which both would revert the deposit.
+        //     - 1 collateral and 1 debtInCollateralAsset would result in a CR of 1e8. This causes a revert in previewDeposit
+        //       due to division by zero for the calculation of collateralToAdd. This also implies a 100% CR - in practice,
+        //       the strategy should be rebalanced before this point (or liquidated)
+        //     - 1 collateral and 0 debtInCollateralAsset would result in a CR of type(uint256).max. This causes a revert
+        //       in deposit because the strategy is not within the collateral ratio range and it holds > 0 collateral or debt.
+        //       The strategy must be rebalanced (or price action must occur) before a deposit can occur
         vm.assume(initialCollateral != 1);
+
+        equityToAddInCollateralAsset = uint128(bound(equityToAddInCollateralAsset, 1, type(uint128).max));
 
         // collateral:debt is 1:2
         lendingAdapter.mockConvertCollateralToDebtAssetExchangeRate(2e8);
@@ -83,8 +91,6 @@ contract DepositTest is LeverageManagerBaseTest {
                 sharesTotalSupply: sharesTotalSupply
             })
         );
-
-        equityToAddInCollateralAsset = uint128(bound(equityToAddInCollateralAsset, 1, type(uint128).max));
 
         uint256 allowedSlippage = _getAllowedCollateralRatioSlippage(initialCollateral);
         _testDeposit(equityToAddInCollateralAsset, allowedSlippage);
@@ -194,7 +200,7 @@ contract DepositTest is LeverageManagerBaseTest {
         leverageManager.deposit(strategy, equityToAddInCollateralAsset, 0);
     }
 
-    function test_deposit_EmptyStrategy() public {
+    function test_deposit_IsEmptyStrategy() public {
         MockLeverageManagerStateForDeposit memory beforeState =
             MockLeverageManagerStateForDeposit({collateral: 0, debt: 0, sharesTotalSupply: 0});
 
