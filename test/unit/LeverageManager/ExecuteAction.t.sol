@@ -6,6 +6,7 @@ import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol"
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 
 // Internal imports
+import {IRebalanceProfitDistributor} from "src/interfaces/IRebalanceProfitDistributor.sol";
 import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
@@ -31,7 +32,7 @@ contract ExecuteActionTest is LeverageManagerBaseTest {
                 maxCollateralRatio: _BASE_RATIO() + 2,
                 targetCollateralRatio: _BASE_RATIO() + 1,
                 collateralCap: type(uint256).max,
-                rebalanceRewardPercentage: 0,
+                rebalanceProfitDistributor: IRebalanceProfitDistributor(address(0)),
                 rebalanceWhitelist: IRebalanceWhitelist(address(0))
             }),
             address(collateralToken),

@@ -13,6 +13,7 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {SignedMath} from "@openzeppelin/contracts/utils/math/SignedMath.sol";
 
 // Internal imports
+import {IRebalanceProfitDistributor} from "src/interfaces/IRebalanceProfitDistributor.sol";
 import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {IBeaconProxyFactory} from "src/interfaces/IBeaconProxyFactory.sol";
@@ -64,8 +65,12 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function getStrategyRebalanceReward(IStrategy strategy) public view returns (uint256 reward) {
-        return Storage.layout().config[strategy].rebalanceRewardPercentage;
+    function getStrategyRebalanceProfitDistributor(IStrategy strategy)
+        public
+        view
+        returns (IRebalanceProfitDistributor distributor)
+    {
+        return Storage.layout().config[strategy].rebalanceProfitDistributor;
     }
 
     function getStrategyRebalanceWhitelist(IStrategy strategy) public view returns (IRebalanceWhitelist whitelist) {
@@ -126,7 +131,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
         setStrategyLendingAdapter(strategy, address(strategyConfig.lendingAdapter));
         setStrategyCollateralCap(strategy, strategyConfig.collateralCap);
-        setStrategyRebalanceReward(strategy, strategyConfig.rebalanceRewardPercentage);
+        setStrategyRebalanceProfitDistributor(strategy, strategyConfig.rebalanceProfitDistributor);
         setStrategyCollateralRatios(
             strategy,
             CollateralRatios({
@@ -189,13 +194,12 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function setStrategyRebalanceReward(IStrategy strategy, uint256 reward) public onlyRole(MANAGER_ROLE) {
-        if (reward > BASE_REWARD_PERCENTAGE) {
-            revert InvalidRewardPercentage(reward);
-        }
-
-        Storage.layout().config[strategy].rebalanceRewardPercentage = reward;
-        emit StrategyRebalanceRewardSet(strategy, reward);
+    function setStrategyRebalanceProfitDistributor(IStrategy strategy, IRebalanceProfitDistributor distributor)
+        public
+        onlyRole(MANAGER_ROLE)
+    {
+        Storage.layout().config[strategy].rebalanceProfitDistributor = distributor;
+        emit StrategyRebalanceProfitDistributorSet(strategy, distributor);
     }
 
     /// @inheritdoc ILeverageManager
@@ -438,11 +442,10 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     ) internal view {
         uint256 equityBefore = stateBefore.equity;
         uint256 equityAfter = stateAfter.equity;
-        uint256 debtBefore = stateBefore.debt;
-        uint256 debtAfter = stateAfter.debt;
 
-        uint256 debtChange = (debtAfter.toInt256() - debtBefore.toInt256()).abs();
-        uint256 reward = Math.mulDiv(debtChange, getStrategyRebalanceReward(strategy), BASE_REWARD_PERCENTAGE);
+        uint256 reward = getStrategyRebalanceProfitDistributor(strategy).calculateRebalanceReward(
+            address(strategy), stateBefore, stateAfter
+        );
 
         if (equityAfter < equityBefore - reward) {
             revert EquityLossTooBig();

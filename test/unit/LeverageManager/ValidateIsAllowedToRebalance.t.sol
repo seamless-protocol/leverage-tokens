@@ -22,7 +22,7 @@ contract ValidateIsAllowedToRebalance is LeverageManagerBaseTest {
         super.setUp();
     }
 
-    function test_validateIsAllowedToRebalance_RebalanceWhitelistIsZeroAddress() public {
+    function test_validateIsAllowedToRebalance_RebalanceWhitelistIsZeroAddress() public view {
         // Should not revert because rebalance whitelist is zero address which means everyone can rebalance
         leverageManager.exposed_validateIsAllowedToRebalance(strategy);
     }
@@ -30,6 +30,8 @@ contract ValidateIsAllowedToRebalance is LeverageManagerBaseTest {
     function test_validateIsAllowedToRebalance_RebalanceWhitelistIsNotZeroAddress(IRebalanceWhitelist whitelist)
         public
     {
+        vm.assume(address(whitelist) != address(0));
+
         _setStrategyRebalanceWhitelist(manager, whitelist);
 
         vm.mockCall(

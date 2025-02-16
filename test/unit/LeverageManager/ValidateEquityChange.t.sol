@@ -9,6 +9,7 @@ import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol"
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 
 // Internal imports
+import {IRebalanceProfitDistributor} from "src/interfaces/IRebalanceProfitDistributor.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
@@ -19,12 +20,9 @@ import {StrategyState} from "src/types/DataTypes.sol";
 contract ValidateEquityChangeTest is LeverageManagerBaseTest {
     function setUp() public override {
         super.setUp();
-
-        vm.prank(manager);
-        leverageManager.setStrategyRebalanceReward(strategy, 10_000); // 10%
     }
 
-    function test_validateEquityChange() public view {
+    function test_validateEquityChange() public {
         StrategyState memory stateBefore = StrategyState({
             collateral: 100 ether, // not important for this test
             debt: 50 ether,
@@ -37,6 +35,17 @@ contract ValidateEquityChangeTest is LeverageManagerBaseTest {
             equity: 48 ether,
             collateralRatio: 200 // not important for this test
         });
+
+        vm.mockCall(
+            address(leverageManager.getStrategyRebalanceProfitDistributor(strategy)),
+            abi.encodeWithSelector(
+                IRebalanceProfitDistributor.calculateRebalanceReward.selector,
+                address(strategy),
+                stateBefore,
+                stateAfter
+            ),
+            abi.encode(2 ether)
+        );
 
         // Should not revert because 10% is reward, debt changed for 20 ether to he can take 2 ether as reward
         leverageManager.exposed_validateEquityChange(strategy, stateBefore, stateAfter);
@@ -55,6 +64,17 @@ contract ValidateEquityChangeTest is LeverageManagerBaseTest {
             equity: 47 ether,
             collateralRatio: 200 // not important for this test
         });
+
+        vm.mockCall(
+            address(leverageManager.getStrategyRebalanceProfitDistributor(strategy)),
+            abi.encodeWithSelector(
+                IRebalanceProfitDistributor.calculateRebalanceReward.selector,
+                address(strategy),
+                stateBefore,
+                stateAfter
+            ),
+            abi.encode(2 ether)
+        );
 
         vm.expectRevert(ILeverageManager.EquityLossTooBig.selector);
         leverageManager.exposed_validateEquityChange(strategy, stateBefore, stateAfter);

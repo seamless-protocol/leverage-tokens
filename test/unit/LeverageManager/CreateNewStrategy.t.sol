@@ -37,8 +37,6 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
             targetCollateralRatio > _BASE_RATIO() && minCollateralRatio <= targetCollateralRatio
                 && targetCollateralRatio <= maxCollateralRatio
         );
-        config.rebalanceRewardPercentage =
-            bound(config.rebalanceRewardPercentage, 0, leverageManager.BASE_REWARD_PERCENTAGE());
 
         address expectedStrategyAddress = strategyTokenFactory.computeProxyAddress(
             address(leverageManager),

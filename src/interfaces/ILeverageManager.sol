@@ -12,6 +12,7 @@ import {IBeaconProxyFactory} from "./IBeaconProxyFactory.sol";
 import {ILendingAdapter} from "./ILendingAdapter.sol";
 import {LeverageManagerStorage as Storage} from "../storage/LeverageManagerStorage.sol";
 import {RebalanceAction, TokenTransfer} from "src/types/DataTypes.sol";
+import {IRebalanceProfitDistributor} from "./IRebalanceProfitDistributor.sol";
 
 interface ILeverageManager {
     /// @notice Error thrown when someone tries to create strategy with lending adapter that already exists
@@ -64,8 +65,8 @@ interface ILeverageManager {
     /// @notice Event emitted when collateral caps are set/changed for a strategy
     event StrategyCollateralCapSet(IStrategy indexed strategy, uint256 collateralCap);
 
-    /// @notice Event emitted when rebalance reward is set for a strategy
-    event StrategyRebalanceRewardSet(IStrategy indexed strategy, uint256 reward);
+    /// @notice Event emitted when rebalance reward distributor is set for a strategy
+    event StrategyRebalanceProfitDistributorSet(IStrategy indexed strategy, IRebalanceProfitDistributor distributor);
 
     /// @notice Event emitted when rebalance whitelist is set for a strategy
     event StrategyRebalanceWhitelistSet(IStrategy indexed strategy, IRebalanceWhitelist whitelist);
@@ -102,10 +103,13 @@ interface ILeverageManager {
     /// @return debtAsset Debt asset for the strategy
     function getStrategyDebtAsset(IStrategy strategy) external view returns (IERC20 debtAsset);
 
-    /// @notice Returns reward for rebalancing strategy
-    /// @param strategy Strategy to get reward for
-    /// @return reward Reward for rebalancing strategy, percentage of debt change where 100_00 = 100%
-    function getStrategyRebalanceReward(IStrategy strategy) external view returns (uint256 reward);
+    /// @notice Returns module for distributing rewards for rebalancing strategy
+    /// @param strategy Strategy to get module for
+    /// @return distributor Module for distributing rewards for rebalancing strategy
+    function getStrategyRebalanceProfitDistributor(IStrategy strategy)
+        external
+        view
+        returns (IRebalanceProfitDistributor distributor);
 
     /// @notice Returns rebalance whitelist module for strategy
     /// @param strategy Strategy to get rebalance whitelist for
@@ -169,11 +173,12 @@ interface ILeverageManager {
     /// @dev Only address with MANAGER role can call this function
     function setStrategyCollateralCap(IStrategy strategy, uint256 collateralCap) external;
 
-    /// @notice Sets reward for rebalancing strategy
-    /// @param strategy Strategy to set reward for
-    /// @param reward Reward for rebalancing strategy, percentage of debt change where 100_00 = 100%
+    /// @notice Sets rebalance reward distributor module for strategy
+    /// @param strategy Strategy to set rebalance reward distributor for
+    /// @param distributor Rebalance reward distributor module
     /// @dev Only address with MANAGER role can call this function
-    function setStrategyRebalanceReward(IStrategy strategy, uint256 reward) external;
+    function setStrategyRebalanceProfitDistributor(IStrategy strategy, IRebalanceProfitDistributor distributor)
+        external;
 
     /// @notice Sets rebalance whitelist module for strategy
     /// @param strategy Strategy to set rebalance whitelist for

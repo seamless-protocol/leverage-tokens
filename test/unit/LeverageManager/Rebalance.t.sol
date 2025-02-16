@@ -10,11 +10,13 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 
 // Internal imports
+import {IRebalanceProfitDistributor} from "src/interfaces/IRebalanceProfitDistributor.sol";
 import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {LeverageManagerBaseTest} from "test/unit/LeverageManager/LeverageManagerBase.t.sol";
 import {MockLendingAdapterRebalance} from "test/unit/mock/MockLendingAdapterRebalance.sol";
+import {MockRebalanceProfitDistributor} from "test/unit/mock/MockRebalanceProfitDistributor.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
@@ -23,6 +25,7 @@ import {RebalanceAction, ActionType, TokenTransfer, StrategyState} from "src/typ
 contract RebalanceTest is LeverageManagerBaseTest {
     ERC20Mock public WETH = new ERC20Mock();
     ERC20Mock public USDC = new ERC20Mock();
+    MockRebalanceProfitDistributor public profitDistributor = new MockRebalanceProfitDistributor();
     MockLendingAdapterRebalance public adapter;
 
     function setUp() public override {
@@ -38,7 +41,7 @@ contract RebalanceTest is LeverageManagerBaseTest {
                 maxCollateralRatio: 25 * _BASE_RATIO() / 10, // 2.5x leverage
                 targetCollateralRatio: 2 * _BASE_RATIO(), // 2x leverage
                 collateralCap: type(uint256).max,
-                rebalanceRewardPercentage: 10_000, // 10% reward
+                rebalanceProfitDistributor: IRebalanceProfitDistributor(address(profitDistributor)),
                 rebalanceWhitelist: IRebalanceWhitelist(address(0))
             }),
             address(WETH),
@@ -164,7 +167,7 @@ contract RebalanceTest is LeverageManagerBaseTest {
                 maxCollateralRatio: 16 * _BASE_RATIO() / 10, // 3.5x leverage
                 targetCollateralRatio: 15 * _BASE_RATIO() / 10, // 3x leverage which means 2x price exposure
                 collateralCap: type(uint256).max,
-                rebalanceRewardPercentage: 10_000, // 10% reward
+                rebalanceProfitDistributor: IRebalanceProfitDistributor(address(profitDistributor)),
                 rebalanceWhitelist: IRebalanceWhitelist(address(0))
             }),
             "ETH Short 2x",

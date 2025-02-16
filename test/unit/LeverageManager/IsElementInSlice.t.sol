@@ -18,7 +18,7 @@ contract TransferTokensTest is LeverageManagerBaseTest {
         super.setUp();
     }
 
-    function test_IsElementInSlice() public {
+    function test_IsElementInSlice() public view {
         RebalanceAction[] memory actions = new RebalanceAction[](4);
 
         actions[0] =
