@@ -27,12 +27,6 @@ struct TokenTransfer {
     uint256 amount;
 }
 
-struct StrategyStateOnRebalance {
-    uint256 collateralRatio;
-    uint256 equity;
-    uint256 debt;
-}
-
 struct StrategyState {
     uint256 collateral;
     uint256 debt;
