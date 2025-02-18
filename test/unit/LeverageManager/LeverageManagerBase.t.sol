@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-// Forge imports
-import {Test, console} from "forge-std/Test.sol";
-
 // Dependency imports
 import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
+import {IRebalanceProfitDistributor} from "src/interfaces/IRebalanceProfitDistributor.sol";
+import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 import {LeverageManager} from "src/LeverageManager.sol";
-import {LeverageManagerHarness} from "test/unit/LeverageManager/harness/LeverageManagerHarness.sol";
+import {LeverageManagerHarness} from "test/unit/LeverageManager/harness/LeverageManagerHarness.t.sol";
 import {FeeManagerBaseTest} from "test/unit/FeeManager/FeeManagerBase.t.sol";
 import {FeeManagerHarness} from "test/unit/FeeManager/harness/FeeManagerHarness.sol";
 import {CollateralRatios} from "src/types/DataTypes.sol";
@@ -83,7 +83,9 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
                     minCollateralRatio: _BASE_RATIO(),
                     maxCollateralRatio: _BASE_RATIO() + 2,
                     targetCollateralRatio: _BASE_RATIO() + 1,
-                    collateralCap: type(uint256).max
+                    collateralCap: type(uint256).max,
+                    rebalanceProfitDistributor: IRebalanceProfitDistributor(address(0)),
+                    rebalanceWhitelist: IRebalanceWhitelist(address(0))
                 }),
                 address(0),
                 address(0),
@@ -104,16 +106,18 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         vm.mockCall(
             address(config.lendingAdapter),
             abi.encodeWithSelector(ILendingAdapter.getCollateralAsset.selector),
-            abi.encode(collateralAsset)
+            abi.encode(IERC20(collateralAsset))
         );
         vm.mockCall(
             address(config.lendingAdapter),
             abi.encodeWithSelector(ILendingAdapter.getDebtAsset.selector),
-            abi.encode(debtAsset)
+            abi.encode(IERC20(debtAsset))
         );
 
-        vm.prank(caller);
+        vm.startPrank(caller);
         strategy = leverageManager.createNewStrategy(config, name, symbol);
+        vm.stopPrank();
+
         return strategy;
     }
 
@@ -125,6 +129,11 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     function _setStrategyCollateralCap(address caller, uint256 cap) internal {
         vm.prank(caller);
         leverageManager.setStrategyCollateralCap(strategy, cap);
+    }
+
+    function _setStrategyRebalanceProfitDistributor(address caller, IRebalanceProfitDistributor distributor) internal {
+        vm.prank(caller);
+        leverageManager.setStrategyRebalanceProfitDistributor(strategy, distributor);
     }
 
     function _mintShares(address recipient, uint256 amount) internal {
@@ -222,6 +231,9 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     ) internal {
         _mockStrategyCollateralInDebtAsset(state.collateralInDebt);
         _mockStrategyDebt(state.debt);
+        _mockStrategyTotalEquityInDebtAsset(
+            state.collateralInDebt > state.debt ? state.collateralInDebt - state.debt : 0
+        );
         _setStrategyCollateralRatios(
             CollateralRatios({
                 minCollateralRatio: 0,
@@ -261,6 +273,11 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
             abi.encodeWithSelector(ILendingAdapter.getEquityInCollateralAsset.selector),
             abi.encode(equity)
         );
+    }
+
+    function _setStrategyRebalanceWhitelist(address caller, IRebalanceWhitelist whitelist) internal {
+        vm.prank(caller);
+        leverageManager.setStrategyRebalanceWhitelist(strategy, whitelist);
     }
 
     function _setStrategyActionFee(IStrategy _strategy, IFeeManager.Action action, uint256 fee) internal {

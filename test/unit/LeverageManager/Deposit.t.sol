@@ -8,6 +8,8 @@ import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
+import {IRebalanceProfitDistributor} from "src/interfaces/IRebalanceProfitDistributor.sol";
+import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 import {CollateralRatios, StrategyState} from "src/types/DataTypes.sol";
 import {LeverageManagerBaseTest} from "../LeverageManager/LeverageManagerBase.t.sol";
@@ -29,7 +31,9 @@ contract DepositTest is LeverageManagerBaseTest {
                 minCollateralRatio: _BASE_RATIO() + 1,
                 maxCollateralRatio: 3 * _BASE_RATIO(),
                 targetCollateralRatio: 2 * _BASE_RATIO(), // 2x leverage
-                collateralCap: type(uint256).max
+                collateralCap: type(uint256).max,
+                rebalanceProfitDistributor: IRebalanceProfitDistributor(address(0)),
+                rebalanceWhitelist: IRebalanceWhitelist(address(0))
             }),
             address(collateralToken),
             address(debtToken),
@@ -217,7 +221,7 @@ contract DepositTest is LeverageManagerBaseTest {
         StrategyState memory afterState = leverageManager.exposed_getStrategyState(strategy);
         assertEq(
             afterState.collateral,
-            beforeState.collateral + collateralToAdd,
+            beforeState.collateral + lendingAdapter.convertCollateralToDebtAsset(collateralToAdd),
             "Collateral in strategy after deposit mismatch"
         );
         assertEq(collateralAdded, collateralToAdd, "Collateral added mismatch");
