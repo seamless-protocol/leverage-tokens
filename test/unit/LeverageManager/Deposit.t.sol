@@ -125,18 +125,17 @@ contract DepositTest is LeverageManagerBaseTest {
         _prepareLeverageManagerStateForDeposit(beforeState);
 
         uint256 equityToAddInCollateralAsset = 10 ether;
-        (uint256 collateralToAdd, uint256 debtToBorrow, uint256 shares,) =
-            leverageManager.exposed_previewDeposit(strategy, equityToAddInCollateralAsset);
+        uint256 collateralToAdd = 20 ether; // 2x CR
 
         deal(address(collateralToken), address(this), collateralToAdd);
         collateralToken.approve(address(leverageManager), collateralToAdd);
 
         // Does not revert
-        leverageManager.deposit(strategy, equityToAddInCollateralAsset, shares);
+        leverageManager.deposit(strategy, equityToAddInCollateralAsset, equityToAddInCollateralAsset - 1);
 
         StrategyState memory afterState = leverageManager.exposed_getStrategyState(strategy);
-        assertEq(afterState.collateral, collateralToAdd, "Collateral mismatch");
-        assertEq(afterState.debt, debtToBorrow, "Debt mismatch");
+        assertEq(afterState.collateral, 20 ether, "Collateral mismatch");
+        assertEq(afterState.debt, 10 ether, "Debt mismatch");
         assertEq(afterState.collateralRatio, 2 * _BASE_RATIO(), "Collateral ratio mismatch");
     }
 
