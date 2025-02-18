@@ -24,13 +24,13 @@ contract ValidateEquityChangeTest is LeverageManagerBaseTest {
 
     function test_validateEquityChange() public {
         StrategyState memory stateBefore = StrategyState({
-            collateral: 100 ether, // not important for this test
+            collateralInDebtAsset: 100 ether, // not important for this test
             debt: 50 ether,
             equity: 50 ether,
             collateralRatio: 200 // not important for this test
         });
         StrategyState memory stateAfter = StrategyState({
-            collateral: 100 ether, // not important for this test
+            collateralInDebtAsset: 100 ether, // not important for this test
             debt: 70 ether,
             equity: 48 ether,
             collateralRatio: 200 // not important for this test
@@ -50,13 +50,13 @@ contract ValidateEquityChangeTest is LeverageManagerBaseTest {
 
     function test_validateEquityChange_RevertIf_ChangeTooBig() public {
         StrategyState memory stateBefore = StrategyState({
-            collateral: 100 ether, // not important for this test
+            collateralInDebtAsset: 100 ether, // not important for this test
             debt: 50 ether,
             equity: 50 ether,
             collateralRatio: 200 // not important for this test
         });
         StrategyState memory stateAfter = StrategyState({
-            collateral: 100 ether, // not important for this test
+            collateralInDebtAsset: 100 ether, // not important for this test
             debt: 70 ether,
             equity: 47 ether,
             collateralRatio: 200 // not important for this test

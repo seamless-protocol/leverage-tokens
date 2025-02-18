@@ -28,7 +28,7 @@ contract GetStrategyStateTest is LeverageManagerBaseTest {
         );
 
         StrategyState memory state = leverageManager.exposed_getStrategyState(strategy);
-        assertEq(state.collateral, 200 ether);
+        assertEq(state.collateralInDebtAsset, 200 ether);
         assertEq(state.debt, 100 ether);
         assertEq(state.collateralRatio, 2 * _BASE_RATIO());
     }
@@ -43,7 +43,7 @@ contract GetStrategyStateTest is LeverageManagerBaseTest {
         );
 
         StrategyState memory state = leverageManager.exposed_getStrategyState(strategy);
-        assertEq(state.collateral, 200 ether);
+        assertEq(state.collateralInDebtAsset, 200 ether);
         assertEq(state.debt, 0);
         assertEq(state.collateralRatio, type(uint256).max);
     }
