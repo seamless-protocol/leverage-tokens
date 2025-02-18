@@ -47,8 +47,8 @@ contract CalculateCollateralAndDebtToCoverEquityTest is LeverageManagerBaseTest 
             strategy, _getLendingAdapter(), equity, IFeeManager.Action.Deposit
         );
 
-        // assertEq(collateral, debtToCollateral);
-        // assertEq(debtToCoverEquity, expectedDebt);
+        assertEq(collateral, debtToCollateral);
+        assertEq(debtToCoverEquity, expectedDebt);
     }
 
     function test_calculateCollateralAndDebtToCoverEquity_DepositUnderCollateralized_EquityCoversDeficit() public {
