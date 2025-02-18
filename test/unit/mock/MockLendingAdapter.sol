@@ -77,7 +77,7 @@ contract MockLendingAdapter {
     }
 
     function removeCollateral(uint256 amount) external {
-        collateralAsset.mint(msg.sender, amount);
+        SafeERC20.safeTransfer(collateralAsset, msg.sender, amount);
     }
 
     function borrow(uint256 amount) external {

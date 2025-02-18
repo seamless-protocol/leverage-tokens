@@ -15,7 +15,7 @@ import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {LeverageManagerBaseTest} from "test/unit/LeverageManager/LeverageManagerBase.t.sol";
-import {MockLendingAdapterRebalance} from "test/unit/mock/MockLendingAdapterRebalance.sol";
+import {MockLendingAdapter} from "test/unit/mock/MockLendingAdapter.sol";
 import {MockRebalanceProfitDistributor} from "test/unit/mock/MockRebalanceProfitDistributor.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
@@ -26,12 +26,12 @@ contract RebalanceTest is LeverageManagerBaseTest {
     ERC20Mock public WETH = new ERC20Mock();
     ERC20Mock public USDC = new ERC20Mock();
     MockRebalanceProfitDistributor public profitDistributor = new MockRebalanceProfitDistributor();
-    MockLendingAdapterRebalance public adapter;
+    MockLendingAdapter public adapter;
 
     function setUp() public override {
         super.setUp();
 
-        adapter = new MockLendingAdapterRebalance(address(WETH), address(USDC));
+        adapter = new MockLendingAdapter(address(WETH), address(USDC));
 
         _createNewStrategy(
             manager,
@@ -52,7 +52,7 @@ contract RebalanceTest is LeverageManagerBaseTest {
     }
 
     function test_Rebalance_SimpleRebalanceSingleStrategy_Overcollateralized() public {
-        adapter.setCollateralToDebtExchangeRate(2_000_00000000); // ETH = 2000 USDC
+        adapter.mockConvertCollateralToDebtAssetExchangeRate(2_000_00000000); // ETH = 2000 USDC
         adapter.mockCollateral(10 ether); // 10 ETH = 20,000 USDC
         adapter.mockDebt(5_000 ether); // 5,000 USDC
 
@@ -86,7 +86,7 @@ contract RebalanceTest is LeverageManagerBaseTest {
     }
 
     function test_Rebalance_SimpleRebalanceSingleStrategy_RebalancerTakesReward_Overcollateralized() public {
-        adapter.setCollateralToDebtExchangeRate(2_000_00000000); // ETH = 2000 USDC
+        adapter.mockConvertCollateralToDebtAssetExchangeRate(2_000_00000000); // ETH = 2000 USDC
         adapter.mockCollateral(10 ether); // 10 ETH = 20,000 USDC
         adapter.mockDebt(5_000 ether); // 5,000 USDC
 
@@ -120,7 +120,7 @@ contract RebalanceTest is LeverageManagerBaseTest {
     }
 
     function test_Rebalance_SimpleRebalanceSingleStrategy_RebalancerTakesReward_Undercollateralized() public {
-        adapter.setCollateralToDebtExchangeRate(2_000_00000000); // ETH = 2000 USDC, mock ETH price
+        adapter.mockConvertCollateralToDebtAssetExchangeRate(2_000_00000000); // ETH = 2000 USDC, mock ETH price
         adapter.mockCollateral(10 ether); // 10 ETH = 20,000 USDC
         adapter.mockDebt(15_000 ether); // 15,000 USDC
 
@@ -156,8 +156,8 @@ contract RebalanceTest is LeverageManagerBaseTest {
 
     function test_Rebalance_MultipleStrategies_MoveFundsAcrossStrategies() public {
         IStrategy ethLong = strategy;
-        MockLendingAdapterRebalance ethLongAdapter = adapter;
-        MockLendingAdapterRebalance ethShortAdapter = new MockLendingAdapterRebalance(address(USDC), address(WETH));
+        MockLendingAdapter ethLongAdapter = adapter;
+        MockLendingAdapter ethShortAdapter = new MockLendingAdapter(address(USDC), address(WETH));
 
         vm.startPrank(manager);
         IStrategy ethShort = leverageManager.createNewStrategy(
@@ -175,11 +175,11 @@ contract RebalanceTest is LeverageManagerBaseTest {
         );
         vm.stopPrank();
 
-        ethLongAdapter.setCollateralToDebtExchangeRate(2_000_00000000); // ETH = 2000 USDC
+        ethLongAdapter.mockConvertCollateralToDebtAssetExchangeRate(2_000_00000000); // ETH = 2000 USDC
         ethLongAdapter.mockCollateral(10 ether); // 10 ETH = 20,000 USDC
         ethLongAdapter.mockDebt(5_000 ether); // 5,000 USDC
 
-        ethShortAdapter.setCollateralToDebtExchangeRate(5_0000); // ETH = 2000 USDC => USDC = 0.0005 ETH
+        ethShortAdapter.mockConvertCollateralToDebtAssetExchangeRate(5_0000); // ETH = 2000 USDC => USDC = 0.0005 ETH
         ethShortAdapter.mockCollateral(15_000 ether); // 15,000 USDC
         ethShortAdapter.mockDebt(2.5 ether); // 2,5 ETH = 5,000 USDC
 

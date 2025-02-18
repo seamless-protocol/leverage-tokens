@@ -124,6 +124,7 @@ contract RedeemTest is LeverageManagerBaseTest {
 
         debtToken.mint(address(this), debtToCoverEquity);
         debtToken.approve(address(leverageManager), debtToCoverEquity);
+        collateralToken.mint(address(lendingAdapter), collateral);
 
         leverageManager.redeem(strategy, sharesToRedeem, 0);
 
