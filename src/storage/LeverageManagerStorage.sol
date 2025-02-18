@@ -6,7 +6,7 @@ import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {IBeaconProxyFactory} from "src/interfaces/IBeaconProxyFactory.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
-import {IRebalanceProfitDistributor} from "src/interfaces/IRebalanceProfitDistributor.sol";
+import {IRebalanceRewardDistributor} from "src/interfaces/IRebalanceRewardDistributor.sol";
 
 library LeverageManagerStorage {
     /// @dev Struct that contains entire strategy config
@@ -23,7 +23,7 @@ library LeverageManagerStorage {
         /// @dev Target collateral ratio of the strategy on 8 decimals
         uint256 targetCollateralRatio;
         /// @dev Rebalance reward distributor module for strategy
-        IRebalanceProfitDistributor rebalanceProfitDistributor;
+        IRebalanceRewardDistributor rebalanceRewardDistributor;
         /// @dev Whitelist module for strategy, if not set rebalance is open for everybody
         IRebalanceWhitelist rebalanceWhitelist;
     }

@@ -9,7 +9,7 @@ import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol"
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 
 // Internal imports
-import {IRebalanceProfitDistributor} from "src/interfaces/IRebalanceProfitDistributor.sol";
+import {IRebalanceRewardDistributor} from "src/interfaces/IRebalanceRewardDistributor.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
@@ -37,12 +37,9 @@ contract ValidateEquityChangeTest is LeverageManagerBaseTest {
         });
 
         vm.mockCall(
-            address(leverageManager.getStrategyRebalanceProfitDistributor(strategy)),
+            address(leverageManager.getStrategyRebalanceRewardDistributor(strategy)),
             abi.encodeWithSelector(
-                IRebalanceProfitDistributor.calculateRebalanceReward.selector,
-                address(strategy),
-                stateBefore,
-                stateAfter
+                IRebalanceRewardDistributor.computeRebalanceReward.selector, address(strategy), stateBefore, stateAfter
             ),
             abi.encode(2 ether)
         );
@@ -66,12 +63,9 @@ contract ValidateEquityChangeTest is LeverageManagerBaseTest {
         });
 
         vm.mockCall(
-            address(leverageManager.getStrategyRebalanceProfitDistributor(strategy)),
+            address(leverageManager.getStrategyRebalanceRewardDistributor(strategy)),
             abi.encodeWithSelector(
-                IRebalanceProfitDistributor.calculateRebalanceReward.selector,
-                address(strategy),
-                stateBefore,
-                stateAfter
+                IRebalanceRewardDistributor.computeRebalanceReward.selector, address(strategy), stateBefore, stateAfter
             ),
             abi.encode(2 ether)
         );

@@ -12,7 +12,7 @@ import {IBeaconProxyFactory} from "./IBeaconProxyFactory.sol";
 import {ILendingAdapter} from "./ILendingAdapter.sol";
 import {LeverageManagerStorage as Storage} from "../storage/LeverageManagerStorage.sol";
 import {RebalanceAction, TokenTransfer} from "src/types/DataTypes.sol";
-import {IRebalanceProfitDistributor} from "./IRebalanceProfitDistributor.sol";
+import {IRebalanceRewardDistributor} from "./IRebalanceRewardDistributor.sol";
 
 interface ILeverageManager {
     /// @notice Error thrown when someone tries to create strategy with lending adapter that already exists
@@ -66,7 +66,7 @@ interface ILeverageManager {
     event StrategyCollateralCapSet(IStrategy indexed strategy, uint256 collateralCap);
 
     /// @notice Event emitted when rebalance reward distributor is set for a strategy
-    event StrategyRebalanceProfitDistributorSet(IStrategy indexed strategy, IRebalanceProfitDistributor distributor);
+    event StrategyRebalanceRewardDistributorSet(IStrategy indexed strategy, IRebalanceRewardDistributor distributor);
 
     /// @notice Event emitted when rebalance whitelist is set for a strategy
     event StrategyRebalanceWhitelistSet(IStrategy indexed strategy, IRebalanceWhitelist whitelist);
@@ -106,10 +106,10 @@ interface ILeverageManager {
     /// @notice Returns module for distributing rewards for rebalancing strategy
     /// @param strategy Strategy to get module for
     /// @return distributor Module for distributing rewards for rebalancing strategy
-    function getStrategyRebalanceProfitDistributor(IStrategy strategy)
+    function getStrategyRebalanceRewardDistributor(IStrategy strategy)
         external
         view
-        returns (IRebalanceProfitDistributor distributor);
+        returns (IRebalanceRewardDistributor distributor);
 
     /// @notice Returns rebalance whitelist module for strategy
     /// @param strategy Strategy to get rebalance whitelist for
@@ -177,7 +177,7 @@ interface ILeverageManager {
     /// @param strategy Strategy to set rebalance reward distributor for
     /// @param distributor Rebalance reward distributor module
     /// @dev Only address with MANAGER role can call this function
-    function setStrategyRebalanceProfitDistributor(IStrategy strategy, IRebalanceProfitDistributor distributor)
+    function setStrategyRebalanceRewardDistributor(IStrategy strategy, IRebalanceRewardDistributor distributor)
         external;
 
     /// @notice Sets rebalance whitelist module for strategy

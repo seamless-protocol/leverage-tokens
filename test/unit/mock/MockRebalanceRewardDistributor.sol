@@ -6,11 +6,11 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {StrategyState} from "src/types/DataTypes.sol";
 
-contract MockRebalanceProfitDistributor {
+contract MockRebalanceRewardDistributor {
     using SignedMath for int256;
     using SafeCast for uint256;
 
-    function calculateRebalanceReward(address, StrategyState memory stateBefore, StrategyState memory stateAfter)
+    function computeRebalanceReward(address, StrategyState memory stateBefore, StrategyState memory stateAfter)
         external
         pure
         returns (uint256 reward)

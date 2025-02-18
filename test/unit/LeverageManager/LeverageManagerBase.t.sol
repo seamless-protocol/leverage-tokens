@@ -9,7 +9,7 @@ import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
-import {IRebalanceProfitDistributor} from "src/interfaces/IRebalanceProfitDistributor.sol";
+import {IRebalanceRewardDistributor} from "src/interfaces/IRebalanceRewardDistributor.sol";
 import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
@@ -78,7 +78,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
                     maxCollateralRatio: _BASE_RATIO() + 2,
                     targetCollateralRatio: _BASE_RATIO() + 1,
                     collateralCap: type(uint256).max,
-                    rebalanceProfitDistributor: IRebalanceProfitDistributor(address(0)),
+                    rebalanceRewardDistributor: IRebalanceRewardDistributor(address(0)),
                     rebalanceWhitelist: IRebalanceWhitelist(address(0))
                 }),
                 address(0),
@@ -125,9 +125,9 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         leverageManager.setStrategyCollateralCap(strategy, cap);
     }
 
-    function _setStrategyRebalanceProfitDistributor(address caller, IRebalanceProfitDistributor distributor) internal {
+    function _setStrategyRebalanceRewardDistributor(address caller, IRebalanceRewardDistributor distributor) internal {
         vm.prank(caller);
-        leverageManager.setStrategyRebalanceProfitDistributor(strategy, distributor);
+        leverageManager.setStrategyRebalanceRewardDistributor(strategy, distributor);
     }
 
     function _mintShares(address recipient, uint256 amount) internal {
