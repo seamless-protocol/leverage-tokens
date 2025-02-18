@@ -167,7 +167,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     /// @inheritdoc ILeverageManager
     function deposit(IStrategy strategy, uint256 equityInCollateralAsset, uint256 minShares)
         external
-        returns (uint256)
+        returns (uint256, uint256, uint256, uint256)
     {
         (uint256 collateralToAdd, uint256 debtToBorrow, uint256 sharesAfterFee, uint256 sharesFee) =
             _previewDeposit(strategy, equityInCollateralAsset);
@@ -176,17 +176,19 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             revert SlippageTooHigh(sharesAfterFee, minShares);
         }
 
-        ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
+        {
+            ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
 
-        // Take asset from sender and supply it as collateral
-        IERC20 collateralAsset = lendingAdapter.getCollateralAsset();
-        SafeERC20.safeTransferFrom(collateralAsset, msg.sender, address(this), collateralToAdd);
-        collateralAsset.approve(address(lendingAdapter), collateralToAdd);
-        lendingAdapter.addCollateral(collateralToAdd);
+            // Take asset from sender and supply it as collateral
+            IERC20 collateralAsset = lendingAdapter.getCollateralAsset();
+            SafeERC20.safeTransferFrom(collateralAsset, msg.sender, address(this), collateralToAdd);
+            collateralAsset.approve(address(lendingAdapter), collateralToAdd);
+            lendingAdapter.addCollateral(collateralToAdd);
 
-        // Borrow and send debt assets to caller
-        lendingAdapter.borrow(debtToBorrow);
-        SafeERC20.safeTransfer(lendingAdapter.getDebtAsset(), msg.sender, debtToBorrow);
+            // Borrow and send debt assets to caller
+            lendingAdapter.borrow(debtToBorrow);
+            SafeERC20.safeTransfer(lendingAdapter.getDebtAsset(), msg.sender, debtToBorrow);
+        }
 
         // Mint shares to user
         strategy.mint(msg.sender, sharesAfterFee);
@@ -195,7 +197,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         emit Deposit(
             strategy, msg.sender, collateralToAdd, debtToBorrow, equityInCollateralAsset, sharesAfterFee, sharesFee
         );
-        return sharesAfterFee;
+        return (collateralToAdd, debtToBorrow, sharesAfterFee, sharesFee);
     }
 
     /// @inheritdoc ILeverageManager

@@ -208,10 +208,12 @@ contract DepositTest is LeverageManagerBaseTest {
         emit ILeverageManager.Deposit(
             strategy, address(this), collateralToAdd, debtToBorrow, equityToAddInCollateralAsset, shares, sharesFee
         );
-        uint256 sharesReceived = leverageManager.deposit(strategy, equityToAddInCollateralAsset, shares);
+        (uint256 collateralAdded, uint256 debtBorrowed, uint256 sharesReceived, uint256 shareFeeCharged) =
+            leverageManager.deposit(strategy, equityToAddInCollateralAsset, shares);
 
         assertEq(sharesReceived, shares);
         assertEq(strategy.balanceOf(address(this)), sharesReceived, "Shares received mismatch");
+        assertEq(shareFeeCharged, sharesFee, "Share fee charged mismatch");
 
         StrategyState memory afterState = leverageManager.exposed_getStrategyState(strategy);
         assertEq(
@@ -219,7 +221,9 @@ contract DepositTest is LeverageManagerBaseTest {
             beforeState.collateral + collateralToAdd,
             "Collateral in strategy after deposit mismatch"
         );
+        assertEq(collateralAdded, collateralToAdd, "Collateral added mismatch");
         assertEq(afterState.debt, beforeState.debt + debtToBorrow, "Debt in strategy after deposit mismatch");
+        assertEq(debtBorrowed, debtToBorrow, "Debt borrowed mismatch");
         assertEq(debtToken.balanceOf(address(this)), debtToBorrow, "Debt tokens received mismatch");
 
         if (beforeState.collateral != 0 || beforeState.debt != 0) {
