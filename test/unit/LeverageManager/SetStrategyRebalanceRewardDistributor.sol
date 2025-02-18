@@ -8,26 +8,26 @@ import {Test, console} from "forge-std/Test.sol";
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
 
 // Internal imports
-import {IRebalanceProfitDistributor} from "src/interfaces/IRebalanceProfitDistributor.sol";
+import {IRebalanceRewardDistributor} from "src/interfaces/IRebalanceRewardDistributor.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 import {LeverageManagerBaseTest} from "./LeverageManagerBase.t.sol";
 
-contract SetStrategyRebalanceProfitDistributor is LeverageManagerBaseTest {
+contract SetStrategyRebalanceRewardDistributor is LeverageManagerBaseTest {
     function setUp() public override {
         super.setUp();
     }
 
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_setStrategyRebalanceProfitDistributor(IRebalanceProfitDistributor distributor) public {
-        _setStrategyRebalanceProfitDistributor(manager, distributor);
-        assertEq(address(leverageManager.getStrategyRebalanceProfitDistributor(strategy)), address(distributor));
+    function testFuzz_setStrategyRebalanceRewardDistributor(IRebalanceRewardDistributor distributor) public {
+        _setStrategyRebalanceRewardDistributor(manager, distributor);
+        assertEq(address(leverageManager.getStrategyRebalanceRewardDistributor(strategy)), address(distributor));
     }
 
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_setStrategyRebalanceProfitDistributor_RevertIf_CallerIsNotManager(
+    function testFuzz_setStrategyRebalanceRewardDistributor_RevertIf_CallerIsNotManager(
         address caller,
-        IRebalanceProfitDistributor distributor
+        IRebalanceRewardDistributor distributor
     ) public {
         vm.assume(caller != manager);
 
@@ -36,6 +36,6 @@ contract SetStrategyRebalanceProfitDistributor is LeverageManagerBaseTest {
                 IAccessControl.AccessControlUnauthorizedAccount.selector, caller, leverageManager.MANAGER_ROLE()
             )
         );
-        _setStrategyRebalanceProfitDistributor(caller, distributor);
+        _setStrategyRebalanceRewardDistributor(caller, distributor);
     }
 }

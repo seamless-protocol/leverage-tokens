@@ -22,12 +22,12 @@ contract ValidateIsAllowedToRebalance is LeverageManagerBaseTest {
         super.setUp();
     }
 
-    function test_validateIsAllowedToRebalance_RebalanceWhitelistIsZeroAddress() public view {
+    function test_validateIsAuthorizedToRebalance_RebalanceWhitelistIsZeroAddress() public view {
         // Should not revert because rebalance whitelist is zero address which means everyone can rebalance
-        leverageManager.exposed_validateIsAllowedToRebalance(strategy);
+        leverageManager.exposed_validateIsAuthorizedToRebalance(strategy);
     }
 
-    function test_validateIsAllowedToRebalance_RebalanceWhitelistIsNotZeroAddress(IRebalanceWhitelist whitelist)
+    function test_validateIsAuthorizedToRebalance_RebalanceWhitelistIsNotZeroAddress(IRebalanceWhitelist whitelist)
         public
     {
         vm.assume(address(whitelist) != address(0));
@@ -40,10 +40,10 @@ contract ValidateIsAllowedToRebalance is LeverageManagerBaseTest {
             abi.encode(true)
         );
 
-        leverageManager.exposed_validateIsAllowedToRebalance(strategy);
+        leverageManager.exposed_validateIsAuthorizedToRebalance(strategy);
     }
 
-    function test_validateIsAllowedToRebalance_NotWhitelisted(IRebalanceWhitelist whitelist) public {
+    function test_validateIsAuthorizedToRebalance_NotWhitelisted(IRebalanceWhitelist whitelist) public {
         _setStrategyRebalanceWhitelist(manager, whitelist);
 
         vm.mockCall(
@@ -53,6 +53,6 @@ contract ValidateIsAllowedToRebalance is LeverageManagerBaseTest {
         );
 
         vm.expectRevert(abi.encodeWithSelector(ILeverageManager.NotRebalancer.selector, strategy, address(this)));
-        leverageManager.exposed_validateIsAllowedToRebalance(strategy);
+        leverageManager.exposed_validateIsAuthorizedToRebalance(strategy);
     }
 }

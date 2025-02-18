@@ -10,7 +10,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 
 // Internal imports
-import {IRebalanceProfitDistributor} from "src/interfaces/IRebalanceProfitDistributor.sol";
+import {IRebalanceRewardDistributor} from "src/interfaces/IRebalanceRewardDistributor.sol";
 import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {LeverageManagerBaseTest} from "test/unit/LeverageManager/LeverageManagerBase.t.sol";
@@ -31,7 +31,7 @@ contract RedeemTest is LeverageManagerBaseTest {
                 maxCollateralRatio: _BASE_RATIO() + 2,
                 targetCollateralRatio: _BASE_RATIO() + 1,
                 collateralCap: type(uint256).max,
-                rebalanceProfitDistributor: IRebalanceProfitDistributor(address(0)),
+                rebalanceRewardDistributor: IRebalanceRewardDistributor(address(0)),
                 rebalanceWhitelist: IRebalanceWhitelist(address(0))
             }),
             address(collateralToken),

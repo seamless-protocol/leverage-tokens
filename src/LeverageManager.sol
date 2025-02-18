@@ -13,7 +13,7 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {SignedMath} from "@openzeppelin/contracts/utils/math/SignedMath.sol";
 
 // Internal imports
-import {IRebalanceProfitDistributor} from "src/interfaces/IRebalanceProfitDistributor.sol";
+import {IRebalanceRewardDistributor} from "src/interfaces/IRebalanceRewardDistributor.sol";
 import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {IBeaconProxyFactory} from "src/interfaces/IBeaconProxyFactory.sol";
@@ -65,12 +65,12 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function getStrategyRebalanceProfitDistributor(IStrategy strategy)
+    function getStrategyRebalanceRewardDistributor(IStrategy strategy)
         public
         view
-        returns (IRebalanceProfitDistributor distributor)
+        returns (IRebalanceRewardDistributor distributor)
     {
-        return Storage.layout().config[strategy].rebalanceProfitDistributor;
+        return Storage.layout().config[strategy].rebalanceRewardDistributor;
     }
 
     function getStrategyRebalanceWhitelist(IStrategy strategy) public view returns (IRebalanceWhitelist whitelist) {
@@ -131,7 +131,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
         setStrategyLendingAdapter(strategy, address(strategyConfig.lendingAdapter));
         setStrategyCollateralCap(strategy, strategyConfig.collateralCap);
-        setStrategyRebalanceProfitDistributor(strategy, strategyConfig.rebalanceProfitDistributor);
+        setStrategyRebalanceRewardDistributor(strategy, strategyConfig.rebalanceRewardDistributor);
         setStrategyCollateralRatios(
             strategy,
             CollateralRatios({
@@ -193,12 +193,13 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         emit StrategyCollateralCapSet(strategy, collateralCap);
     }
 
-    function setStrategyRebalanceProfitDistributor(IStrategy strategy, IRebalanceProfitDistributor distributor)
+    /// @inheritdoc ILeverageManager
+    function setStrategyRebalanceRewardDistributor(IStrategy strategy, IRebalanceRewardDistributor distributor)
         public
         onlyRole(MANAGER_ROLE)
     {
-        Storage.layout().config[strategy].rebalanceProfitDistributor = distributor;
-        emit StrategyRebalanceProfitDistributorSet(strategy, distributor);
+        Storage.layout().config[strategy].rebalanceRewardDistributor = distributor;
+        emit StrategyRebalanceRewardDistributorSet(strategy, distributor);
     }
 
     /// @inheritdoc ILeverageManager
@@ -288,7 +289,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
                 StrategyState memory state = _getStrategyState(strategy);
                 strategiesStateBefore[i] = state;
 
-                _validateIsAllowedToRebalance(strategy);
+                _validateIsAuthorizedToRebalance(strategy);
                 _validateRebalanceEligibility(strategy, state.collateralRatio);
             }
 
@@ -370,7 +371,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     /// @notice Validates if caller is allowed to rebalance strategy
     /// @param strategy Strategy to validate caller for
     /// @dev Caller is not allowed to rebalance strategy if they are not whitelisted in the strategy's rebalance whitelist module
-    function _validateIsAllowedToRebalance(IStrategy strategy) internal view {
+    function _validateIsAuthorizedToRebalance(IStrategy strategy) internal view {
         IRebalanceWhitelist whitelist = getStrategyRebalanceWhitelist(strategy);
 
         if (address(whitelist) != address(0) && !whitelist.isAllowedToRebalance(address(strategy), msg.sender)) {
@@ -444,7 +445,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         uint256 equityBefore = stateBefore.equity;
         uint256 equityAfter = stateAfter.equity;
 
-        uint256 reward = getStrategyRebalanceProfitDistributor(strategy).calculateRebalanceReward(
+        uint256 reward = getStrategyRebalanceRewardDistributor(strategy).computeRebalanceReward(
             address(strategy), stateBefore, stateAfter
         );
 

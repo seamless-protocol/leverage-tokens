@@ -42,7 +42,7 @@ contract ValidateCollateralRatioAfterRebalance is LeverageManagerBaseTest {
         );
     }
 
-    function test_validateCollateralRatioAfterRebalance_RevertIf_RatioInWorstState() public {
+    function test_validateCollateralRatioAfterRebalance_RevertIf_RatioInWorseState() public {
         uint256 ratioBefore = 3 * _BASE_RATIO();
         uint256 ratioAfter = 3 * _BASE_RATIO() + 1;
 

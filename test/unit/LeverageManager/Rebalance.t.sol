@@ -1,22 +1,19 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-// Forge imports
-import {Test, console} from "forge-std/Test.sol";
-
 // Dependency imports
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 
 // Internal imports
-import {IRebalanceProfitDistributor} from "src/interfaces/IRebalanceProfitDistributor.sol";
+import {IRebalanceRewardDistributor} from "src/interfaces/IRebalanceRewardDistributor.sol";
 import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {LeverageManagerBaseTest} from "test/unit/LeverageManager/LeverageManagerBase.t.sol";
 import {MockLendingAdapter} from "test/unit/mock/MockLendingAdapter.sol";
-import {MockRebalanceProfitDistributor} from "test/unit/mock/MockRebalanceProfitDistributor.sol";
+import {MockRebalanceRewardDistributor} from "test/unit/mock/MockRebalanceRewardDistributor.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
@@ -25,7 +22,8 @@ import {RebalanceAction, ActionType, TokenTransfer, StrategyState} from "src/typ
 contract RebalanceTest is LeverageManagerBaseTest {
     ERC20Mock public WETH = new ERC20Mock();
     ERC20Mock public USDC = new ERC20Mock();
-    MockRebalanceProfitDistributor public profitDistributor = new MockRebalanceProfitDistributor();
+
+    MockRebalanceRewardDistributor public rewardDistributor = new MockRebalanceRewardDistributor();
     MockLendingAdapter public adapter;
 
     function setUp() public override {
@@ -41,7 +39,7 @@ contract RebalanceTest is LeverageManagerBaseTest {
                 maxCollateralRatio: 25 * _BASE_RATIO() / 10, // 2.5x leverage
                 targetCollateralRatio: 2 * _BASE_RATIO(), // 2x leverage
                 collateralCap: type(uint256).max,
-                rebalanceProfitDistributor: IRebalanceProfitDistributor(address(profitDistributor)),
+                rebalanceRewardDistributor: IRebalanceRewardDistributor(address(rewardDistributor)),
                 rebalanceWhitelist: IRebalanceWhitelist(address(0))
             }),
             address(WETH),
@@ -167,7 +165,7 @@ contract RebalanceTest is LeverageManagerBaseTest {
                 maxCollateralRatio: 16 * _BASE_RATIO() / 10, // 3.5x leverage
                 targetCollateralRatio: 15 * _BASE_RATIO() / 10, // 3x leverage which means 2x price exposure
                 collateralCap: type(uint256).max,
-                rebalanceProfitDistributor: IRebalanceProfitDistributor(address(profitDistributor)),
+                rebalanceRewardDistributor: IRebalanceRewardDistributor(address(rewardDistributor)),
                 rebalanceWhitelist: IRebalanceWhitelist(address(0))
             }),
             "ETH Short 2x",
@@ -226,5 +224,63 @@ contract RebalanceTest is LeverageManagerBaseTest {
 
         assertEq(USDC.balanceOf(address(this)), usdcToTake);
         assertEq(WETH.balanceOf(address(this)), wethToTake);
+    }
+
+    function test_rebalance_RevertIf_EquityLossToBig() external {
+        adapter.mockConvertCollateralToDebtAssetExchangeRate(2_000_00000000); // ETH = 2000 USDC
+        adapter.mockCollateral(10 ether); // 10 ETH = 20,000 USDC
+        adapter.mockDebt(5_000 ether); // 5,000 USDC
+
+        // Current leverage is 4x and strategy needs to be rebalanced, current equity is 15,000 USDC
+        uint256 amountToBorrow = 10_000 ether; // 10,000 USDC
+        uint256 amountToSupply = 4 ether; // 4 ETH = 8,000 USDC
+
+        WETH.mint(address(this), amountToSupply);
+
+        // Rebalancer gives collateral that will be supplied
+        TokenTransfer[] memory transfersIn = new TokenTransfer[](1);
+        transfersIn[0] = TokenTransfer({token: address(WETH), amount: amountToSupply});
+
+        // Rebalancer takes debt that will be borrowed and will swap it on his own
+        TokenTransfer[] memory transfersOut = new TokenTransfer[](1);
+        transfersOut[0] = TokenTransfer({token: address(USDC), amount: amountToBorrow});
+
+        RebalanceAction[] memory actions = new RebalanceAction[](2);
+        actions[0] = RebalanceAction({strategy: strategy, actionType: ActionType.AddCollateral, amount: amountToSupply});
+        actions[1] = RebalanceAction({strategy: strategy, actionType: ActionType.Borrow, amount: amountToBorrow});
+
+        WETH.approve(address(leverageManager), amountToSupply);
+
+        vm.expectRevert(ILeverageManager.EquityLossTooBig.selector);
+        leverageManager.rebalance(actions, transfersIn, transfersOut);
+    }
+
+    function test_rebalance_RevertIf_CollateralRatioChangesDirection() external {
+        adapter.mockConvertCollateralToDebtAssetExchangeRate(2_000_00000000); // ETH = 2000 USDC
+        adapter.mockCollateral(10 ether); // 10 ETH = 20,000 USDC
+        adapter.mockDebt(5_000 ether); // 5,000 USDC
+
+        // Current leverage is 4x and strategy needs to be rebalanced, current equity is 15,000 USDC
+        uint256 amountToBorrow = 11_000 ether; // 11,000 USDC
+        uint256 amountToSupply = 5.5 ether; // 5,5 ETH = 11,000 USDC
+
+        WETH.mint(address(this), amountToSupply);
+
+        // Rebalancer gives collateral that will be supplied
+        TokenTransfer[] memory transfersIn = new TokenTransfer[](1);
+        transfersIn[0] = TokenTransfer({token: address(WETH), amount: amountToSupply});
+
+        // Rebalancer takes debt that will be borrowed and will swap it on his own
+        TokenTransfer[] memory transfersOut = new TokenTransfer[](1);
+        transfersOut[0] = TokenTransfer({token: address(USDC), amount: amountToBorrow});
+
+        RebalanceAction[] memory actions = new RebalanceAction[](2);
+        actions[0] = RebalanceAction({strategy: strategy, actionType: ActionType.AddCollateral, amount: amountToSupply});
+        actions[1] = RebalanceAction({strategy: strategy, actionType: ActionType.Borrow, amount: amountToBorrow});
+
+        WETH.approve(address(leverageManager), amountToSupply);
+
+        vm.expectRevert(ILeverageManager.ExposureDirectionChanged.selector);
+        leverageManager.rebalance(actions, transfersIn, transfersOut);
     }
 }
