@@ -51,4 +51,12 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
     function exposed_getStrategyState(IStrategy strategy) external view returns (StrategyState memory) {
         return _getStrategyState(strategy);
     }
+
+    function exposed_previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
+        external
+        view
+        returns (uint256, uint256, uint256, uint256)
+    {
+        return _previewDeposit(strategy, equityInCollateralAsset);
+    }
 }

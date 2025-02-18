@@ -92,18 +92,6 @@ interface ILeverageManager is IFeeManager {
     /// @return targetRatio Target ratio
     function getStrategyTargetCollateralRatio(IStrategy strategy) external view returns (uint256 targetRatio);
 
-    /// @notice Returns a preview for a deposit into a strategy
-    /// @param strategy Strategy to preview deposit for
-    /// @param equityInCollateralAsset Amount of equity in collateral asset
-    /// @return collateralToAdd Amount of collateral to add
-    /// @return debtToBorrow Amount of debt to borrow
-    /// @return shares Amount of shares to mint
-    /// @return sharesFee Share fee for deposit
-    function previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
-        external
-        view
-        returns (uint256 collateralToAdd, uint256 debtToBorrow, uint256 shares, uint256 sharesFee);
-
     /// @notice Returns entire configuration for given strategy
     /// @param strategy Address of the strategy to get config for
     /// @return config Strategy configuration

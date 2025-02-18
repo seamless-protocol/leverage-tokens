@@ -51,86 +51,34 @@ contract DepositTest is LeverageManagerBaseTest {
         _testDeposit(equityToAddInCollateralAsset, 0);
     }
 
-    function testFuzz_deposit_StrategyWithinMinMaxCollateralRatio(
+    function testFuzz_deposit(
         uint128 initialCollateral,
         uint128 initialDebtInCollateralAsset,
         uint128 sharesTotalSupply,
         uint128 equityToAddInCollateralAsset
     ) public {
-        // If the initial collateral is 1, the amount of debt in the strategy will be calculated as either 0 or 1 if we
-        // calculate the initial debt to respect the min and max collateral ratios, as we do in this test. That would
-        // result in an initial collateral ratio of either type(uint256).max or 1e8, which both would revert the deposit.
-        //     - 1 collateral and 1 debtInCollateralAsset would result in a CR of 1e8. This causes a revert in previewDeposit
-        //       due to division by zero for the calculation of collateralToAdd. This also implies a 100% CR - in practice,
-        //       the strategy should be rebalanced before this point (or liquidated)
-        //     - 1 collateral and 0 debtInCollateralAsset would result in a CR of type(uint256).max. This causes a revert
-        //       in deposit because the strategy is not within the collateral ratio range and it holds > 0 collateral or debt.
-        //       The strategy must be rebalanced (or price action must occur) before a deposit can occur
-        vm.assume(initialCollateral != 1);
+        initialDebtInCollateralAsset =
+            initialCollateral == 0 ? 0 : uint128(bound(initialDebtInCollateralAsset, 0, initialCollateral - 1));
 
-        equityToAddInCollateralAsset = uint128(bound(equityToAddInCollateralAsset, 1, type(uint128).max));
-
-        // collateral:debt is 1:2
-        lendingAdapter.mockConvertCollateralToDebtAssetExchangeRate(2e8);
-
-        uint256 minCollateralRatio = _BASE_RATIO() + 1;
-        uint256 maxCollateralRatio = 3 * _BASE_RATIO();
-
-        uint256 maxInitialDebtInCollateralAsset =
-            Math.mulDiv(initialCollateral, _BASE_RATIO(), minCollateralRatio, Math.Rounding.Floor);
-        uint256 minInitialDebtInCollateralAsset =
-            Math.mulDiv(initialCollateral, _BASE_RATIO(), maxCollateralRatio, Math.Rounding.Ceil);
-        initialDebtInCollateralAsset = uint128(
-            bound(initialDebtInCollateralAsset, minInitialDebtInCollateralAsset, maxInitialDebtInCollateralAsset)
-        );
+        if (initialCollateral == 0 && initialDebtInCollateralAsset == 0) {
+            sharesTotalSupply = 0;
+        } else {
+            sharesTotalSupply = uint128(bound(sharesTotalSupply, 1, type(uint128).max));
+        }
 
         _prepareLeverageManagerStateForDeposit(
             MockLeverageManagerStateForDeposit({
                 collateral: initialCollateral,
-                debt: lendingAdapter.convertCollateralToDebtAsset(initialDebtInCollateralAsset),
+                debt: initialDebtInCollateralAsset, // 1:1 exchange rate for this test
                 sharesTotalSupply: sharesTotalSupply
             })
         );
 
-        uint256 allowedSlippage = _getAllowedCollateralRatioSlippage(initialCollateral);
+        // Ensure the collateral being added does not result in overflows due to mocked value sizes
+        equityToAddInCollateralAsset = uint128(bound(equityToAddInCollateralAsset, 1, type(uint96).max));
+
+        uint256 allowedSlippage = _getAllowedCollateralRatioSlippage(initialDebtInCollateralAsset);
         _testDeposit(equityToAddInCollateralAsset, allowedSlippage);
-    }
-
-    function test_deposit_RevertIf_CurrentCollateralRatioTooHigh() public {
-        // CR is 10x
-        _prepareLeverageManagerStateForDeposit(
-            MockLeverageManagerStateForDeposit({collateral: 1000 ether, debt: 100 ether, sharesTotalSupply: 100 ether})
-        );
-
-        uint256 equityToAddInCollateralAsset = 10 ether;
-        (uint256 collateralToAdd,,,) = leverageManager.previewDeposit(strategy, equityToAddInCollateralAsset);
-
-        deal(address(collateralToken), address(this), collateralToAdd);
-        collateralToken.approve(address(leverageManager), collateralToAdd);
-
-        // CR is 10x, but the max is 3x
-        vm.expectRevert(abi.encodeWithSelector(ILeverageManager.CollateralRatioOutsideRange.selector, 10e8));
-        leverageManager.deposit(strategy, equityToAddInCollateralAsset, 0);
-    }
-
-    function test_deposit_RevertIf_CurrentCollateralRatioTooLow() public {
-        _setStrategyCollateralRatios(
-            CollateralRatios({minCollateralRatio: 2e8, targetCollateralRatio: 3e8, maxCollateralRatio: 4e8})
-        );
-
-        // CR is 1.5e8, but the min is 2e8
-        _prepareLeverageManagerStateForDeposit(
-            MockLeverageManagerStateForDeposit({collateral: 150 ether, debt: 100 ether, sharesTotalSupply: 100 ether})
-        );
-
-        uint256 equityToAddInCollateralAsset = 10 ether;
-        (uint256 collateralToAdd,,,) = leverageManager.previewDeposit(strategy, equityToAddInCollateralAsset);
-
-        deal(address(collateralToken), address(this), collateralToAdd);
-        collateralToken.approve(address(leverageManager), collateralToAdd);
-
-        vm.expectRevert(abi.encodeWithSelector(ILeverageManager.CollateralRatioOutsideRange.selector, 1.5e8));
-        leverageManager.deposit(strategy, equityToAddInCollateralAsset, 0);
     }
 
     function test_deposit_EquityToDepositIsZero() public {
@@ -141,7 +89,7 @@ contract DepositTest is LeverageManagerBaseTest {
 
         uint256 equityToAddInCollateralAsset = 0;
         (uint256 collateralToAdd, uint256 debtToBorrow,,) =
-            leverageManager.previewDeposit(strategy, equityToAddInCollateralAsset);
+            leverageManager.exposed_previewDeposit(strategy, equityToAddInCollateralAsset);
 
         assertEq(collateralToAdd, 0);
         assertEq(debtToBorrow, 0);
@@ -159,7 +107,7 @@ contract DepositTest is LeverageManagerBaseTest {
 
         uint256 equityToAddInCollateralAsset = 10 ether;
         (uint256 collateralToAdd,, uint256 shares,) =
-            leverageManager.previewDeposit(strategy, equityToAddInCollateralAsset);
+            leverageManager.exposed_previewDeposit(strategy, equityToAddInCollateralAsset);
 
         deal(address(collateralToken), address(this), collateralToAdd);
         collateralToken.approve(address(leverageManager), collateralToAdd);
@@ -170,36 +118,6 @@ contract DepositTest is LeverageManagerBaseTest {
         leverageManager.deposit(strategy, equityToAddInCollateralAsset, minShares);
     }
 
-    /// forge-config: default.fuzz.runs = 1
-    function testFuzz_deposit_RevertIf_CollateralCapExceeded(uint128 excessCollateral) public {
-        vm.assume(excessCollateral > 0);
-
-        uint256 collateralBefore = 100 ether;
-        _prepareLeverageManagerStateForDeposit(
-            MockLeverageManagerStateForDeposit({
-                collateral: collateralBefore,
-                debt: 50 ether,
-                sharesTotalSupply: 100 ether
-            })
-        );
-
-        _setStrategyCollateralCap(manager, 110 ether);
-
-        // Strategy is at 2x ratio, so adding 5 ether will require 10 ether of collateral which will bring the strategy to the cap.
-        uint256 equityToAddInCollateralAsset = uint256(5 ether) + excessCollateral;
-        (uint256 collateralToAdd,,,) = leverageManager.previewDeposit(strategy, equityToAddInCollateralAsset);
-
-        deal(address(collateralToken), address(this), collateralToAdd);
-        collateralToken.approve(address(leverageManager), collateralToAdd);
-
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                ILeverageManager.CollateralCapExceeded.selector, collateralBefore + collateralToAdd, 110 ether
-            )
-        );
-        leverageManager.deposit(strategy, equityToAddInCollateralAsset, 0);
-    }
-
     function test_deposit_IsEmptyStrategy() public {
         MockLeverageManagerStateForDeposit memory beforeState =
             MockLeverageManagerStateForDeposit({collateral: 0, debt: 0, sharesTotalSupply: 0});
@@ -208,7 +126,7 @@ contract DepositTest is LeverageManagerBaseTest {
 
         uint256 equityToAddInCollateralAsset = 10 ether;
         (uint256 collateralToAdd, uint256 debtToBorrow, uint256 shares,) =
-            leverageManager.previewDeposit(strategy, equityToAddInCollateralAsset);
+            leverageManager.exposed_previewDeposit(strategy, equityToAddInCollateralAsset);
 
         deal(address(collateralToken), address(this), collateralToAdd);
         collateralToken.approve(address(leverageManager), collateralToAdd);
@@ -223,7 +141,7 @@ contract DepositTest is LeverageManagerBaseTest {
     }
 
     /// @dev The allowed slippage in collateral ratio of the strategy after a deposit should scale with the size of the
-    /// initial collateral in the strategy, as smaller strategies may incur a higher collateral ratio delta after the
+    /// initial debt in the strategy, as smaller strategies may incur a higher collateral ratio delta after the
     /// deposit due to rounding.
     ///
     /// For example, if the initial collateral is 3 and the initial debt is 1 (with collateral and debt normalized) then the
@@ -231,36 +149,36 @@ contract DepositTest is LeverageManagerBaseTest {
     /// debt is 1. So the resulting collateral is 5 and the debt is 4. The resulting collateral ratio is 250000000, which is
     /// a ~16.67% change from the initial collateral ratio.
     ///
-    /// As the intial collateral scales up in size, the allowed slippage should scale down as more precision can be achieved
+    /// As the intial debt scales up in size, the allowed slippage should scale down as more precision can be achieved
     /// for the collateral ratio:
-    ///    initialCollateral < 100: 1e18 (100% slippage)
-    ///    initialCollateral < 1000: 0.1e18 (10% slippage)
-    ///    initialCollateral < 10000: 0.01e18 (1% slippage)
-    ///    initialCollateral < 100000: 0.001e18 (0.1% slippage)
-    ///    initialCollateral < 1000000: 0.0001e18 (0.01% slippage)
-    ///    initialCollateral < 10000000: 0.00001e18 (0.001% slippage)
-    ///    initialCollateral < 100000000: 0.000001e18 (0.0001% slippage)
-    ///    initialCollateral < 1000000000: 0.0000001e18 (0.00001% slippage)
-    ///    initialCollateral >= 1000000000: 0.00000001e18 (0.000001% slippage)
+    ///    initialDebt < 100: 1e18 (100% slippage)
+    ///    initialDebt < 1000: 0.1e18 (10% slippage)
+    ///    initialDebt < 10000: 0.01e18 (1% slippage)
+    ///    initialDebt < 100000: 0.001e18 (0.1% slippage)
+    ///    initialDebt < 1000000: 0.0001e18 (0.01% slippage)
+    ///    initialDebt < 10000000: 0.00001e18 (0.001% slippage)
+    ///    initialDebt < 100000000: 0.000001e18 (0.0001% slippage)
+    ///    initialDebt < 1000000000: 0.0000001e18 (0.00001% slippage)
+    ///    initialDebt >= 1000000000: 0.00000001e18 (0.000001% slippage)
     ///
     /// Note: We can at maximum support up to 0.00000001e18 (0.000001% slippage) due to the base collateral ratio
     ///       being 1e8
-    function _getAllowedCollateralRatioSlippage(uint256 initialCollateral)
+    function _getAllowedCollateralRatioSlippage(uint256 initialDebt)
         internal
         pure
         returns (uint256 allowedSlippagePercentage)
     {
-        if (initialCollateral == 0) {
+        if (initialDebt == 0) {
             return 0;
         }
 
-        uint256 i = Math.log10(initialCollateral);
+        uint256 i = Math.log10(initialDebt);
 
         // This is the maximum slippage that we can support due to the precision of the collateral ratio being
         // 1e8 (1e18 / 1e8 = 1e10 = 0.00000001e18)
         if (i > 8) return 0.00000001e18;
 
-        // If i <= 1, that means initialCollateral < 100, thus slippage = 1e18
+        // If i <= 1, that means initialDebt < 100, thus slippage = 1e18
         // Otherwise slippage = 1e18 / (10^(i - 1))
         return (i <= 1) ? 1e18 : (1e18 / (10 ** (i - 1)));
     }
@@ -281,7 +199,7 @@ contract DepositTest is LeverageManagerBaseTest {
         StrategyState memory beforeState = leverageManager.exposed_getStrategyState(strategy);
 
         (uint256 collateralToAdd, uint256 debtToBorrow, uint256 shares, uint256 sharesFee) =
-            leverageManager.previewDeposit(strategy, equityToAddInCollateralAsset);
+            leverageManager.exposed_previewDeposit(strategy, equityToAddInCollateralAsset);
 
         deal(address(collateralToken), address(this), collateralToAdd);
         collateralToken.approve(address(leverageManager), collateralToAdd);
@@ -304,7 +222,7 @@ contract DepositTest is LeverageManagerBaseTest {
         assertEq(afterState.debt, beforeState.debt + debtToBorrow, "Debt in strategy after deposit mismatch");
         assertEq(debtToken.balanceOf(address(this)), debtToBorrow, "Debt tokens received mismatch");
 
-        if (beforeState.collateralRatio != type(uint256).max) {
+        if (beforeState.collateral != 0 || beforeState.debt != 0) {
             assertApproxEqRel(
                 afterState.collateralRatio,
                 beforeState.collateralRatio,

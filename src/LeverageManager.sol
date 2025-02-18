@@ -81,15 +81,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
-        external
-        view
-        returns (uint256, uint256, uint256, uint256)
-    {
-        return _previewDeposit(strategy, equityInCollateralAsset, _getStrategyState(strategy).collateralRatio);
-    }
-
-    /// @inheritdoc ILeverageManager
     function setStrategyTokenFactory(address factory) external onlyRole(DEFAULT_ADMIN_ROLE) {
         Storage.layout().strategyTokenFactory = IBeaconProxyFactory(factory);
         emit StrategyTokenFactorySet(factory);
@@ -178,32 +169,11 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         external
         returns (uint256)
     {
-        StrategyState memory beforeState = _getStrategyState(strategy);
-
-        {
-            CollateralRatios memory ratios = getStrategyCollateralRatios(strategy);
-
-            bool isWithinCollateralRatioRange = beforeState.collateralRatio >= ratios.minCollateralRatio
-                && beforeState.collateralRatio <= ratios.maxCollateralRatio;
-            bool isStrategyEmpty = beforeState.collateral == 0 && beforeState.debt == 0;
-
-            if (!isWithinCollateralRatioRange && !isStrategyEmpty) {
-                // Cannot deposit if the strategy is not within the configured collateral ratio range and
-                // it holds any collateral or debt. Must wait for a rebalance or price action to
-                // bring the strategy back to within the range
-                revert CollateralRatioOutsideRange(beforeState.collateralRatio);
-            }
-        }
-
         (uint256 collateralToAdd, uint256 debtToBorrow, uint256 sharesAfterFee, uint256 sharesFee) =
-            _previewDeposit(strategy, equityInCollateralAsset, beforeState.collateralRatio);
+            _previewDeposit(strategy, equityInCollateralAsset);
 
         if (sharesAfterFee < minShares) {
             revert SlippageTooHigh(sharesAfterFee, minShares);
-        }
-
-        if (collateralToAdd + beforeState.collateral > getStrategyCollateralCap(strategy)) {
-            revert CollateralCapExceeded(collateralToAdd + beforeState.collateral, getStrategyCollateralCap(strategy));
         }
 
         ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
@@ -385,31 +355,35 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     /// @notice Previews parameters related to a deposit action
     /// @param strategy Strategy to preview deposit for
     /// @param equityInCollateralAsset Equity to deposit, denominated in collateral asset
-    /// @param currentCollateralRatio Current collateral ratio of the strategy
     /// @return (collateralToAdd, debtToBorrow, sharesAfterFee, sharesFee)
-    function _previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset, uint256 currentCollateralRatio)
+    function _previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
         internal
         view
         returns (uint256, uint256, uint256, uint256)
     {
         ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
+        StrategyState memory state = _getStrategyState(strategy);
 
         uint256 sharesBeforeFee = _convertToShares(strategy, equityInCollateralAsset);
         uint256 sharesAfterFee = _computeFeeAdjustedShares(strategy, sharesBeforeFee, IFeeManager.Action.Deposit);
 
-        // If the strategy currently has no debt (and thus collateral ratio is `type(uint256).max`), then the deposit
-        // preview should use the target ratio of the strategy for determining how much collateral to add and how
-        // much debt to borrow
-        uint256 depositCollateralRatio = currentCollateralRatio == type(uint256).max
-            ? getStrategyTargetCollateralRatio(strategy)
-            : currentCollateralRatio;
-
-        uint256 collateralToAdd = Math.mulDiv(
-            equityInCollateralAsset, depositCollateralRatio, depositCollateralRatio - BASE_RATIO, Math.Rounding.Ceil
-        );
-
-        uint256 debtToBorrowInCollateral = collateralToAdd - equityInCollateralAsset;
-        uint256 debtToBorrow = lendingAdapter.convertCollateralToDebtAsset(debtToBorrowInCollateral);
+        uint256 collateralToAdd;
+        uint256 debtToBorrow;
+        if (state.collateral == 0 && state.debt == 0) {
+            // If the strategy does not hold any collateral or debt, then the deposit preview should use the target ratio
+            // for determining how much collateral to add and how much debt to borrow
+            uint256 targetRatio = getStrategyTargetCollateralRatio(strategy);
+            collateralToAdd =
+                Math.mulDiv(equityInCollateralAsset, targetRatio, targetRatio - BASE_RATIO, Math.Rounding.Ceil);
+            debtToBorrow = lendingAdapter.convertCollateralToDebtAsset(collateralToAdd - equityInCollateralAsset);
+        } else if (state.debt == 0) {
+            collateralToAdd = equityInCollateralAsset;
+            debtToBorrow = 0;
+        } else {
+            uint256 shareTotalSupply = strategy.totalSupply();
+            collateralToAdd = Math.mulDiv(state.collateral, sharesAfterFee, shareTotalSupply, Math.Rounding.Ceil);
+            debtToBorrow = Math.mulDiv(state.debt, sharesAfterFee, shareTotalSupply, Math.Rounding.Floor);
+        }
 
         return (collateralToAdd, debtToBorrow, sharesAfterFee, sharesBeforeFee - sharesAfterFee);
     }
