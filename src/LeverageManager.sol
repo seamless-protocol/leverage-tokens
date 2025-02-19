@@ -528,16 +528,13 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         uint256 currentDebt = lendingAdapter.getDebt();
         uint256 collateralToAdd;
         uint256 debtToBorrow;
-        if (currentCollateral == 0 && currentDebt == 0) {
-            // If the strategy does not hold any collateral or debt, then the deposit preview should use the target ratio
-            // for determining how much collateral to add and how much debt to borrow
+        if ((currentCollateral == 0 && currentDebt == 0) || strategy.totalSupply() == 0) {
+            // If the strategy does not hold any collateral or debt, or the strategy has no shares then the deposit
+            // preview should use the target ratio for determining how much collateral to add and how much debt to borrow.
             uint256 targetRatio = getStrategyTargetCollateralRatio(strategy);
             collateralToAdd =
                 Math.mulDiv(equityInCollateralAsset, targetRatio, targetRatio - BASE_RATIO, Math.Rounding.Ceil);
             debtToBorrow = lendingAdapter.convertCollateralToDebtAsset(collateralToAdd - equityInCollateralAsset);
-        } else if (currentDebt == 0) {
-            collateralToAdd = equityInCollateralAsset;
-            debtToBorrow = 0;
         } else {
             uint256 shareTotalSupply = strategy.totalSupply();
             collateralToAdd = Math.mulDiv(currentCollateral, sharesAfterFee, shareTotalSupply, Math.Rounding.Ceil);

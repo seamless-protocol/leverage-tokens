@@ -143,6 +143,16 @@ contract DepositTest is LeverageManagerBaseTest {
         assertEq(afterState.collateralRatio, 2 * _BASE_RATIO(), "Collateral ratio mismatch");
     }
 
+    function test_deposit_ZeroSharesTotalSupply() public {
+        MockLeverageManagerStateForDeposit memory beforeState =
+            MockLeverageManagerStateForDeposit({collateral: 2, debt: 1, sharesTotalSupply: 0});
+
+        _prepareLeverageManagerStateForDeposit(beforeState);
+
+        uint256 equityToAddInCollateralAsset = 10 ether;
+        _testDeposit(equityToAddInCollateralAsset, 0);
+    }
+
     /// @dev The allowed slippage in collateral ratio of the strategy after a deposit should scale with the size of the
     /// initial debt in the strategy, as smaller strategies may incur a higher collateral ratio delta after the
     /// deposit due to rounding.

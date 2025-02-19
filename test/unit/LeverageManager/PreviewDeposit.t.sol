@@ -62,6 +62,24 @@ contract PreviewDepositTest is DepositTest {
         assertEq(sharesFee, 0);
     }
 
+    function test_previewDeposit_ZeroSharesTotalSupply() public {
+        MockLeverageManagerStateForDeposit memory beforeState =
+            MockLeverageManagerStateForDeposit({collateral: 2, debt: 1, sharesTotalSupply: 0});
+
+        _prepareLeverageManagerStateForDeposit(beforeState);
+
+        uint256 equityToAddInCollateralAsset = 1 ether;
+
+        (uint256 collateralToAdd, uint256 debtToBorrow, uint256 shares, uint256 sharesFee) =
+            leverageManager.exposed_previewDeposit(strategy, equityToAddInCollateralAsset);
+
+        // Follows 2x target ratio
+        assertEq(collateralToAdd, 2 ether);
+        assertEq(debtToBorrow, 1 ether);
+        assertEq(shares, 0.5e18);
+        assertEq(sharesFee, 0);
+    }
+
     function testFuzz_previewDeposit(
         uint128 initialCollateral,
         uint128 initialDebtInCollateralAsset,
@@ -96,22 +114,17 @@ contract PreviewDepositTest is DepositTest {
             leverageManager.exposed_previewDeposit(strategy, equityToAddInCollateralAsset);
 
         StrategyState memory currentState = leverageManager.exposed_getStrategyState(strategy);
-        if (currentState.collateralInDebtAsset != 0 || currentState.debt != 0) {
-            if (currentState.debt == 0) {
-                // If the strategy holds collateral but no debt, then the collateral to add should be equal to the equity
-                assertEq(collateralToAdd, equityToAddInCollateralAsset);
-                assertEq(debtToBorrow, 0);
-            } else {
-                // If the strategy holds both collateral and debt, then the collateral to add should be equal to the current
-                // collateral ratio (minus some slippage due to rounding)
-                uint256 resultCollateralRatio = ((initialCollateral + collateralToAdd) * _BASE_RATIO())
-                    / (initialDebtInCollateralAsset + debtToBorrow);
-                assertApproxEqRel(
-                    resultCollateralRatio,
-                    currentState.collateralRatio,
-                    _getAllowedCollateralRatioSlippage(initialDebtInCollateralAsset)
-                );
-            }
+        if ((currentState.collateralInDebtAsset != 0 || currentState.debt != 0) && sharesTotalSupply != 0) {
+            // If the strategy holds collateral or debt, then the collateral to add should be equal to the current
+            // collateral ratio (minus some slippage due to rounding)
+            uint256 newDebt = initialDebtInCollateralAsset + debtToBorrow;
+            uint256 newCollateral = initialCollateral + collateralToAdd;
+            uint256 resultCollateralRatio = newDebt != 0 ? (newCollateral * _BASE_RATIO()) / newDebt : type(uint256).max;
+            assertApproxEqRel(
+                resultCollateralRatio,
+                currentState.collateralRatio,
+                _getAllowedCollateralRatioSlippage(initialDebtInCollateralAsset)
+            );
         } else {
             // If the strategy does not hold any debt or collateral, then the deposit preview should use the target ratio
             // for determining how much collateral to add and how much debt to borrow
@@ -126,21 +139,5 @@ contract PreviewDepositTest is DepositTest {
         // Check that the shares to be minted are wrt the new equity being added to the strategy and the fee applied
         assertEq(sharesFee, sharesFeeExpected);
         assertEq(shares, sharesBeforeFee - sharesFee);
-    }
-
-    function test_previewDeposit_ZeroDebtInStrategy() public {
-        MockLeverageManagerStateForDeposit memory beforeState =
-            MockLeverageManagerStateForDeposit({collateral: 100 ether, debt: 0, sharesTotalSupply: 100 ether});
-
-        _prepareLeverageManagerStateForDeposit(beforeState);
-
-        uint256 equityToAddInCollateralAsset = 10 ether;
-        (uint256 collateralToAdd, uint256 debtToBorrow, uint256 shares, uint256 sharesFee) =
-            leverageManager.exposed_previewDeposit(strategy, equityToAddInCollateralAsset);
-
-        assertEq(debtToBorrow, 0);
-        assertEq(collateralToAdd, 10 ether);
-        assertEq(shares, 10 ether);
-        assertEq(sharesFee, 0);
     }
 }
