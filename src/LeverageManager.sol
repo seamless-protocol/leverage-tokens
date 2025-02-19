@@ -33,7 +33,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
     // Base collateral ratio constant, 1e8 means that collateral / debt ratio is 1:1
     uint256 public constant BASE_RATIO = 1e8;
-    uint256 public constant BASE_REWARD_PERCENTAGE = 1e5;
     uint256 public constant DECIMALS_OFFSET = 0;
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
@@ -363,7 +362,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         uint256 targetCollateral = Math.mulDiv(state.debt, targetRatio, BASE_RATIO, Math.Rounding.Ceil);
 
         // Calculate excess of collateral. If collateral is higher than target excess will be positive, otherwise negative
-        excessCollateral = state.collateral.toInt256() - targetCollateral.toInt256();
+        excessCollateral = state.collateralInDebtAsset.toInt256() - targetCollateral.toInt256();
 
         return (state.collateralRatio, excessCollateral);
     }
@@ -503,7 +502,12 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         uint256 collateralRatio =
             debt > 0 ? Math.mulDiv(collateral, BASE_RATIO, debt, Math.Rounding.Floor) : type(uint256).max;
 
-        return StrategyState({collateral: collateral, debt: debt, equity: equity, collateralRatio: collateralRatio});
+        return StrategyState({
+            collateralInDebtAsset: collateral,
+            debt: debt,
+            equity: equity,
+            collateralRatio: collateralRatio
+        });
     }
 
     /// @notice Previews parameters related to a deposit action

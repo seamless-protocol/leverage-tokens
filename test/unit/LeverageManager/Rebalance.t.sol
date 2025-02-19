@@ -76,7 +76,7 @@ contract RebalanceTest is LeverageManagerBaseTest {
         leverageManager.rebalance(actions, transfersIn, transfersOut);
 
         StrategyState memory state = leverageManager.exposed_getStrategyState(strategy);
-        assertEq(state.collateral, 30_000 ether); // 15 ETH = 30,000 USDC
+        assertEq(state.collateralInDebtAsset, 30_000 ether); // 15 ETH = 30,000 USDC
         assertEq(state.debt, 15_000 ether); // 15,000 USDC
         assertEq(state.equity, 15_000 ether); // 15,000 USDC
         assertEq(state.collateralRatio, 2 * _BASE_RATIO()); // Back to 2x leverage
@@ -110,7 +110,7 @@ contract RebalanceTest is LeverageManagerBaseTest {
         leverageManager.rebalance(actions, transfersIn, transfersOut);
 
         StrategyState memory state = leverageManager.exposed_getStrategyState(strategy);
-        assertEq(state.collateral, 24_500 ether); // 12,25 ETH = 24,500 USDC
+        assertEq(state.collateralInDebtAsset, 24_500 ether); // 12,25 ETH = 24,500 USDC
         assertEq(state.debt, 10_000 ether); // 10,000 USDC
         assertEq(state.equity, 14_500 ether); // 14,500 USDC, 10% reward
         assertEq(state.collateralRatio, 245 * _BASE_RATIO() / 100); // Back to 2.45x leverage which is better than 4x
@@ -145,7 +145,7 @@ contract RebalanceTest is LeverageManagerBaseTest {
         leverageManager.rebalance(actions, transfersIn, transfersOut);
 
         StrategyState memory state = leverageManager.exposed_getStrategyState(strategy);
-        assertEq(state.collateral, 9_000 ether); // 4,5 ETH = 9,000 USDC
+        assertEq(state.collateralInDebtAsset, 9_000 ether); // 4,5 ETH = 9,000 USDC
         assertEq(state.debt, 5_000 ether); // 5,000 USDC
         assertEq(state.equity, 4_000 ether); // 4,500 USDC, 10% reward
         assertEq(state.collateralRatio, 180 * _BASE_RATIO() / 100); // Back to 1,8x leverage which is better than 1,333x
@@ -211,13 +211,13 @@ contract RebalanceTest is LeverageManagerBaseTest {
         leverageManager.rebalance(actions, new TokenTransfer[](0), transfersOut);
 
         StrategyState memory stateLong = leverageManager.exposed_getStrategyState(ethLong);
-        assertEq(stateLong.collateral, 24_500 ether);
+        assertEq(stateLong.collateralInDebtAsset, 24_500 ether);
         assertEq(stateLong.debt, 10_000 ether);
         assertEq(stateLong.equity, 14_500 ether);
         assertEq(stateLong.collateralRatio, 2_45 * _BASE_RATIO() / 100); // 2,45 leverage
 
         StrategyState memory stateShort = leverageManager.exposed_getStrategyState(ethShort);
-        assertEq(stateShort.collateral, 9.75 ether); // 9,75 ETH = 19,500 USDC
+        assertEq(stateShort.collateralInDebtAsset, 9.75 ether); // 9,75 ETH = 19,500 USDC
         assertEq(stateShort.debt, 5 ether); // 5,000 ETH = 10,000 USDC
         assertEq(stateShort.equity, 4.75 ether); // 4,750 ETH = 9,500 USDC
         assertEq(stateShort.collateralRatio, 1_95 * _BASE_RATIO() / 100); // 1,95 leverage
