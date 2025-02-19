@@ -27,7 +27,7 @@ contract ValidateIsAllowedToRebalance is LeverageManagerBaseTest {
         leverageManager.exposed_validateIsAuthorizedToRebalance(strategy);
     }
 
-    function test_validateIsAuthorizedToRebalance_RebalanceWhitelistIsNotZeroAddress(IRebalanceWhitelist whitelist)
+    function testFuzz_validateIsAuthorizedToRebalance_RebalanceWhitelistIsNotZeroAddress(IRebalanceWhitelist whitelist)
         public
     {
         vm.assume(address(whitelist) != address(0));
@@ -43,7 +43,7 @@ contract ValidateIsAllowedToRebalance is LeverageManagerBaseTest {
         leverageManager.exposed_validateIsAuthorizedToRebalance(strategy);
     }
 
-    function test_validateIsAuthorizedToRebalance_NotWhitelisted(IRebalanceWhitelist whitelist) public {
+    function testFuzz_validateIsAuthorizedToRebalance_NotWhitelisted(IRebalanceWhitelist whitelist) public {
         _setStrategyRebalanceWhitelist(manager, whitelist);
 
         vm.mockCall(
