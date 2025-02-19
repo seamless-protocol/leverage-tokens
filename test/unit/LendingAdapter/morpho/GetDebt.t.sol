@@ -32,9 +32,8 @@ contract GetDebt is MorphoLendingAdapterBaseTest {
 
         assertEq(
             lendingAdapter.getDebt(),
-            // getDebt() calls MorphoBalancesLib.expectedBorrowAssets, which uses SharesMathLib.toAssetsUp, which uses
-            // the market's total borrow assets and shares and virtual offsets
-            Math.mulDiv(borrowShares, market.totalBorrowAssets + 1, market.totalBorrowShares + 1e6, Math.Rounding.Ceil)
+            // getDebt() calls MorphoBalancesLib.expectedBorrowAssets, which uses SharesMathLib.toAssetsUp with the market's total borrow assets and shares, which are mocked above
+            SharesMathLib.toAssetsUp(borrowShares, market.totalBorrowAssets, market.totalBorrowShares)
         );
     }
 }
