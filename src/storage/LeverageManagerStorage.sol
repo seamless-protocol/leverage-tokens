@@ -5,6 +5,8 @@ pragma solidity ^0.8.26;
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {IBeaconProxyFactory} from "src/interfaces/IBeaconProxyFactory.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
+import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
+import {IRebalanceRewardDistributor} from "src/interfaces/IRebalanceRewardDistributor.sol";
 
 library LeverageManagerStorage {
     /// @dev Struct that contains entire strategy config
@@ -20,6 +22,10 @@ library LeverageManagerStorage {
         uint256 maxCollateralRatio;
         /// @dev Target collateral ratio of the strategy on 8 decimals
         uint256 targetCollateralRatio;
+        /// @dev Rebalance reward distributor module for strategy
+        IRebalanceRewardDistributor rebalanceRewardDistributor;
+        /// @dev Whitelist module for strategy, if not set rebalance is open for everybody
+        IRebalanceWhitelist rebalanceWhitelist;
     }
 
     /// @dev Struct containing all state for the LeverageManager contract

@@ -24,7 +24,7 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
     }
 
     function testFuzz_CreateNewStrategy(
-        Storage.StrategyConfig calldata config,
+        Storage.StrategyConfig memory config,
         address collateralAsset,
         address debtAsset,
         string memory name,
@@ -65,6 +65,9 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
         assertEq(ratios.minCollateralRatio, config.minCollateralRatio);
         assertEq(ratios.maxCollateralRatio, config.maxCollateralRatio);
         assertEq(ratios.targetCollateralRatio, config.targetCollateralRatio);
+
+        assertEq(address(leverageManager.getStrategyCollateralAsset(strategy)), collateralAsset);
+        assertEq(address(leverageManager.getStrategyDebtAsset(strategy)), debtAsset);
     }
 
     /// forge-config: default.fuzz.runs = 1
