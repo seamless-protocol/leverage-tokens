@@ -138,12 +138,12 @@ contract DepositTest is LeverageManagerBaseTest {
         leverageManager.deposit(strategy, equityToAddInCollateralAsset, equityToAddInCollateralAsset - 1);
 
         StrategyState memory afterState = leverageManager.exposed_getStrategyState(strategy);
-        assertEq(afterState.collateralInDebtAsset, 20 ether, "Collateral mismatch"); // 1:1 exchange rate, 2x CR
-        assertEq(afterState.debt, 10 ether, "Debt mismatch");
-        assertEq(afterState.collateralRatio, 2 * _BASE_RATIO(), "Collateral ratio mismatch");
+        assertEq(afterState.collateralInDebtAsset, 20 ether); // 1:1 exchange rate, 2x CR
+        assertEq(afterState.debt, 10 ether);
+        assertEq(afterState.collateralRatio, 2 * _BASE_RATIO());
     }
 
-    function test_deposit_ZeroSharesTotalSupply() public {
+    function test_deposit_ZeroSharesTotalSupplyWithDust() public {
         MockLeverageManagerStateForDeposit memory beforeState =
             MockLeverageManagerStateForDeposit({collateral: 2, debt: 1, sharesTotalSupply: 0});
 
