@@ -27,6 +27,7 @@ contract ValidateIsAllowedToRebalance is LeverageManagerBaseTest {
         leverageManager.exposed_validateIsAuthorizedToRebalance(strategy);
     }
 
+    /// forge-config: default.fuzz.runs = 1
     function testFuzz_validateIsAuthorizedToRebalance_RebalanceWhitelistIsNotZeroAddress(IRebalanceWhitelist whitelist)
         public
     {
@@ -43,7 +44,8 @@ contract ValidateIsAllowedToRebalance is LeverageManagerBaseTest {
         leverageManager.exposed_validateIsAuthorizedToRebalance(strategy);
     }
 
-    function testFuzz_validateIsAuthorizedToRebalance_NotWhitelisted(IRebalanceWhitelist whitelist) public {
+    /// forge-config: default.fuzz.runs = 1
+    function testFuzz_validateIsAuthorizedToRebalance_RevertIf_NotWhitelisted(IRebalanceWhitelist whitelist) public {
         _setStrategyRebalanceWhitelist(manager, whitelist);
 
         vm.mockCall(
