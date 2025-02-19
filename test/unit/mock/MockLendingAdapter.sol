@@ -49,7 +49,7 @@ contract MockLendingAdapter {
     }
 
     function getEquityInCollateralAsset() external view returns (uint256) {
-        return getCollateral() - getDebtInCollateralAsset();
+        return getCollateral() - convertDebtToCollateralAsset(getDebt());
     }
 
     function getEquityInDebtAsset() external view returns (uint256) {
@@ -66,10 +66,6 @@ contract MockLendingAdapter {
 
     function getDebt() public view returns (uint256) {
         return debt;
-    }
-
-    function getDebtInCollateralAsset() public view returns (uint256) {
-        return convertDebtToCollateralAsset(getDebt());
     }
 
     function addCollateral(uint256 amount) external {

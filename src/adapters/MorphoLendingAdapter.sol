@@ -97,11 +97,6 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     }
 
     /// @inheritdoc ILendingAdapter
-    function getDebtInCollateralAsset() public view returns (uint256) {
-        return convertDebtToCollateralAsset(getDebt());
-    }
-
-    /// @inheritdoc ILendingAdapter
     function getEquityInCollateralAsset() external view returns (uint256) {
         uint256 collateral = getCollateral();
         uint256 debtInCollateralAsset = convertDebtToCollateralAsset(getDebt());

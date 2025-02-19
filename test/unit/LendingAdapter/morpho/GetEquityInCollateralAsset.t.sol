@@ -43,7 +43,7 @@ contract GetEquityInCollateralAsset is MorphoLendingAdapterBaseTest {
         // Confirm that the equity in debt assets is the difference between the collateral converted to debt assets and the debt
         assertEq(
             lendingAdapter.getEquityInCollateralAsset(),
-            lendingAdapter.getCollateral() - lendingAdapter.getDebtInCollateralAsset()
+            lendingAdapter.getCollateral() - lendingAdapter.convertDebtToCollateralAsset(lendingAdapter.getDebt())
         );
     }
 
