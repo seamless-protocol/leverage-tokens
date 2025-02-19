@@ -194,13 +194,13 @@ interface ILeverageManager is IFeeManager {
     /// @param strategy The strategy to deposit into
     /// @param equityInCollateralAsset The amount of equity to deposit denominated in the collateral asset of the strategy
     /// @param minShares The minimum amount of shares to mint
-    /// @return collateralToAdd Amount of collateral that will be added
-    /// @return debtToBorrow Amount of debt that will be borrowed
+    /// @return collateral Amount of collateral that was added
+    /// @return debt Amount of debt that was added
     /// @return sharesMinted The amount of shares minted to the sender
     /// @return sharesFee Share fee for deposit
     function deposit(IStrategy strategy, uint256 equityInCollateralAsset, uint256 minShares)
         external
-        returns (uint256 collateralToAdd, uint256 debtToBorrow, uint256 sharesMinted, uint256 sharesFee);
+        returns (uint256 collateral, uint256 debt, uint256 sharesMinted, uint256 sharesFee);
 
     /// @notice Redeems shares of a strategy and withdraws assets from it, sender receives assets and caller pays debt
     /// @param strategy The strategy to redeem from
