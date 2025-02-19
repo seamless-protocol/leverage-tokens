@@ -138,7 +138,7 @@ contract DepositTest is LeverageManagerBaseTest {
         leverageManager.deposit(strategy, equityToAddInCollateralAsset, equityToAddInCollateralAsset - 1);
 
         StrategyState memory afterState = leverageManager.exposed_getStrategyState(strategy);
-        assertEq(afterState.collateral, 20 ether, "Collateral mismatch");
+        assertEq(afterState.collateralInDebtAsset, 20 ether, "Collateral mismatch"); // 1:1 exchange rate, 2x CR
         assertEq(afterState.debt, 10 ether, "Debt mismatch");
         assertEq(afterState.collateralRatio, 2 * _BASE_RATIO(), "Collateral ratio mismatch");
     }
@@ -220,8 +220,8 @@ contract DepositTest is LeverageManagerBaseTest {
 
         StrategyState memory afterState = leverageManager.exposed_getStrategyState(strategy);
         assertEq(
-            afterState.collateral,
-            beforeState.collateral + lendingAdapter.convertCollateralToDebtAsset(collateralToAdd),
+            afterState.collateralInDebtAsset,
+            beforeState.collateralInDebtAsset + lendingAdapter.convertCollateralToDebtAsset(collateralToAdd),
             "Collateral in strategy after deposit mismatch"
         );
         assertEq(collateralAdded, collateralToAdd, "Collateral added mismatch");
@@ -229,7 +229,7 @@ contract DepositTest is LeverageManagerBaseTest {
         assertEq(debtBorrowed, debtToBorrow, "Debt borrowed mismatch");
         assertEq(debtToken.balanceOf(address(this)), debtToBorrow, "Debt tokens received mismatch");
 
-        if (beforeState.collateral != 0 || beforeState.debt != 0) {
+        if (beforeState.collateralInDebtAsset != 0 || beforeState.debt != 0) {
             assertApproxEqRel(
                 afterState.collateralRatio,
                 beforeState.collateralRatio,

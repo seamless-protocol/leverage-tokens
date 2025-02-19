@@ -96,7 +96,7 @@ contract PreviewDepositTest is DepositTest {
             leverageManager.exposed_previewDeposit(strategy, equityToAddInCollateralAsset);
 
         StrategyState memory currentState = leverageManager.exposed_getStrategyState(strategy);
-        if (currentState.collateral != 0 || currentState.debt != 0) {
+        if (currentState.collateralInDebtAsset != 0 || currentState.debt != 0) {
             if (currentState.debt == 0) {
                 // If the strategy holds collateral but no debt, then the collateral to add should be equal to the equity
                 assertEq(collateralToAdd, equityToAddInCollateralAsset);
