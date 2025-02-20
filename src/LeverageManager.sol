@@ -514,6 +514,9 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     /// @param strategy Strategy to preview deposit for
     /// @param equityInCollateralAsset Equity to deposit, denominated in collateral asset
     /// @return (collateralToAdd, debtToBorrow, sharesAfterFee, sharesFee)
+    /// @dev If the strategy has zero total supply of shares (so the strategy does not hold any collateral or debt,
+    ///      or holds some leftover dust after all shares are redeemed), then the deposit preview will use the target
+    ///      collateral ratio for determining how much collateral and debt is required instead of the current collateral ratio.
     function _previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
         internal
         view
@@ -529,9 +532,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         uint256 collateralToAdd;
         uint256 debtToBorrow;
         if (strategy.totalSupply() == 0) {
-            // If the strategy does not hold any collateral or debt, or holds some leftover dust after all shares are redeemed,
-            // then the deposit preview should use the target ratio for determining how much collateral to add and how much
-            // debt to borrow.
             uint256 targetRatio = getStrategyTargetCollateralRatio(strategy);
             collateralToAdd =
                 Math.mulDiv(equityInCollateralAsset, targetRatio, targetRatio - BASE_RATIO, Math.Rounding.Ceil);
