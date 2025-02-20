@@ -62,9 +62,11 @@ contract PreviewDepositTest is DepositTest {
         assertEq(sharesFee, 0);
     }
 
-    function test_previewDeposit_ZeroSharesTotalSupply() public {
+    function testFuzz_previewDeposit_ZeroSharesTotalSupply(uint128 initialCollateral, uint128 initialDebt) public {
+        initialDebt = initialCollateral == 0 ? 0 : uint128(bound(initialDebt, 0, initialCollateral - 1));
+
         MockLeverageManagerStateForDeposit memory beforeState =
-            MockLeverageManagerStateForDeposit({collateral: 2, debt: 1, sharesTotalSupply: 0});
+            MockLeverageManagerStateForDeposit({collateral: initialCollateral, debt: initialDebt, sharesTotalSupply: 0});
 
         _prepareLeverageManagerStateForDeposit(beforeState);
 
@@ -76,7 +78,14 @@ contract PreviewDepositTest is DepositTest {
         // Follows 2x target ratio
         assertEq(collateralToAdd, 2 ether);
         assertEq(debtToBorrow, 1 ether);
-        assertEq(shares, 0.5e18);
+
+        uint256 expectedShares = Math.mulDiv(
+            equityToAddInCollateralAsset,
+            strategy.totalSupply() + 1,
+            initialCollateral - initialDebt + 1, // 1:1 collateral to debt exchange rate in this test
+            Math.Rounding.Floor
+        );
+        assertEq(shares, expectedShares);
         assertEq(sharesFee, 0);
     }
 
@@ -114,8 +123,8 @@ contract PreviewDepositTest is DepositTest {
             leverageManager.exposed_previewDeposit(strategy, equityToAddInCollateralAsset);
 
         StrategyState memory currentState = leverageManager.exposed_getStrategyState(strategy);
-        if ((currentState.collateralInDebtAsset != 0 || currentState.debt != 0) && sharesTotalSupply != 0) {
-            // If the strategy holds collateral or debt, then the collateral to add should be equal to the current
+        if (sharesTotalSupply != 0) {
+            // If the strategy has shares, then the collateral to add should be equal to the current
             // collateral ratio (minus some slippage due to rounding)
             uint256 newDebt = initialDebtInCollateralAsset + debtToBorrow;
             uint256 newCollateral = initialCollateral + collateralToAdd;
