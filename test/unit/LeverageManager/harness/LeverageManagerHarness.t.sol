@@ -7,7 +7,7 @@ import {FeeManagerHarness} from "test/unit/FeeManager/harness/FeeManagerHarness.
 import {LeverageManager} from "src/LeverageManager.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
-import {ActionType, RebalanceAction, TokenTransfer, StrategyState} from "src/types/DataTypes.sol";
+import {ActionType, ExternalAction, RebalanceAction, TokenTransfer, StrategyState} from "src/types/DataTypes.sol";
 
 /// @notice Wrapper contract that exposes all internal functions of LeverageManager
 contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
@@ -21,23 +21,6 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
 
     function exposed_authorizeUpgrade(address newImplementation) external {
         _authorizeUpgrade(newImplementation);
-    }
-
-    function exposed_getStrategyCollateralRatioAndExcess(IStrategy strategy, ILendingAdapter)
-        external
-        view
-        returns (uint256 currCollateralRatio, int256 excessCollateral)
-    {
-        return _getStrategyCollateralRatioAndExcess(strategy);
-    }
-
-    function exposed_calculateCollateralAndDebtToCoverEquity(
-        IStrategy strategy,
-        ILendingAdapter,
-        uint256 equity,
-        IFeeManager.Action action
-    ) external view returns (uint256 collateral, uint256 debt) {
-        return _calculateCollateralAndDebtToCoverEquity(strategy, equity, action);
     }
 
     function exposed_validateIsAuthorizedToRebalance(IStrategy strategy) external view {
@@ -84,19 +67,15 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
         _executeLendingAdapterAction(strategy, actionType, amount);
     }
 
-    function exposed_convertToEquity(IStrategy strategy, uint256 shares) external view returns (uint256 equity) {
-        return _convertToEquity(strategy, shares);
-    }
-
     function exposed_convertToShares(IStrategy strategy, uint256 equity) external view returns (uint256 shares) {
         return _convertToShares(strategy, equity);
     }
 
-    function exposed_previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
+    function exposed_previewAction(IStrategy strategy, uint256 equityInCollateralAsset, ExternalAction action)
         external
         view
         returns (uint256, uint256, uint256, uint256)
     {
-        return _previewDeposit(strategy, equityInCollateralAsset);
+        return _previewAction(strategy, equityInCollateralAsset, action);
     }
 }

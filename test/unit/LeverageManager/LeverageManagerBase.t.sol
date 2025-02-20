@@ -21,6 +21,7 @@ import {BeaconProxyFactory} from "src/BeaconProxyFactory.sol";
 import {Strategy} from "src/Strategy.sol";
 import {MockERC20} from "test/unit/mock/MockERC20.sol";
 import {MockLendingAdapter} from "test/unit/mock/MockLendingAdapter.sol";
+import {ExternalAction} from "src/types/DataTypes.sol";
 
 contract LeverageManagerBaseTest is FeeManagerBaseTest {
     IStrategy public strategy;
@@ -280,7 +281,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         leverageManager.setStrategyRebalanceWhitelist(strategy, whitelist);
     }
 
-    function _setStrategyActionFee(IStrategy _strategy, IFeeManager.Action action, uint256 fee) internal {
+    function _setStrategyActionFee(IStrategy _strategy, ExternalAction action, uint256 fee) internal {
         vm.prank(feeManagerRole);
         leverageManager.setStrategyActionFee(_strategy, action, fee);
     }

@@ -73,15 +73,23 @@ interface ILeverageManager is IFeeManager {
     event Deposit(
         IStrategy indexed strategy,
         address indexed sender,
-        uint256 collateralToAdd,
-        uint256 debtToBorrow,
+        uint256 addedCollateral,
+        uint256 borrowedDebt,
         uint256 equityInCollateralAsset,
         uint256 sharesMinted,
         uint256 sharesFee
     );
 
-    /// @notice Event emitted when user redeems assets from strategy
-    event Redeem(IStrategy indexed strategy, address indexed from, uint256 shares, uint256 collateral, uint256 debt);
+    /// @notice Event emitted when user withdraws assets from strategy
+    event Withdraw(
+        IStrategy indexed strategy,
+        address indexed sender,
+        uint256 removedCollateral,
+        uint256 repaidDebt,
+        uint256 equityInCollateralAsset,
+        uint256 sharesBurned,
+        uint256 sharesFee
+    );
 
     /// @notice Returns factory for creating new strategy tokens
     /// @return factory Factory for creating new strategy tokens
@@ -202,12 +210,17 @@ interface ILeverageManager is IFeeManager {
         external
         returns (uint256 collateral, uint256 debt, uint256 sharesMinted, uint256 sharesFee);
 
-    /// @notice Redeems shares of a strategy and withdraws assets from it, sender receives assets and caller pays debt
-    /// @param strategy The strategy to redeem from
-    /// @param shares The quantity of shares to redeem
-    /// @param minAssets The minimum amount of collateral to receive
-    /// @return assets Actual amount of assets given to the user
-    function redeem(IStrategy strategy, uint256 shares, uint256 minAssets) external returns (uint256 assets);
+    /// @notice Withdraws equity from a strategy and burns shares from sender
+    /// @param strategy The strategy to withdraw from
+    /// @param equityInCollateralAsset The amount of equity to withdraw denominated in the collateral asset of the strategy
+    /// @param minShares The minimum amount of shares to burn
+    /// @return collateral Amount of collateral that was added
+    /// @return debt Amount of debt that was added
+    /// @return sharesBurned The amount of shares burned
+    /// @return sharesFee Share fee for withdraw
+    function withdraw(IStrategy strategy, uint256 equityInCollateralAsset, uint256 minShares)
+        external
+        returns (uint256 collateral, uint256 debt, uint256 sharesBurned, uint256 sharesFee);
 
     /// @notice Rebalances strategies based on provided actions
     /// @param actions Array of rebalance actions to execute (add collateral, remove collateral, borrow or repay)

@@ -6,6 +6,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 
 // Internal imports
+import {ExternalAction} from "src/types/DataTypes.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IRebalanceRewardDistributor} from "src/interfaces/IRebalanceRewardDistributor.sol";
@@ -93,7 +94,7 @@ contract DepositTest is LeverageManagerBaseTest {
 
         uint256 equityToAddInCollateralAsset = 0;
         (uint256 collateralToAdd, uint256 debtToBorrow,,) =
-            leverageManager.exposed_previewDeposit(strategy, equityToAddInCollateralAsset);
+            leverageManager.exposed_previewAction(strategy, equityToAddInCollateralAsset, ExternalAction.Deposit);
 
         assertEq(collateralToAdd, 0);
         assertEq(debtToBorrow, 0);
@@ -111,7 +112,7 @@ contract DepositTest is LeverageManagerBaseTest {
 
         uint256 equityToAddInCollateralAsset = 10 ether;
         (uint256 collateralToAdd,, uint256 shares,) =
-            leverageManager.exposed_previewDeposit(strategy, equityToAddInCollateralAsset);
+            leverageManager.exposed_previewAction(strategy, equityToAddInCollateralAsset, ExternalAction.Deposit);
 
         deal(address(collateralToken), address(this), collateralToAdd);
         collateralToken.approve(address(leverageManager), collateralToAdd);
@@ -212,7 +213,7 @@ contract DepositTest is LeverageManagerBaseTest {
         StrategyState memory beforeState = leverageManager.exposed_getStrategyState(strategy);
 
         (uint256 collateralToAdd, uint256 debtToBorrow, uint256 shares, uint256 sharesFee) =
-            leverageManager.exposed_previewDeposit(strategy, equityToAddInCollateralAsset);
+            leverageManager.exposed_previewAction(strategy, equityToAddInCollateralAsset, ExternalAction.Deposit);
 
         deal(address(collateralToken), address(this), collateralToAdd);
         collateralToken.approve(address(leverageManager), collateralToAdd);

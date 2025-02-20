@@ -6,7 +6,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // Internal imports
 import {IStrategy} from "src/interfaces/IStrategy.sol";
-import {IFeeManager} from "src/interfaces/IFeeManager.sol";
+import {ExternalAction} from "src/types/DataTypes.sol";
 import {FeeManagerBaseTest} from "test/unit/FeeManager/FeeManagerBase.t.sol";
 
 contract SetStrategyActionFeeTest is FeeManagerBaseTest {
@@ -19,11 +19,10 @@ contract SetStrategyActionFeeTest is FeeManagerBaseTest {
         uint256 amount = 1;
         uint256 fee = 1;
 
-        for (uint256 i = 0; i < uint256(type(IFeeManager.Action).max) + 1; i++) {
-            _setStrategyActionFee(feeManagerRole, strategy, IFeeManager.Action(i), fee);
+        for (uint256 i = 0; i < uint256(type(ExternalAction).max) + 1; i++) {
+            _setStrategyActionFee(feeManagerRole, strategy, ExternalAction(i), fee);
 
-            uint256 amountAfterFee =
-                feeManager.exposed_computeFeeAdjustedShares(strategy, amount, IFeeManager.Action.Deposit);
+            uint256 amountAfterFee = feeManager.exposed_computeFeeAdjustedShares(strategy, amount, ExternalAction(i));
 
             assertEq(amountAfterFee, 0);
         }
@@ -32,7 +31,7 @@ contract SetStrategyActionFeeTest is FeeManagerBaseTest {
     function testFuzz_computeFeeAdjustedShares(IStrategy strategy, uint256 amount, uint256 actionNum, uint256 fee)
         public
     {
-        IFeeManager.Action action = IFeeManager.Action(bound(actionNum, 0, 2));
+        ExternalAction action = ExternalAction(bound(actionNum, 0, 2));
         fee = bound(fee, 0, feeManager.MAX_FEE());
 
         _setStrategyActionFee(feeManagerRole, strategy, action, fee);
