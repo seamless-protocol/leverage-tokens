@@ -185,9 +185,14 @@ contract DepositTest is LeverageManagerBaseTest {
     /// deposit due to rounding.
     ///
     /// For example, if the initial collateral is 3 and the initial debt is 1 (with collateral and debt normalized) then the
-    /// collateral ratio is 300000000. If a deposit of 1 equity is made, then the required collateral is 2 and the required
-    /// debt is 1. So the resulting collateral is 5 and the debt is 4. The resulting collateral ratio is 250000000, which is
-    /// a ~16.67% change from the initial collateral ratio.
+    /// collateral ratio is 300000000, with 2 shares total supply. If a deposit of 1 equity is made, then the required collateral
+    /// is 2 and the required debt is 0, so the resulting collateral is 5 and the debt is 1:
+    ///
+    ///    sharesMinted = convertToShares(1) = equityToAdd * (existingSharesTotalSupply + offset) / (existingEquity + offset) = 1 * 3 / 3 = 1
+    ///    collateralToAdd = existingCollateral * sharesMinted / sharesTotalSupply = 3 * 1 / 2 = 2 (1.5 rounded up)
+    ///    debtToBorrow = existingDebt * sharesMinted / sharesTotalSupply = 1 * 1 / 2 = 0 (0.5 rounded down)
+    ///
+    /// The resulting collateral ratio is 500000000, which is a ~+66.67% change from the initial collateral ratio.
     ///
     /// As the intial debt scales up in size, the allowed slippage should scale down as more precision can be achieved
     /// for the collateral ratio:
