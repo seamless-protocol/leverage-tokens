@@ -49,11 +49,15 @@ contract MockLendingAdapter {
     }
 
     function getEquityInCollateralAsset() external view returns (uint256) {
-        return getCollateral() - convertDebtToCollateralAsset(getDebt());
+        uint256 collateral = getCollateral();
+        uint256 debtInCollateralAsset = convertDebtToCollateralAsset(getDebt());
+        return collateral > debtInCollateralAsset ? collateral - debtInCollateralAsset : 0;
     }
 
     function getEquityInDebtAsset() external view returns (uint256) {
-        return getCollateralInDebtAsset() - getDebt();
+        uint256 collateralInDebtAsset = getCollateralInDebtAsset();
+        uint256 _debt = getDebt();
+        return collateralInDebtAsset > _debt ? collateralInDebtAsset - _debt : 0;
     }
 
     function getCollateral() public view returns (uint256) {

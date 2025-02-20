@@ -240,15 +240,15 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         return (collateralToAdd, debtToBorrow, sharesAfterFee, sharesFee);
     }
 
-    function withdraw(IStrategy strategy, uint256 equityInCollateralAsset, uint256 minShares)
+    function withdraw(IStrategy strategy, uint256 equityInCollateralAsset, uint256 maxShares)
         external
         returns (uint256, uint256, uint256, uint256)
     {
         (uint256 collateral, uint256 debt, uint256 sharesBurned, uint256 sharesFee) =
             _previewAction(strategy, equityInCollateralAsset, ExternalAction.Withdraw);
 
-        if (sharesBurned < minShares) {
-            revert SlippageTooHigh(sharesBurned, minShares);
+        if (sharesBurned > maxShares) {
+            revert SlippageTooHigh(sharesBurned, maxShares);
         }
 
         // Burn shares from user and total supply
@@ -428,42 +428,42 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         });
     }
 
-    /// @notice Previews parameters related to an action, action can be deposit or withdraw
-    /// @param strategy Strategy to preview action for
-    /// @param equityInCollateralAsset Equity to deposit or withdraw, denominated in collateral asset
-    /// @param action Action to preview, can be deposit or withdraw
-    /// @return collateral Amount of collateral to add or withdraw
-    /// @return debt Amount of debt to borrow or repay
-    /// @return sharesAfterFee Shares after fee
-    /// @return sharesFee Fee charged for the action
+    /// @notice Previews parameters related to a deposit action
+    /// @param strategy Strategy to preview deposit for
+    /// @param equityInCollateralAsset Amount of equity to add or withdraw, denominated in collateral asset
+    /// @param action Type of the action to preview, can be Deposit or Withdraw
+    /// @return (collateralToAdd, debtToBorrow, sharesAfterFee, sharesFee)
+    /// @dev If the strategy has zero total supply of shares (so the strategy does not hold any collateral or debt,
+    ///      or holds some leftover dust after all shares are redeemed), then the preview will use the target
+    ///      collateral ratio for determining how much collateral and debt is required instead of the current collateral ratio.
     function _previewAction(IStrategy strategy, uint256 equityInCollateralAsset, ExternalAction action)
         internal
         view
-        returns (uint256 collateral, uint256 debt, uint256 sharesAfterFee, uint256 sharesFee)
+        returns (uint256, uint256, uint256, uint256)
     {
         ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
 
         uint256 sharesBeforeFee = _convertToShares(strategy, equityInCollateralAsset);
-        sharesAfterFee = _computeFeeAdjustedShares(strategy, sharesBeforeFee, action);
+        uint256 sharesAfterFee = _computeFeeAdjustedShares(strategy, sharesBeforeFee, IFeeManager.Action.Deposit);
 
+        uint256 collateral;
+        uint256 debt;
         uint256 totalShares = strategy.totalSupply();
-        uint256 totalCollateral = lendingAdapter.getCollateral();
-        uint256 totalDebt = lendingAdapter.getDebt();
 
-        // If user is depositing assets collateral will be rounded up and debt down, otherwise collateral is rounded down and debt up to make sure user does not drains strategy
-        Math.Rounding collateralRounding = action == ExternalAction.Deposit ? Math.Rounding.Ceil : Math.Rounding.Floor;
-        Math.Rounding debtRounding = action == ExternalAction.Deposit ? Math.Rounding.Floor : Math.Rounding.Ceil;
+        uint256 collateralRounding = action == ExternalAction.Deposit ? Math.Rounding.Ceil : Math.Rounding.Floor;
+        uint256 debtRounding = action == ExternalAction.Deposit ? Math.Rounding.Floor : Math.Rounding.Ceil;
 
         if (totalShares == 0) {
             uint256 targetRatio = getStrategyTargetCollateralRatio(strategy);
             collateral = Math.mulDiv(equityInCollateralAsset, targetRatio, targetRatio - BASE_RATIO, collateralRounding);
-            debt = lendingAdapter.convertCollateralToDebtAsset(collateral - equityInCollateralAsset);
+            debtToBorrow = lendingAdapter.convertCollateralToDebtAsset(collateralToAdd - equityInCollateralAsset);
         } else {
-            collateral = Math.mulDiv(totalCollateral, sharesAfterFee, totalShares, collateralRounding);
-            debt = Math.mulDiv(totalDebt, sharesAfterFee, totalShares, debtRounding);
+            collateralToAdd =
+                Math.mulDiv(lendingAdapter.getCollateral(), sharesBeforeFee, totalShares, collateralRounding);
+            debtToBorrow = Math.mulDiv(lendingAdapter.getDebt(), sharesBeforeFee, totalShares, debtRounding);
         }
 
-        return (collateral, debt, sharesAfterFee, sharesBeforeFee - sharesAfterFee);
+        return (collateralToAdd, debtToBorrow, sharesAfterFee, sharesBeforeFee - sharesAfterFee);
     }
 
     /// @notice Function that checks if specific element has already been processed in the slice up to the given index
