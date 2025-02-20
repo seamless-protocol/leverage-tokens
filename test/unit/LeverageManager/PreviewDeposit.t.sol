@@ -132,12 +132,22 @@ contract PreviewDepositTest is DepositTest {
             assertApproxEqRel(
                 resultCollateralRatio,
                 currentState.collateralRatio,
-                _getAllowedCollateralRatioSlippage(initialDebtInCollateralAsset)
+                _getAllowedCollateralRatioSlippage(initialDebtInCollateralAsset),
+                "Collateral ratio after deposit should be within the allowed slippage"
+            );
+            assertGe(
+                resultCollateralRatio,
+                currentState.collateralRatio,
+                "Collateral ratio after deposit should be greater than or equal to before"
             );
         } else {
             // If the strategy does not hold any debt or collateral, then the deposit preview should use the target ratio
             // for determining how much collateral to add and how much debt to borrow
-            assertEq(collateralToAdd * _BASE_RATIO() / debtToBorrow, 2 * _BASE_RATIO());
+            assertEq(
+                collateralToAdd * _BASE_RATIO() / debtToBorrow,
+                2 * _BASE_RATIO(),
+                "Collateral ratio after deposit should be 2x"
+            );
         }
 
         uint256 sharesBeforeFee = equityToAddInCollateralAsset
