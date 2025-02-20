@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
+/// @notice Interface for the Aerodrome Slipstream Router
+/// @dev https://github.com/aerodrome-finance/slipstream/blob/5b529b4d418a6d2e394391a153dfbd0c98de937d/contracts/periphery/interfaces/ISwapRouter.sol
 interface IAerodromeSlipstreamRouter {
     struct ExactInputSingleParams {
         address tokenIn;
