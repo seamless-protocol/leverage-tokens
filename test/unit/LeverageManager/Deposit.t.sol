@@ -120,25 +120,42 @@ contract DepositTest is LeverageManagerBaseTest {
 
     function test_deposit_ZeroSharesTotalSupplyWithDust() public {
         MockLeverageManagerStateForDeposit memory beforeState =
-            MockLeverageManagerStateForDeposit({collateral: 1, debt: 1, sharesTotalSupply: 0});
+            MockLeverageManagerStateForDeposit({collateral: 3, debt: 1, sharesTotalSupply: 0});
 
         _prepareLeverageManagerStateForDeposit(beforeState);
 
         uint256 equityToAddInCollateralAsset = 1 ether;
         uint256 expectedCollateralToAdd = 2 ether; // 2x target CR
         uint256 expectedDebtToBorrow = 1 ether;
+        uint256 expectedShares = Math.mulDiv(
+            equityToAddInCollateralAsset,
+            10 ** _DECIMALS_OFFSET(),
+            beforeState.collateral - beforeState.debt + 1, // 1:1 collateral to debt exchange rate in this test
+            Math.Rounding.Floor
+        );
 
         deal(address(collateralToken), address(this), expectedCollateralToAdd);
         collateralToken.approve(address(leverageManager), expectedCollateralToAdd);
 
-        leverageManager.deposit(strategy, equityToAddInCollateralAsset, equityToAddInCollateralAsset - 1);
+        (uint256 collateralAdded, uint256 debtBorrowed, uint256 sharesReceived, uint256 shareFeeCharged) =
+            leverageManager.deposit(strategy, equityToAddInCollateralAsset, expectedShares);
+
+        assertEq(collateralAdded, expectedCollateralToAdd);
+        assertEq(debtBorrowed, expectedDebtToBorrow);
+        assertEq(sharesReceived, expectedShares);
+        assertEq(shareFeeCharged, 0);
 
         StrategyState memory afterState = leverageManager.exposed_getStrategyState(strategy);
-        assertEq(afterState.collateralInDebtAsset, expectedCollateralToAdd + 1);
-        assertEq(afterState.debt, expectedDebtToBorrow + 1); // 1:1 collateral to debt exchange rate, 2x target CR
+        assertEq(afterState.collateralInDebtAsset, expectedCollateralToAdd + beforeState.collateral);
+        assertEq(afterState.debt, expectedDebtToBorrow + beforeState.debt); // 1:1 collateral to debt exchange rate, 2x target CR
         assertEq(
             afterState.collateralRatio,
-            Math.mulDiv(expectedCollateralToAdd + 1, _BASE_RATIO(), expectedDebtToBorrow + 1, Math.Rounding.Floor)
+            Math.mulDiv(
+                expectedCollateralToAdd + beforeState.collateral,
+                _BASE_RATIO(),
+                expectedDebtToBorrow + beforeState.debt,
+                Math.Rounding.Floor
+            )
         );
     }
 
@@ -263,6 +280,11 @@ contract DepositTest is LeverageManagerBaseTest {
             beforeState.collateralRatio,
             collateralRatioDeltaRelative,
             "Collateral ratio after deposit mismatch"
+        );
+        assertGe(
+            afterState.collateralRatio,
+            beforeState.collateralRatio,
+            "Collateral ratio after deposit should be greater than or equal to before"
         );
     }
 }

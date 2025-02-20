@@ -81,8 +81,8 @@ contract PreviewDepositTest is DepositTest {
 
         uint256 expectedShares = Math.mulDiv(
             equityToAddInCollateralAsset,
-            strategy.totalSupply() + 1,
-            initialCollateral - initialDebt + 1, // 1:1 collateral to debt exchange rate in this test
+            strategy.totalSupply() + 10 ** _DECIMALS_OFFSET(),
+            uint256(initialCollateral) - initialDebt + 1, // 1:1 collateral to debt exchange rate in this test
             Math.Rounding.Floor
         );
         assertEq(shares, expectedShares);

@@ -70,6 +70,10 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         return leverageManager.BASE_RATIO();
     }
 
+    function _DECIMALS_OFFSET() internal view returns (uint256) {
+        return leverageManager.DECIMALS_OFFSET();
+    }
+
     function _getLendingAdapter() internal view returns (ILendingAdapter) {
         return leverageManager.getStrategyLendingAdapter(strategy);
     }
