@@ -5,8 +5,7 @@ import {IStrategy} from "src/interfaces/IStrategy.sol";
 
 enum ExternalAction {
     Deposit,
-    Withdraw,
-    Compound
+    Withdraw
 }
 
 enum ActionType {

@@ -5,7 +5,6 @@ import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {FeeManagerHarness} from "test/unit/FeeManager/harness/FeeManagerHarness.sol";
 import {LeverageManager} from "src/LeverageManager.sol";
-import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 import {ActionType, ExternalAction, RebalanceAction, TokenTransfer, StrategyState} from "src/types/DataTypes.sol";
 
@@ -77,17 +76,5 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
         returns (uint256, uint256, uint256, uint256)
     {
         return _previewAction(strategy, equityInCollateralAsset, action);
-    }
-
-    function exposed_convertToShares(IStrategy strategy, uint256 equity) external view returns (uint256 shares) {
-        return _convertToShares(strategy, equity);
-    }
-
-    function exposed_previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
-        external
-        view
-        returns (uint256, uint256, uint256, uint256)
-    {
-        return _previewDeposit(strategy, equityInCollateralAsset);
     }
 }

@@ -62,11 +62,11 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
     function _computeFeeAdjustedShares(IStrategy strategy, uint256 amount, ExternalAction action)
         internal
         view
-        returns (uint256 amountAfterFee)
+        returns (uint256 amountAfterFee, uint256 feeAmount)
     {
         // Calculate deposit fee (always round up) and send it to treasury
-        uint256 feeAmount = Math.mulDiv(amount, getStrategyActionFee(strategy, action), MAX_FEE, Math.Rounding.Ceil);
-
-        return amount - feeAmount;
+        feeAmount = Math.mulDiv(amount, getStrategyActionFee(strategy, action), MAX_FEE, Math.Rounding.Ceil);
+        amountAfterFee = action == ExternalAction.Deposit ? amount - feeAmount : amount + feeAmount;
+        return (amountAfterFee, feeAmount);
     }
 }
