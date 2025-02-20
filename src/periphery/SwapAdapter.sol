@@ -258,6 +258,7 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
         internal
         returns (uint256 fromAmount)
     {
+        // Check that the number of fees is equal to the number of paths minus one, as required by Uniswap V3
         if (swapContext.path.length != swapContext.fees.length + 1) revert InvalidNumFees();
 
         IUniswapSwapRouter02 uniswapRouter02 = IUniswapSwapRouter02(swapContext.exchangeAddresses.uniswapRouter02);
@@ -277,6 +278,7 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
             return uniswapRouter02.exactOutputSingle(params);
         } else {
             IUniswapSwapRouter02.ExactOutputParams memory params = IUniswapSwapRouter02.ExactOutputParams({
+                // We need to reverse the path as we are swapping from the last token to the first, as required by Uniswap V3
                 path: _encodeUniswapV3Path(swapContext.path, swapContext.fees, true),
                 recipient: msg.sender,
                 amountOut: toAmount,
