@@ -4,7 +4,6 @@ pragma solidity ^0.8.26;
 // Dependency imports
 import {Id, IMorphoBase, Market, MarketParams} from "@morpho-blue/interfaces/IMorpho.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {console2} from "forge-std/console2.sol";
 
 contract MockMorpho {
     mapping(Id => MarketParams) public idToMarketParams;

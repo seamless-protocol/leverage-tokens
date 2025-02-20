@@ -87,4 +87,16 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
     function exposed_convertToEquity(IStrategy strategy, uint256 shares) external view returns (uint256 equity) {
         return _convertToEquity(strategy, shares);
     }
+
+    function exposed_convertToShares(IStrategy strategy, uint256 equity) external view returns (uint256 shares) {
+        return _convertToShares(strategy, equity);
+    }
+
+    function exposed_previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
+        external
+        view
+        returns (uint256, uint256, uint256, uint256)
+    {
+        return _previewDeposit(strategy, equityInCollateralAsset);
+    }
 }

@@ -5,6 +5,7 @@ pragma solidity ^0.8.26;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
+import {IFeeManager} from "./IFeeManager.sol";
 import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
 import {IStrategy} from "./IStrategy.sol";
 import {CollateralRatios} from "src/types/DataTypes.sol";
@@ -14,7 +15,7 @@ import {LeverageManagerStorage as Storage} from "../storage/LeverageManagerStora
 import {RebalanceAction, TokenTransfer} from "src/types/DataTypes.sol";
 import {IRebalanceRewardDistributor} from "./IRebalanceRewardDistributor.sol";
 
-interface ILeverageManager {
+interface ILeverageManager is IFeeManager {
     /// @notice Error thrown when someone tries to create strategy with lending adapter that already exists
     error LendingAdapterAlreadyInUse(address adapter);
 
@@ -26,9 +27,6 @@ interface ILeverageManager {
 
     /// @notice Error thrown when manager tries to set invalid reward percentage
     error InvalidRewardPercentage(uint256 reward);
-
-    /// @notice Error thrown when user tries to deposit into strategy more than cap
-    error CollateralExceedsCap(uint256 collateral, uint256 cap);
 
     /// @notice Error thrown when slippage is too high during mint/redeem
     error SlippageTooHigh(uint256 actual, uint256 expected);
@@ -73,7 +71,13 @@ interface ILeverageManager {
 
     /// @notice Event emitted when user deposits assets into strategy
     event Deposit(
-        IStrategy indexed strategy, address indexed from, address indexed to, uint256 assets, uint256 sharesMinted
+        IStrategy indexed strategy,
+        address indexed sender,
+        uint256 collateralToAdd,
+        uint256 debtToBorrow,
+        uint256 equityInCollateralAsset,
+        uint256 sharesMinted,
+        uint256 sharesFee
     );
 
     /// @notice Event emitted when user redeems assets from strategy
@@ -186,12 +190,17 @@ interface ILeverageManager {
     /// @dev Only address with MANAGER role can call this function
     function setStrategyRebalanceWhitelist(IStrategy strategy, IRebalanceWhitelist whitelist) external;
 
-    /// @notice Mints shares of a strategy and deposits assets into it, recipient receives shares but caller receives debt
+    /// @notice Deposits equity into a strategy and mints shares to the sender
     /// @param strategy The strategy to deposit into
-    /// @param shares The quantity of shares to mint
-    /// @param maxAssets The maximum amount of equity to take from the user denominated in debt asset
-    /// @return assets Actual amount of equity taken from the user denominated in debt asset
-    function mint(IStrategy strategy, uint256 shares, uint256 maxAssets) external returns (uint256 assets);
+    /// @param equityInCollateralAsset The amount of equity to deposit denominated in the collateral asset of the strategy
+    /// @param minShares The minimum amount of shares to mint
+    /// @return collateral Amount of collateral that was added
+    /// @return debt Amount of debt that was added
+    /// @return sharesMinted The amount of shares minted to the sender
+    /// @return sharesFee Share fee for deposit
+    function deposit(IStrategy strategy, uint256 equityInCollateralAsset, uint256 minShares)
+        external
+        returns (uint256 collateral, uint256 debt, uint256 sharesMinted, uint256 sharesFee);
 
     /// @notice Redeems shares of a strategy and withdraws assets from it, sender receives assets and caller pays debt
     /// @param strategy The strategy to redeem from

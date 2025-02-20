@@ -1,17 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-// Forge imports
-import {Test, console} from "forge-std/Test.sol";
-
 // Dependency imports
 import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
+import {IFeeManager} from "src/interfaces/IFeeManager.sol";
+import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IRebalanceRewardDistributor} from "src/interfaces/IRebalanceRewardDistributor.sol";
 import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
-import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 import {LeverageManager} from "src/LeverageManager.sol";
@@ -21,12 +19,18 @@ import {FeeManagerHarness} from "test/unit/FeeManager/harness/FeeManagerHarness.
 import {CollateralRatios} from "src/types/DataTypes.sol";
 import {BeaconProxyFactory} from "src/BeaconProxyFactory.sol";
 import {Strategy} from "src/Strategy.sol";
+import {MockERC20} from "test/unit/mock/MockERC20.sol";
+import {MockLendingAdapter} from "test/unit/mock/MockLendingAdapter.sol";
 
 contract LeverageManagerBaseTest is FeeManagerBaseTest {
     IStrategy public strategy;
-    address public lendingAdapter = makeAddr("lendingAdapter");
     address public defaultAdmin = makeAddr("defaultAdmin");
     address public manager = makeAddr("manager");
+
+    MockERC20 public collateralToken = new MockERC20();
+    MockERC20 public debtToken = new MockERC20();
+
+    MockLendingAdapter public lendingAdapter;
 
     address public strategyTokenImplementation;
     BeaconProxyFactory public strategyTokenFactory;
@@ -35,6 +39,8 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     function setUp() public virtual override {
         strategyTokenImplementation = address(new Strategy());
         strategyTokenFactory = new BeaconProxyFactory(strategyTokenImplementation, address(this));
+
+        lendingAdapter = new MockLendingAdapter(address(collateralToken), address(debtToken));
 
         address leverageManagerImplementation = address(new LeverageManagerHarness());
         address leverageManagerProxy = UnsafeUpgrades.deployUUPSProxy(
@@ -62,6 +68,10 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
 
     function _BASE_RATIO() internal view returns (uint256) {
         return leverageManager.BASE_RATIO();
+    }
+
+    function _DECIMALS_OFFSET() internal view returns (uint256) {
+        return leverageManager.DECIMALS_OFFSET();
     }
 
     function _getLendingAdapter() internal view returns (ILendingAdapter) {
@@ -145,13 +155,19 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     }
 
     function _mockState_CalculateDebtAndShares(CalculateDebtAndSharesState memory state) internal {
-        _mockState_ConvertToShareOrEquity(
+        _mockState_ConvertToEquity(
             ConvertToSharesState({totalEquity: state.totalEquity, sharesTotalSupply: state.strategyTotalShares})
         );
 
         _mockStrategyCollateral(state.strategyCollateral);
         _mockConvertCollateral(state.depositAmount, state.depositAmountInDebtAsset);
-        _setStrategyTargetRatio(state.targetRatio);
+        _setStrategyCollateralRatios(
+            CollateralRatios({
+                minCollateralRatio: 0,
+                targetCollateralRatio: state.targetRatio,
+                maxCollateralRatio: type(uint256).max
+            })
+        );
     }
 
     function _mockStrategyCollateral(uint256 collateral) internal {
@@ -167,9 +183,14 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         uint256 sharesTotalSupply;
     }
 
-    function _mockState_ConvertToShareOrEquity(ConvertToSharesState memory state) internal {
+    function _mockState_ConvertToShares(ConvertToSharesState memory state) internal {
         _mintShares(address(1), state.sharesTotalSupply);
-        _mockStrategyTotalEquity(state.totalEquity);
+        _mockStrategyTotalEquityInCollateralAsset(state.totalEquity);
+    }
+
+    function _mockState_ConvertToEquity(ConvertToSharesState memory state) internal {
+        _mintShares(address(1), state.sharesTotalSupply);
+        _mockStrategyTotalEquityInDebtAsset(state.totalEquity);
     }
 
     struct MintRedeemState {
@@ -188,7 +209,9 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
                 targetRatio: state.targetRatio
             })
         );
-        _mockStrategyTotalEquity(state.collateralInDebt - state.debt);
+        lendingAdapter.mockDebt(state.debt);
+        lendingAdapter.mockCollateral(state.collateralInDebt);
+        _mockStrategyTotalEquityInDebtAsset(state.collateralInDebt - state.debt);
 
         _mintShares(address(this), state.userShares);
         _mintShares(address(1), state.totalShares - state.userShares);
@@ -212,8 +235,16 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     ) internal {
         _mockStrategyCollateralInDebtAsset(state.collateralInDebt);
         _mockStrategyDebt(state.debt);
-        _mockStrategyTotalEquity(state.collateralInDebt > state.debt ? state.collateralInDebt - state.debt : 0);
-        _setStrategyTargetRatio(state.targetRatio);
+        _mockStrategyTotalEquityInDebtAsset(
+            state.collateralInDebt > state.debt ? state.collateralInDebt - state.debt : 0
+        );
+        _setStrategyCollateralRatios(
+            CollateralRatios({
+                minCollateralRatio: 0,
+                targetCollateralRatio: state.targetRatio,
+                maxCollateralRatio: type(uint256).max
+            })
+        );
     }
 
     function _mockConvertCollateral(uint256 collateral, uint256 debt) internal {
@@ -232,11 +263,19 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         );
     }
 
-    function _mockStrategyTotalEquity(uint256 totalEquity) internal {
+    function _mockStrategyTotalEquityInDebtAsset(uint256 equity) internal {
         vm.mockCall(
             address(leverageManager.getStrategyLendingAdapter(strategy)),
             abi.encodeWithSelector(ILendingAdapter.getEquityInDebtAsset.selector),
-            abi.encode(totalEquity)
+            abi.encode(equity)
+        );
+    }
+
+    function _mockStrategyTotalEquityInCollateralAsset(uint256 equity) internal {
+        vm.mockCall(
+            address(leverageManager.getStrategyLendingAdapter(strategy)),
+            abi.encodeWithSelector(ILendingAdapter.getEquityInCollateralAsset.selector),
+            abi.encode(equity)
         );
     }
 
@@ -245,16 +284,14 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         leverageManager.setStrategyRebalanceWhitelist(strategy, whitelist);
     }
 
-    function _setStrategyTargetRatio(uint256 targetRatio) internal {
+    function _setStrategyActionFee(IStrategy _strategy, IFeeManager.Action action, uint256 fee) internal {
+        vm.prank(feeManagerRole);
+        leverageManager.setStrategyActionFee(_strategy, action, fee);
+    }
+
+    function _setStrategyCollateralRatios(CollateralRatios memory ratios) internal {
         vm.prank(manager);
-        leverageManager.setStrategyCollateralRatios(
-            strategy,
-            CollateralRatios({
-                minCollateralRatio: 0,
-                targetCollateralRatio: targetRatio,
-                maxCollateralRatio: type(uint256).max
-            })
-        );
+        leverageManager.setStrategyCollateralRatios(strategy, ratios);
     }
 
     function _mockStrategyDebt(uint256 debt) internal {

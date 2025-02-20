@@ -22,7 +22,7 @@ import {FeeManager} from "src/FeeManager.sol";
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
-import {CollateralRatios} from "src/types/DataTypes.sol";
+import {CollateralRatios, StrategyState} from "src/types/DataTypes.sol";
 import {Strategy} from "src/Strategy.sol";
 import {RebalanceAction, TokenTransfer, ActionType, StrategyState} from "src/types/DataTypes.sol";
 
@@ -211,31 +211,33 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function mint(IStrategy strategy, uint256 shares, uint256 maxAssets) external returns (uint256 assets) {
-        // Charge strategy fee. Fee is not sent to treasury but burned which increases overall share value
-        uint256 sharesAfterFee = _computeFeeAdjustedShares(strategy, shares, IFeeManager.Action.Deposit);
-        uint256 equity = _convertToEquity(strategy, sharesAfterFee);
+    function deposit(IStrategy strategy, uint256 equityInCollateralAsset, uint256 minShares)
+        external
+        returns (uint256, uint256, uint256, uint256)
+    {
+        (uint256 collateralToAdd, uint256 debtToBorrow, uint256 sharesAfterFee, uint256 sharesFee) =
+            _previewDeposit(strategy, equityInCollateralAsset);
 
-        if (equity > maxAssets) {
-            revert SlippageTooHigh(equity, maxAssets);
+        if (sharesAfterFee < minShares) {
+            revert SlippageTooHigh(sharesAfterFee, minShares);
         }
 
-        (uint256 collateral, uint256 debt) =
-            _calculateCollateralAndDebtToCoverEquity(strategy, equity, IFeeManager.Action.Deposit);
-
         // Take asset from sender and supply it as collateral
-        SafeERC20.safeTransferFrom(getStrategyCollateralAsset(strategy), msg.sender, address(this), collateral);
-        _executeLendingAdapterAction(strategy, ActionType.AddCollateral, collateral);
+        SafeERC20.safeTransferFrom(getStrategyCollateralAsset(strategy), msg.sender, address(this), collateralToAdd);
+        _executeLendingAdapterAction(strategy, ActionType.AddCollateral, collateralToAdd);
 
         // Borrow and send debt assets to caller
-        _executeLendingAdapterAction(strategy, ActionType.Borrow, debt);
-        SafeERC20.safeTransfer(getStrategyDebtAsset(strategy), msg.sender, debt);
+        _executeLendingAdapterAction(strategy, ActionType.Borrow, debtToBorrow);
+        SafeERC20.safeTransfer(getStrategyDebtAsset(strategy), msg.sender, debtToBorrow);
 
         // Mint shares to user
-        strategy.mint(msg.sender, shares);
+        strategy.mint(msg.sender, sharesAfterFee);
 
-        emit Deposit(strategy, msg.sender, msg.sender, equity, shares);
-        return equity;
+        // Emit event and explicit return statement
+        emit Deposit(
+            strategy, msg.sender, collateralToAdd, debtToBorrow, equityInCollateralAsset, sharesAfterFee, sharesFee
+        );
+        return (collateralToAdd, debtToBorrow, sharesAfterFee, sharesFee);
     }
 
     /// @inheritdoc ILeverageManager
@@ -451,6 +453,43 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         }
     }
 
+    /// @notice Function that converts user's shares to strategy equity, equity will be denominated in debt asset
+    /// @notice Function uses OZ formula for calculating assets
+    /// @param strategy Strategy to convert shares for
+    /// @param shares Shares to convert to equity
+    /// @dev Function must be called before supplying and borrowing
+    /// @dev Function should be used to calculate how much shares user should receive for their shares
+    function _convertToEquity(IStrategy strategy, uint256 shares) internal view returns (uint256 equityInDebtAsset) {
+        ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
+
+        return Math.mulDiv(
+            shares,
+            lendingAdapter.getEquityInDebtAsset() + 1,
+            strategy.totalSupply() + 10 ** DECIMALS_OFFSET,
+            Math.Rounding.Floor
+        );
+    }
+
+    /// @notice Function that converts user's equity to shares
+    /// @notice Function uses OZ formula for calculating shares
+    /// @param strategy Strategy to convert equity for
+    /// @param equityInCollateralAsset Equity to convert to shares, denominated in collateral asset
+    /// @dev Function should be used to calculate how much shares user should receive for their equity
+    function _convertToShares(IStrategy strategy, uint256 equityInCollateralAsset)
+        internal
+        view
+        returns (uint256 shares)
+    {
+        ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
+
+        return Math.mulDiv(
+            equityInCollateralAsset,
+            strategy.totalSupply() + 10 ** DECIMALS_OFFSET,
+            lendingAdapter.getEquityInCollateralAsset() + 1,
+            Math.Rounding.Floor
+        );
+    }
+
     /// @notice Returns all data required to describe current strategy state - collateral, debt, equity and collateral ratio
     /// @param strategy Strategy to query state for
     function _getStrategyState(IStrategy strategy) internal view returns (StrategyState memory) {
@@ -471,21 +510,39 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         });
     }
 
-    /// @notice Function that converts user's shares to strategy equity, equity will be denominated in debt asset
-    /// @notice Function uses OZ formula for calculating assets
-    /// @param strategy Strategy to convert shares for
-    /// @param shares Shares to convert to equity
-    /// @dev Function must be called before supplying and borrowing
-    /// @dev Function should be used to calculate how much shares user should receive for their shares
-    function _convertToEquity(IStrategy strategy, uint256 shares) internal view returns (uint256 equityInDebtAsset) {
+    /// @notice Previews parameters related to a deposit action
+    /// @param strategy Strategy to preview deposit for
+    /// @param equityInCollateralAsset Equity to deposit, denominated in collateral asset
+    /// @return (collateralToAdd, debtToBorrow, sharesAfterFee, sharesFee)
+    /// @dev If the strategy has zero total supply of shares (so the strategy does not hold any collateral or debt,
+    ///      or holds some leftover dust after all shares are redeemed), then the deposit preview will use the target
+    ///      collateral ratio for determining how much collateral and debt is required instead of the current collateral ratio.
+    function _previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
+        internal
+        view
+        returns (uint256, uint256, uint256, uint256)
+    {
         ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
 
-        return Math.mulDiv(
-            shares,
-            lendingAdapter.getEquityInDebtAsset() + 1,
-            strategy.totalSupply() + 10 ** DECIMALS_OFFSET,
-            Math.Rounding.Floor
-        );
+        uint256 sharesBeforeFee = _convertToShares(strategy, equityInCollateralAsset);
+        uint256 sharesAfterFee = _computeFeeAdjustedShares(strategy, sharesBeforeFee, IFeeManager.Action.Deposit);
+
+        uint256 collateralToAdd;
+        uint256 debtToBorrow;
+        uint256 sharesTotalSupply = strategy.totalSupply();
+        if (sharesTotalSupply == 0) {
+            uint256 targetRatio = getStrategyTargetCollateralRatio(strategy);
+            collateralToAdd =
+                Math.mulDiv(equityInCollateralAsset, targetRatio, targetRatio - BASE_RATIO, Math.Rounding.Ceil);
+            debtToBorrow = lendingAdapter.convertCollateralToDebtAsset(collateralToAdd - equityInCollateralAsset);
+        } else {
+            collateralToAdd =
+                Math.mulDiv(lendingAdapter.getCollateral(), sharesBeforeFee, sharesTotalSupply, Math.Rounding.Ceil);
+            debtToBorrow =
+                Math.mulDiv(lendingAdapter.getDebt(), sharesBeforeFee, sharesTotalSupply, Math.Rounding.Floor);
+        }
+
+        return (collateralToAdd, debtToBorrow, sharesAfterFee, sharesBeforeFee - sharesAfterFee);
     }
 
     /// @notice Function that checks if specific element has already been processed in the slice up to the given index

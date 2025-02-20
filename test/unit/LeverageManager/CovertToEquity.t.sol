@@ -1,13 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
-
-// Forge imports
-import {Test, console} from "forge-std/Test.sol";
+pragma solidity ^0.8.26;
 
 // Internal imports
 import {LeverageManagerBaseTest} from "test/unit/LeverageManager/LeverageManagerBase.t.sol";
 
-contract ConvertToEquity is LeverageManagerBaseTest {
+contract ConvertToEquityTest is LeverageManagerBaseTest {
     function setUp() public override {
         super.setUp();
 
@@ -19,7 +16,7 @@ contract ConvertToEquity is LeverageManagerBaseTest {
         uint128 totalEquity = 99;
         uint128 sharesTotalSupply = 100;
 
-        _mockState_ConvertToShareOrEquity(
+        _mockState_ConvertToEquity(
             ConvertToSharesState({totalEquity: totalEquity, sharesTotalSupply: sharesTotalSupply})
         );
 
@@ -28,7 +25,7 @@ contract ConvertToEquity is LeverageManagerBaseTest {
     }
 
     function testFuzz_convertToEquity(uint128 shares, uint128 totalEquity, uint128 sharesTotalSupply) public {
-        _mockState_ConvertToShareOrEquity(
+        _mockState_ConvertToEquity(
             ConvertToSharesState({totalEquity: totalEquity, sharesTotalSupply: sharesTotalSupply})
         );
 

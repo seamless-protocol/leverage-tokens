@@ -16,13 +16,8 @@ import {MockLendingAdapter} from "test/unit/mock/MockLendingAdapter.sol";
 import {ActionType} from "src/types/DataTypes.sol";
 
 contract ExecuteActionTest is LeverageManagerBaseTest {
-    ERC20Mock public collateralToken = new ERC20Mock();
-    ERC20Mock public debtToken = new ERC20Mock();
-
     function setUp() public override {
         super.setUp();
-
-        MockLendingAdapter lendingAdapter = new MockLendingAdapter(address(collateralToken), address(debtToken));
 
         _createNewStrategy(
             manager,
@@ -61,7 +56,9 @@ contract ExecuteActionTest is LeverageManagerBaseTest {
 
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_executeLendingAdapterAction_Repay(uint256 amount) public {
-        debtToken.mint(address(leverageManager), amount);
+        vm.prank(address(leverageManager));
+        lendingAdapter.borrow(amount);
+
         leverageManager.exposed_executeLendingAdapterAction(strategy, ActionType.Repay, amount);
 
         assertEq(debtToken.balanceOf(address(leverageManager)), 0);

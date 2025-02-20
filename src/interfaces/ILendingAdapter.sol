@@ -41,6 +41,10 @@ interface ILendingAdapter {
     /// @return debt Total debt of the position held by the lending adapter
     function getDebt() external view returns (uint256 debt);
 
+    /// @notice Returns total equity of the position held by the lending adapter denominated in collateral asset
+    /// @return equity Equity of the position held by the lending adapter
+    function getEquityInCollateralAsset() external view returns (uint256 equity);
+
     /// @notice Returns total equity of the position held by the lending adapter denominated in debt asset
     /// @return equity Equity of the position held by the lending adapter
     /// @dev Equity is calculated as collateral - debt
