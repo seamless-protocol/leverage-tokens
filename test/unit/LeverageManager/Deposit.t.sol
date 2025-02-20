@@ -210,9 +210,10 @@ contract DepositTest is LeverageManagerBaseTest {
         lendingAdapter.mockDebt(state.debt);
         lendingAdapter.mockCollateral(state.collateral);
 
+        uint256 debtInCollateralAsset = lendingAdapter.convertDebtToCollateralAsset(state.debt);
         _mockState_ConvertToShares(
             ConvertToSharesState({
-                totalEquity: state.collateral - lendingAdapter.convertDebtToCollateralAsset(state.debt),
+                totalEquity: state.collateral > debtInCollateralAsset ? state.collateral - debtInCollateralAsset : 0,
                 sharesTotalSupply: state.sharesTotalSupply
             })
         );
