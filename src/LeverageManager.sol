@@ -527,19 +527,19 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         uint256 sharesBeforeFee = _convertToShares(strategy, equityInCollateralAsset);
         uint256 sharesAfterFee = _computeFeeAdjustedShares(strategy, sharesBeforeFee, IFeeManager.Action.Deposit);
 
-        uint256 currentCollateral = lendingAdapter.getCollateral();
-        uint256 currentDebt = lendingAdapter.getDebt();
         uint256 collateralToAdd;
         uint256 debtToBorrow;
-        if (strategy.totalSupply() == 0) {
+        uint256 sharesTotalSupply = strategy.totalSupply();
+        if (sharesTotalSupply == 0) {
             uint256 targetRatio = getStrategyTargetCollateralRatio(strategy);
             collateralToAdd =
                 Math.mulDiv(equityInCollateralAsset, targetRatio, targetRatio - BASE_RATIO, Math.Rounding.Ceil);
             debtToBorrow = lendingAdapter.convertCollateralToDebtAsset(collateralToAdd - equityInCollateralAsset);
         } else {
-            uint256 shareTotalSupply = strategy.totalSupply();
-            collateralToAdd = Math.mulDiv(currentCollateral, sharesAfterFee, shareTotalSupply, Math.Rounding.Ceil);
-            debtToBorrow = Math.mulDiv(currentDebt, sharesAfterFee, shareTotalSupply, Math.Rounding.Floor);
+            collateralToAdd =
+                Math.mulDiv(lendingAdapter.getCollateral(), sharesBeforeFee, sharesTotalSupply, Math.Rounding.Ceil);
+            debtToBorrow =
+                Math.mulDiv(lendingAdapter.getDebt(), sharesBeforeFee, sharesTotalSupply, Math.Rounding.Floor);
         }
 
         return (collateralToAdd, debtToBorrow, sharesAfterFee, sharesBeforeFee - sharesAfterFee);

@@ -27,11 +27,11 @@ contract PreviewDepositTest is DepositTest {
         (uint256 collateralToAdd, uint256 debtToBorrow, uint256 expectedShares, uint256 sharesFee) =
             leverageManager.exposed_previewDeposit(strategy, equityToAdd);
 
-        assertEq(collateralToAdd, 19 ether - 1);
-        assertEq(debtToBorrow, 19 ether - 1);
-        assertEq(expectedShares, 19 ether - 1);
+        assertEq(collateralToAdd, 20 ether - 1);
+        assertEq(debtToBorrow, 20 ether - 1);
+        assertEq(expectedShares, 19 ether - 1); // 5% fee
         assertEq(sharesFee, 1 ether);
-        assertEq(leverageManager.exposed_convertToEquity(strategy, expectedShares), 19 ether - 1);
+        assertEq(leverageManager.exposed_convertToEquity(strategy, expectedShares), 19 ether - 1); // 5% fee
     }
 
     function test_previewDeposit_WithoutFee() public {
