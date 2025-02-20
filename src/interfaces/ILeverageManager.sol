@@ -136,10 +136,22 @@ interface ILeverageManager is IFeeManager {
     /// @return targetRatio Target ratio
     function getStrategyTargetCollateralRatio(IStrategy strategy) external view returns (uint256 targetRatio);
 
+    /// @notice Previews parameters related to a deposit action
+    /// @param strategy Strategy to preview deposit for
+    /// @param equityInCollateralAsset Equity to deposit, denominated in collateral asset
+    /// @return collateralToAdd Amount of collateral to add for the equity deposit
+    /// @return debtToBorrow Amount of debt to borrow for the equity deposit
+    /// @return shares The amount of shares minted to the sender
+    /// @return sharesFee Share fee for deposit
+    function previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
+        external
+        view
+        returns (uint256 collateralToAdd, uint256 debtToBorrow, uint256 shares, uint256 sharesFee);
+
     /// @notice Returns entire configuration for given strategy
     /// @param strategy Address of the strategy to get config for
     /// @return config Strategy configuration
-    function getStrategyConfig(IStrategy strategy) external returns (Storage.StrategyConfig memory config);
+    function getStrategyConfig(IStrategy strategy) external view returns (Storage.StrategyConfig memory config);
 
     /// @notice Sets factory for creating new strategy tokens
     /// @param factory Factory to set

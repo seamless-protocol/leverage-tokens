@@ -1,0 +1,47 @@
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.26;
+
+// Dependency imports
+import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
+
+// Internal imports
+import {ILeverageManager} from "./ILeverageManager.sol";
+import {IStrategy} from "./IStrategy.sol";
+import {ISwapAdapter} from "./ISwapAdapter.sol";
+
+interface ILeverageRouter {
+    /// @notice Error thrown when the sender's supplied collateral is insufficient to cover the deposit
+    error InsufficientSenderCollateral(uint256 actual, uint256 expected);
+
+    /// @notice Error thrown when the caller is not authorized to call a function
+    error Unauthorized();
+
+    /// @notice The Seamless LeverageManager contract
+    function leverageManager() external view returns (ILeverageManager leverageManager);
+
+    /// @notice The Morpho core protocol contract
+    function morpho() external view returns (IMorpho _morpho);
+
+    /// @notice The swap adapter contract used to facilitate swaps
+    function swapper() external view returns (ISwapAdapter _swapper);
+
+    /// @notice Deposit equity into a strategy
+    /// @param strategy Strategy to deposit equity into
+    /// @param equityInCollateralAsset The amount of equity in the collateral asset to deposit into the strategy
+    /// @param minShares Minimum shares to receive from the deposit
+    /// @param maxSenderCollateral The maximum amount of collateral from the sender to use to help repay the flash loan
+    /// @param swapContext Swap context to use for the swap (which DEX to use, the route, tick spacing, etc.)
+    /// @dev Flash loans the collateral required to add the equity to the strategy, receives debt, then swaps the debt to the
+    ///      strategy's collateral asset. The swapped assets and the sender's supplied collateral are used to repay the flash loan
+    /// @dev The sender should approve the LeverageRouter an amount of collateral assets greater than the equity being added
+    ///      to facilitate the deposit in the case that the deposit requires additional collateral to cover swap slippage when swapping
+    ///      debt to collateral to repay the flash loan. The approved amount should equal at least `maxSenderCollateral`. To see the preview of
+    ///      the deposit, `LeverageRouter.leverageManager().previewDeposit(...)` can be used.
+    function deposit(
+        IStrategy strategy,
+        uint256 equityInCollateralAsset,
+        uint256 minShares,
+        uint256 maxSenderCollateral,
+        ISwapAdapter.SwapContext memory swapContext
+    ) external;
+}

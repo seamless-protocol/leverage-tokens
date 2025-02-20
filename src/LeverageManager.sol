@@ -108,6 +108,35 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
+    function previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
+        public
+        view
+        returns (uint256, uint256, uint256, uint256)
+    {
+        ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
+
+        uint256 sharesBeforeFee = _convertToShares(strategy, equityInCollateralAsset);
+        uint256 sharesAfterFee = _computeFeeAdjustedShares(strategy, sharesBeforeFee, IFeeManager.Action.Deposit);
+
+        uint256 collateralToAdd;
+        uint256 debtToBorrow;
+        uint256 sharesTotalSupply = strategy.totalSupply();
+        if (sharesTotalSupply == 0) {
+            uint256 targetRatio = getStrategyTargetCollateralRatio(strategy);
+            collateralToAdd =
+                Math.mulDiv(equityInCollateralAsset, targetRatio, targetRatio - BASE_RATIO, Math.Rounding.Ceil);
+            debtToBorrow = lendingAdapter.convertCollateralToDebtAsset(collateralToAdd - equityInCollateralAsset);
+        } else {
+            collateralToAdd =
+                Math.mulDiv(lendingAdapter.getCollateral(), sharesBeforeFee, sharesTotalSupply, Math.Rounding.Ceil);
+            debtToBorrow =
+                Math.mulDiv(lendingAdapter.getDebt(), sharesBeforeFee, sharesTotalSupply, Math.Rounding.Floor);
+        }
+
+        return (collateralToAdd, debtToBorrow, sharesAfterFee, sharesBeforeFee - sharesAfterFee);
+    }
+
+    /// @inheritdoc ILeverageManager
     function setStrategyTokenFactory(address factory) external onlyRole(DEFAULT_ADMIN_ROLE) {
         Storage.layout().strategyTokenFactory = IBeaconProxyFactory(factory);
         emit StrategyTokenFactorySet(factory);
@@ -216,7 +245,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         returns (uint256, uint256, uint256, uint256)
     {
         (uint256 collateralToAdd, uint256 debtToBorrow, uint256 sharesAfterFee, uint256 sharesFee) =
-            _previewDeposit(strategy, equityInCollateralAsset);
+            previewDeposit(strategy, equityInCollateralAsset);
 
         if (sharesAfterFee < minShares) {
             revert SlippageTooHigh(sharesAfterFee, minShares);
@@ -508,41 +537,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             equity: equity,
             collateralRatio: collateralRatio
         });
-    }
-
-    /// @notice Previews parameters related to a deposit action
-    /// @param strategy Strategy to preview deposit for
-    /// @param equityInCollateralAsset Equity to deposit, denominated in collateral asset
-    /// @return (collateralToAdd, debtToBorrow, sharesAfterFee, sharesFee)
-    /// @dev If the strategy has zero total supply of shares (so the strategy does not hold any collateral or debt,
-    ///      or holds some leftover dust after all shares are redeemed), then the deposit preview will use the target
-    ///      collateral ratio for determining how much collateral and debt is required instead of the current collateral ratio.
-    function _previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
-        internal
-        view
-        returns (uint256, uint256, uint256, uint256)
-    {
-        ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
-
-        uint256 sharesBeforeFee = _convertToShares(strategy, equityInCollateralAsset);
-        uint256 sharesAfterFee = _computeFeeAdjustedShares(strategy, sharesBeforeFee, IFeeManager.Action.Deposit);
-
-        uint256 collateralToAdd;
-        uint256 debtToBorrow;
-        uint256 sharesTotalSupply = strategy.totalSupply();
-        if (sharesTotalSupply == 0) {
-            uint256 targetRatio = getStrategyTargetCollateralRatio(strategy);
-            collateralToAdd =
-                Math.mulDiv(equityInCollateralAsset, targetRatio, targetRatio - BASE_RATIO, Math.Rounding.Ceil);
-            debtToBorrow = lendingAdapter.convertCollateralToDebtAsset(collateralToAdd - equityInCollateralAsset);
-        } else {
-            collateralToAdd =
-                Math.mulDiv(lendingAdapter.getCollateral(), sharesBeforeFee, sharesTotalSupply, Math.Rounding.Ceil);
-            debtToBorrow =
-                Math.mulDiv(lendingAdapter.getDebt(), sharesBeforeFee, sharesTotalSupply, Math.Rounding.Floor);
-        }
-
-        return (collateralToAdd, debtToBorrow, sharesAfterFee, sharesBeforeFee - sharesAfterFee);
     }
 
     /// @notice Function that checks if specific element has already been processed in the slice up to the given index
