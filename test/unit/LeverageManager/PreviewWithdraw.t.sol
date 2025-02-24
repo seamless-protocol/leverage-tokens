@@ -4,14 +4,16 @@ pragma solidity ^0.8.26;
 import {ExternalAction} from "src/types/DataTypes.sol";
 import {PreviewActionTest} from "./PreviewAction.t.sol";
 
-contract PreviewDepositTest is PreviewActionTest {
-    function testFuzz_previewDeposit_MatchesPreviewAction(
+contract PreviewWithdrawTest is PreviewActionTest {
+    function testFuzz_previewWithdraw_MatchesPreviewAction(
         uint128 initialCollateral,
         uint128 initialDebtInCollateralAsset,
         uint128 sharesTotalSupply,
-        uint128 equityToAddInCollateralAsset
+        uint128 equityToWithdrawInCollateralAsset
     ) public {
         initialDebtInCollateralAsset = uint128(bound(initialDebtInCollateralAsset, 0, initialCollateral));
+        equityToWithdrawInCollateralAsset =
+            uint128(bound(equityToWithdrawInCollateralAsset, 0, initialCollateral - initialDebtInCollateralAsset));
 
         _prepareLeverageManagerStateForAction(
             MockLeverageManagerStateForAction({
@@ -22,21 +24,21 @@ contract PreviewDepositTest is PreviewActionTest {
         );
 
         (
-            uint256 expectedCollateralToAdd,
-            uint256 expectedDebtToBorrow,
+            uint256 expectedCollateralToRemove,
+            uint256 expectedDebtToRepay,
             uint256 expectedSharesAfterFee,
             uint256 expectedSharesFee
-        ) = leverageManager.exposed_previewAction(strategy, equityToAddInCollateralAsset, ExternalAction.Deposit);
+        ) = leverageManager.exposed_previewAction(strategy, equityToWithdrawInCollateralAsset, ExternalAction.Withdraw);
 
         (
-            uint256 actualCollateralToAdd,
-            uint256 actualDebtToBorrow,
+            uint256 actualCollateralToRemove,
+            uint256 actualDebtToRepay,
             uint256 actualSharesAfterFee,
             uint256 actualSharesFee
-        ) = leverageManager.previewDeposit(strategy, equityToAddInCollateralAsset);
+        ) = leverageManager.previewWithdraw(strategy, equityToWithdrawInCollateralAsset);
 
-        assertEq(actualCollateralToAdd, expectedCollateralToAdd, "Collateral to add mismatch");
-        assertEq(actualDebtToBorrow, expectedDebtToBorrow, "Debt to borrow mismatch");
+        assertEq(actualCollateralToRemove, expectedCollateralToRemove, "Collateral to remove mismatch");
+        assertEq(actualDebtToRepay, expectedDebtToRepay, "Debt to repay mismatch");
         assertEq(actualSharesAfterFee, expectedSharesAfterFee, "Shares after fee mismatch");
         assertEq(actualSharesFee, expectedSharesFee, "Shares fee mismatch");
     }

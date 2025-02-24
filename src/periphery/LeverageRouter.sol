@@ -16,7 +16,7 @@ import {ILeverageManager} from "../interfaces/ILeverageManager.sol";
 import {IStrategy} from "../interfaces/IStrategy.sol";
 import {ISwapAdapter} from "../interfaces/ISwapAdapter.sol";
 import {ILeverageRouter} from "../interfaces/ILeverageRouter.sol";
-import {StrategyState} from "../types/DataTypes.sol";
+import {ExternalAction} from "../types/DataTypes.sol";
 
 contract LeverageRouter is ILeverageRouter {
     using SafeCast for uint256;
@@ -35,7 +35,7 @@ contract LeverageRouter is ILeverageRouter {
     }
 
     struct MorphoCallbackData {
-        IFeeManager.Action action;
+        ExternalAction action;
         bytes data;
     }
 
@@ -88,7 +88,7 @@ contract LeverageRouter is ILeverageRouter {
         morpho.flashLoan(
             address(collateralAsset),
             collateralToAdd,
-            abi.encode(MorphoCallbackData({action: IFeeManager.Action.Deposit, data: depositData}))
+            abi.encode(MorphoCallbackData({action: ExternalAction.Deposit, data: depositData}))
         );
     }
 
@@ -100,7 +100,7 @@ contract LeverageRouter is ILeverageRouter {
 
         MorphoCallbackData memory callbackData = abi.decode(data, (MorphoCallbackData));
 
-        if (callbackData.action == IFeeManager.Action.Deposit) {
+        if (callbackData.action == ExternalAction.Deposit) {
             DepositParams memory params = abi.decode(callbackData.data, (DepositParams));
             _depositAndRepayMorphoFlashLoan(params, loanAmount);
         }

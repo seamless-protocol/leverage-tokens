@@ -3,6 +3,11 @@ pragma solidity ^0.8.26;
 
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 
+enum ExternalAction {
+    Deposit,
+    Withdraw
+}
+
 enum ActionType {
     AddCollateral,
     RemoveCollateral,

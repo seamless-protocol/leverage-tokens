@@ -9,6 +9,7 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
+import {ExternalAction} from "src/types/DataTypes.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {FeeManagerStorage as Storage} from "src/storage/FeeManagerStorage.sol";
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
@@ -33,7 +34,7 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
     }
 
     /// @inheritdoc IFeeManager
-    function getStrategyActionFee(IStrategy strategy, IFeeManager.Action action) public view returns (uint256 fee) {
+    function getStrategyActionFee(IStrategy strategy, ExternalAction action) public view returns (uint256 fee) {
         return Storage.layout().strategyActionFee[strategy][action];
     }
 
@@ -44,7 +45,7 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
     }
 
     /// @inheritdoc IFeeManager
-    function setStrategyActionFee(IStrategy strategy, IFeeManager.Action action, uint256 fee)
+    function setStrategyActionFee(IStrategy strategy, ExternalAction action, uint256 fee)
         external
         onlyRole(FEE_MANAGER_ROLE)
     {
@@ -57,15 +58,23 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
         emit StrategyActionFeeSet(strategy, action, fee);
     }
 
-    // Calculates and charges fee based on action type
-    function _computeFeeAdjustedShares(IStrategy strategy, uint256 amount, IFeeManager.Action action)
+    /// @notice Computes fee based on user action
+    /// @param strategy Strategy to compute fee for
+    /// @param amount Shares to charge fee on
+    /// @param action Action to compute fee for, Deposit or Withdraw
+    /// @return amountAfterFee Shares amount after fee
+    /// @return feeAmount Fee amount in shares
+    /// @dev Fee is always rounded up.
+    ///      If action is deposit, fee is subtracted from amount, if action is withdraw, fee is added to amount.
+    ///      Which means that on deposit user will receive less shares and on withdraw more shares will be burned from user
+    function _computeFeeAdjustedShares(IStrategy strategy, uint256 amount, ExternalAction action)
         internal
         view
-        returns (uint256 amountAfterFee)
+        returns (uint256, uint256)
     {
         // Calculate deposit fee (always round up) and send it to treasury
         uint256 feeAmount = Math.mulDiv(amount, getStrategyActionFee(strategy, action), MAX_FEE, Math.Rounding.Ceil);
-
-        return amount - feeAmount;
+        uint256 amountAfterFee = action == ExternalAction.Deposit ? amount - feeAmount : amount + feeAmount;
+        return (amountAfterFee, feeAmount);
     }
 }
