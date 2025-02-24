@@ -25,7 +25,7 @@ contract PreviewDepositTest is DepositTest {
 
         uint256 equityToAdd = 10 ether;
         (uint256 collateralToAdd, uint256 debtToBorrow, uint256 expectedShares, uint256 sharesFee) =
-            leverageManager.exposed_previewDeposit(strategy, equityToAdd);
+            leverageManager.previewDeposit(strategy, equityToAdd);
 
         assertEq(collateralToAdd, 20 ether - 1);
         assertEq(debtToBorrow, 20 ether - 1);
@@ -42,7 +42,7 @@ contract PreviewDepositTest is DepositTest {
 
         uint256 equityToAdd = 10 ether;
         (uint256 collateralToAdd, uint256 debtToBorrow, uint256 expectedShares, uint256 sharesFee) =
-            leverageManager.exposed_previewDeposit(strategy, equityToAdd);
+            leverageManager.previewDeposit(strategy, equityToAdd);
 
         assertEq(collateralToAdd, 20 ether - 1);
         assertEq(debtToBorrow, 10 ether - 1);
@@ -54,7 +54,7 @@ contract PreviewDepositTest is DepositTest {
     function test_previewDeposit_ZeroEquityToAdd() public view {
         uint256 equityToAdd = 0;
         (uint256 collateralToAdd, uint256 debtToBorrow, uint256 expectedShares, uint256 sharesFee) =
-            leverageManager.exposed_previewDeposit(strategy, equityToAdd);
+            leverageManager.previewDeposit(strategy, equityToAdd);
 
         assertEq(collateralToAdd, 0);
         assertEq(debtToBorrow, 0);
@@ -73,7 +73,7 @@ contract PreviewDepositTest is DepositTest {
         uint256 equityToAddInCollateralAsset = 1 ether;
 
         (uint256 collateralToAdd, uint256 debtToBorrow, uint256 shares, uint256 sharesFee) =
-            leverageManager.exposed_previewDeposit(strategy, equityToAddInCollateralAsset);
+            leverageManager.previewDeposit(strategy, equityToAddInCollateralAsset);
 
         // Follows 2x target ratio
         assertEq(collateralToAdd, 2 ether);
@@ -120,7 +120,7 @@ contract PreviewDepositTest is DepositTest {
         equityToAddInCollateralAsset = uint128(bound(equityToAddInCollateralAsset, 1, type(uint96).max));
 
         (uint256 collateralToAdd, uint256 debtToBorrow, uint256 shares, uint256 sharesFee) =
-            leverageManager.exposed_previewDeposit(strategy, equityToAddInCollateralAsset);
+            leverageManager.previewDeposit(strategy, equityToAddInCollateralAsset);
 
         StrategyState memory currentState = leverageManager.exposed_getStrategyState(strategy);
         if (sharesTotalSupply != 0) {

@@ -2,10 +2,16 @@
 pragma solidity ^0.8.26;
 
 // Dependency imports
+import {Test} from "forge-std/Test.sol";
+
+// Dependency imports
 import {Id, IMorphoBase, Market, MarketParams} from "@morpho-blue/interfaces/IMorpho.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract MockMorpho {
+// Internal imports
+import {LeverageRouter} from "src/periphery/LeverageRouter.sol";
+
+contract MockMorpho is Test {
     mapping(Id => MarketParams) public idToMarketParams;
 
     mapping(Id => Market) public idToMarket;
@@ -73,5 +79,15 @@ contract MockMorpho {
         address receiver
     ) external {
         IERC20(marketParams.collateralToken).transfer(receiver, assets);
+    }
+
+    function flashLoan(address token, uint256 assets, bytes calldata data) external {
+        deal(token, msg.sender, IERC20(token).balanceOf(msg.sender) + assets);
+        LeverageRouter(msg.sender).onMorphoFlashLoan(assets, data);
+
+        require(
+            IERC20(token).allowance(msg.sender, address(this)) >= assets,
+            "MockMorpho: Morpho not approved to spend enough assets to repay flash loan"
+        );
     }
 }

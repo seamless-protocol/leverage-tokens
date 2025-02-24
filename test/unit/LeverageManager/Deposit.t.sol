@@ -89,7 +89,7 @@ contract DepositTest is LeverageManagerBaseTest {
 
         uint256 equityToAddInCollateralAsset = 0;
         (uint256 collateralToAdd, uint256 debtToBorrow,,) =
-            leverageManager.exposed_previewDeposit(strategy, equityToAddInCollateralAsset);
+            leverageManager.previewDeposit(strategy, equityToAddInCollateralAsset);
 
         assertEq(collateralToAdd, 0);
         assertEq(debtToBorrow, 0);
@@ -169,7 +169,7 @@ contract DepositTest is LeverageManagerBaseTest {
 
         uint256 equityToAddInCollateralAsset = 10 ether;
         (uint256 collateralToAdd,, uint256 shares,) =
-            leverageManager.exposed_previewDeposit(strategy, equityToAddInCollateralAsset);
+            leverageManager.previewDeposit(strategy, equityToAddInCollateralAsset);
 
         deal(address(collateralToken), address(this), collateralToAdd);
         collateralToken.approve(address(leverageManager), collateralToAdd);
@@ -253,7 +253,7 @@ contract DepositTest is LeverageManagerBaseTest {
         );
 
         (uint256 collateralToAdd, uint256 debtToBorrow, uint256 shares, uint256 sharesFee) =
-            leverageManager.exposed_previewDeposit(strategy, equityToAddInCollateralAsset);
+            leverageManager.previewDeposit(strategy, equityToAddInCollateralAsset);
 
         deal(address(collateralToken), address(this), collateralToAdd);
         collateralToken.approve(address(leverageManager), collateralToAdd);
