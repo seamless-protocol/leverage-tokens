@@ -4,6 +4,8 @@ pragma solidity ^0.8.26;
 /// @notice Interface for the Uniswap V2 and V3 Router
 /// @dev https://github.com/Uniswap/swap-router-contracts/blob/70bc2e40dfca294c1cea9bf67a4036732ee54303/contracts/interfaces/ISwapRouter02.sol
 interface IUniswapSwapRouter02 {
+    // **** V3 ****
+
     struct ExactInputSingleParams {
         address tokenIn;
         address tokenOut;
@@ -63,6 +65,8 @@ interface IUniswapSwapRouter02 {
     /// @param params The parameters necessary for the multi-hop swap, encoded as `ExactOutputParams` in calldata
     /// @return amountIn The amount of the input token
     function exactOutput(ExactOutputParams calldata params) external payable returns (uint256 amountIn);
+
+    // **** V2 ****
 
     /// @notice Swaps `amountIn` of one token for as much as possible of another token
     /// @dev Setting `amountIn` to 0 will cause the contract to look up its own balance,
