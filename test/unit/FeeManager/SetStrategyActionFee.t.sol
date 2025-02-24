@@ -5,9 +5,11 @@ pragma solidity ^0.8.26;
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
 
 // Internal imports
-import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
+import {IStrategy} from "src/interfaces/IStrategy.sol";
+import {ExternalAction} from "src/types/DataTypes.sol";
 import {FeeManagerBaseTest} from "test/unit/FeeManager/FeeManagerBase.t.sol";
+import {FeeManager} from "src/FeeManager.sol";
 
 contract SetStrategyActionFeeTest is FeeManagerBaseTest {
     function setUp() public override {
@@ -16,7 +18,7 @@ contract SetStrategyActionFeeTest is FeeManagerBaseTest {
 
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_setStrategyActionFee(IStrategy strategy, uint256 actionNum, uint256 fee) public {
-        IFeeManager.Action action = IFeeManager.Action(bound(actionNum, 0, 2));
+        ExternalAction action = ExternalAction(actionNum % 2);
         fee = bound(fee, 0, feeManager.MAX_FEE());
 
         vm.expectEmit(true, true, true, true);
@@ -35,7 +37,7 @@ contract SetStrategyActionFeeTest is FeeManagerBaseTest {
         uint256 fee
     ) public {
         vm.assume(caller != feeManagerRole);
-        IFeeManager.Action action = IFeeManager.Action(bound(actionNum, 0, 2));
+        ExternalAction action = ExternalAction(actionNum % 2);
 
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -49,7 +51,7 @@ contract SetStrategyActionFeeTest is FeeManagerBaseTest {
     function testFuzz_setStrategyActionFee_RevertIfFeeTooHigh(IStrategy strategy, uint256 actionNum, uint256 fee)
         public
     {
-        IFeeManager.Action action = IFeeManager.Action(bound(actionNum, 0, 2));
+        ExternalAction action = ExternalAction(actionNum % 2);
         fee = bound(fee, feeManager.MAX_FEE() + 1, type(uint256).max);
 
         vm.expectRevert(abi.encodeWithSelector(IFeeManager.FeeTooHigh.selector, fee, feeManager.MAX_FEE()));

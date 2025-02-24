@@ -2,7 +2,7 @@
 pragma solidity ^0.8.26;
 
 import {IStrategy} from "src/interfaces/IStrategy.sol";
-import {IFeeManager} from "src/interfaces/IFeeManager.sol";
+import {ExternalAction} from "src/types/DataTypes.sol";
 
 library FeeManagerStorage {
     /// @dev Struct containing all state for the FeeManager contract
@@ -11,7 +11,7 @@ library FeeManagerStorage {
         /// @dev Treasury address that receives all the fees
         address treasury;
         /// @dev Strategy address => Action => Fee
-        mapping(IStrategy strategy => mapping(IFeeManager.Action => uint256)) strategyActionFee;
+        mapping(IStrategy strategy => mapping(ExternalAction action => uint256)) strategyActionFee;
     }
 
     function layout() internal pure returns (Layout storage l) {

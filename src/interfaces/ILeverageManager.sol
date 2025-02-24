@@ -25,9 +25,6 @@ interface ILeverageManager is IFeeManager {
     /// @notice Error thrown when collateral ratios are invalid
     error InvalidCollateralRatios();
 
-    /// @notice Error thrown when manager tries to set invalid reward percentage
-    error InvalidRewardPercentage(uint256 reward);
-
     /// @notice Error thrown when slippage is too high during mint/redeem
     error SlippageTooHigh(uint256 actual, uint256 expected);
 
@@ -60,9 +57,6 @@ interface ILeverageManager is IFeeManager {
     /// @notice Event emitted when collateral ratios are set for a strategy
     event StrategyCollateralRatiosSet(IStrategy indexed strategy, CollateralRatios ratios);
 
-    /// @notice Event emitted when collateral caps are set/changed for a strategy
-    event StrategyCollateralCapSet(IStrategy indexed strategy, uint256 collateralCap);
-
     /// @notice Event emitted when rebalance reward distributor is set for a strategy
     event StrategyRebalanceRewardDistributorSet(IStrategy indexed strategy, IRebalanceRewardDistributor distributor);
 
@@ -73,15 +67,23 @@ interface ILeverageManager is IFeeManager {
     event Deposit(
         IStrategy indexed strategy,
         address indexed sender,
-        uint256 collateralToAdd,
-        uint256 debtToBorrow,
+        uint256 addedCollateral,
+        uint256 borrowedDebt,
         uint256 equityInCollateralAsset,
         uint256 sharesMinted,
         uint256 sharesFee
     );
 
-    /// @notice Event emitted when user redeems assets from strategy
-    event Redeem(IStrategy indexed strategy, address indexed from, uint256 shares, uint256 collateral, uint256 debt);
+    /// @notice Event emitted when user withdraws assets from strategy
+    event Withdraw(
+        IStrategy indexed strategy,
+        address indexed sender,
+        uint256 removedCollateral,
+        uint256 repaidDebt,
+        uint256 equityInCollateralAsset,
+        uint256 sharesBurned,
+        uint256 sharesFee
+    );
 
     /// @notice Returns factory for creating new strategy tokens
     /// @return factory Factory for creating new strategy tokens
@@ -119,12 +121,6 @@ interface ILeverageManager is IFeeManager {
     /// @param strategy Strategy to get rebalance whitelist for
     /// @param whitelist Rebalance whitelist module
     function getStrategyRebalanceWhitelist(IStrategy strategy) external view returns (IRebalanceWhitelist whitelist);
-
-    /// @notice Returns strategy cap in collateral asset
-    /// @param strategy Strategy to get cap for
-    /// @return cap Strategy cap
-    /// @dev Strategy cap is leveraged amount in collateral asset
-    function getStrategyCollateralCap(IStrategy strategy) external view returns (uint256 cap);
 
     /// @notice Returns leverage config for a strategy including min, max and target
     /// @param strategy Strategy to get leverage config for
@@ -170,12 +166,31 @@ interface ILeverageManager is IFeeManager {
     ///      If collateral ratios are not valid function will revert
     function setStrategyCollateralRatios(IStrategy strategy, CollateralRatios calldata ratios) external;
 
-    /// @notice Sets collateral cap for strategy
-    /// @param strategy Strategy to set cap for
-    /// @param collateralCap Cap for strategy
-    /// @dev Cap for strategy is leveraged amount in collateral asset
-    /// @dev Only address with MANAGER role can call this function
-    function setStrategyCollateralCap(IStrategy strategy, uint256 collateralCap) external;
+    /// @notice Previews deposit function call and returns all required data
+    /// @param strategy Strategy to preview deposit for
+    /// @param equityInCollateralAsset Equity to deposit denominated in collateral asset
+    /// @return collateralToAdd Amount of collateral that sender needs to add to the strategy
+    /// @return debtToBorrow Amount of debt that will be borrowed and sent to sender
+    /// @return sharesAfterFee Amount of shares that will be minted to the sender after fee
+    /// @return sharesFee Amount of shares that will be charged for the deposit
+    /// @dev Sender should approve leverage manager to spend collateralToAdd amount of collateral asset
+    function previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
+        external
+        view
+        returns (uint256 collateralToAdd, uint256 debtToBorrow, uint256 sharesAfterFee, uint256 sharesFee);
+
+    /// @notice Previews withdraw function call and returns all required data
+    /// @param strategy Strategy to preview withdraw for
+    /// @param equityInCollateralAsset Equity to withdraw denominated in collateral asset
+    /// @return collateralToRemove Amount of collateral that will be removed from strategy and sent to sender
+    /// @return debtToRepay Amount of debt that will be taken from sender and repaid to the strategy
+    /// @return sharesAfterFee Amount of shares that will be burned from sender
+    /// @return sharesFee Amount of shares that will be charged for the withdraw
+    /// @dev Sender should approve leverage manager to spend debtToRepay amount of debt asset
+    function previewWithdraw(IStrategy strategy, uint256 equityInCollateralAsset)
+        external
+        view
+        returns (uint256 collateralToRemove, uint256 debtToRepay, uint256 sharesAfterFee, uint256 sharesFee);
 
     /// @notice Sets rebalance reward distributor module for strategy
     /// @param strategy Strategy to set rebalance reward distributor for
@@ -202,12 +217,17 @@ interface ILeverageManager is IFeeManager {
         external
         returns (uint256 collateral, uint256 debt, uint256 sharesMinted, uint256 sharesFee);
 
-    /// @notice Redeems shares of a strategy and withdraws assets from it, sender receives assets and caller pays debt
-    /// @param strategy The strategy to redeem from
-    /// @param shares The quantity of shares to redeem
-    /// @param minAssets The minimum amount of collateral to receive
-    /// @return assets Actual amount of assets given to the user
-    function redeem(IStrategy strategy, uint256 shares, uint256 minAssets) external returns (uint256 assets);
+    /// @notice Withdraws equity from a strategy and burns shares from sender
+    /// @param strategy The strategy to withdraw from
+    /// @param equityInCollateralAsset The amount of equity to withdraw denominated in the collateral asset of the strategy
+    /// @param maxShares The maximum amount of shares to burn
+    /// @return collateral Amount of collateral that was removed from strategy and sent to sender
+    /// @return debt Amount of debt that was repaid to strategy, taken from sender
+    /// @return sharesBurned The amount of the sender's shares that were burned for the withdrawal
+    /// @return sharesFee Share fee for withdraw
+    function withdraw(IStrategy strategy, uint256 equityInCollateralAsset, uint256 maxShares)
+        external
+        returns (uint256 collateral, uint256 debt, uint256 sharesBurned, uint256 sharesFee);
 
     /// @notice Rebalances strategies based on provided actions
     /// @param actions Array of rebalance actions to execute (add collateral, remove collateral, borrow or repay)
