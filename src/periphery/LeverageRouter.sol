@@ -29,7 +29,7 @@ contract LeverageRouter is ILeverageRouter {
         uint256 equityInCollateralAsset;
         uint256 debtToBorrow;
         uint256 minShares;
-        uint256 maxSenderCollateral;
+        uint256 maxDepositCostInCollateralAsset;
         address sender;
         ISwapAdapter.SwapContext swapContext;
     }
@@ -63,7 +63,7 @@ contract LeverageRouter is ILeverageRouter {
         IStrategy strategy,
         uint256 equityInCollateralAsset,
         uint256 minShares,
-        uint256 maxSenderCollateral,
+        uint256 maxDepositCostInCollateralAsset,
         ISwapAdapter.SwapContext memory swapContext
     ) external {
         IERC20 collateralAsset = leverageManager.getStrategyCollateralAsset(strategy);
@@ -78,7 +78,7 @@ contract LeverageRouter is ILeverageRouter {
                 equityInCollateralAsset: equityInCollateralAsset,
                 debtToBorrow: debtToBorrow,
                 minShares: minShares,
-                maxSenderCollateral: maxSenderCollateral,
+                maxDepositCostInCollateralAsset: maxDepositCostInCollateralAsset,
                 sender: msg.sender,
                 swapContext: swapContext
             })
@@ -133,9 +133,9 @@ contract LeverageRouter is ILeverageRouter {
         if (swappedCollateralAmount < collateralLoanAmount) {
             uint256 senderCollateralRequired = collateralLoanAmount - swappedCollateralAmount;
 
-            // Check if the amount of collateral from the sender is less than the amount of collateral needed to help repay the flash loan
-            if (params.maxSenderCollateral < senderCollateralRequired) {
-                revert InsufficientSenderCollateral(params.maxSenderCollateral, senderCollateralRequired);
+            // Check if the maximum cost specified by the sender is less than the amount of collateral needed to help repay the flash loan
+            if (params.maxDepositCostInCollateralAsset < senderCollateralRequired) {
+                revert MaxDepositCostExceeded(params.maxDepositCostInCollateralAsset, senderCollateralRequired);
             }
 
             SafeERC20.safeTransferFrom(params.collateralAsset, params.sender, address(this), senderCollateralRequired);
