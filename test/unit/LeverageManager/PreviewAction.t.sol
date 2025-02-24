@@ -23,7 +23,6 @@ contract PreviewActionTest is LeverageManagerBaseTest {
                 minCollateralRatio: _BASE_RATIO() + 1,
                 maxCollateralRatio: 3 * _BASE_RATIO(),
                 targetCollateralRatio: 2 * _BASE_RATIO(), // 2x leverage
-                collateralCap: type(uint256).max,
                 rebalanceRewardDistributor: IRebalanceRewardDistributor(address(0)),
                 rebalanceWhitelist: IRebalanceWhitelist(address(0))
             }),

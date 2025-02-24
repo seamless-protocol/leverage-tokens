@@ -88,7 +88,6 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
                     minCollateralRatio: _BASE_RATIO(),
                     maxCollateralRatio: _BASE_RATIO() + 2,
                     targetCollateralRatio: _BASE_RATIO() + 1,
-                    collateralCap: type(uint256).max,
                     rebalanceRewardDistributor: IRebalanceRewardDistributor(address(0)),
                     rebalanceWhitelist: IRebalanceWhitelist(address(0))
                 }),
@@ -126,52 +125,9 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         return strategy;
     }
 
-    function _setStrategyCollateralRatios(address caller, CollateralRatios memory ratios) internal {
-        vm.prank(caller);
-        leverageManager.setStrategyCollateralRatios(strategy, ratios);
-    }
-
-    function _setStrategyRebalanceRewardDistributor(address caller, IRebalanceRewardDistributor distributor) internal {
-        vm.prank(caller);
-        leverageManager.setStrategyRebalanceRewardDistributor(strategy, distributor);
-    }
-
     function _mintShares(address recipient, uint256 amount) internal {
         vm.prank(address(leverageManager));
         strategy.mint(recipient, amount);
-    }
-
-    struct CalculateDebtAndSharesState {
-        uint256 targetRatio;
-        uint128 strategyCollateral;
-        uint128 depositAmount;
-        uint128 depositAmountInDebtAsset;
-        uint128 totalEquity;
-        uint128 strategyTotalShares;
-    }
-
-    function _mockState_CalculateDebtAndShares(CalculateDebtAndSharesState memory state) internal {
-        _mockState_ConvertToEquity(
-            ConvertToSharesState({totalEquity: state.totalEquity, sharesTotalSupply: state.strategyTotalShares})
-        );
-
-        _mockStrategyCollateral(state.strategyCollateral);
-        _mockConvertCollateral(state.depositAmount, state.depositAmountInDebtAsset);
-        _setStrategyCollateralRatios(
-            CollateralRatios({
-                minCollateralRatio: 0,
-                targetCollateralRatio: state.targetRatio,
-                maxCollateralRatio: type(uint256).max
-            })
-        );
-    }
-
-    function _mockStrategyCollateral(uint256 collateral) internal {
-        vm.mockCall(
-            address(_getLendingAdapter()),
-            abi.encodeWithSelector(ILendingAdapter.getCollateral.selector),
-            abi.encode(collateral)
-        );
     }
 
     struct ConvertToSharesState {
@@ -184,89 +140,6 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         _mockStrategyTotalEquityInCollateralAsset(state.totalEquity);
     }
 
-    function _mockState_ConvertToEquity(ConvertToSharesState memory state) internal {
-        _mintShares(address(1), state.sharesTotalSupply);
-        _mockStrategyTotalEquityInDebtAsset(state.totalEquity);
-    }
-
-    struct MintRedeemState {
-        uint128 collateralInDebt;
-        uint128 debt;
-        uint128 targetRatio;
-        uint128 userShares;
-        uint128 totalShares;
-    }
-
-    function _mockState_MintRedeem(MintRedeemState memory state) internal {
-        _mockState_CalculateStrategyCollateralRatioAndExcess(
-            CalculateStrategyCollateralRatioAndExcessState({
-                collateralInDebt: state.collateralInDebt,
-                debt: state.debt,
-                targetRatio: state.targetRatio
-            })
-        );
-        lendingAdapter.mockDebt(state.debt);
-        lendingAdapter.mockCollateral(state.collateralInDebt);
-        _mockStrategyTotalEquityInDebtAsset(state.collateralInDebt - state.debt);
-
-        _mintShares(address(this), state.userShares);
-        _mintShares(address(1), state.totalShares - state.userShares);
-
-        // Mock convert rate in _calculateCollateralAndDebtToCoverEquity function. Not important for redeem test
-        vm.mockCall(
-            address(leverageManager.getStrategyLendingAdapter(strategy)),
-            abi.encodeWithSelector(ILendingAdapter.convertDebtToCollateralAsset.selector),
-            abi.encode(4 ether)
-        );
-    }
-
-    struct CalculateStrategyCollateralRatioAndExcessState {
-        uint128 collateralInDebt;
-        uint128 debt;
-        uint128 targetRatio;
-    }
-
-    function _mockState_CalculateStrategyCollateralRatioAndExcess(
-        CalculateStrategyCollateralRatioAndExcessState memory state
-    ) internal {
-        _mockStrategyCollateralInDebtAsset(state.collateralInDebt);
-        _mockStrategyDebt(state.debt);
-        _mockStrategyTotalEquityInDebtAsset(
-            state.collateralInDebt > state.debt ? state.collateralInDebt - state.debt : 0
-        );
-        _setStrategyCollateralRatios(
-            CollateralRatios({
-                minCollateralRatio: 0,
-                targetCollateralRatio: state.targetRatio,
-                maxCollateralRatio: type(uint256).max
-            })
-        );
-    }
-
-    function _mockConvertCollateral(uint256 collateral, uint256 debt) internal {
-        vm.mockCall(
-            address(leverageManager.getStrategyLendingAdapter(strategy)),
-            abi.encodeWithSelector(ILendingAdapter.convertCollateralToDebtAsset.selector, collateral),
-            abi.encode(debt)
-        );
-    }
-
-    function _mockConvertDebt(uint256 debt, uint256 collateral) internal {
-        vm.mockCall(
-            address(leverageManager.getStrategyLendingAdapter(strategy)),
-            abi.encodeWithSelector(ILendingAdapter.convertDebtToCollateralAsset.selector, debt),
-            abi.encode(collateral)
-        );
-    }
-
-    function _mockStrategyTotalEquityInDebtAsset(uint256 equity) internal {
-        vm.mockCall(
-            address(leverageManager.getStrategyLendingAdapter(strategy)),
-            abi.encodeWithSelector(ILendingAdapter.getEquityInDebtAsset.selector),
-            abi.encode(equity)
-        );
-    }
-
     function _mockStrategyTotalEquityInCollateralAsset(uint256 equity) internal {
         vm.mockCall(
             address(leverageManager.getStrategyLendingAdapter(strategy)),
@@ -275,19 +148,9 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         );
     }
 
-    function _setStrategyRebalanceWhitelist(address caller, IRebalanceWhitelist whitelist) internal {
-        vm.prank(caller);
-        leverageManager.setStrategyRebalanceWhitelist(strategy, whitelist);
-    }
-
     function _setStrategyActionFee(IStrategy _strategy, ExternalAction action, uint256 fee) internal {
         vm.prank(feeManagerRole);
         leverageManager.setStrategyActionFee(_strategy, action, fee);
-    }
-
-    function _setStrategyCollateralRatios(CollateralRatios memory ratios) internal {
-        vm.prank(manager);
-        leverageManager.setStrategyCollateralRatios(strategy, ratios);
     }
 
     function _mockStrategyDebt(uint256 debt) internal {

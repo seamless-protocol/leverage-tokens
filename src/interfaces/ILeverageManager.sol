@@ -46,22 +46,10 @@ interface ILeverageManager is IFeeManager {
     /// @notice Event emitted when strategy token factory is set
     event StrategyTokenFactorySet(address factory);
 
-    /// @notice Event emitted when lending adapter is set for the strategy
-    event StrategyLendingAdapterSet(IStrategy indexed strategy, address adapter);
-
     /// @notice Event emitted when new strategy is created
     event StrategyCreated(
         IStrategy indexed strategy, IERC20 collateralAsset, IERC20 debtAsset, Storage.StrategyConfig config
     );
-
-    /// @notice Event emitted when collateral ratios are set for a strategy
-    event StrategyCollateralRatiosSet(IStrategy indexed strategy, CollateralRatios ratios);
-
-    /// @notice Event emitted when rebalance reward distributor is set for a strategy
-    event StrategyRebalanceRewardDistributorSet(IStrategy indexed strategy, IRebalanceRewardDistributor distributor);
-
-    /// @notice Event emitted when rebalance whitelist is set for a strategy
-    event StrategyRebalanceWhitelistSet(IStrategy indexed strategy, IRebalanceWhitelist whitelist);
 
     /// @notice Event emitted when user deposits assets into strategy
     event Deposit(
@@ -153,19 +141,6 @@ interface ILeverageManager is IFeeManager {
         external
         returns (IStrategy strategy);
 
-    /// @notice Sets lending adapter for the strategy
-    /// @param strategy Strategy to set lending adapter for
-    /// @param adapter Adapter to set
-    /// @dev Only MANAGER role can call this function
-    function setStrategyLendingAdapter(IStrategy strategy, address adapter) external;
-
-    /// @notice Sets collateral ratios for a strategy including min/max for rebalance and target
-    /// @param strategy Strategy to set collateral ratios for
-    /// @param ratios Collateral ratios to set
-    /// @dev Only MANAGER role can call this function
-    ///      If collateral ratios are not valid function will revert
-    function setStrategyCollateralRatios(IStrategy strategy, CollateralRatios calldata ratios) external;
-
     /// @notice Previews deposit function call and returns all required data
     /// @param strategy Strategy to preview deposit for
     /// @param equityInCollateralAsset Equity to deposit denominated in collateral asset
@@ -191,19 +166,6 @@ interface ILeverageManager is IFeeManager {
         external
         view
         returns (uint256 collateralToRemove, uint256 debtToRepay, uint256 sharesAfterFee, uint256 sharesFee);
-
-    /// @notice Sets rebalance reward distributor module for strategy
-    /// @param strategy Strategy to set rebalance reward distributor for
-    /// @param distributor Rebalance reward distributor module
-    /// @dev Only address with MANAGER role can call this function
-    function setStrategyRebalanceRewardDistributor(IStrategy strategy, IRebalanceRewardDistributor distributor)
-        external;
-
-    /// @notice Sets rebalance whitelist module for strategy
-    /// @param strategy Strategy to set rebalance whitelist for
-    /// @param whitelist Rebalance whitelist module
-    /// @dev Only address with MANAGER role can call this function
-    function setStrategyRebalanceWhitelist(IStrategy strategy, IRebalanceWhitelist whitelist) external;
 
     /// @notice Deposits equity into a strategy and mints shares to the sender
     /// @param strategy The strategy to deposit into

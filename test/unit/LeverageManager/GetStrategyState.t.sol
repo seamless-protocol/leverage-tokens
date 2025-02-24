@@ -8,16 +8,13 @@ import {StrategyState} from "src/types/DataTypes.sol";
 contract GetStrategyStateTest is LeverageManagerBaseTest {
     function setUp() public override {
         super.setUp();
+
+        _createDummyStrategy();
     }
 
     function test_getStrategyState() public {
-        _mockState_CalculateStrategyCollateralRatioAndExcess(
-            CalculateStrategyCollateralRatioAndExcessState({
-                collateralInDebt: 200 ether,
-                debt: 100 ether,
-                targetRatio: uint128(_BASE_RATIO() + 1) // not important for this test
-            })
-        );
+        _mockStrategyCollateralInDebtAsset(200 ether);
+        _mockStrategyDebt(100 ether);
 
         StrategyState memory state = leverageManager.exposed_getStrategyState(strategy);
         assertEq(state.collateralInDebtAsset, 200 ether);
@@ -26,13 +23,8 @@ contract GetStrategyStateTest is LeverageManagerBaseTest {
     }
 
     function test_getStrategyState_ZeroDebt() public {
-        _mockState_CalculateStrategyCollateralRatioAndExcess(
-            CalculateStrategyCollateralRatioAndExcessState({
-                collateralInDebt: 200 ether,
-                debt: 0,
-                targetRatio: uint128(_BASE_RATIO() + 1) // not important for this test
-            })
-        );
+        _mockStrategyCollateralInDebtAsset(200 ether);
+        _mockStrategyDebt(0);
 
         StrategyState memory state = leverageManager.exposed_getStrategyState(strategy);
         assertEq(state.collateralInDebtAsset, 200 ether);
