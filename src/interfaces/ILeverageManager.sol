@@ -12,7 +12,7 @@ import {CollateralRatios} from "src/types/DataTypes.sol";
 import {IBeaconProxyFactory} from "./IBeaconProxyFactory.sol";
 import {ILendingAdapter} from "./ILendingAdapter.sol";
 import {LeverageManagerStorage as Storage} from "../storage/LeverageManagerStorage.sol";
-import {RebalanceAction, StrategyState, TokenTransfer} from "src/types/DataTypes.sol";
+import {RebalanceAction, TokenTransfer} from "src/types/DataTypes.sol";
 import {IRebalanceRewardDistributor} from "./IRebalanceRewardDistributor.sol";
 
 interface ILeverageManager is IFeeManager {
@@ -83,10 +83,6 @@ interface ILeverageManager is IFeeManager {
     /// @notice Event emitted when user redeems assets from strategy
     event Redeem(IStrategy indexed strategy, address indexed from, uint256 shares, uint256 collateral, uint256 debt);
 
-    /// @notice Returns base collateral ratio
-    /// @return baseCollateralRatio Base collateral ratio
-    function BASE_RATIO() external view returns (uint256 baseCollateralRatio);
-
     /// @notice Returns factory for creating new strategy tokens
     /// @return factory Factory for creating new strategy tokens
     function getStrategyTokenFactory() external view returns (IBeaconProxyFactory factory);
@@ -156,8 +152,6 @@ interface ILeverageManager is IFeeManager {
     /// @param strategy Address of the strategy to get config for
     /// @return config Strategy configuration
     function getStrategyConfig(IStrategy strategy) external view returns (Storage.StrategyConfig memory config);
-
-    function getStrategyState(IStrategy strategy) external view returns (StrategyState memory state);
 
     /// @notice Sets factory for creating new strategy tokens
     /// @param factory Factory to set

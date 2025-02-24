@@ -16,6 +16,7 @@ import {ILeverageManager} from "../interfaces/ILeverageManager.sol";
 import {IStrategy} from "../interfaces/IStrategy.sol";
 import {ISwapAdapter} from "../interfaces/ISwapAdapter.sol";
 import {ILeverageRouter} from "../interfaces/ILeverageRouter.sol";
+import {StrategyState} from "../types/DataTypes.sol";
 
 contract LeverageRouter is ILeverageRouter {
     using SafeCast for uint256;
@@ -91,38 +92,6 @@ contract LeverageRouter is ILeverageRouter {
         );
     }
 
-    function borrow(
-        IStrategy strategy,
-        uint256 debtToBorrow,
-        uint256 minShares,
-        uint256 maxSenderCollateral,
-        ISwapAdapter.SwapContext memory swapContext
-    ) external {
-        (uint256 collateralToAdd, uint256 equityInCollateralAsset) = previewBorrow(strategy, debtToBorrow);
-
-        IERC20 collateralAsset = leverageManager.getStrategyCollateralAsset(strategy);
-
-        bytes memory depositData = abi.encode(
-            DepositParams({
-                strategy: strategy,
-                collateralAsset: collateralAsset,
-                equityInCollateralAsset: equityInCollateralAsset,
-                debtToBorrow: debtToBorrow,
-                minShares: minShares,
-                maxSenderCollateral: maxSenderCollateral,
-                sender: msg.sender,
-                swapContext: swapContext
-            })
-        );
-
-        // Flash loan the collateral to add, and pass the required data to the Morpho flash loan callback handler for the deposit
-        morpho.flashLoan(
-            address(collateralAsset),
-            collateralToAdd,
-            abi.encode(MorphoCallbackData({action: IFeeManager.Action.Deposit, data: depositData}))
-        );
-    }
-
     /// @notice Morpho flash loan callback function
     /// @param loanAmount Amount of asset flash loaned
     /// @param data Encoded data passed to `morpho.flashLoan`
@@ -135,29 +104,6 @@ contract LeverageRouter is ILeverageRouter {
             DepositParams memory params = abi.decode(callbackData.data, (DepositParams));
             _depositAndRepayMorphoFlashLoan(params, loanAmount);
         }
-    }
-
-    /// @notice Previews the amount of collateral and equity required to borrow an amount of debt from a strategy
-    /// @param strategy The strategy to borrow debt from
-    /// @param debtToBorrow The amount of debt to borrow
-    /// @return collateralToAdd The amount of collateral required
-    /// @return equityInCollateralAsset The amount of equity in collateral asset required
-    /// @dev Note: This function calculates the amount of collateral to add to the strategy using a different formula than
-    /// `LeverageManager.previewDeposit`. As such, there may be a discrepancy between the amount of collateral required by this function
-    /// and the amount of collateral required by `LeverageManager.previewDeposit`, with the amount of collateral required by this
-    /// function being greater than the amount of collateral required by `LeverageManager.previewDeposit` (and thus equity as well).
-    function previewBorrow(IStrategy strategy, uint256 debtToBorrow) public view returns (uint256, uint256) {
-        uint256 collateralToAdd = Math.mulDiv(
-            debtToBorrow,
-            leverageManager.getStrategyState(strategy).collateralRatio,
-            leverageManager.BASE_RATIO(),
-            Math.Rounding.Ceil
-        );
-
-        uint256 equityInCollateralAsset = collateralToAdd
-            - leverageManager.getStrategyLendingAdapter(strategy).convertDebtToCollateralAsset(debtToBorrow);
-
-        return (collateralToAdd, equityInCollateralAsset);
     }
 
     /// @notice Executes the deposit of equity into a strategy and the swap of debt assets to the collateral asset
