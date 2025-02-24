@@ -13,12 +13,16 @@ import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStor
 import {LeverageManagerBaseTest} from "./LeverageManagerBase.t.sol";
 
 contract ValidateRebalanceEligibility is LeverageManagerBaseTest {
-    uint256 public minRatio = _BASE_RATIO();
-    uint256 public maxRatio = 3 * _BASE_RATIO();
-    uint256 public targetRatio = 2 * _BASE_RATIO();
+    uint256 public minRatio;
+    uint256 public maxRatio;
+    uint256 public targetRatio;
 
     function setUp() public override {
         super.setUp();
+
+        minRatio = _BASE_RATIO();
+        maxRatio = 3 * _BASE_RATIO();
+        targetRatio = 2 * _BASE_RATIO();
 
         vm.startPrank(manager);
         strategy = leverageManager.createNewStrategy(
@@ -46,6 +50,7 @@ contract ValidateRebalanceEligibility is LeverageManagerBaseTest {
 
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_validateRebalanceEligibility_RevertIf_RatioInProperState(uint256 currRatio) public {
+        vm.assume(currRatio >= minRatio && currRatio <= maxRatio);
         vm.expectRevert(abi.encodeWithSelector(ILeverageManager.StrategyNotEligibleForRebalance.selector, strategy));
         leverageManager.exposed_validateRebalanceEligibility(strategy, currRatio);
     }

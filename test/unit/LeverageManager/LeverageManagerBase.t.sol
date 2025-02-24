@@ -40,14 +40,11 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     function setUp() public virtual override {
         strategyTokenImplementation = address(new Strategy());
         strategyTokenFactory = new BeaconProxyFactory(strategyTokenImplementation, address(this));
-
         lendingAdapter = new MockLendingAdapter(address(collateralToken), address(debtToken));
-
         address leverageManagerImplementation = address(new LeverageManagerHarness());
         address leverageManagerProxy = UnsafeUpgrades.deployUUPSProxy(
             leverageManagerImplementation, abi.encodeWithSelector(LeverageManager.initialize.selector, defaultAdmin)
         );
-
         leverageManager = LeverageManagerHarness(leverageManagerProxy);
 
         vm.startPrank(defaultAdmin);

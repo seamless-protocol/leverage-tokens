@@ -123,7 +123,12 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             )
         );
 
+        if (getIsLendingAdapterUsed(address(strategyConfig.lendingAdapter))) {
+            revert LendingAdapterAlreadyInUse(address(strategyConfig.lendingAdapter));
+        }
+
         Storage.layout().config[strategy] = strategyConfig;
+        Storage.layout().isLendingAdapterUsed[address(strategyConfig.lendingAdapter)] = true;
 
         emit StrategyCreated(
             strategy,
