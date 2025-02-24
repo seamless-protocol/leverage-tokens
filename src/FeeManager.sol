@@ -58,15 +58,23 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
         emit StrategyActionFeeSet(strategy, action, fee);
     }
 
-    // Calculates and charges fee based on action type
+    /// @notice Computes fee based on user action
+    /// @param strategy Strategy to compute fee for
+    /// @param amount Shares to charge fee on
+    /// @param action Action to compute fee for, Deposit or Withdraw
+    /// @return amountAfterFee Shares amount after fee
+    /// @return feeAmount Fee amount in shares
+    /// @dev Fee is always rounded up.
+    ///      If action is deposit, fee is subtracted from amount, if action is withdraw, fee is added to amount.
+    ///      Which means that on deposit user will receive less shares and on withdraw more shares will be burned from user
     function _computeFeeAdjustedShares(IStrategy strategy, uint256 amount, ExternalAction action)
         internal
         view
-        returns (uint256 amountAfterFee, uint256 feeAmount)
+        returns (uint256, uint256)
     {
         // Calculate deposit fee (always round up) and send it to treasury
-        feeAmount = Math.mulDiv(amount, getStrategyActionFee(strategy, action), MAX_FEE, Math.Rounding.Ceil);
-        amountAfterFee = action == ExternalAction.Deposit ? amount - feeAmount : amount + feeAmount;
+        uint256 feeAmount = Math.mulDiv(amount, getStrategyActionFee(strategy, action), MAX_FEE, Math.Rounding.Ceil);
+        uint256 amountAfterFee = action == ExternalAction.Deposit ? amount - feeAmount : amount + feeAmount;
         return (amountAfterFee, feeAmount);
     }
 }
