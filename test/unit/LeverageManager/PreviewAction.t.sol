@@ -216,12 +216,12 @@ contract PreviewActionTest is LeverageManagerBaseTest {
             from,
             to,
             _getAllowedCollateralRatioSlippage(respectiveDebt),
-            "Collateral ratio after deposit should be within the allowed slippage"
+            "Collateral ratio after action should be within the allowed slippage"
         );
         assertGe(
             newCollateralRatio,
             prevState.collateralRatio,
-            "Collateral ratio after deposit should be greater than or equal to before"
+            "Collateral ratio after action should be greater than or equal to before"
         );
     }
 

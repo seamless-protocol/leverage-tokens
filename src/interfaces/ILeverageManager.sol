@@ -172,7 +172,7 @@ interface ILeverageManager is IFeeManager {
     /// @return collateralToAdd Amount of collateral that sender needs to add to the strategy
     /// @return debtToBorrow Amount of debt that will be borrowed and sent to sender
     /// @return sharesAfterFee Amount of shares that will be minted to the sender after fee
-    /// @return sharesFee Amount of fee that will be charged for the deposit
+    /// @return sharesFee Amount of shares that will be charged for the deposit
     /// @dev Sender should approve leverage manager to spend collateralToAdd amount of collateral asset
     function previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
         external
@@ -185,7 +185,7 @@ interface ILeverageManager is IFeeManager {
     /// @return collateralToRemove Amount of collateral that will be removed from strategy and sent to sender
     /// @return debtToRepay Amount of debt that will be taken from sender and repaid to the strategy
     /// @return sharesAfterFee Amount of shares that will be burned from sender
-    /// @return sharesFee Amount of fee that will be charged for the withdraw
+    /// @return sharesFee Amount of shares that will be charged for the withdraw
     /// @dev Sender should approve leverage manager to spend debtToRepay amount of debt asset
     function previewWithdraw(IStrategy strategy, uint256 equityInCollateralAsset)
         external
@@ -220,12 +220,12 @@ interface ILeverageManager is IFeeManager {
     /// @notice Withdraws equity from a strategy and burns shares from sender
     /// @param strategy The strategy to withdraw from
     /// @param equityInCollateralAsset The amount of equity to withdraw denominated in the collateral asset of the strategy
-    /// @param minShares The minimum amount of shares to burn
+    /// @param maxShares The maximum amount of shares to burn
     /// @return collateral Amount of collateral that was removed from strategy and sent to sender
     /// @return debt Amount of debt that was repaid to strategy, taken from sender
-    /// @return sharesBurned The amount of shares burned from sender
+    /// @return sharesBurned The amount of the sender's shares that were burned for the withdrawal
     /// @return sharesFee Share fee for withdraw
-    function withdraw(IStrategy strategy, uint256 equityInCollateralAsset, uint256 minShares)
+    function withdraw(IStrategy strategy, uint256 equityInCollateralAsset, uint256 maxShares)
         external
         returns (uint256 collateral, uint256 debt, uint256 sharesBurned, uint256 sharesFee);
 

@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-import "forge-std/console.sol";
-
 // Dependency imports
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
@@ -397,7 +395,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         }
     }
 
-    // TODO: Update rounding, on withdraw it should be up, on deposit it should be down
     /// @notice Function that converts user's equity to shares
     /// @notice Function uses OZ formula for calculating shares
     /// @param strategy Strategy to convert equity for
