@@ -131,11 +131,6 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         leverageManager.setStrategyCollateralRatios(strategy, ratios);
     }
 
-    function _setStrategyCollateralCap(address caller, uint256 cap) internal {
-        vm.prank(caller);
-        leverageManager.setStrategyCollateralCap(strategy, cap);
-    }
-
     function _setStrategyRebalanceRewardDistributor(address caller, IRebalanceRewardDistributor distributor) internal {
         vm.prank(caller);
         leverageManager.setStrategyRebalanceRewardDistributor(strategy, distributor);

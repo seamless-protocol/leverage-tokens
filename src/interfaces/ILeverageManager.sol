@@ -25,9 +25,6 @@ interface ILeverageManager is IFeeManager {
     /// @notice Error thrown when collateral ratios are invalid
     error InvalidCollateralRatios();
 
-    /// @notice Error thrown when manager tries to set invalid reward percentage
-    error InvalidRewardPercentage(uint256 reward);
-
     /// @notice Error thrown when slippage is too high during mint/redeem
     error SlippageTooHigh(uint256 actual, uint256 expected);
 
@@ -59,9 +56,6 @@ interface ILeverageManager is IFeeManager {
 
     /// @notice Event emitted when collateral ratios are set for a strategy
     event StrategyCollateralRatiosSet(IStrategy indexed strategy, CollateralRatios ratios);
-
-    /// @notice Event emitted when collateral caps are set/changed for a strategy
-    event StrategyCollateralCapSet(IStrategy indexed strategy, uint256 collateralCap);
 
     /// @notice Event emitted when rebalance reward distributor is set for a strategy
     event StrategyRebalanceRewardDistributorSet(IStrategy indexed strategy, IRebalanceRewardDistributor distributor);
@@ -127,12 +121,6 @@ interface ILeverageManager is IFeeManager {
     /// @param strategy Strategy to get rebalance whitelist for
     /// @param whitelist Rebalance whitelist module
     function getStrategyRebalanceWhitelist(IStrategy strategy) external view returns (IRebalanceWhitelist whitelist);
-
-    /// @notice Returns strategy cap in collateral asset
-    /// @param strategy Strategy to get cap for
-    /// @return cap Strategy cap
-    /// @dev Strategy cap is leveraged amount in collateral asset
-    function getStrategyCollateralCap(IStrategy strategy) external view returns (uint256 cap);
 
     /// @notice Returns leverage config for a strategy including min, max and target
     /// @param strategy Strategy to get leverage config for
@@ -203,13 +191,6 @@ interface ILeverageManager is IFeeManager {
         external
         view
         returns (uint256 collateralToRemove, uint256 debtToRepay, uint256 sharesAfterFee, uint256 sharesFee);
-
-    /// @notice Sets collateral cap for strategy
-    /// @param strategy Strategy to set cap for
-    /// @param collateralCap Cap for strategy
-    /// @dev Cap for strategy is leveraged amount in collateral asset
-    /// @dev Only address with MANAGER role can call this function
-    function setStrategyCollateralCap(IStrategy strategy, uint256 collateralCap) external;
 
     /// @notice Sets rebalance reward distributor module for strategy
     /// @param strategy Strategy to set rebalance reward distributor for

@@ -100,11 +100,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function getStrategyCollateralCap(IStrategy strategy) public view returns (uint256 collateralCap) {
-        return Storage.layout().config[strategy].collateralCap;
-    }
-
-    /// @inheritdoc ILeverageManager
     function getStrategyTargetCollateralRatio(IStrategy strategy) public view returns (uint256 targetCollateralRatio) {
         return Storage.layout().config[strategy].targetCollateralRatio;
     }
@@ -131,7 +126,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         );
 
         setStrategyLendingAdapter(strategy, address(strategyConfig.lendingAdapter));
-        setStrategyCollateralCap(strategy, strategyConfig.collateralCap);
         setStrategyRebalanceRewardDistributor(strategy, strategyConfig.rebalanceRewardDistributor);
         setStrategyCollateralRatios(
             strategy,
@@ -186,12 +180,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         config.targetCollateralRatio = ratios.targetCollateralRatio;
 
         emit StrategyCollateralRatiosSet(strategy, ratios);
-    }
-
-    /// @inheritdoc ILeverageManager
-    function setStrategyCollateralCap(IStrategy strategy, uint256 collateralCap) public onlyRole(MANAGER_ROLE) {
-        Storage.layout().config[strategy].collateralCap = collateralCap;
-        emit StrategyCollateralCapSet(strategy, collateralCap);
     }
 
     /// @inheritdoc ILeverageManager

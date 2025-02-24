@@ -59,7 +59,6 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
         // Check if the strategy core is set correctly
         Storage.StrategyConfig memory configAfter = leverageManager.getStrategyConfig(strategy);
         assertEq(address(configAfter.lendingAdapter), address(config.lendingAdapter));
-        assertEq(configAfter.collateralCap, config.collateralCap);
 
         CollateralRatios memory ratios = leverageManager.getStrategyCollateralRatios(strategy);
         assertEq(ratios.minCollateralRatio, config.minCollateralRatio);
