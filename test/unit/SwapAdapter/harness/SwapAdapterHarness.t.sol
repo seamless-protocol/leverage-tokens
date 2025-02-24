@@ -30,4 +30,12 @@ contract SwapAdapterHarness is SwapAdapter {
     ) external returns (uint256 toAmount) {
         return _swapExactFromToMinToUniV2(fromAmount, minToAmount, swapContext);
     }
+
+    function exposed_swapExactFromToMinToUniV3(
+        uint256 fromAmount,
+        uint256 minToAmount,
+        ISwapAdapter.SwapContext memory swapContext
+    ) external returns (uint256 toAmount) {
+        return _swapExactFromToMinToUniV3(fromAmount, minToAmount, swapContext);
+    }
 }

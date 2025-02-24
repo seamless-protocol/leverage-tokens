@@ -7,20 +7,23 @@ import {SwapAdapterBaseTest} from "./SwapAdapterBase.t.sol";
 import {MockUniswapRouter02} from "test/unit/mock/MockUniswapRouter02.sol";
 import {MockERC20} from "test/unit/mock/MockERC20.sol";
 
-contract SwapExactFromToMinToUniswapV2Test is SwapAdapterBaseTest {
+contract SwapExactFromToMinToUniswapV3Test is SwapAdapterBaseTest {
     MockERC20 public fromToken = new MockERC20();
     MockERC20 public toToken = new MockERC20();
 
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_SwapExactFromToMinToUniV2(uint256 fromAmount, uint256 minToAmount) public {
+    function testFuzz_SwapExactFromToMinToUniV3(uint256 fromAmount, uint256 minToAmount) public {
         address[] memory path = new address[](2);
         path[0] = address(fromToken);
         path[1] = address(toToken);
 
+        uint24[] memory fees = new uint24[](1);
+        fees[0] = 500;
+
         ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
-            exchange: ISwapAdapter.Exchange.UNISWAP_V2,
+            exchange: ISwapAdapter.Exchange.UNISWAP_V3,
             path: path,
-            fees: new uint24[](0),
+            fees: fees,
             tickSpacing: new int24[](0),
             exchangeAddresses: ISwapAdapter.ExchangeAddresses({
                 aerodromeRouter: address(0),
@@ -30,22 +33,23 @@ contract SwapExactFromToMinToUniswapV2Test is SwapAdapterBaseTest {
             })
         });
 
-        MockUniswapRouter02.MockV2Swap memory mockSwap = MockUniswapRouter02.MockV2Swap({
-            fromToken: fromToken,
-            toToken: toToken,
+        MockUniswapRouter02.MockV3ExactInputSingleSwap memory mockSwap = MockUniswapRouter02.MockV3ExactInputSingleSwap({
+            fromToken: address(fromToken),
+            toToken: address(toToken),
             fromAmount: fromAmount,
             toAmount: minToAmount,
-            encodedPath: keccak256(abi.encode(swapContext.path)),
+            fee: fees[0],
+            sqrtPriceLimitX96: 0,
             isExecuted: false
         });
-        mockUniswapRouter02.mockNextUniswapV2Swap(mockSwap);
+        mockUniswapRouter02.mockNextUniswapV3ExactInputSingleSwap(mockSwap);
 
         // `SwapAdapter._swapExactFromToMinToUniV2` does not transfer in the fromToken,
         // `SwapAdapterHarness.swapExactFromToMinTo` does which is the external function that calls
         // `_swapExactFromToMinToUniV2`
         deal(address(fromToken), address(swapAdapter), fromAmount);
 
-        uint256 toAmount = swapAdapter.exposed_swapExactFromToMinToUniV2(fromAmount, minToAmount, swapContext);
+        uint256 toAmount = swapAdapter.exposed_swapExactFromToMinToUniV3(fromAmount, minToAmount, swapContext);
 
         // Uniswap receives the fromToken
         assertEq(fromToken.balanceOf(address(mockUniswapRouter02)), fromAmount);
