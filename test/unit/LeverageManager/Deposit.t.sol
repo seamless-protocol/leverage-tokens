@@ -50,7 +50,7 @@ contract DepositTest is LeverageManagerBaseTest {
         MockLeverageManagerStateForDeposit memory beforeState =
             MockLeverageManagerStateForDeposit({collateral: 200 ether, debt: 50 ether, sharesTotalSupply: 100 ether});
 
-        _prepareLeverageManagerStateForDeposit(beforeState);
+        _prepareLeverageManagerStateForAction(beforeState);
 
         uint256 equityToAddInCollateralAsset = 10 ether;
         _testDeposit(equityToAddInCollateralAsset, 0);
@@ -67,7 +67,7 @@ contract DepositTest is LeverageManagerBaseTest {
             initialCollateral == 1 ? 0 : uint128(bound(initialDebtInCollateralAsset, 1, initialCollateral - 1));
         sharesTotalSupply = uint128(bound(sharesTotalSupply, 1, type(uint128).max));
 
-        _prepareLeverageManagerStateForDeposit(
+        _prepareLeverageManagerStateForAction(
             MockLeverageManagerStateForDeposit({
                 collateral: initialCollateral,
                 debt: initialDebtInCollateralAsset, // 1:1 exchange rate for this test
@@ -84,7 +84,7 @@ contract DepositTest is LeverageManagerBaseTest {
 
     function test_deposit_EquityToDepositIsZero() public {
         // CR is 3x
-        _prepareLeverageManagerStateForDeposit(
+        _prepareLeverageManagerStateForAction(
             MockLeverageManagerStateForDeposit({collateral: 9, debt: 3, sharesTotalSupply: 3})
         );
 
@@ -102,7 +102,7 @@ contract DepositTest is LeverageManagerBaseTest {
         MockLeverageManagerStateForDeposit memory beforeState =
             MockLeverageManagerStateForDeposit({collateral: 0, debt: 0, sharesTotalSupply: 0});
 
-        _prepareLeverageManagerStateForDeposit(beforeState);
+        _prepareLeverageManagerStateForAction(beforeState);
 
         uint256 equityToAddInCollateralAsset = 10 ether;
         uint256 collateralToAdd = 20 ether; // 2x CR
@@ -123,7 +123,7 @@ contract DepositTest is LeverageManagerBaseTest {
         MockLeverageManagerStateForDeposit memory beforeState =
             MockLeverageManagerStateForDeposit({collateral: 3, debt: 1, sharesTotalSupply: 0});
 
-        _prepareLeverageManagerStateForDeposit(beforeState);
+        _prepareLeverageManagerStateForAction(beforeState);
 
         uint256 equityToAddInCollateralAsset = 1 ether;
         uint256 expectedCollateralToAdd = 2 ether; // 2x target CR
@@ -164,7 +164,7 @@ contract DepositTest is LeverageManagerBaseTest {
     function testFuzz_deposit_RevertIf_SlippageIsTooHigh(uint128 sharesSlippage) public {
         vm.assume(sharesSlippage > 0);
 
-        _prepareLeverageManagerStateForDeposit(
+        _prepareLeverageManagerStateForAction(
             MockLeverageManagerStateForDeposit({collateral: 100 ether, debt: 50 ether, sharesTotalSupply: 10 ether})
         );
 
@@ -228,7 +228,7 @@ contract DepositTest is LeverageManagerBaseTest {
         return (i <= 1) ? 1e18 : (1e18 / (10 ** (i - 1)));
     }
 
-    function _prepareLeverageManagerStateForDeposit(MockLeverageManagerStateForDeposit memory state) internal {
+    function _prepareLeverageManagerStateForAction(MockLeverageManagerStateForDeposit memory state) internal {
         lendingAdapter.mockDebt(state.debt);
         lendingAdapter.mockCollateral(state.collateral);
 

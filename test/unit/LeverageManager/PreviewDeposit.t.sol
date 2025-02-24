@@ -2,9 +2,8 @@
 pragma solidity ^0.8.26;
 
 // Dependency imports
-import {console} from "forge-std/console.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-
+import {console} from "forge-std/console.sol";
 // Internal imports
 import {ExternalAction} from "src/types/DataTypes.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
@@ -23,7 +22,7 @@ contract PreviewActionTest is DepositTest {
         MockLeverageManagerStateForDeposit memory beforeState =
             MockLeverageManagerStateForDeposit({collateral: 100 ether, debt: 100 ether, sharesTotalSupply: 100 ether});
 
-        _prepareLeverageManagerStateForDeposit(beforeState);
+        _prepareLeverageManagerStateForAction(beforeState);
 
         uint256 equity = 10 ether;
         (uint256 collateral, uint256 debt, uint256 expectedShares, uint256 sharesFee) =
@@ -47,7 +46,7 @@ contract PreviewActionTest is DepositTest {
         MockLeverageManagerStateForDeposit memory beforeState =
             MockLeverageManagerStateForDeposit({collateral: 100 ether, debt: 50 ether, sharesTotalSupply: 100 ether});
 
-        _prepareLeverageManagerStateForDeposit(beforeState);
+        _prepareLeverageManagerStateForAction(beforeState);
 
         uint256 equityToAdd = 10 ether;
         (uint256 collateralToAdd, uint256 debtToBorrow, uint256 expectedShares, uint256 sharesFee) =
@@ -55,6 +54,14 @@ contract PreviewActionTest is DepositTest {
 
         assertEq(collateralToAdd, 20 ether - 1);
         assertEq(debtToBorrow, 10 ether - 1);
+        assertEq(expectedShares, 20 ether - 1);
+        assertEq(sharesFee, 0);
+
+        (collateralToAdd, debtToBorrow, expectedShares, sharesFee) =
+            leverageManager.exposed_previewAction(strategy, equityToAdd, ExternalAction.Withdraw);
+
+        assertEq(collateralToAdd, 20 ether - 1);
+        assertEq(debtToBorrow, 10 ether); // Rounded up
         assertEq(expectedShares, 20 ether - 1);
         assertEq(sharesFee, 0);
     }
@@ -84,7 +91,7 @@ contract PreviewActionTest is DepositTest {
         MockLeverageManagerStateForDeposit memory beforeState =
             MockLeverageManagerStateForDeposit({collateral: initialCollateral, debt: initialDebt, sharesTotalSupply: 0});
 
-        _prepareLeverageManagerStateForDeposit(beforeState);
+        _prepareLeverageManagerStateForAction(beforeState);
 
         uint256 equity = 1 ether;
 
@@ -108,7 +115,7 @@ contract PreviewActionTest is DepositTest {
         assertEq(sharesFee, 0);
     }
 
-    function testFuzz_previewDeposit(
+    function testFuzz_previewAction(
         uint128 initialCollateral,
         uint128 initialDebtInCollateralAsset,
         uint128 sharesTotalSupply,
@@ -120,12 +127,7 @@ contract PreviewActionTest is DepositTest {
         fee = uint16(bound(fee, 0, 1e4)); // 0% to 100% fee
         _setStrategyActionFee(strategy, action, fee);
 
-        console.log("1");
-
-        initialDebtInCollateralAsset =
-            initialCollateral == 0 ? 0 : uint128(bound(initialDebtInCollateralAsset, 0, initialCollateral - 1));
-
-        console.log("2");
+        initialDebtInCollateralAsset = uint128(bound(initialDebtInCollateralAsset, 0, initialCollateral));
 
         if (initialCollateral == 0 && initialDebtInCollateralAsset == 0) {
             sharesTotalSupply = 0;
@@ -133,17 +135,13 @@ contract PreviewActionTest is DepositTest {
             sharesTotalSupply = uint128(bound(sharesTotalSupply, 1, type(uint128).max));
         }
 
-        console.log("3");
-
-        _prepareLeverageManagerStateForDeposit(
+        _prepareLeverageManagerStateForAction(
             MockLeverageManagerStateForDeposit({
                 collateral: initialCollateral,
                 debt: initialDebtInCollateralAsset, // 1:1 exchange rate for this test
                 sharesTotalSupply: sharesTotalSupply
             })
         );
-
-        console.log("4");
 
         // Ensure the collateral being added does not result in overflows due to mocked value sizes
         if (action == ExternalAction.Deposit) {
@@ -153,81 +151,88 @@ contract PreviewActionTest is DepositTest {
                 uint128(bound(equityInCollateralAsset, 0, initialCollateral - initialDebtInCollateralAsset));
         }
 
-        console.log("5");
+        // Get state prior to action
+        StrategyState memory prevState = leverageManager.exposed_getStrategyState(strategy);
 
         (uint256 collateral, uint256 debt, uint256 shares, uint256 sharesFee) =
             leverageManager.exposed_previewAction(strategy, equityInCollateralAsset, action);
 
-        console.log("6");
+        // Calculate state after action
+        (, uint256 newDebt, uint256 newCollateralRatio) =
+            _getNewStrategyState(initialCollateral, initialDebtInCollateralAsset, collateral, debt, action);
 
-        StrategyState memory currentState = leverageManager.exposed_getStrategyState(strategy);
-        if (sharesTotalSupply != 0) {
-            console.log("7");
-            // If the strategy has shares, then the collateral should be equal to the current
-            // collateral ratio (minus some slippage due to rounding)
-            uint256 debtChangeInCollateralAsset = lendingAdapter.convertDebtToCollateralAsset(debt);
+        // First validate if shares and fee are properly calculated
+        uint256 sharesBeforeFeeExpected = leverageManager.exposed_convertToShares(strategy, equityInCollateralAsset);
+        (uint256 sharesAfterFeeExpected, uint256 sharesFeeExpected) =
+            leverageManager.exposed_computeFeeAdjustedShares(strategy, sharesBeforeFeeExpected, action);
 
-            console.log(initialDebtInCollateralAsset);
-            console.log(debtChangeInCollateralAsset);
+        assertEq(sharesFee, sharesFeeExpected);
+        assertEq(shares, sharesAfterFeeExpected);
 
-            uint256 newDebt = action == ExternalAction.Deposit
-                ? initialDebtInCollateralAsset + debtChangeInCollateralAsset
-                : initialDebtInCollateralAsset - debtChangeInCollateralAsset;
-            uint256 newCollateral =
-                action == ExternalAction.Deposit ? initialCollateral + collateral : initialCollateral - collateral;
-
-            console.log("9");
-
-            uint256 resultCollateralRatio = newDebt != 0 ? (newCollateral * _BASE_RATIO()) / newDebt : type(uint256).max;
-
-            console.log("numbers");
-
-            console.log(equityInCollateralAsset);
-            console.log(initialCollateral);
-            console.log(initialDebtInCollateralAsset);
-            console.log(initialCollateral - initialDebtInCollateralAsset);
-
-            console.log("new numbers");
-
-            console.log(collateral);
-            console.log(debt);
-
-            if (action == ExternalAction.Withdraw && debt == initialDebtInCollateralAsset) {
-                assertEq(resultCollateralRatio, type(uint256).max);
-            } else {
-                console.log("Nije full withdraw");
-                console.log(resultCollateralRatio);
-                console.log(currentState.collateralRatio);
-                uint256 x = action == ExternalAction.Deposit ? initialDebtInCollateralAsset : newDebt;
-                assertApproxEqRel(
-                    resultCollateralRatio,
-                    currentState.collateralRatio,
-                    _getAllowedCollateralRatioSlippage(x),
-                    "Collateral ratio after deposit should be within the allowed slippage"
-                );
-                assertGe(
-                    resultCollateralRatio,
-                    currentState.collateralRatio,
-                    "Collateral ratio after deposit should be greater than or equal to before"
-                );
-            }
-        } else {
-            console.log("8");
-
-            // If the strategy does not hold any debt or collateral, then the deposit preview should use the target ratio
-            // for determining how much collateral to add and how much debt to borrow
-            // assertEq(
-            //     collateral * _BASE_RATIO() / debt, 2 * _BASE_RATIO(), "Collateral ratio after deposit should be 2x"
-            // );
+        // If full withdraw is done then the collateral ratio should be max
+        if (_isFullWithdraw(initialDebtInCollateralAsset, debt, action)) {
+            assertEq(newCollateralRatio, type(uint256).max);
+            return;
         }
 
-        uint256 sharesBeforeFee = equityInCollateralAsset
-            * (sharesTotalSupply + 10 ** leverageManager.DECIMALS_OFFSET())
-            / (uint256(initialCollateral) - initialDebtInCollateralAsset + 1);
-        uint256 sharesFeeExpected = Math.mulDiv(sharesBeforeFee, fee, 1e4, Math.Rounding.Ceil);
+        // If strategy was initially empty then action should be done by respecting the target ratio
+        if (_isStrategyEmpty(initialCollateral)) {
+            assertEq(newCollateralRatio, 2 * _BASE_RATIO());
+            return;
+        }
 
-        // Check that the shares to be minted are wrt the new equity being added to the strategy and the fee applied
-        // assertEq(sharesFee, sharesFeeExpected);
-        // assertEq(shares, sharesBeforeFee - sharesFee);
+        // Otherwise, the action should be done by respecting the current collateral ratio
+        // There is some tolerance on collateral ratio due to rounding depending on debt size
+        // It is important to calculate tolerance with smaller debt (for deposit before action for withdraw after action)
+
+        uint256 respectiveDebt = action == ExternalAction.Deposit ? initialDebtInCollateralAsset : newDebt;
+        uint256 from = action == ExternalAction.Deposit ? newCollateralRatio : prevState.collateralRatio;
+        uint256 to = action == ExternalAction.Deposit ? prevState.collateralRatio : newCollateralRatio;
+        assertApproxEqRel(
+            from,
+            to,
+            _getAllowedCollateralRatioSlippage(respectiveDebt),
+            "Collateral ratio after deposit should be within the allowed slippage"
+        );
+        assertGe(
+            newCollateralRatio,
+            prevState.collateralRatio,
+            "Collateral ratio after deposit should be greater than or equal to before"
+        );
+    }
+
+    function _getNewStrategyState(
+        uint256 initialCollateral,
+        uint256 initialDebtInCollateralAsset,
+        uint256 collateralChange,
+        uint256 debtChange,
+        ExternalAction action
+    ) internal view returns (uint256 newCollateral, uint256 newDebt, uint256 newCollateralRatio) {
+        debtChange = lendingAdapter.convertDebtToCollateralAsset(debtChange);
+
+        newCollateral = action == ExternalAction.Deposit
+            ? initialCollateral + collateralChange
+            : initialCollateral - collateralChange;
+
+        newDebt = action == ExternalAction.Deposit
+            ? initialDebtInCollateralAsset + debtChange
+            : initialDebtInCollateralAsset - debtChange;
+
+        newCollateralRatio = newDebt != 0 ? (newCollateral * _BASE_RATIO()) / newDebt : type(uint256).max;
+
+        return (newCollateral, newDebt, newCollateralRatio);
+    }
+
+    function _isFullWithdraw(uint256 initialDebt, uint256 debtChange, ExternalAction action)
+        internal
+        view
+        returns (bool)
+    {
+        return
+            action == ExternalAction.Withdraw && initialDebt == lendingAdapter.convertDebtToCollateralAsset(debtChange);
+    }
+
+    function _isStrategyEmpty(uint256 collateral) private pure returns (bool) {
+        return collateral == 0;
     }
 }
