@@ -9,11 +9,17 @@ import {Test} from "forge-std/Test.sol";
 import {ISwapAdapter} from "src/interfaces/ISwapAdapter.sol";
 import {SwapAdapter} from "src/periphery/SwapAdapter.sol";
 import {SwapAdapterHarness} from "test/unit/SwapAdapter/harness/SwapAdapterHarness.t.sol";
+import {MockAerodromeRouter} from "test/unit/mock/MockAerodromeRouter.sol";
+import {MockUniswapRouter02} from "test/unit/mock/MockUniswapRouter02.sol";
 
 contract SwapAdapterBaseTest is Test {
     address public defaultAdmin = makeAddr("defaultAdmin");
 
     SwapAdapterHarness public swapAdapter;
+
+    MockUniswapRouter02 public mockUniswapRouter02;
+
+    MockAerodromeRouter public mockAerodromeRouter;
 
     function setUp() public virtual {
         address swapAdapterImplementation = address(new SwapAdapterHarness());
@@ -22,6 +28,8 @@ contract SwapAdapterBaseTest is Test {
         );
 
         swapAdapter = SwapAdapterHarness(swapAdapterProxy);
+        mockUniswapRouter02 = new MockUniswapRouter02();
+        mockAerodromeRouter = new MockAerodromeRouter();
     }
 
     function test_setUp() public view virtual {
