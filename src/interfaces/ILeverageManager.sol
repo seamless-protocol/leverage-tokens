@@ -178,6 +178,32 @@ interface ILeverageManager is IFeeManager {
     ///      If collateral ratios are not valid function will revert
     function setStrategyCollateralRatios(IStrategy strategy, CollateralRatios calldata ratios) external;
 
+    /// @notice Previews deposit function call and returns all required data
+    /// @param strategy Strategy to preview deposit for
+    /// @param equityInCollateralAsset Equity to deposit denominated in collateral asset
+    /// @return collateralToAdd Amount of collateral that sender needs to add to the strategy
+    /// @return debtToBorrow Amount of debt that will be borrowed and sent to sender
+    /// @return sharesAfterFee Amount of shares that will be minted to the sender after fee
+    /// @return sharesFee Amount of fee that will be charged for the deposit
+    /// @dev Sender should approve leverage manager to spend collateralToAdd amount of collateral asset
+    function previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
+        external
+        view
+        returns (uint256 collateralToAdd, uint256 debtToBorrow, uint256 sharesAfterFee, uint256 sharesFee);
+
+    /// @notice Previews withdraw function call and returns all required data
+    /// @param strategy Strategy to preview withdraw for
+    /// @param equityInCollateralAsset Equity to withdraw denominated in collateral asset
+    /// @return collateralToRemove Amount of collateral that will be removed from strategy and sent to sender
+    /// @return debtToRepay Amount of debt that will be taken from sender and repaid to the strategy
+    /// @return sharesAfterFee Amount of shares that will be burned from sender
+    /// @return sharesFee Amount of fee that will be charged for the withdraw
+    /// @dev Sender should approve leverage manager to spend debtToRepay amount of debt asset
+    function previewWithdraw(IStrategy strategy, uint256 equityInCollateralAsset)
+        external
+        view
+        returns (uint256 collateralToRemove, uint256 debtToRepay, uint256 sharesAfterFee, uint256 sharesFee);
+
     /// @notice Sets collateral cap for strategy
     /// @param strategy Strategy to set cap for
     /// @param collateralCap Cap for strategy
@@ -214,9 +240,9 @@ interface ILeverageManager is IFeeManager {
     /// @param strategy The strategy to withdraw from
     /// @param equityInCollateralAsset The amount of equity to withdraw denominated in the collateral asset of the strategy
     /// @param minShares The minimum amount of shares to burn
-    /// @return collateral Amount of collateral that was added
-    /// @return debt Amount of debt that was added
-    /// @return sharesBurned The amount of shares burned
+    /// @return collateral Amount of collateral that was removed from strategy and sent to sender
+    /// @return debt Amount of debt that was repaid to strategy, taken from sender
+    /// @return sharesBurned The amount of shares burned from sender
     /// @return sharesFee Share fee for withdraw
     function withdraw(IStrategy strategy, uint256 equityInCollateralAsset, uint256 minShares)
         external

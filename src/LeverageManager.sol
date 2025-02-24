@@ -211,12 +211,30 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
+    function previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
+        public
+        view
+        returns (uint256 collateralToAdd, uint256 debtToBorrow, uint256 sharesAfterFee, uint256 sharesFee)
+    {
+        return _previewAction(strategy, equityInCollateralAsset, ExternalAction.Deposit);
+    }
+
+    /// @inheritdoc ILeverageManager
+    function previewWithdraw(IStrategy strategy, uint256 equityInCollateralAsset)
+        public
+        view
+        returns (uint256 collateralToRemove, uint256 debtToRepay, uint256 sharesAfterFee, uint256 sharesFee)
+    {
+        return _previewAction(strategy, equityInCollateralAsset, ExternalAction.Withdraw);
+    }
+
+    /// @inheritdoc ILeverageManager
     function deposit(IStrategy strategy, uint256 equityInCollateralAsset, uint256 minShares)
         external
         returns (uint256, uint256, uint256, uint256)
     {
         (uint256 collateralToAdd, uint256 debtToBorrow, uint256 sharesAfterFee, uint256 sharesFee) =
-            _previewAction(strategy, equityInCollateralAsset, ExternalAction.Deposit);
+            previewDeposit(strategy, equityInCollateralAsset);
 
         if (sharesAfterFee < minShares) {
             revert SlippageTooHigh(sharesAfterFee, minShares);
@@ -240,12 +258,13 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         return (collateralToAdd, debtToBorrow, sharesAfterFee, sharesFee);
     }
 
+    /// @inheritdoc ILeverageManager
     function withdraw(IStrategy strategy, uint256 equityInCollateralAsset, uint256 maxShares)
         external
         returns (uint256, uint256, uint256, uint256)
     {
         (uint256 collateral, uint256 debt, uint256 sharesAfterFee, uint256 sharesFee) =
-            _previewAction(strategy, equityInCollateralAsset, ExternalAction.Withdraw);
+            previewWithdraw(strategy, equityInCollateralAsset);
 
         if (sharesAfterFee > maxShares) {
             revert SlippageTooHigh(sharesAfterFee, maxShares);
