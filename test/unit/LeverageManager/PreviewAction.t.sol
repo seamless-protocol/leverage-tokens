@@ -64,7 +64,7 @@ contract PreviewActionTest is LeverageManagerBaseTest {
         assertEq(sharesFee, 1 ether);
     }
 
-    function test_previewDeposit_WithoutFee() public {
+    function test_previewAction_WithoutFee() public {
         MockLeverageManagerStateForAction memory beforeState =
             MockLeverageManagerStateForAction({collateral: 100 ether, debt: 50 ether, sharesTotalSupply: 100 ether});
 
