@@ -23,6 +23,14 @@ contract SwapAdapterHarness is SwapAdapter {
         return _swapExactFromToMinToAerodrome(fromToken, toToken, toAmount, maxFromAmount, swapContext);
     }
 
+    function exposed_swapExactFromToMinToAerodromeSlipstream(
+        uint256 fromAmount,
+        uint256 minToAmount,
+        ISwapAdapter.SwapContext memory swapContext
+    ) external returns (uint256 toAmount) {
+        return _swapExactFromToMinToAerodromeSlipstream(fromAmount, minToAmount, swapContext);
+    }
+
     function exposed_swapExactFromToMinToUniV2(
         uint256 fromAmount,
         uint256 minToAmount,

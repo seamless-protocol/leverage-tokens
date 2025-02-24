@@ -10,6 +10,7 @@ import {ISwapAdapter} from "src/interfaces/ISwapAdapter.sol";
 import {SwapAdapter} from "src/periphery/SwapAdapter.sol";
 import {SwapAdapterHarness} from "test/unit/SwapAdapter/harness/SwapAdapterHarness.t.sol";
 import {MockAerodromeRouter} from "test/unit/mock/MockAerodromeRouter.sol";
+import {MockAerodromeSlipstreamRouter} from "test/unit/mock/MockAerodromeSlipstreamRouter.sol";
 import {MockUniswapRouter02} from "test/unit/mock/MockUniswapRouter02.sol";
 
 contract SwapAdapterBaseTest is Test {
@@ -21,6 +22,8 @@ contract SwapAdapterBaseTest is Test {
 
     MockAerodromeRouter public mockAerodromeRouter;
 
+    MockAerodromeSlipstreamRouter public mockAerodromeSlipstreamRouter;
+
     function setUp() public virtual {
         address swapAdapterImplementation = address(new SwapAdapterHarness());
         address swapAdapterProxy = UnsafeUpgrades.deployUUPSProxy(
@@ -30,6 +33,7 @@ contract SwapAdapterBaseTest is Test {
         swapAdapter = SwapAdapterHarness(swapAdapterProxy);
         mockUniswapRouter02 = new MockUniswapRouter02();
         mockAerodromeRouter = new MockAerodromeRouter();
+        mockAerodromeSlipstreamRouter = new MockAerodromeSlipstreamRouter();
     }
 
     function test_setUp() public view virtual {
