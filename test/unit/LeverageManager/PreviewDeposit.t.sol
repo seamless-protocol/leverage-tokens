@@ -161,13 +161,15 @@ contract PreviewActionTest is DepositTest {
         (, uint256 newDebt, uint256 newCollateralRatio) =
             _getNewStrategyState(initialCollateral, initialDebtInCollateralAsset, collateral, debt, action);
 
-        // First validate if shares and fee are properly calculated
-        uint256 sharesBeforeFeeExpected = leverageManager.exposed_convertToShares(strategy, equityInCollateralAsset);
-        (uint256 sharesAfterFeeExpected, uint256 sharesFeeExpected) =
-            leverageManager.exposed_computeFeeAdjustedShares(strategy, sharesBeforeFeeExpected, action);
+        {
+            // First validate if shares and fee are properly calculated
+            uint256 sharesBeforeFeeExpected = leverageManager.exposed_convertToShares(strategy, equityInCollateralAsset);
+            (uint256 sharesAfterFeeExpected, uint256 sharesFeeExpected) =
+                leverageManager.exposed_computeFeeAdjustedShares(strategy, sharesBeforeFeeExpected, action);
 
-        assertEq(sharesFee, sharesFeeExpected);
-        assertEq(shares, sharesAfterFeeExpected);
+            assertEq(sharesFee, sharesFeeExpected);
+            assertEq(shares, sharesAfterFeeExpected);
+        }
 
         // If full withdraw is done then the collateral ratio should be max
         if (_isFullWithdraw(initialDebtInCollateralAsset, debt, action)) {
