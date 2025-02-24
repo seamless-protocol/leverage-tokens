@@ -5,6 +5,7 @@ pragma solidity ^0.8.26;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // Internal imports
 import {IAerodromeRouter} from "../interfaces/IAerodromeRouter.sol";
@@ -29,6 +30,8 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
         uint256 minToAmount,
         SwapContext memory swapContext
     ) external returns (uint256 toAmount) {
+        SafeERC20.safeTransferFrom(fromToken, msg.sender, address(this), fromAmount);
+
         if (swapContext.exchange == Exchange.AERODROME) {
             return _swapExactFromToMinToAerodrome(fromToken, toToken, fromAmount, minToAmount, swapContext);
         } else if (swapContext.exchange == Exchange.AERODROME_SLIPSTREAM) {
@@ -48,6 +51,8 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
         uint256 maxFromAmount,
         SwapContext memory swapContext
     ) external returns (uint256 fromAmount) {
+        SafeERC20.safeTransferFrom(fromToken, msg.sender, address(this), maxFromAmount);
+
         if (swapContext.exchange == Exchange.AERODROME) {
             return _swapMaxFromToExactToAerodrome(fromToken, toToken, toAmount, maxFromAmount, swapContext);
         } else if (swapContext.exchange == Exchange.AERODROME_SLIPSTREAM) {
@@ -131,7 +136,7 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
     }
 
     function _swapExactFromToMinToUniV2(uint256 fromAmount, uint256 minToAmount, SwapContext memory swapContext)
-        private
+        internal
         returns (uint256 toAmount)
     {
         IUniswapSwapRouter02 uniswapRouter02 = IUniswapSwapRouter02(swapContext.exchangeAddresses.uniswapRouter02);
@@ -141,7 +146,7 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
     }
 
     function _swapExactFromToMinToUniV3(uint256 fromAmount, uint256 minToAmount, SwapContext memory swapContext)
-        private
+        internal
         returns (uint256 toAmount)
     {
         if (swapContext.path.length != swapContext.fees.length + 1) revert InvalidNumFees();
