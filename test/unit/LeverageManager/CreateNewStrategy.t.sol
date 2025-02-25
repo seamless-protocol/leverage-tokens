@@ -30,13 +30,10 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
         string memory name,
         string memory symbol
     ) public {
-        uint256 minCollateralRatio = config.minCollateralRatio;
-        uint256 targetCollateralRatio = config.targetCollateralRatio;
-        uint256 maxCollateralRatio = config.maxCollateralRatio;
-        vm.assume(
-            targetCollateralRatio > _BASE_RATIO() && minCollateralRatio <= targetCollateralRatio
-                && targetCollateralRatio <= maxCollateralRatio
-        );
+        config.targetCollateralRatio = bound(config.minCollateralRatio, _BASE_RATIO() + 1, type(uint256).max - 1);
+        config.minCollateralRatio = bound(config.minCollateralRatio, _BASE_RATIO(), config.targetCollateralRatio - 1);
+        config.maxCollateralRatio =
+            bound(config.maxCollateralRatio, config.targetCollateralRatio + 1, type(uint256).max);
 
         address expectedStrategyAddress = strategyTokenFactory.computeProxyAddress(
             address(leverageManager),
@@ -67,6 +64,34 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
 
         assertEq(address(leverageManager.getStrategyCollateralAsset(strategy)), collateralAsset);
         assertEq(address(leverageManager.getStrategyDebtAsset(strategy)), debtAsset);
+
+        assertEq(leverageManager.getIsLendingAdapterUsed(address(config.lendingAdapter)), true);
+        assertEq(leverageManager.getStrategyTargetCollateralRatio(strategy), config.targetCollateralRatio);
+        assertEq(
+            address(leverageManager.getStrategyRebalanceRewardDistributor(strategy)),
+            address(config.rebalanceRewardDistributor)
+        );
+        assertEq(address(leverageManager.getStrategyRebalanceWhitelist(strategy)), address(config.rebalanceWhitelist));
+    }
+
+    function test_CreateNewStrategy_RevertIf_LendingAdapterAlreadyInUse(
+        Storage.StrategyConfig memory config,
+        address collateralAsset,
+        address debtAsset,
+        string memory name,
+        string memory symbol
+    ) public {
+        config.targetCollateralRatio = bound(config.minCollateralRatio, _BASE_RATIO() + 1, type(uint256).max - 1);
+        config.minCollateralRatio = bound(config.minCollateralRatio, _BASE_RATIO(), config.targetCollateralRatio - 1);
+        config.maxCollateralRatio =
+            bound(config.maxCollateralRatio, config.targetCollateralRatio + 1, type(uint256).max);
+
+        _createNewStrategy(manager, config, collateralAsset, debtAsset, name, symbol);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(ILeverageManager.LendingAdapterAlreadyInUse.selector, address(config.lendingAdapter))
+        );
+        _createNewStrategy(manager, config, collateralAsset, debtAsset, name, symbol);
     }
 
     /// forge-config: default.fuzz.runs = 1

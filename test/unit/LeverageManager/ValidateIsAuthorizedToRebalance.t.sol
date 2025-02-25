@@ -4,18 +4,13 @@ pragma solidity ^0.8.26;
 // Forge imports
 import {Test, console} from "forge-std/Test.sol";
 
-// Dependency imports
-import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
-import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
-
 // Internal imports
 import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
-import {IStrategy} from "src/interfaces/IStrategy.sol";
+import {IRebalanceRewardDistributor} from "src/interfaces/IRebalanceRewardDistributor.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 import {LeverageManagerBaseTest} from "./LeverageManagerBase.t.sol";
-import {StrategyState} from "src/types/DataTypes.sol";
 
 contract ValidateIsAllowedToRebalance is LeverageManagerBaseTest {
     function setUp() public override {
@@ -33,7 +28,7 @@ contract ValidateIsAllowedToRebalance is LeverageManagerBaseTest {
     {
         vm.assume(address(whitelist) != address(0));
 
-        _setStrategyRebalanceWhitelist(manager, whitelist);
+        _setRebalanceWhitelist(whitelist);
 
         vm.mockCall(
             address(whitelist),
@@ -46,7 +41,7 @@ contract ValidateIsAllowedToRebalance is LeverageManagerBaseTest {
 
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_validateIsAuthorizedToRebalance_RevertIf_NotWhitelisted(IRebalanceWhitelist whitelist) public {
-        _setStrategyRebalanceWhitelist(manager, whitelist);
+        _setRebalanceWhitelist(whitelist);
 
         vm.mockCall(
             address(whitelist),
@@ -56,5 +51,22 @@ contract ValidateIsAllowedToRebalance is LeverageManagerBaseTest {
 
         vm.expectRevert(abi.encodeWithSelector(ILeverageManager.NotRebalancer.selector, strategy, address(this)));
         leverageManager.exposed_validateIsAuthorizedToRebalance(strategy);
+    }
+
+    function _setRebalanceWhitelist(IRebalanceWhitelist whitelist) internal {
+        vm.startPrank(manager);
+        strategy = leverageManager.createNewStrategy(
+            Storage.StrategyConfig({
+                lendingAdapter: ILendingAdapter(address(lendingAdapter)),
+                minCollateralRatio: 1e8,
+                maxCollateralRatio: 3e8,
+                targetCollateralRatio: 2e8,
+                rebalanceRewardDistributor: IRebalanceRewardDistributor(address(0)),
+                rebalanceWhitelist: whitelist
+            }),
+            "",
+            ""
+        );
+        vm.stopPrank();
     }
 }

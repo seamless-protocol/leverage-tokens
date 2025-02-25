@@ -123,16 +123,12 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             )
         );
 
-        setStrategyLendingAdapter(strategy, address(strategyConfig.lendingAdapter));
-        setStrategyRebalanceRewardDistributor(strategy, strategyConfig.rebalanceRewardDistributor);
-        setStrategyCollateralRatios(
-            strategy,
-            CollateralRatios({
-                minCollateralRatio: strategyConfig.minCollateralRatio,
-                targetCollateralRatio: strategyConfig.targetCollateralRatio,
-                maxCollateralRatio: strategyConfig.maxCollateralRatio
-            })
-        );
+        if (getIsLendingAdapterUsed(address(strategyConfig.lendingAdapter))) {
+            revert LendingAdapterAlreadyInUse(address(strategyConfig.lendingAdapter));
+        }
+
+        Storage.layout().config[strategy] = strategyConfig;
+        Storage.layout().isLendingAdapterUsed[address(strategyConfig.lendingAdapter)] = true;
 
         emit StrategyCreated(
             strategy,
@@ -141,61 +137,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             strategyConfig
         );
         return strategy;
-    }
-
-    /// @inheritdoc ILeverageManager
-    function setStrategyLendingAdapter(IStrategy strategy, address adapter) public onlyRole(MANAGER_ROLE) {
-        if (getIsLendingAdapterUsed(adapter)) {
-            revert LendingAdapterAlreadyInUse(adapter);
-        }
-
-        Storage.Layout storage $ = Storage.layout();
-        $.isLendingAdapterUsed[address(getStrategyLendingAdapter(strategy))] = false;
-
-        $.config[strategy].lendingAdapter = ILendingAdapter(adapter);
-        $.isLendingAdapterUsed[adapter] = true;
-
-        emit StrategyLendingAdapterSet(strategy, adapter);
-    }
-
-    /// @inheritdoc ILeverageManager
-    function setStrategyCollateralRatios(IStrategy strategy, CollateralRatios memory ratios)
-        public
-        onlyRole(MANAGER_ROLE)
-    {
-        // Validate that target ratio is in between min and max rebalance ratios before setting
-        bool isValid = ratios.targetCollateralRatio > BASE_RATIO
-            && ratios.minCollateralRatio <= ratios.targetCollateralRatio
-            && ratios.targetCollateralRatio <= ratios.maxCollateralRatio;
-
-        if (!isValid) {
-            revert InvalidCollateralRatios();
-        }
-
-        Storage.StrategyConfig storage config = Storage.layout().config[strategy];
-        config.minCollateralRatio = ratios.minCollateralRatio;
-        config.maxCollateralRatio = ratios.maxCollateralRatio;
-        config.targetCollateralRatio = ratios.targetCollateralRatio;
-
-        emit StrategyCollateralRatiosSet(strategy, ratios);
-    }
-
-    /// @inheritdoc ILeverageManager
-    function setStrategyRebalanceRewardDistributor(IStrategy strategy, IRebalanceRewardDistributor distributor)
-        public
-        onlyRole(MANAGER_ROLE)
-    {
-        Storage.layout().config[strategy].rebalanceRewardDistributor = distributor;
-        emit StrategyRebalanceRewardDistributorSet(strategy, distributor);
-    }
-
-    /// @inheritdoc ILeverageManager
-    function setStrategyRebalanceWhitelist(IStrategy strategy, IRebalanceWhitelist whitelist)
-        external
-        onlyRole(MANAGER_ROLE)
-    {
-        Storage.layout().config[strategy].rebalanceWhitelist = whitelist;
-        emit StrategyRebalanceWhitelistSet(strategy, whitelist);
     }
 
     /// @inheritdoc ILeverageManager

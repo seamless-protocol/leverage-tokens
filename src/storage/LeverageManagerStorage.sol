@@ -13,8 +13,6 @@ library LeverageManagerStorage {
     struct StrategyConfig {
         /// @dev Lending adapter for strategy
         ILendingAdapter lendingAdapter;
-        /// @dev Cap of the strategy, leveraged amount that can be changed
-        uint256 collateralCap;
         /// @dev Minimum collateral ratio allowed for strategy before triggering rebalance on 8 decimals
         ///      Collateral ratio is calculated as collateral value / debt value
         uint256 minCollateralRatio;

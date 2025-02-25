@@ -38,7 +38,6 @@ contract RebalanceTest is LeverageManagerBaseTest {
                 minCollateralRatio: 15 * _BASE_RATIO() / 10, // 1.5x leverage
                 maxCollateralRatio: 25 * _BASE_RATIO() / 10, // 2.5x leverage
                 targetCollateralRatio: 2 * _BASE_RATIO(), // 2x leverage
-                collateralCap: type(uint256).max,
                 rebalanceRewardDistributor: IRebalanceRewardDistributor(address(rewardDistributor)),
                 rebalanceWhitelist: IRebalanceWhitelist(address(0))
             }),
@@ -164,7 +163,6 @@ contract RebalanceTest is LeverageManagerBaseTest {
                 minCollateralRatio: 14 * _BASE_RATIO() / 10, // 2.5x leverage
                 maxCollateralRatio: 16 * _BASE_RATIO() / 10, // 3.5x leverage
                 targetCollateralRatio: 15 * _BASE_RATIO() / 10, // 3x leverage which means 2x price exposure
-                collateralCap: type(uint256).max,
                 rebalanceRewardDistributor: IRebalanceRewardDistributor(address(rewardDistributor)),
                 rebalanceWhitelist: IRebalanceWhitelist(address(0))
             }),
