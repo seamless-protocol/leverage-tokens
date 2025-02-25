@@ -31,7 +31,7 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
     ) external returns (uint256) {
         SafeERC20.safeTransferFrom(fromToken, msg.sender, address(this), fromAmount);
 
-        uint256 toAmount;
+        uint256 toAmount = 0;
         if (swapContext.exchange == Exchange.AERODROME) {
             toAmount = _swapExactFromToMinToAerodrome(fromAmount, minToAmount, swapContext);
         } else if (swapContext.exchange == Exchange.AERODROME_SLIPSTREAM) {
@@ -54,7 +54,7 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
     ) external returns (uint256) {
         SafeERC20.safeTransferFrom(fromToken, msg.sender, address(this), maxFromAmount);
 
-        uint256 fromAmount;
+        uint256 fromAmount = 0;
         if (swapContext.exchange == Exchange.AERODROME) {
             fromAmount = _swapMaxFromToExactToAerodrome(toAmount, maxFromAmount, swapContext);
         } else if (swapContext.exchange == Exchange.AERODROME_SLIPSTREAM) {
