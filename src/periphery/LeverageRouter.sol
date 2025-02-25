@@ -25,7 +25,6 @@ contract LeverageRouter is ILeverageRouter {
 
     struct DepositParams {
         IStrategy strategy;
-        IERC20 collateralAsset;
         uint256 equityInCollateralAsset;
         uint256 debtToBorrow;
         uint256 minShares;
@@ -66,15 +65,12 @@ contract LeverageRouter is ILeverageRouter {
         uint256 maxDepositCostInCollateralAsset,
         ISwapAdapter.SwapContext memory swapContext
     ) external {
-        IERC20 collateralAsset = leverageManager.getStrategyCollateralAsset(strategy);
-
         (uint256 collateralToAdd, uint256 debtToBorrow,,) =
             leverageManager.previewDeposit(strategy, equityInCollateralAsset);
 
         bytes memory depositData = abi.encode(
             DepositParams({
                 strategy: strategy,
-                collateralAsset: collateralAsset,
                 equityInCollateralAsset: equityInCollateralAsset,
                 debtToBorrow: debtToBorrow,
                 minShares: minShares,
@@ -86,7 +82,7 @@ contract LeverageRouter is ILeverageRouter {
 
         // Flash loan the collateral to add, and pass the required data to the Morpho flash loan callback handler for the deposit
         morpho.flashLoan(
-            address(collateralAsset),
+            address(leverageManager.getStrategyCollateralAsset(strategy)),
             collateralToAdd,
             abi.encode(MorphoCallbackData({action: ExternalAction.Deposit, data: depositData}))
         );
@@ -111,10 +107,11 @@ contract LeverageRouter is ILeverageRouter {
     /// @param params Params for the deposit of equity into a strategy
     /// @param collateralLoanAmount Amount of collateral asset flash loaned
     function _depositAndRepayMorphoFlashLoan(DepositParams memory params, uint256 collateralLoanAmount) internal {
+        IERC20 collateralAsset = leverageManager.getStrategyCollateralAsset(params.strategy);
         IERC20 debtAsset = leverageManager.getStrategyDebtAsset(params.strategy);
 
         // Use the flash loaned collateral for the deposit
-        params.collateralAsset.approve(address(leverageManager), collateralLoanAmount);
+        collateralAsset.approve(address(leverageManager), collateralLoanAmount);
         (,, uint256 sharesReceived,) =
             leverageManager.deposit(params.strategy, params.equityInCollateralAsset, params.minShares);
 
@@ -137,12 +134,12 @@ contract LeverageRouter is ILeverageRouter {
                 revert MaxDepositCostExceeded(params.maxDepositCostInCollateralAsset, senderCollateralRequired);
             }
 
-            SafeERC20.safeTransferFrom(params.collateralAsset, params.sender, address(this), senderCollateralRequired);
+            SafeERC20.safeTransferFrom(collateralAsset, params.sender, address(this), senderCollateralRequired);
         } else {
             // Return any surplus collateral asset received from the swap that was not used to repay the flash loan to the deposit sender
             uint256 collateralAssetSurplus = swappedCollateralAmount - collateralLoanAmount;
             if (collateralAssetSurplus > 0) {
-                SafeERC20.safeTransfer(params.collateralAsset, params.sender, collateralAssetSurplus);
+                SafeERC20.safeTransfer(collateralAsset, params.sender, collateralAssetSurplus);
             }
         }
 
@@ -150,6 +147,6 @@ contract LeverageRouter is ILeverageRouter {
         SafeERC20.safeTransfer(params.strategy, params.sender, sharesReceived);
 
         // Approve morpho to transfer assets to repay the flash loan
-        params.collateralAsset.approve(address(morpho), collateralLoanAmount);
+        collateralAsset.approve(address(morpho), collateralLoanAmount);
     }
 }
