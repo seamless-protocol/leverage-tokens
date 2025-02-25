@@ -28,8 +28,10 @@ interface ISwapAdapter {
         ExchangeAddresses exchangeAddresses;
     }
 
+    /// @notice Error thrown when the number of ticks is invalid
     error InvalidNumTicks();
 
+    /// @notice Error thrown when the number of fees is invalid
     error InvalidNumFees();
 
     /// @notice Swap tokens from the fromToken to the toToken using the specified provider

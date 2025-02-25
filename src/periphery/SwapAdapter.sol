@@ -84,17 +84,6 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
         )[1];
     }
 
-    function _generateAerodromeRoutes(address[] memory path, address aerodromeFactory)
-        internal
-        pure
-        returns (IAerodromeRouter.Route[] memory routes)
-    {
-        routes = new IAerodromeRouter.Route[](path.length - 1);
-        for (uint256 i = 0; i < path.length - 1; i++) {
-            routes[i] = IAerodromeRouter.Route(path[i], path[i + 1], false, aerodromeFactory);
-        }
-    }
-
     function _swapExactFromToMinToAerodrome(uint256 fromAmount, uint256 minToAmount, SwapContext memory swapContext)
         internal
         returns (uint256 toAmount)
@@ -352,6 +341,19 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
         }
     }
 
+    /// @notice Generate the array of Routes as required by the Aerodrome router
+    function _generateAerodromeRoutes(address[] memory path, address aerodromeFactory)
+        internal
+        pure
+        returns (IAerodromeRouter.Route[] memory routes)
+    {
+        routes = new IAerodromeRouter.Route[](path.length - 1);
+        for (uint256 i = 0; i < path.length - 1; i++) {
+            routes[i] = IAerodromeRouter.Route(path[i], path[i + 1], false, aerodromeFactory);
+        }
+    }
+
+    /// @notice Reverses a path of addresses
     function _reversePath(address[] memory path) internal pure returns (address[] memory reversedPath) {
         reversedPath = new address[](path.length);
         for (uint256 i = 0; i < path.length; i++) {
