@@ -66,14 +66,7 @@ contract MockUniswapRouter02 is Test {
             if (!swap.isExecuted && swap.encodedPath == encodedPath) {
                 require(swap.toAmount >= amountOutMin, "MockUniswapRouter02: INSUFFICIENT_OUTPUT_AMOUNT");
 
-                // Transfer in the fromToken
-                swap.fromToken.transferFrom(msg.sender, address(this), swap.fromAmount);
-
-                // Transfer out the toToken
-                deal(address(swap.toToken), address(this), swap.toAmount);
-                swap.toToken.transfer(to, swap.toAmount);
-
-                v2Swaps[i].isExecuted = true;
+                _executeV2Swap(swap, to, i);
                 return swap.toAmount;
             }
         }
@@ -92,14 +85,7 @@ contract MockUniswapRouter02 is Test {
             if (!swap.isExecuted && swap.encodedPath == encodedPath) {
                 require(swap.fromAmount <= amountInMax, "MockUniswapRouter02: INSUFFICIENT_INPUT_AMOUNT");
 
-                // Transfer in the fromToken
-                swap.fromToken.transferFrom(msg.sender, address(this), swap.fromAmount);
-
-                // Transfer out the toToken
-                deal(address(swap.toToken), address(this), swap.toAmount);
-                swap.toToken.transfer(to, swap.toAmount);
-
-                v2Swaps[i].isExecuted = true;
+                _executeV2Swap(swap, to, i);
                 return swap.fromAmount;
             }
         }
@@ -120,14 +106,7 @@ contract MockUniswapRouter02 is Test {
             ) {
                 require(swap.toAmount >= params.amountOutMinimum, "MockUniswapRouter02: INSUFFICIENT_OUTPUT_AMOUNT");
 
-                // Transfer in the fromToken
-                IERC20(swap.fromToken).transferFrom(msg.sender, address(this), swap.fromAmount);
-
-                // Transfer out the toToken
-                deal(address(swap.toToken), address(this), swap.toAmount);
-                IERC20(swap.toToken).transfer(params.recipient, swap.toAmount);
-
-                v3SingleHopSwaps[i].isExecuted = true;
+                _executeV3SingleHopSwap(swap, params.recipient, i);
                 return swap.toAmount;
             }
         }
@@ -149,14 +128,7 @@ contract MockUniswapRouter02 is Test {
             ) {
                 require(swap.toAmount >= params.amountOutMinimum, "MockUniswapRouter02: INSUFFICIENT_OUTPUT_AMOUNT");
 
-                // Transfer in the fromToken
-                IERC20(swap.fromToken).transferFrom(msg.sender, address(this), swap.fromAmount);
-
-                // Transfer out the toToken
-                deal(address(swap.toToken), address(this), swap.toAmount);
-                IERC20(swap.toToken).transfer(params.recipient, swap.toAmount);
-
-                v3MultiHopSwaps[i].isExecuted = true;
+                _executeV3MultiHopSwap(swap, params.recipient, i);
                 return swap.toAmount;
             }
         }
@@ -177,14 +149,7 @@ contract MockUniswapRouter02 is Test {
             ) {
                 require(swap.fromAmount <= params.amountInMaximum, "MockUniswapRouter02: INSUFFICIENT_INPUT_AMOUNT");
 
-                // Transfer in the fromToken
-                IERC20(swap.fromToken).transferFrom(msg.sender, address(this), swap.fromAmount);
-
-                // Transfer out the toToken
-                deal(address(swap.toToken), address(this), swap.toAmount);
-                IERC20(swap.toToken).transfer(params.recipient, swap.toAmount);
-
-                v3SingleHopSwaps[i].isExecuted = true;
+                _executeV3SingleHopSwap(swap, params.recipient, i);
                 return swap.fromAmount;
             }
         }
@@ -206,18 +171,48 @@ contract MockUniswapRouter02 is Test {
             ) {
                 require(swap.fromAmount <= params.amountInMaximum, "MockUniswapRouter02: INSUFFICIENT_INPUT_AMOUNT");
 
-                // Transfer in the fromToken
-                IERC20(swap.fromToken).transferFrom(msg.sender, address(this), swap.fromAmount);
-
-                // Transfer out the toToken
-                deal(address(swap.toToken), address(this), swap.toAmount);
-                IERC20(swap.toToken).transfer(params.recipient, swap.toAmount);
-
-                v3MultiHopSwaps[i].isExecuted = true;
+                _executeV3MultiHopSwap(swap, params.recipient, i);
                 return swap.fromAmount;
             }
         }
 
         revert("MockUniswapRouter02: No mocked swap set");
+    }
+
+    function _executeV2Swap(MockV2Swap memory swap, address recipient, uint256 v2SwapIndex) internal {
+        // Transfer in the fromToken
+        IERC20(swap.fromToken).transferFrom(msg.sender, address(this), swap.fromAmount);
+
+        // Transfer out the toToken
+        deal(address(swap.toToken), address(this), swap.toAmount);
+        IERC20(swap.toToken).transfer(recipient, swap.toAmount);
+
+        v2Swaps[v2SwapIndex].isExecuted = true;
+    }
+
+    function _executeV3SingleHopSwap(MockV3SingleHopSwap memory swap, address recipient, uint256 v3SingleHopSwapIndex)
+        internal
+    {
+        // Transfer in the fromToken
+        IERC20(swap.fromToken).transferFrom(msg.sender, address(this), swap.fromAmount);
+
+        // Transfer out the toToken
+        deal(address(swap.toToken), address(this), swap.toAmount);
+        IERC20(swap.toToken).transfer(recipient, swap.toAmount);
+
+        v3SingleHopSwaps[v3SingleHopSwapIndex].isExecuted = true;
+    }
+
+    function _executeV3MultiHopSwap(MockV3MultiHopSwap memory swap, address recipient, uint256 v3MultiHopSwapIndex)
+        internal
+    {
+        // Transfer in the fromToken
+        IERC20(swap.fromToken).transferFrom(msg.sender, address(this), swap.fromAmount);
+
+        // Transfer out the toToken
+        deal(address(swap.toToken), address(this), swap.toAmount);
+        IERC20(swap.toToken).transfer(recipient, swap.toAmount);
+
+        v3MultiHopSwaps[v3MultiHopSwapIndex].isExecuted = true;
     }
 }

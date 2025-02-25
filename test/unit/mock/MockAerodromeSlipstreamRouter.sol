@@ -58,14 +58,7 @@ contract MockAerodromeSlipstreamRouter is Test {
                     "MockAerodromeSlipstreamRouter: INSUFFICIENT_OUTPUT_AMOUNT"
                 );
 
-                // Transfer in the fromToken
-                IERC20(swap.fromToken).transferFrom(msg.sender, address(this), swap.fromAmount);
-
-                // Transfer out the toToken
-                deal(address(swap.toToken), address(this), swap.toAmount);
-                IERC20(swap.toToken).transfer(params.recipient, swap.toAmount);
-
-                singleHopSwaps[i].isExecuted = true;
+                _executeSingleHopSwap(swap, params.recipient, i);
                 return swap.toAmount;
             }
         }
@@ -90,14 +83,7 @@ contract MockAerodromeSlipstreamRouter is Test {
                     "MockAerodromeSlipstreamRouter: INSUFFICIENT_OUTPUT_AMOUNT"
                 );
 
-                // Transfer in the fromToken
-                IERC20(swap.fromToken).transferFrom(msg.sender, address(this), swap.fromAmount);
-
-                // Transfer out the toToken
-                deal(address(swap.toToken), address(this), swap.toAmount);
-                IERC20(swap.toToken).transfer(params.recipient, swap.toAmount);
-
-                multiHopSwaps[i].isExecuted = true;
+                _executeMultiHopSwap(swap, params.recipient, i);
                 return swap.toAmount;
             }
         }
@@ -121,14 +107,7 @@ contract MockAerodromeSlipstreamRouter is Test {
                     "MockAerodromeSlipstreamRouter: INSUFFICIENT_INPUT_AMOUNT"
                 );
 
-                // Transfer in the fromToken
-                IERC20(swap.fromToken).transferFrom(msg.sender, address(this), swap.fromAmount);
-
-                // Transfer out the toToken
-                deal(address(swap.toToken), address(this), swap.toAmount);
-                IERC20(swap.toToken).transfer(params.recipient, swap.toAmount);
-
-                singleHopSwaps[i].isExecuted = true;
+                _executeSingleHopSwap(swap, params.recipient, i);
                 return swap.fromAmount;
             }
         }
@@ -153,18 +132,37 @@ contract MockAerodromeSlipstreamRouter is Test {
                     "MockAerodromeSlipstreamRouter: INSUFFICIENT_INPUT_AMOUNT"
                 );
 
-                // Transfer in the fromToken
-                IERC20(swap.fromToken).transferFrom(msg.sender, address(this), swap.fromAmount);
-
-                // Transfer out the toToken
-                deal(address(swap.toToken), address(this), swap.toAmount);
-                IERC20(swap.toToken).transfer(params.recipient, swap.toAmount);
-
-                multiHopSwaps[i].isExecuted = true;
+                _executeMultiHopSwap(swap, params.recipient, i);
                 return swap.fromAmount;
             }
         }
 
         revert("MockAerodromeSlipstreamRouter: No mocked swap set");
+    }
+
+    function _executeSingleHopSwap(MockSwapSingleHop memory swap, address recipient, uint256 singleHopSwapIndex)
+        internal
+    {
+        // Transfer in the fromToken
+        IERC20(swap.fromToken).transferFrom(msg.sender, address(this), swap.fromAmount);
+
+        // Transfer out the toToken
+        deal(address(swap.toToken), address(this), swap.toAmount);
+        IERC20(swap.toToken).transfer(recipient, swap.toAmount);
+
+        singleHopSwaps[singleHopSwapIndex].isExecuted = true;
+    }
+
+    function _executeMultiHopSwap(MockSwapMultiHop memory swap, address recipient, uint256 multiHopSwapIndex)
+        internal
+    {
+        // Transfer in the fromToken
+        IERC20(swap.fromToken).transferFrom(msg.sender, address(this), swap.fromAmount);
+
+        // Transfer out the toToken
+        deal(address(swap.toToken), address(this), swap.toAmount);
+        IERC20(swap.toToken).transfer(recipient, swap.toAmount);
+
+        multiHopSwaps[multiHopSwapIndex].isExecuted = true;
     }
 }
