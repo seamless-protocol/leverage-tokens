@@ -18,31 +18,7 @@ contract SwapMaxFromToExactToAerodromeTest is SwapAdapterBaseTest {
         path[0] = address(fromToken);
         path[1] = address(toToken);
 
-        ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
-            exchange: ISwapAdapter.Exchange.AERODROME,
-            path: path,
-            fees: new uint24[](0),
-            tickSpacing: new int24[](0),
-            exchangeAddresses: ISwapAdapter.ExchangeAddresses({
-                aerodromeRouter: address(mockAerodromeRouter),
-                aerodromeFactory: aerodromeFactory,
-                aerodromeSlipstreamRouter: address(0),
-                uniswapRouter02: address(0)
-            })
-        });
-
-        IAerodromeRouter.Route[] memory routes = new IAerodromeRouter.Route[](1);
-        routes[0] = IAerodromeRouter.Route(address(fromToken), address(toToken), false, aerodromeFactory);
-        MockAerodromeRouter.MockSwap memory mockSwap = MockAerodromeRouter.MockSwap({
-            fromToken: fromToken,
-            toToken: toToken,
-            fromAmount: maxFromAmount,
-            toAmount: toAmount,
-            encodedRoutes: keccak256(abi.encode(routes)),
-            deadline: block.timestamp,
-            isExecuted: false
-        });
-        mockAerodromeRouter.mockNextSwap(mockSwap);
+        ISwapAdapter.SwapContext memory swapContext = _mock_SwapMaxFromToExactToAerodrome(path, toAmount, maxFromAmount);
 
         // `SwapAdapter._swapMaxFromToExactToAerodrome` does not transfer in the fromToken,
         // `SwapAdapterHarness.swapMaxFromToExactTo` does which is the external function that calls
@@ -67,33 +43,7 @@ contract SwapMaxFromToExactToAerodromeTest is SwapAdapterBaseTest {
         path[1] = makeAddr("additional hop");
         path[2] = address(toToken);
 
-        ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
-            exchange: ISwapAdapter.Exchange.AERODROME,
-            path: path,
-            fees: new uint24[](0),
-            tickSpacing: new int24[](0),
-            exchangeAddresses: ISwapAdapter.ExchangeAddresses({
-                aerodromeRouter: address(mockAerodromeRouter),
-                aerodromeFactory: aerodromeFactory,
-                aerodromeSlipstreamRouter: address(0),
-                uniswapRouter02: address(0)
-            })
-        });
-
-        IAerodromeRouter.Route[] memory routes = new IAerodromeRouter.Route[](2);
-        routes[0] = IAerodromeRouter.Route(path[0], path[1], false, aerodromeFactory);
-        routes[1] = IAerodromeRouter.Route(path[1], path[2], false, aerodromeFactory);
-
-        MockAerodromeRouter.MockSwap memory mockSwap = MockAerodromeRouter.MockSwap({
-            fromToken: fromToken,
-            toToken: toToken,
-            fromAmount: maxFromAmount,
-            toAmount: toAmount,
-            encodedRoutes: keccak256(abi.encode(routes)),
-            deadline: block.timestamp,
-            isExecuted: false
-        });
-        mockAerodromeRouter.mockNextSwap(mockSwap);
+        ISwapAdapter.SwapContext memory swapContext = _mock_SwapMaxFromToExactToAerodrome(path, toAmount, maxFromAmount);
 
         // `SwapAdapter._swapMaxFromToExactToAerodrome` does not transfer in the fromToken,
         // `SwapAdapterHarness.swapMaxFromToExactTo` does which is the external function that calls
@@ -172,5 +122,41 @@ contract SwapMaxFromToExactToAerodromeTest is SwapAdapterBaseTest {
         assertEq(fromToken.balanceOf(address(this)), mockSwap2.toAmount);
         // The fromAmount should be less than the maxFromAmount by the surplus received from the second swap
         assertEq(fromAmount, maxFromAmount - mockSwap2.toAmount);
+    }
+
+    function _mock_SwapMaxFromToExactToAerodrome(address[] memory path, uint256 toAmount, uint256 maxFromAmount)
+        internal
+        returns (ISwapAdapter.SwapContext memory swapContext)
+    {
+        swapContext = ISwapAdapter.SwapContext({
+            exchange: ISwapAdapter.Exchange.AERODROME,
+            path: path,
+            fees: new uint24[](0),
+            tickSpacing: new int24[](0),
+            exchangeAddresses: ISwapAdapter.ExchangeAddresses({
+                aerodromeRouter: address(mockAerodromeRouter),
+                aerodromeFactory: aerodromeFactory,
+                aerodromeSlipstreamRouter: address(0),
+                uniswapRouter02: address(0)
+            })
+        });
+
+        IAerodromeRouter.Route[] memory routes = new IAerodromeRouter.Route[](path.length - 1);
+        for (uint256 i = 0; i < path.length - 1; i++) {
+            routes[i] = IAerodromeRouter.Route(path[i], path[i + 1], false, aerodromeFactory);
+        }
+
+        MockAerodromeRouter.MockSwap memory mockSwap = MockAerodromeRouter.MockSwap({
+            fromToken: fromToken,
+            toToken: toToken,
+            fromAmount: maxFromAmount,
+            toAmount: toAmount,
+            encodedRoutes: keccak256(abi.encode(routes)),
+            deadline: block.timestamp,
+            isExecuted: false
+        });
+        mockAerodromeRouter.mockNextSwap(mockSwap);
+
+        return swapContext;
     }
 }

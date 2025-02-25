@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
+// Dependency imports
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 // Internal imports
 import {ISwapAdapter} from "src/interfaces/ISwapAdapter.sol";
 import {SwapAdapterBaseTest} from "./SwapAdapterBase.t.sol";
@@ -137,5 +140,53 @@ contract SwapExactFromToMinToAerodromeSlipstreamTest is SwapAdapterBaseTest {
 
         vm.expectRevert(ISwapAdapter.InvalidNumTicks.selector);
         swapAdapter.exposed_swapExactFromToMinToAerodromeSlipstream(fromAmount, minToAmount, swapContext);
+    }
+
+    function _mock_SwapExactFromToMinToAerodromeSlipstream(
+        address[] memory path,
+        int24[] memory tickSpacing,
+        uint256 fromAmount,
+        uint256 minToAmount,
+        bool isMultiHop
+    ) internal returns (ISwapAdapter.SwapContext memory swapContext) {
+        swapContext = ISwapAdapter.SwapContext({
+            exchange: ISwapAdapter.Exchange.AERODROME_SLIPSTREAM,
+            path: path,
+            fees: new uint24[](0),
+            tickSpacing: tickSpacing,
+            exchangeAddresses: ISwapAdapter.ExchangeAddresses({
+                aerodromeRouter: address(0),
+                aerodromeFactory: address(0),
+                aerodromeSlipstreamRouter: address(mockAerodromeSlipstreamRouter),
+                uniswapRouter02: address(0)
+            })
+        });
+
+        if (isMultiHop) {
+            MockAerodromeSlipstreamRouter.MockSwapMultiHop memory mockSwap = MockAerodromeSlipstreamRouter
+                .MockSwapMultiHop({
+                encodedPath: keccak256(swapAdapter.exposed_encodeAerodromeSlipstreamPath(path, tickSpacing, false)),
+                fromToken: IERC20(path[0]),
+                toToken: IERC20(path[path.length - 1]),
+                fromAmount: fromAmount,
+                toAmount: minToAmount,
+                isExecuted: false
+            });
+            mockAerodromeSlipstreamRouter.mockNextMultiHopSwap(mockSwap);
+        } else {
+            MockAerodromeSlipstreamRouter.MockSwapSingleHop memory mockSwap = MockAerodromeSlipstreamRouter
+                .MockSwapSingleHop({
+                fromToken: path[0],
+                toToken: path[path.length - 1],
+                fromAmount: fromAmount,
+                toAmount: minToAmount,
+                tickSpacing: tickSpacing[0],
+                sqrtPriceLimitX96: 0,
+                isExecuted: false
+            });
+            mockAerodromeSlipstreamRouter.mockNextSingleHopSwap(mockSwap);
+        }
+
+        return swapContext;
     }
 }

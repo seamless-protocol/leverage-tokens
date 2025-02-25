@@ -6,7 +6,6 @@ import {IAerodromeRouter} from "src/interfaces/IAerodromeRouter.sol";
 import {ISwapAdapter} from "src/interfaces/ISwapAdapter.sol";
 import {SwapAdapterBaseTest} from "./SwapAdapterBase.t.sol";
 import {MockAerodromeRouter} from "test/unit/mock/MockAerodromeRouter.sol";
-import {MockERC20} from "test/unit/mock/MockERC20.sol";
 
 contract SwapExactFromToMinToAerodromeV2Test is SwapAdapterBaseTest {
     address public aerodromeFactory = makeAddr("aerodromeFactory");
