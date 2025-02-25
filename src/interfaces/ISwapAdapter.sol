@@ -34,14 +34,12 @@ interface ISwapAdapter {
 
     /// @notice Swap tokens from the fromToken to the toToken using the specified provider
     /// @param fromToken Token to swap from
-    /// @param toToken Token to swap to
     /// @param toAmount Amount of tokens to receive
     /// @param maxFromAmount Maximum amount of tokens to swap
     /// @param swapContext Swap context to use for the swap (which exchange to use, the route, tick spacing, etc.)
     /// @return fromAmount Amount of tokens swapped
     function swapMaxFromToExactTo(
         IERC20 fromToken,
-        IERC20 toToken,
         uint256 toAmount,
         uint256 maxFromAmount,
         SwapContext memory swapContext
@@ -49,14 +47,12 @@ interface ISwapAdapter {
 
     /// @notice Swap tokens from the fromToken to the toToken using the specified provider
     /// @param fromToken Token to swap from
-    /// @param toToken Token to swap to
     /// @param fromAmount Amount of tokens to swap
     /// @param minToAmount Minimum amount of tokens to receive
     /// @param swapContext Swap context to use for the swap (which exchange to use, the route, tick spacing, etc.)
     /// @return toAmount Amount of tokens received
     function swapExactFromToMinTo(
         IERC20 fromToken,
-        IERC20 toToken,
         uint256 fromAmount,
         uint256 minToAmount,
         SwapContext memory swapContext

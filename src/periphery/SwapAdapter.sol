@@ -25,7 +25,6 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
     /// @inheritdoc ISwapAdapter
     function swapExactFromToMinTo(
         IERC20 fromToken,
-        IERC20 toToken,
         uint256 fromAmount,
         uint256 minToAmount,
         SwapContext memory swapContext
@@ -33,7 +32,7 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
         SafeERC20.safeTransferFrom(fromToken, msg.sender, address(this), fromAmount);
 
         if (swapContext.exchange == Exchange.AERODROME) {
-            return _swapExactFromToMinToAerodrome(fromToken, toToken, fromAmount, minToAmount, swapContext);
+            return _swapExactFromToMinToAerodrome(fromAmount, minToAmount, swapContext);
         } else if (swapContext.exchange == Exchange.AERODROME_SLIPSTREAM) {
             return _swapExactFromToMinToAerodromeSlipstream(fromAmount, minToAmount, swapContext);
         } else if (swapContext.exchange == Exchange.UNISWAP_V2) {
@@ -46,7 +45,6 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
     /// @inheritdoc ISwapAdapter
     function swapMaxFromToExactTo(
         IERC20 fromToken,
-        IERC20 toToken,
         uint256 toAmount,
         uint256 maxFromAmount,
         SwapContext memory swapContext
@@ -54,7 +52,7 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
         SafeERC20.safeTransferFrom(fromToken, msg.sender, address(this), maxFromAmount);
 
         if (swapContext.exchange == Exchange.AERODROME) {
-            return _swapMaxFromToExactToAerodrome(fromToken, toToken, toAmount, maxFromAmount, swapContext);
+            return _swapMaxFromToExactToAerodrome(toAmount, maxFromAmount, swapContext);
         } else if (swapContext.exchange == Exchange.AERODROME_SLIPSTREAM) {
             return _swapMaxFromToExactToAerodromeSlipstream(toAmount, maxFromAmount, swapContext);
         } else if (swapContext.exchange == Exchange.UNISWAP_V3) {
@@ -65,36 +63,43 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
     }
 
     function _swapAerodrome(
-        IERC20 fromToken,
-        IERC20 toToken,
         uint256 fromAmount,
         uint256 minToAmount,
+        address receiver,
         address aerodromeRouter,
-        address aerodromeFactory
+        address aerodromeFactory,
+        address[] memory path
     ) internal returns (uint256 toAmount) {
-        IAerodromeRouter.Route[] memory routes = new IAerodromeRouter.Route[](1);
-        routes[0] = IAerodromeRouter.Route(address(fromToken), address(toToken), false, aerodromeFactory);
+        IAerodromeRouter.Route[] memory routes = _generateAerodromeRoutes(path, aerodromeFactory);
 
-        fromToken.approve(aerodromeRouter, fromAmount);
+        IERC20(path[0]).approve(aerodromeRouter, fromAmount);
         return IAerodromeRouter(aerodromeRouter).swapExactTokensForTokens(
-            fromAmount, minToAmount, routes, msg.sender, block.timestamp
+            fromAmount, minToAmount, routes, receiver, block.timestamp
         )[1];
     }
 
-    function _swapExactFromToMinToAerodrome(
-        IERC20 fromToken,
-        IERC20 toToken,
-        uint256 fromAmount,
-        uint256 minToAmount,
-        SwapContext memory swapContext
-    ) internal returns (uint256 toAmount) {
+    function _generateAerodromeRoutes(address[] memory path, address aerodromeFactory)
+        internal
+        pure
+        returns (IAerodromeRouter.Route[] memory routes)
+    {
+        routes = new IAerodromeRouter.Route[](path.length - 1);
+        for (uint256 i = 0; i < path.length - 1; i++) {
+            routes[i] = IAerodromeRouter.Route(path[i], path[i + 1], false, aerodromeFactory);
+        }
+    }
+
+    function _swapExactFromToMinToAerodrome(uint256 fromAmount, uint256 minToAmount, SwapContext memory swapContext)
+        internal
+        returns (uint256 toAmount)
+    {
         return _swapAerodrome(
-            fromToken,
-            toToken,
             fromAmount,
             minToAmount,
+            msg.sender,
             swapContext.exchangeAddresses.aerodromeRouter,
-            swapContext.exchangeAddresses.aerodromeFactory
+            swapContext.exchangeAddresses.aerodromeFactory,
+            swapContext.path
         );
     }
 
@@ -103,6 +108,9 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
         uint256 minToAmount,
         SwapContext memory swapContext
     ) internal returns (uint256 toAmount) {
+        // Check that the number of routes is equal to the number of tick spacings plus one, as required by Aerodrome Slipstream
+        if (swapContext.path.length != swapContext.tickSpacing.length + 1) revert InvalidNumTicks();
+
         IAerodromeSlipstreamRouter aerodromeSlipstreamRouter =
             IAerodromeSlipstreamRouter(swapContext.exchangeAddresses.aerodromeSlipstreamRouter);
 
@@ -179,33 +187,38 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
         }
     }
 
-    function _swapMaxFromToExactToAerodrome(
-        IERC20 fromToken,
-        IERC20 toToken,
-        uint256 toAmount,
-        uint256 maxFromAmount,
-        SwapContext memory swapContext
-    ) internal returns (uint256 fromAmount) {
-        uint256 toAmountFromMaxFromAmount = _swapAerodrome(
-            fromToken,
-            toToken,
+    function _swapMaxFromToExactToAerodrome(uint256 toAmount, uint256 maxFromAmount, SwapContext memory swapContext)
+        internal
+        returns (uint256 fromAmount)
+    {
+        uint256 toAmountReceived = _swapAerodrome(
             maxFromAmount,
             toAmount,
+            address(this),
             swapContext.exchangeAddresses.aerodromeRouter,
-            swapContext.exchangeAddresses.aerodromeFactory
+            swapContext.exchangeAddresses.aerodromeFactory,
+            swapContext.path
         );
 
-        // We only need toAmount of the received tokens, so we swap the excess back to the fromToken and send it back to receiver
-        if (toAmountFromMaxFromAmount > toAmount) {
-            return _swapAerodrome(
-                toToken,
-                fromToken,
-                toAmountFromMaxFromAmount - toAmount,
+        // We only need toAmount of the received tokens, so we swap the surplus back to the fromToken and send it back to sender
+        if (toAmountReceived > toAmount) {
+            uint256 surplusFromAmount = _swapAerodrome(
+                toAmountReceived - toAmount,
                 0,
+                address(this),
                 swapContext.exchangeAddresses.aerodromeRouter,
-                swapContext.exchangeAddresses.aerodromeFactory
+                swapContext.exchangeAddresses.aerodromeFactory,
+                _reversePath(swapContext.path)
             );
+
+            // We need to transfer the toToken and the surplus fromToken to the sender
+            SafeERC20.safeTransfer(IERC20(swapContext.path[0]), msg.sender, surplusFromAmount);
+            SafeERC20.safeTransfer(IERC20(swapContext.path[swapContext.path.length - 1]), msg.sender, toAmount);
+
+            return maxFromAmount - surplusFromAmount;
         } else {
+            SafeERC20.safeTransfer(IERC20(swapContext.path[swapContext.path.length - 1]), msg.sender, toAmount);
+
             return maxFromAmount;
         }
     }
@@ -330,6 +343,13 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
             for (uint256 i = 0; i < fees.length; i++) {
                 encodedPath = abi.encodePacked(encodedPath, fees[i], path[i + 1]);
             }
+        }
+    }
+
+    function _reversePath(address[] memory path) internal pure returns (address[] memory reversedPath) {
+        reversedPath = new address[](path.length);
+        for (uint256 i = 0; i < path.length; i++) {
+            reversedPath[i] = path[path.length - i - 1];
         }
     }
 }

@@ -122,7 +122,6 @@ contract LeverageRouter is ILeverageRouter {
         debtAsset.approve(address(swapper), params.debtToBorrow);
         uint256 swappedCollateralAmount = swapper.swapExactFromToMinTo(
             debtAsset,
-            params.collateralAsset,
             params.debtToBorrow,
             0, // Set to zero because additional collateral from the sender is used to help repay the flash loan
             params.swapContext
