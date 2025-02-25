@@ -22,6 +22,7 @@ interface ISwapAdapter {
 
     struct SwapContext {
         address[] path;
+        bytes encodedPath;
         uint24[] fees;
         int24[] tickSpacing;
         Exchange exchange;

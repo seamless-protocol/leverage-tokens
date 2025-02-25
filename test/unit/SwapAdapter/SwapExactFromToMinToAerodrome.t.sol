@@ -69,6 +69,7 @@ abstract contract SwapExactFromToMinToAerodromeTest is SwapAdapterBaseTest {
     {
         swapContext = ISwapAdapter.SwapContext({
             exchange: ISwapAdapter.Exchange.AERODROME,
+            encodedPath: new bytes(0),
             path: path,
             fees: new uint24[](0),
             tickSpacing: new int24[](0),

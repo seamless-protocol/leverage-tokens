@@ -67,6 +67,7 @@ abstract contract SwapExactFromToMinToUniV2Test is SwapAdapterBaseTest {
         swapContext = ISwapAdapter.SwapContext({
             exchange: ISwapAdapter.Exchange.UNISWAP_V2,
             path: path,
+            encodedPath: new bytes(0),
             fees: new uint24[](0),
             tickSpacing: new int24[](0),
             exchangeAddresses: ISwapAdapter.ExchangeAddresses({

@@ -84,6 +84,7 @@ abstract contract SwapExactFromToMinToUniV3Test is SwapAdapterBaseTest {
         ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
             exchange: ISwapAdapter.Exchange.UNISWAP_V3,
             path: path,
+            encodedPath: _encodeUniswapV3Path(path, fees, false),
             fees: fees,
             tickSpacing: new int24[](0),
             exchangeAddresses: ISwapAdapter.ExchangeAddresses({
@@ -108,6 +109,7 @@ abstract contract SwapExactFromToMinToUniV3Test is SwapAdapterBaseTest {
         swapContext = ISwapAdapter.SwapContext({
             exchange: ISwapAdapter.Exchange.UNISWAP_V3,
             path: path,
+            encodedPath: _encodeUniswapV3Path(path, fees, false),
             fees: fees,
             tickSpacing: new int24[](0),
             exchangeAddresses: ISwapAdapter.ExchangeAddresses({
@@ -120,7 +122,7 @@ abstract contract SwapExactFromToMinToUniV3Test is SwapAdapterBaseTest {
 
         if (isMultiHop) {
             MockUniswapRouter02.MockV3MultiHopSwap memory mockSwap = MockUniswapRouter02.MockV3MultiHopSwap({
-                encodedPath: keccak256(swapAdapter.exposed_encodeUniswapV3Path(path, fees, false)),
+                encodedPath: keccak256(_encodeUniswapV3Path(path, fees, false)),
                 fromToken: IERC20(path[0]),
                 toToken: IERC20(path[path.length - 1]),
                 fromAmount: fromAmount,

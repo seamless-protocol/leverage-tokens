@@ -76,20 +76,4 @@ contract SwapAdapterHarness is SwapAdapter {
     ) external returns (uint256 fromAmount) {
         return _swapMaxFromToExactToUniV3(toAmount, maxFromAmount, swapContext);
     }
-
-    function exposed_encodeAerodromeSlipstreamPath(address[] memory path, int24[] memory tickSpacing, bool reverseOrder)
-        external
-        pure
-        returns (bytes memory encodedPath)
-    {
-        return _encodeAerodromeSlipstreamPath(path, tickSpacing, reverseOrder);
-    }
-
-    function exposed_encodeUniswapV3Path(address[] memory path, uint24[] memory fees, bool reverseOrder)
-        external
-        pure
-        returns (bytes memory encodedPath)
-    {
-        return _encodeUniswapV3Path(path, fees, reverseOrder);
-    }
 }

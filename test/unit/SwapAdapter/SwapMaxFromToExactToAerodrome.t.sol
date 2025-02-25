@@ -72,6 +72,7 @@ abstract contract SwapMaxFromToExactToAerodromeTest is SwapAdapterBaseTest {
         ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
             exchange: ISwapAdapter.Exchange.AERODROME,
             path: path,
+            encodedPath: new bytes(0),
             fees: new uint24[](0),
             tickSpacing: new int24[](0),
             exchangeAddresses: ISwapAdapter.ExchangeAddresses({
@@ -132,6 +133,7 @@ abstract contract SwapMaxFromToExactToAerodromeTest is SwapAdapterBaseTest {
         swapContext = ISwapAdapter.SwapContext({
             exchange: ISwapAdapter.Exchange.AERODROME,
             path: path,
+            encodedPath: new bytes(0),
             fees: new uint24[](0),
             tickSpacing: new int24[](0),
             exchangeAddresses: ISwapAdapter.ExchangeAddresses({

@@ -86,6 +86,7 @@ abstract contract SwapMaxFromToExactToAerodromeSlipstreamTest is SwapAdapterBase
         ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
             exchange: ISwapAdapter.Exchange.AERODROME_SLIPSTREAM,
             path: path,
+            encodedPath: _encodeAerodromeSlipstreamPath(path, tickSpacing, true),
             fees: new uint24[](0),
             tickSpacing: tickSpacing,
             exchangeAddresses: ISwapAdapter.ExchangeAddresses({
@@ -110,6 +111,7 @@ abstract contract SwapMaxFromToExactToAerodromeSlipstreamTest is SwapAdapterBase
         swapContext = ISwapAdapter.SwapContext({
             exchange: ISwapAdapter.Exchange.AERODROME_SLIPSTREAM,
             path: path,
+            encodedPath: _encodeAerodromeSlipstreamPath(path, tickSpacing, true),
             fees: new uint24[](0),
             tickSpacing: tickSpacing,
             exchangeAddresses: ISwapAdapter.ExchangeAddresses({
@@ -123,7 +125,7 @@ abstract contract SwapMaxFromToExactToAerodromeSlipstreamTest is SwapAdapterBase
         if (isMultiHop) {
             MockAerodromeSlipstreamRouter.MockSwapMultiHop memory mockSwap = MockAerodromeSlipstreamRouter
                 .MockSwapMultiHop({
-                encodedPath: keccak256(swapAdapter.exposed_encodeAerodromeSlipstreamPath(path, tickSpacing, true)),
+                encodedPath: keccak256(_encodeAerodromeSlipstreamPath(path, tickSpacing, true)),
                 fromToken: IERC20(path[0]),
                 toToken: IERC20(path[path.length - 1]),
                 fromAmount: maxFromAmount,

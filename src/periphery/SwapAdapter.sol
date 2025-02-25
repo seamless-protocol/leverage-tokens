@@ -127,7 +127,7 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
             return aerodromeSlipstreamRouter.exactInputSingle(swapParams);
         } else {
             IAerodromeSlipstreamRouter.ExactInputParams memory swapParams = IAerodromeSlipstreamRouter.ExactInputParams({
-                path: _encodeAerodromeSlipstreamPath(swapContext.path, swapContext.tickSpacing, false),
+                path: swapContext.encodedPath,
                 recipient: msg.sender,
                 deadline: block.timestamp,
                 amountIn: fromAmount,
@@ -172,7 +172,7 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
             return uniswapRouter02.exactInputSingle(params);
         } else {
             IUniswapSwapRouter02.ExactInputParams memory params = IUniswapSwapRouter02.ExactInputParams({
-                path: _encodeUniswapV3Path(swapContext.path, swapContext.fees, false),
+                path: swapContext.encodedPath,
                 recipient: msg.sender,
                 amountIn: fromAmount,
                 amountOutMinimum: minToAmount
@@ -247,8 +247,8 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
         } else {
             IAerodromeSlipstreamRouter.ExactOutputParams memory swapParams = IAerodromeSlipstreamRouter
                 .ExactOutputParams({
-                // We need to reverse the path as we are swapping from the last token to the first, as required by Aerodrome Slipstream
-                path: _encodeAerodromeSlipstreamPath(swapContext.path, swapContext.tickSpacing, true),
+                // This should be the encoded reversed path as exactOutput expects the path to be in reverse order
+                path: swapContext.encodedPath,
                 recipient: msg.sender,
                 deadline: block.timestamp,
                 amountOut: toAmount,
@@ -291,53 +291,13 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
             return uniswapRouter02.exactOutputSingle(params);
         } else {
             IUniswapSwapRouter02.ExactOutputParams memory params = IUniswapSwapRouter02.ExactOutputParams({
-                // We need to reverse the path as we are swapping from the last token to the first, as required by Uniswap V3
-                path: _encodeUniswapV3Path(swapContext.path, swapContext.fees, true),
+                // This should be the encoded reversed path as exactOutput expects the path to be in reverse order
+                path: swapContext.encodedPath,
                 recipient: msg.sender,
                 amountOut: toAmount,
                 amountInMaximum: maxFromAmount
             });
             return uniswapRouter02.exactOutput(params);
-        }
-    }
-
-    /// @notice Encode the path as required by the Aerodrome Slipstream router
-    function _encodeAerodromeSlipstreamPath(address[] memory path, int24[] memory tickSpacing, bool reverseOrder)
-        internal
-        pure
-        returns (bytes memory encodedPath)
-    {
-        if (reverseOrder) {
-            encodedPath = abi.encodePacked(path[path.length - 1]);
-            for (uint256 i = tickSpacing.length; i > 0; i--) {
-                uint256 indexToAppend = i - 1;
-                encodedPath = abi.encodePacked(encodedPath, tickSpacing[indexToAppend], path[indexToAppend]);
-            }
-        } else {
-            encodedPath = abi.encodePacked(path[0]);
-            for (uint256 i = 0; i < tickSpacing.length; i++) {
-                encodedPath = abi.encodePacked(encodedPath, tickSpacing[i], path[i + 1]);
-            }
-        }
-    }
-
-    /// @notice Encode the path as required by the Uniswap V3 router
-    function _encodeUniswapV3Path(address[] memory path, uint24[] memory fees, bool reverseOrder)
-        internal
-        pure
-        returns (bytes memory encodedPath)
-    {
-        if (reverseOrder) {
-            encodedPath = abi.encodePacked(path[path.length - 1]);
-            for (uint256 i = fees.length; i > 0; i--) {
-                uint256 indexToAppend = i - 1;
-                encodedPath = abi.encodePacked(encodedPath, fees[indexToAppend], path[indexToAppend]);
-            }
-        } else {
-            encodedPath = abi.encodePacked(path[0]);
-            for (uint256 i = 0; i < fees.length; i++) {
-                encodedPath = abi.encodePacked(encodedPath, fees[i], path[i + 1]);
-            }
         }
     }
 

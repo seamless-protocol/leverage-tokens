@@ -82,6 +82,7 @@ contract DepositTest is LeverageRouterBaseTest {
             // Mock the swap context (doesn't matter for this test as the swap is mocked)
             ISwapAdapter.SwapContext({
                 path: new address[](0),
+                encodedPath: new bytes(0),
                 fees: new uint24[](0),
                 tickSpacing: new int24[](0),
                 exchange: ISwapAdapter.Exchange.AERODROME,
@@ -172,6 +173,7 @@ contract DepositTest is LeverageRouterBaseTest {
             // Mock the swap context (doesn't matter for this test as the swap is mocked)
             ISwapAdapter.SwapContext({
                 path: new address[](0),
+                encodedPath: new bytes(0),
                 fees: new uint24[](0),
                 tickSpacing: new int24[](0),
                 exchange: ISwapAdapter.Exchange.AERODROME,
@@ -274,6 +276,7 @@ contract DepositTest is LeverageRouterBaseTest {
             // Mock the swap context (doesn't matter for this test as the swap is mocked)
             ISwapAdapter.SwapContext({
                 path: new address[](0),
+                encodedPath: new bytes(0),
                 fees: new uint24[](0),
                 tickSpacing: new int24[](0),
                 exchange: ISwapAdapter.Exchange.AERODROME,
