@@ -6,10 +6,10 @@ import {ISwapAdapter} from "src/interfaces/ISwapAdapter.sol";
 import {SwapAdapterBaseTest} from "./SwapAdapterBase.t.sol";
 import {MockAerodromeSlipstreamRouter} from "test/unit/mock/MockAerodromeSlipstreamRouter.sol";
 
-contract SwapExactFromToMinToAerodromeSlipstreamTest is SwapAdapterBaseTest {
-    function test_SwapExactFromToMinToAerodromeSlipstream_SingleHop() public {
-        uint256 fromAmount = 100 ether;
-        uint256 minToAmount = 10 ether;
+contract SwapMaxFromToExactToAerodromeSlipstreamTest is SwapAdapterBaseTest {
+    function test_SwapMaxFromToExactToAerodromeSlipstream_SingleHop() public {
+        uint256 toAmount = 10 ether;
+        uint256 maxFromAmount = 100 ether;
 
         address[] memory path = new address[](2);
         path[0] = address(fromToken);
@@ -35,8 +35,8 @@ contract SwapExactFromToMinToAerodromeSlipstreamTest is SwapAdapterBaseTest {
             .MockSwapSingleHop({
             fromToken: address(fromToken),
             toToken: address(toToken),
-            fromAmount: fromAmount,
-            toAmount: minToAmount,
+            fromAmount: maxFromAmount,
+            toAmount: toAmount,
             tickSpacing: tickSpacing[0],
             sqrtPriceLimitX96: 0,
             isExecuted: false
@@ -46,21 +46,21 @@ contract SwapExactFromToMinToAerodromeSlipstreamTest is SwapAdapterBaseTest {
         // `SwapAdapter._swapExactFromToMinToAerodromeSlipstream` does not transfer in the fromToken,
         // `SwapAdapterHarness.swapExactFromToMinTo` does which is the external function that calls
         // `_swapExactFromToMinToAerodromeSlipstream`
-        deal(address(fromToken), address(swapAdapter), fromAmount);
+        deal(address(fromToken), address(swapAdapter), maxFromAmount);
 
-        uint256 toAmount =
-            swapAdapter.exposed_swapExactFromToMinToAerodromeSlipstream(fromAmount, minToAmount, swapContext);
+        uint256 fromAmount =
+            swapAdapter.exposed_swapMaxFromToExactToAerodromeSlipstream(toAmount, maxFromAmount, swapContext);
 
         // Aerodrome receives the fromToken
         assertEq(fromToken.balanceOf(address(mockAerodromeSlipstreamRouter)), fromAmount);
         // We receive the toToken
-        assertEq(toToken.balanceOf(address(this)), minToAmount);
-        assertEq(toAmount, minToAmount);
+        assertEq(toToken.balanceOf(address(this)), toAmount);
+        assertEq(fromAmount, maxFromAmount);
     }
 
-    function test_SwapExactFromToMinToAerodromeSlipstream_MultiHop() public {
-        uint256 fromAmount = 100 ether;
-        uint256 minToAmount = 10 ether;
+    function test_SwapMaxFromToExactToAerodromeSlipstream_MultiHop() public {
+        uint256 toAmount = 5 ether;
+        uint256 maxFromAmount = 100 ether;
 
         address[] memory path = new address[](3);
         path[0] = address(fromToken);
@@ -85,11 +85,11 @@ contract SwapExactFromToMinToAerodromeSlipstreamTest is SwapAdapterBaseTest {
         });
 
         MockAerodromeSlipstreamRouter.MockSwapMultiHop memory mockSwap = MockAerodromeSlipstreamRouter.MockSwapMultiHop({
-            encodedPath: keccak256(swapAdapter.exposed_encodeAerodromeSlipstreamPath(path, tickSpacing, false)),
+            encodedPath: keccak256(swapAdapter.exposed_encodeAerodromeSlipstreamPath(path, tickSpacing, true)),
             fromToken: fromToken,
             toToken: toToken,
-            fromAmount: fromAmount,
-            toAmount: minToAmount,
+            fromAmount: maxFromAmount,
+            toAmount: toAmount,
             isExecuted: false
         });
 
@@ -98,21 +98,21 @@ contract SwapExactFromToMinToAerodromeSlipstreamTest is SwapAdapterBaseTest {
         // `SwapAdapter._swapExactFromToMinToAerodromeSlipstream` does not transfer in the fromToken,
         // `SwapAdapterHarness.swapExactFromToMinTo` does which is the external function that calls
         // `_swapExactFromToMinToAerodromeSlipstream`
-        deal(address(fromToken), address(swapAdapter), fromAmount);
+        deal(address(fromToken), address(swapAdapter), maxFromAmount);
 
-        uint256 toAmount =
-            swapAdapter.exposed_swapExactFromToMinToAerodromeSlipstream(fromAmount, minToAmount, swapContext);
+        uint256 fromAmount =
+            swapAdapter.exposed_swapMaxFromToExactToAerodromeSlipstream(toAmount, maxFromAmount, swapContext);
 
         // Aerodrome receives the fromToken
         assertEq(fromToken.balanceOf(address(mockAerodromeSlipstreamRouter)), fromAmount);
         // We receive the toToken
-        assertEq(toToken.balanceOf(address(this)), minToAmount);
-        assertEq(toAmount, minToAmount);
+        assertEq(toToken.balanceOf(address(this)), toAmount);
+        assertEq(fromAmount, maxFromAmount);
     }
 
-    function test_SwapExactFromToMinToAerodromeSlipstream_InvalidNumTicks() public {
-        uint256 fromAmount = 100 ether;
-        uint256 minToAmount = 10 ether;
+    function test_SwapMaxFromToExactToAerodromeSlipstream_InvalidNumTicks() public {
+        uint256 toAmount = 10 ether;
+        uint256 maxFromAmount = 100 ether;
 
         address[] memory path = new address[](3);
         path[0] = address(fromToken);
@@ -136,6 +136,6 @@ contract SwapExactFromToMinToAerodromeSlipstreamTest is SwapAdapterBaseTest {
         });
 
         vm.expectRevert(ISwapAdapter.InvalidNumTicks.selector);
-        swapAdapter.exposed_swapExactFromToMinToAerodromeSlipstream(fromAmount, minToAmount, swapContext);
+        swapAdapter.exposed_swapMaxFromToExactToAerodromeSlipstream(toAmount, maxFromAmount, swapContext);
     }
 }

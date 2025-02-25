@@ -6,10 +6,10 @@ import {ISwapAdapter} from "src/interfaces/ISwapAdapter.sol";
 import {SwapAdapterBaseTest} from "./SwapAdapterBase.t.sol";
 import {MockUniswapRouter02} from "test/unit/mock/MockUniswapRouter02.sol";
 
-contract SwapExactFromToMinToUniswapV3Test is SwapAdapterBaseTest {
-    function test_SwapExactFromToMinToUniV3_SingleHop() public {
-        uint256 fromAmount = 100 ether;
-        uint256 minToAmount = 10 ether;
+contract SwapMaxFromToExactToUniswapV3Test is SwapAdapterBaseTest {
+    function test_SwapMaxFromToExactToUniV3_SingleHop() public {
+        uint256 toAmount = 10 ether;
+        uint256 maxFromAmount = 100 ether;
 
         address[] memory path = new address[](2);
         path[0] = address(fromToken);
@@ -34,31 +34,31 @@ contract SwapExactFromToMinToUniswapV3Test is SwapAdapterBaseTest {
         MockUniswapRouter02.MockV3SingleHopSwap memory mockSwap = MockUniswapRouter02.MockV3SingleHopSwap({
             fromToken: address(fromToken),
             toToken: address(toToken),
-            fromAmount: fromAmount,
-            toAmount: minToAmount,
+            fromAmount: maxFromAmount,
+            toAmount: toAmount,
             fee: fees[0],
             sqrtPriceLimitX96: 0,
             isExecuted: false
         });
         mockUniswapRouter02.mockNextUniswapV3SingleHopSwap(mockSwap);
 
-        // `SwapAdapter._swapExactFromToMinToUniV2` does not transfer in the fromToken,
-        // `SwapAdapterHarness.swapExactFromToMinTo` does which is the external function that calls
-        // `_swapExactFromToMinToUniV2`
-        deal(address(fromToken), address(swapAdapter), fromAmount);
+        // `SwapAdapter._swapMaxFromToExactToUniswapV3` does not transfer in the fromToken,
+        // `SwapAdapterHarness.swapMaxFromToExactTo` does which is the external function that calls
+        // `_swapMaxFromToExactToUniswapV3`
+        deal(address(fromToken), address(swapAdapter), maxFromAmount);
 
-        uint256 toAmount = swapAdapter.exposed_swapExactFromToMinToUniV3(fromAmount, minToAmount, swapContext);
+        uint256 fromAmount = swapAdapter.exposed_swapMaxFromToExactToUniV3(toAmount, maxFromAmount, swapContext);
 
         // Uniswap receives the fromToken
         assertEq(fromToken.balanceOf(address(mockUniswapRouter02)), fromAmount);
         // We receive the toToken
-        assertEq(toToken.balanceOf(address(this)), minToAmount);
-        assertEq(toAmount, minToAmount);
+        assertEq(toToken.balanceOf(address(this)), toAmount);
+        assertEq(fromAmount, maxFromAmount);
     }
 
-    function test_SwapExactFromToMinToUniV3_MultiHop() public {
-        uint256 fromAmount = 100 ether;
-        uint256 minToAmount = 10 ether;
+    function test_SwapMaxFromToExactToUniV3_MultiHop() public {
+        uint256 toAmount = 5 ether;
+        uint256 maxFromAmount = 100 ether;
 
         address[] memory path = new address[](3);
         path[0] = address(fromToken);
@@ -83,32 +83,33 @@ contract SwapExactFromToMinToUniswapV3Test is SwapAdapterBaseTest {
         });
 
         MockUniswapRouter02.MockV3MultiHopSwap memory mockSwap = MockUniswapRouter02.MockV3MultiHopSwap({
-            encodedPath: keccak256(swapAdapter.exposed_encodeUniswapV3Path(path, fees, false)),
+            encodedPath: keccak256(swapAdapter.exposed_encodeUniswapV3Path(path, fees, true)),
             fromToken: fromToken,
             toToken: toToken,
-            fromAmount: fromAmount,
-            toAmount: minToAmount,
+            fromAmount: maxFromAmount,
+            toAmount: toAmount,
             isExecuted: false
         });
+
         mockUniswapRouter02.mockNextUniswapV3MultiHopSwap(mockSwap);
 
-        // `SwapAdapter._swapExactFromToMinToUniV3` does not transfer in the fromToken,
-        // `SwapAdapterHarness.swapExactFromToMinTo` does which is the external function that calls
-        // `_swapExactFromToMinToUniV3`
-        deal(address(fromToken), address(swapAdapter), fromAmount);
+        // `SwapAdapter._swapMaxFromToExactToUniswapV3` does not transfer in the fromToken,
+        // `SwapAdapterHarness.swapMaxFromToExactTo` does which is the external function that calls
+        // `_swapMaxFromToExactToUniswapV3`
+        deal(address(fromToken), address(swapAdapter), maxFromAmount);
 
-        uint256 toAmount = swapAdapter.exposed_swapExactFromToMinToUniV3(fromAmount, minToAmount, swapContext);
+        uint256 fromAmount = swapAdapter.exposed_swapMaxFromToExactToUniV3(toAmount, maxFromAmount, swapContext);
 
         // Uniswap receives the fromToken
         assertEq(fromToken.balanceOf(address(mockUniswapRouter02)), fromAmount);
         // We receive the toToken
-        assertEq(toToken.balanceOf(address(this)), minToAmount);
-        assertEq(toAmount, minToAmount);
+        assertEq(toToken.balanceOf(address(this)), toAmount);
+        assertEq(fromAmount, maxFromAmount);
     }
 
-    function test_SwapExactFromToMinToUniV3_InvalidNumFees() public {
-        uint256 fromAmount = 100 ether;
-        uint256 minToAmount = 10 ether;
+    function test_SwapMaxFromToExactToUniV3_InvalidNumFees() public {
+        uint256 toAmount = 10 ether;
+        uint256 maxFromAmount = 100 ether;
 
         address[] memory path = new address[](3);
         path[0] = address(fromToken);
@@ -119,19 +120,19 @@ contract SwapExactFromToMinToUniswapV3Test is SwapAdapterBaseTest {
         fees[0] = 500;
 
         ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
-            exchange: ISwapAdapter.Exchange.UNISWAP_V3,
+            exchange: ISwapAdapter.Exchange.AERODROME_SLIPSTREAM,
             path: path,
             fees: fees,
             tickSpacing: new int24[](0),
             exchangeAddresses: ISwapAdapter.ExchangeAddresses({
                 aerodromeRouter: address(0),
                 aerodromeFactory: address(0),
-                aerodromeSlipstreamRouter: address(0),
-                uniswapRouter02: address(mockUniswapRouter02)
+                aerodromeSlipstreamRouter: address(mockAerodromeSlipstreamRouter),
+                uniswapRouter02: address(0)
             })
         });
 
         vm.expectRevert(ISwapAdapter.InvalidNumFees.selector);
-        swapAdapter.exposed_swapExactFromToMinToUniV3(fromAmount, minToAmount, swapContext);
+        swapAdapter.exposed_swapMaxFromToExactToUniV3(toAmount, maxFromAmount, swapContext);
     }
 }

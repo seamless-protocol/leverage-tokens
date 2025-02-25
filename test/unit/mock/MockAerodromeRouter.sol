@@ -39,10 +39,10 @@ contract MockAerodromeRouter is Test {
                 require(swap.toAmount >= amountOutMin, "MockAerodromeRouter: INSUFFICIENT_OUTPUT_AMOUNT");
 
                 // Transfer in the fromToken
-                swap.fromToken.transferFrom(msg.sender, address(this), amountIn);
+                swap.fromToken.transferFrom(msg.sender, address(this), swap.fromAmount);
 
                 // Transfer out the toToken
-                deal(address(swap.toToken), address(this), swap.toAmount);
+                deal(address(swap.toToken), address(this), swap.toToken.balanceOf(address(this)) + swap.toAmount);
                 swap.toToken.transfer(to, swap.toAmount);
 
                 swaps[i].isExecuted = true;

@@ -14,13 +14,11 @@ contract SwapAdapterHarness is SwapAdapter {
     }
 
     function exposed_swapExactFromToMinToAerodrome(
-        IERC20 fromToken,
-        IERC20 toToken,
-        uint256 toAmount,
-        uint256 maxFromAmount,
+        uint256 fromAmount,
+        uint256 minToAmount,
         ISwapAdapter.SwapContext memory swapContext
-    ) external returns (uint256 fromAmount) {
-        return _swapExactFromToMinToAerodrome(fromToken, toToken, toAmount, maxFromAmount, swapContext);
+    ) external returns (uint256 toAmount) {
+        return _swapExactFromToMinToAerodrome(fromAmount, minToAmount, swapContext);
     }
 
     function exposed_swapExactFromToMinToAerodromeSlipstream(
@@ -45,5 +43,53 @@ contract SwapAdapterHarness is SwapAdapter {
         ISwapAdapter.SwapContext memory swapContext
     ) external returns (uint256 toAmount) {
         return _swapExactFromToMinToUniV3(fromAmount, minToAmount, swapContext);
+    }
+
+    function exposed_swapMaxFromToExactToAerodrome(
+        uint256 toAmount,
+        uint256 maxFromAmount,
+        ISwapAdapter.SwapContext memory swapContext
+    ) external returns (uint256 fromAmount) {
+        return _swapMaxFromToExactToAerodrome(toAmount, maxFromAmount, swapContext);
+    }
+
+    function exposed_swapMaxFromToExactToAerodromeSlipstream(
+        uint256 toAmount,
+        uint256 maxFromAmount,
+        ISwapAdapter.SwapContext memory swapContext
+    ) external returns (uint256 fromAmount) {
+        return _swapMaxFromToExactToAerodromeSlipstream(toAmount, maxFromAmount, swapContext);
+    }
+
+    function exposed_swapMaxFromToExactToUniV2(
+        uint256 toAmount,
+        uint256 maxFromAmount,
+        ISwapAdapter.SwapContext memory swapContext
+    ) external returns (uint256 fromAmount) {
+        return _swapMaxFromToExactToUniV2(toAmount, maxFromAmount, swapContext);
+    }
+
+    function exposed_swapMaxFromToExactToUniV3(
+        uint256 toAmount,
+        uint256 maxFromAmount,
+        ISwapAdapter.SwapContext memory swapContext
+    ) external returns (uint256 fromAmount) {
+        return _swapMaxFromToExactToUniV3(toAmount, maxFromAmount, swapContext);
+    }
+
+    function exposed_encodeAerodromeSlipstreamPath(address[] memory path, int24[] memory tickSpacing, bool reverseOrder)
+        external
+        pure
+        returns (bytes memory encodedPath)
+    {
+        return _encodeAerodromeSlipstreamPath(path, tickSpacing, reverseOrder);
+    }
+
+    function exposed_encodeUniswapV3Path(address[] memory path, uint24[] memory fees, bool reverseOrder)
+        external
+        pure
+        returns (bytes memory encodedPath)
+    {
+        return _encodeUniswapV3Path(path, fees, reverseOrder);
     }
 }

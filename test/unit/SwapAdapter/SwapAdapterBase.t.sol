@@ -11,10 +11,14 @@ import {SwapAdapter} from "src/periphery/SwapAdapter.sol";
 import {SwapAdapterHarness} from "test/unit/SwapAdapter/harness/SwapAdapterHarness.t.sol";
 import {MockAerodromeRouter} from "test/unit/mock/MockAerodromeRouter.sol";
 import {MockAerodromeSlipstreamRouter} from "test/unit/mock/MockAerodromeSlipstreamRouter.sol";
+import {MockERC20} from "test/unit/mock/MockERC20.sol";
 import {MockUniswapRouter02} from "test/unit/mock/MockUniswapRouter02.sol";
 
 contract SwapAdapterBaseTest is Test {
     address public defaultAdmin = makeAddr("defaultAdmin");
+
+    MockERC20 public fromToken = new MockERC20();
+    MockERC20 public toToken = new MockERC20();
 
     SwapAdapterHarness public swapAdapter;
 

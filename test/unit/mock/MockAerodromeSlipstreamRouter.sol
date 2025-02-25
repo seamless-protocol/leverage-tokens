@@ -11,7 +11,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IAerodromeSlipstreamRouter} from "src/interfaces/IAerodromeSlipstreamRouter.sol";
 
 contract MockAerodromeSlipstreamRouter is Test {
-    struct MockExactInputSingleSwap {
+    struct MockSwapSingleHop {
         address fromToken;
         address toToken;
         uint256 fromAmount;
@@ -21,10 +21,25 @@ contract MockAerodromeSlipstreamRouter is Test {
         bool isExecuted;
     }
 
-    MockExactInputSingleSwap[] public exactInputSingleSwaps;
+    struct MockSwapMultiHop {
+        bytes32 encodedPath;
+        IERC20 fromToken;
+        IERC20 toToken;
+        uint256 fromAmount;
+        uint256 toAmount;
+        bool isExecuted;
+    }
 
-    function mockNextExactInputSingleSwap(MockExactInputSingleSwap memory swap) public {
-        exactInputSingleSwaps.push(swap);
+    MockSwapSingleHop[] public singleHopSwaps;
+
+    MockSwapMultiHop[] public multiHopSwaps;
+
+    function mockNextSingleHopSwap(MockSwapSingleHop memory swap) public {
+        singleHopSwaps.push(swap);
+    }
+
+    function mockNextMultiHopSwap(MockSwapMultiHop memory swap) public {
+        multiHopSwaps.push(swap);
     }
 
     function exactInputSingle(IAerodromeSlipstreamRouter.ExactInputSingleParams memory params)
@@ -32,26 +47,124 @@ contract MockAerodromeSlipstreamRouter is Test {
         payable
         returns (uint256 amountOut)
     {
-        for (uint256 i = 0; i < exactInputSingleSwaps.length; i++) {
-            MockExactInputSingleSwap memory swap = exactInputSingleSwaps[i];
+        for (uint256 i = 0; i < singleHopSwaps.length; i++) {
+            MockSwapSingleHop memory swap = singleHopSwaps[i];
             if (
                 !swap.isExecuted && swap.fromToken == params.tokenIn && swap.toToken == params.tokenOut
                     && swap.tickSpacing == params.tickSpacing && swap.sqrtPriceLimitX96 == params.sqrtPriceLimitX96
             ) {
-                require(swap.toAmount >= params.amountOutMinimum, "MockUniswapRouter02: INSUFFICIENT_OUTPUT_AMOUNT");
+                require(
+                    swap.toAmount >= params.amountOutMinimum,
+                    "MockAerodromeSlipstreamRouter: INSUFFICIENT_OUTPUT_AMOUNT"
+                );
 
                 // Transfer in the fromToken
-                IERC20(swap.fromToken).transferFrom(msg.sender, address(this), params.amountIn);
+                IERC20(swap.fromToken).transferFrom(msg.sender, address(this), swap.fromAmount);
 
                 // Transfer out the toToken
                 deal(address(swap.toToken), address(this), swap.toAmount);
                 IERC20(swap.toToken).transfer(params.recipient, swap.toAmount);
 
-                exactInputSingleSwaps[i].isExecuted = true;
+                singleHopSwaps[i].isExecuted = true;
                 return swap.toAmount;
             }
         }
 
-        revert("MockUniswapRouter02: No mocked v2 swap set");
+        revert("MockAerodromeSlipstreamRouter: No mocked swap set");
+    }
+
+    function exactInput(IAerodromeSlipstreamRouter.ExactInputParams memory params)
+        external
+        payable
+        returns (uint256 amountOut)
+    {
+        for (uint256 i = 0; i < multiHopSwaps.length; i++) {
+            MockSwapMultiHop memory swap = multiHopSwaps[i];
+            bytes32 encodedPath = keccak256(params.path);
+            if (
+                !swap.isExecuted && swap.encodedPath == encodedPath && swap.fromAmount == params.amountIn
+                    && swap.toAmount == params.amountOutMinimum
+            ) {
+                require(
+                    swap.toAmount >= params.amountOutMinimum,
+                    "MockAerodromeSlipstreamRouter: INSUFFICIENT_OUTPUT_AMOUNT"
+                );
+
+                // Transfer in the fromToken
+                IERC20(swap.fromToken).transferFrom(msg.sender, address(this), swap.fromAmount);
+
+                // Transfer out the toToken
+                deal(address(swap.toToken), address(this), swap.toAmount);
+                IERC20(swap.toToken).transfer(params.recipient, swap.toAmount);
+
+                multiHopSwaps[i].isExecuted = true;
+                return swap.toAmount;
+            }
+        }
+
+        revert("MockAerodromeSlipstreamRouter: No mocked swap set");
+    }
+
+    function exactOutputSingle(IAerodromeSlipstreamRouter.ExactOutputSingleParams memory params)
+        external
+        payable
+        returns (uint256 amountIn)
+    {
+        for (uint256 i = 0; i < singleHopSwaps.length; i++) {
+            MockSwapSingleHop memory swap = singleHopSwaps[i];
+            if (
+                !swap.isExecuted && swap.fromToken == params.tokenIn && swap.toToken == params.tokenOut
+                    && swap.tickSpacing == params.tickSpacing && swap.sqrtPriceLimitX96 == params.sqrtPriceLimitX96
+            ) {
+                require(
+                    swap.fromAmount <= params.amountInMaximum,
+                    "MockAerodromeSlipstreamRouter: INSUFFICIENT_INPUT_AMOUNT"
+                );
+
+                // Transfer in the fromToken
+                IERC20(swap.fromToken).transferFrom(msg.sender, address(this), swap.fromAmount);
+
+                // Transfer out the toToken
+                deal(address(swap.toToken), address(this), swap.toAmount);
+                IERC20(swap.toToken).transfer(params.recipient, swap.toAmount);
+
+                singleHopSwaps[i].isExecuted = true;
+                return swap.fromAmount;
+            }
+        }
+
+        revert("MockAerodromeSlipstreamRouter: No mocked swap set");
+    }
+
+    function exactOutput(IAerodromeSlipstreamRouter.ExactOutputParams memory params)
+        external
+        payable
+        returns (uint256 amountIn)
+    {
+        for (uint256 i = 0; i < multiHopSwaps.length; i++) {
+            MockSwapMultiHop memory swap = multiHopSwaps[i];
+            bytes32 encodedPath = keccak256(params.path);
+            if (
+                !swap.isExecuted && swap.encodedPath == encodedPath && swap.fromAmount == params.amountInMaximum
+                    && swap.toAmount == params.amountOut
+            ) {
+                require(
+                    swap.fromAmount <= params.amountInMaximum,
+                    "MockAerodromeSlipstreamRouter: INSUFFICIENT_INPUT_AMOUNT"
+                );
+
+                // Transfer in the fromToken
+                IERC20(swap.fromToken).transferFrom(msg.sender, address(this), swap.fromAmount);
+
+                // Transfer out the toToken
+                deal(address(swap.toToken), address(this), swap.toAmount);
+                IERC20(swap.toToken).transfer(params.recipient, swap.toAmount);
+
+                multiHopSwaps[i].isExecuted = true;
+                return swap.fromAmount;
+            }
+        }
+
+        revert("MockAerodromeSlipstreamRouter: No mocked swap set");
     }
 }

@@ -13,32 +13,36 @@ import {ISwapAdapter} from "src/interfaces/ISwapAdapter.sol";
 
 contract MockSwapper is Test {
     struct MockedSwap {
+        IERC20 toToken;
         uint256 toAmount;
         bool isExecuted;
     }
 
-    mapping(IERC20 fromToken => mapping(IERC20 toToken => MockedSwap[])) public nextSwapToAmount;
+    mapping(IERC20 fromToken => MockedSwap[]) public nextSwapToAmount;
 
     function mockNextSwap(IERC20 fromToken, IERC20 toToken, uint256 mockedToAmount) external {
-        nextSwapToAmount[fromToken][toToken].push(MockedSwap({toAmount: mockedToAmount, isExecuted: false}));
+        nextSwapToAmount[fromToken].push(MockedSwap({toToken: toToken, toAmount: mockedToAmount, isExecuted: false}));
     }
 
     function swapExactFromToMinTo(
         IERC20 fromToken,
-        IERC20 toToken,
         uint256, /* toAmount */
         uint256 maxFromAmount,
         ISwapAdapter.SwapContext memory /* swapContext */
     ) external returns (uint256) {
         SafeERC20.safeTransferFrom(fromToken, msg.sender, address(this), maxFromAmount);
 
-        MockedSwap[] storage mockedSwaps = nextSwapToAmount[fromToken][toToken];
+        MockedSwap[] storage mockedSwaps = nextSwapToAmount[fromToken];
         for (uint256 i = 0; i < mockedSwaps.length; i++) {
             MockedSwap memory mockedSwap = mockedSwaps[i];
 
             if (!mockedSwap.isExecuted) {
                 // Deal the toToken to the sender
-                deal(address(toToken), msg.sender, toToken.balanceOf(msg.sender) + mockedSwap.toAmount);
+                deal(
+                    address(mockedSwap.toToken),
+                    msg.sender,
+                    mockedSwap.toToken.balanceOf(msg.sender) + mockedSwap.toAmount
+                );
 
                 // Set the swap as executed
                 mockedSwaps[i].isExecuted = true;
