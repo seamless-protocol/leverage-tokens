@@ -152,6 +152,7 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
         internal
         returns (uint256 toAmount)
     {
+        // Check that the number of fees is equal to the number of paths minus one, as required by Uniswap V3
         if (swapContext.path.length != swapContext.fees.length + 1) revert InvalidNumFees();
 
         IUniswapSwapRouter02 uniswapRouter02 = IUniswapSwapRouter02(swapContext.exchangeAddresses.uniswapRouter02);
