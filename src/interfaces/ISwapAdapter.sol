@@ -36,7 +36,7 @@ interface ISwapAdapter {
     /// @param fromToken Token to swap from
     /// @param toAmount Amount of tokens to receive
     /// @param maxFromAmount Maximum amount of tokens to swap
-    /// @param swapContext Swap context to use for the swap (which exchange to use, the route, tick spacing, etc.)
+    /// @param swapContext Swap context to use for the swap (which exchange to use, the swap path, tick spacing, etc.)
     /// @return fromAmount Amount of tokens swapped
     function swapMaxFromToExactTo(
         IERC20 fromToken,
@@ -49,7 +49,7 @@ interface ISwapAdapter {
     /// @param fromToken Token to swap from
     /// @param fromAmount Amount of tokens to swap
     /// @param minToAmount Minimum amount of tokens to receive
-    /// @param swapContext Swap context to use for the swap (which exchange to use, the route, tick spacing, etc.)
+    /// @param swapContext Swap context to use for the swap (which exchange to use, the swap path, tick spacing, etc.)
     /// @return toAmount Amount of tokens received
     function swapExactFromToMinTo(
         IERC20 fromToken,

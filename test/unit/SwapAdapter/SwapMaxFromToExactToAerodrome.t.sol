@@ -7,7 +7,8 @@ import {ISwapAdapter} from "src/interfaces/ISwapAdapter.sol";
 import {SwapAdapterBaseTest} from "./SwapAdapterBase.t.sol";
 import {MockAerodromeRouter} from "test/unit/mock/MockAerodromeRouter.sol";
 
-contract SwapMaxFromToExactToAerodromeTest is SwapAdapterBaseTest {
+//  Inherited in `SwapMaxFromToExactTo.t.sol` tests
+abstract contract SwapMaxFromToExactToAerodromeTest is SwapAdapterBaseTest {
     address public aerodromeFactory = makeAddr("aerodromeFactory");
 
     function test_SwapMaxFromToExactToAerodrome_SingleHop() public {

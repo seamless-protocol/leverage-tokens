@@ -9,7 +9,8 @@ import {ISwapAdapter} from "src/interfaces/ISwapAdapter.sol";
 import {SwapAdapterBaseTest} from "./SwapAdapterBase.t.sol";
 import {MockUniswapRouter02} from "test/unit/mock/MockUniswapRouter02.sol";
 
-contract SwapMaxFromToExactToUniswapV3Test is SwapAdapterBaseTest {
+//  Inherited in `SwapMaxFromToExactTo.t.sol` tests
+abstract contract SwapMaxFromToExactToUniV3Test is SwapAdapterBaseTest {
     function test_SwapMaxFromToExactToUniV3_SingleHop() public {
         uint256 toAmount = 10 ether;
         uint256 maxFromAmount = 100 ether;

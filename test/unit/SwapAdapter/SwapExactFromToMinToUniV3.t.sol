@@ -9,7 +9,8 @@ import {ISwapAdapter} from "src/interfaces/ISwapAdapter.sol";
 import {SwapAdapterBaseTest} from "./SwapAdapterBase.t.sol";
 import {MockUniswapRouter02} from "test/unit/mock/MockUniswapRouter02.sol";
 
-contract SwapExactFromToMinToUniswapV3Test is SwapAdapterBaseTest {
+//  Inherited in `SwapExactFromToMinTo.t.sol` tests
+abstract contract SwapExactFromToMinToUniV3Test is SwapAdapterBaseTest {
     function test_SwapExactFromToMinToUniV3_SingleHop() public {
         uint256 fromAmount = 100 ether;
         uint256 minToAmount = 10 ether;

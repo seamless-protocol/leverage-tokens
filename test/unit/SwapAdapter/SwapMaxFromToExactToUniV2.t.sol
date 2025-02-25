@@ -9,7 +9,8 @@ import {ISwapAdapter} from "src/interfaces/ISwapAdapter.sol";
 import {SwapAdapterBaseTest} from "./SwapAdapterBase.t.sol";
 import {MockUniswapRouter02} from "test/unit/mock/MockUniswapRouter02.sol";
 
-contract SwapMaxFromToExactToUniV2Test is SwapAdapterBaseTest {
+//  Inherited in `SwapMaxFromToExactTo.t.sol` tests
+abstract contract SwapMaxFromToExactToUniV2Test is SwapAdapterBaseTest {
     function test_SwapMaxFromToExactToUniV2_SingleHop() public {
         uint256 toAmount = 10 ether;
         uint256 maxFromAmount = 100 ether;
@@ -64,7 +65,7 @@ contract SwapMaxFromToExactToUniV2Test is SwapAdapterBaseTest {
         returns (ISwapAdapter.SwapContext memory swapContext)
     {
         swapContext = ISwapAdapter.SwapContext({
-            exchange: ISwapAdapter.Exchange.AERODROME,
+            exchange: ISwapAdapter.Exchange.UNISWAP_V2,
             path: path,
             fees: new uint24[](0),
             tickSpacing: new int24[](0),

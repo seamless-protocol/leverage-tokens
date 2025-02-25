@@ -9,7 +9,8 @@ import {ISwapAdapter} from "src/interfaces/ISwapAdapter.sol";
 import {SwapAdapterBaseTest} from "./SwapAdapterBase.t.sol";
 import {MockAerodromeSlipstreamRouter} from "test/unit/mock/MockAerodromeSlipstreamRouter.sol";
 
-contract SwapMaxFromToExactToAerodromeSlipstreamTest is SwapAdapterBaseTest {
+//  Inherited in `SwapMaxFromToExactTo.t.sol` tests
+abstract contract SwapMaxFromToExactToAerodromeSlipstreamTest is SwapAdapterBaseTest {
     function test_SwapMaxFromToExactToAerodromeSlipstream_SingleHop() public {
         uint256 toAmount = 10 ether;
         uint256 maxFromAmount = 100 ether;

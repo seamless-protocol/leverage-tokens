@@ -28,18 +28,21 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
         uint256 fromAmount,
         uint256 minToAmount,
         SwapContext memory swapContext
-    ) external returns (uint256 toAmount) {
+    ) external returns (uint256) {
         SafeERC20.safeTransferFrom(fromToken, msg.sender, address(this), fromAmount);
 
+        uint256 toAmount;
         if (swapContext.exchange == Exchange.AERODROME) {
-            return _swapExactFromToMinToAerodrome(fromAmount, minToAmount, swapContext);
+            toAmount = _swapExactFromToMinToAerodrome(fromAmount, minToAmount, swapContext);
         } else if (swapContext.exchange == Exchange.AERODROME_SLIPSTREAM) {
-            return _swapExactFromToMinToAerodromeSlipstream(fromAmount, minToAmount, swapContext);
+            toAmount = _swapExactFromToMinToAerodromeSlipstream(fromAmount, minToAmount, swapContext);
         } else if (swapContext.exchange == Exchange.UNISWAP_V2) {
-            return _swapExactFromToMinToUniV2(fromAmount, minToAmount, swapContext);
+            toAmount = _swapExactFromToMinToUniV2(fromAmount, minToAmount, swapContext);
         } else if (swapContext.exchange == Exchange.UNISWAP_V3) {
-            return _swapExactFromToMinToUniV3(fromAmount, minToAmount, swapContext);
+            toAmount = _swapExactFromToMinToUniV3(fromAmount, minToAmount, swapContext);
         }
+
+        return toAmount;
     }
 
     /// @inheritdoc ISwapAdapter
@@ -48,18 +51,21 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
         uint256 toAmount,
         uint256 maxFromAmount,
         SwapContext memory swapContext
-    ) external returns (uint256 fromAmount) {
+    ) external returns (uint256) {
         SafeERC20.safeTransferFrom(fromToken, msg.sender, address(this), maxFromAmount);
 
+        uint256 fromAmount;
         if (swapContext.exchange == Exchange.AERODROME) {
-            return _swapMaxFromToExactToAerodrome(toAmount, maxFromAmount, swapContext);
+            fromAmount = _swapMaxFromToExactToAerodrome(toAmount, maxFromAmount, swapContext);
         } else if (swapContext.exchange == Exchange.AERODROME_SLIPSTREAM) {
-            return _swapMaxFromToExactToAerodromeSlipstream(toAmount, maxFromAmount, swapContext);
+            fromAmount = _swapMaxFromToExactToAerodromeSlipstream(toAmount, maxFromAmount, swapContext);
         } else if (swapContext.exchange == Exchange.UNISWAP_V3) {
-            return _swapMaxFromToExactToUniV3(toAmount, maxFromAmount, swapContext);
+            fromAmount = _swapMaxFromToExactToUniV3(toAmount, maxFromAmount, swapContext);
         } else if (swapContext.exchange == Exchange.UNISWAP_V2) {
-            return _swapMaxFromToExactToUniV2(toAmount, maxFromAmount, swapContext);
+            fromAmount = _swapMaxFromToExactToUniV2(toAmount, maxFromAmount, swapContext);
         }
+
+        return fromAmount;
     }
 
     function _swapAerodrome(
