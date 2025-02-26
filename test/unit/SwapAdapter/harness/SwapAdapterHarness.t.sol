@@ -44,36 +44,4 @@ contract SwapAdapterHarness is SwapAdapter {
     ) external returns (uint256 outputAmount) {
         return _swapExactInputUniV3(inputAmount, minOutputAmount, swapContext);
     }
-
-    function exposed_swapExactOutputAerodrome(
-        uint256 outputAmount,
-        uint256 maxInputAmount,
-        ISwapAdapter.SwapContext memory swapContext
-    ) external returns (uint256 inputAmount) {
-        return _swapExactOutputAerodrome(outputAmount, maxInputAmount, swapContext);
-    }
-
-    function exposed_swapExactOutputAerodromeSlipstream(
-        uint256 outputAmount,
-        uint256 maxInputAmount,
-        ISwapAdapter.SwapContext memory swapContext
-    ) external returns (uint256 inputAmount) {
-        return _swapExactOutputAerodromeSlipstream(outputAmount, maxInputAmount, swapContext);
-    }
-
-    function exposed_swapExactOutputUniV2(
-        uint256 outputAmount,
-        uint256 maxInputAmount,
-        ISwapAdapter.SwapContext memory swapContext
-    ) external returns (uint256 inputAmount) {
-        return _swapExactOutputUniV2(outputAmount, maxInputAmount, swapContext);
-    }
-
-    function exposed_swapExactOutputUniV3(
-        uint256 outputAmount,
-        uint256 maxInputAmount,
-        ISwapAdapter.SwapContext memory swapContext
-    ) external returns (uint256 inputAmount) {
-        return _swapExactOutputUniV3(outputAmount, maxInputAmount, swapContext);
-    }
 }
