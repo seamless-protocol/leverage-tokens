@@ -12,68 +12,37 @@ import {MockLeverageManager} from "../mock/MockLeverageManager.sol";
 contract DepositTest is LeverageRouterBaseTest {
     function testFuzz_deposit_DebtSwapLessThanRequiredFlashLoanRepaymentCollateral_SenderSuppliesSufficientCollateral(
         uint256 requiredCollateral,
+        uint256 equityInCollateralAsset,
         uint256 collateralReceivedFromDebtSwap,
         uint256 collateralFromSender
     ) public {
-        requiredCollateral = bound(requiredCollateral, 1, type(uint256).max);
+        requiredCollateral = bound(requiredCollateral, 1, type(uint128).max);
+        // Ensure that a flash loan is required by making equity less than the required collateral for the deposit
+        equityInCollateralAsset = requiredCollateral > 1 ? bound(equityInCollateralAsset, 1, requiredCollateral - 1) : 0;
 
-        // LeverageRouter will flash loan the required collateral
-        uint256 requiredFlashLoan = requiredCollateral;
+        // The required flash loan is the required collateral minus the equity being deposited
+        uint256 requiredFlashLoan = requiredCollateral - equityInCollateralAsset;
         // Mock collateral received from the debt swap to be less than the required flash loan repayment
         collateralReceivedFromDebtSwap = bound(collateralReceivedFromDebtSwap, 0, requiredFlashLoan - 1);
         // The delta between the required flash loan repayment and the collateral received from the debt swap is the additional collateral
         // required to cover the flash loan repayment
         uint256 additionalCollateralRequiredForFlashLoanRepay = requiredFlashLoan - collateralReceivedFromDebtSwap;
-        // User approves at minimum an amount of collateral to cover the additional collateral to help with flash loan repayment. We bound the max
-        // to avoid overflows when adding the collateral from the sender to the collateral from the debt swap
+        // User approves at minimum an amount of collateral to cover the equity plus the additional collateral to help with flash loan repayment.
+        // We bound the max to avoid overflows when adding the collateral from the sender to the collateral from the debt swap
         collateralFromSender = bound(
             collateralFromSender,
-            additionalCollateralRequiredForFlashLoanRepay,
+            equityInCollateralAsset + additionalCollateralRequiredForFlashLoanRepay,
             type(uint256).max - collateralReceivedFromDebtSwap
         );
 
-        // Doesn't matter what this value is as the deposit into leverage manager is mocked
-        uint256 equityInCollateralAsset = 100e6;
-        // Mocked debt required to deposit the equity (Doesn't matter for this test as the debt swap is mocked)
-        uint256 requiredDebt = 100e6;
         // Mocked exchange rate of shares (Doesn't matter for this test as the shares received and previewed are mocked)
         uint256 shares = 10 ether;
 
-        // Mock the swap of the debt asset to the collateral asset
-        swapper.mockNextSwap(debtToken, collateralToken, collateralReceivedFromDebtSwap);
-
-        // Mock the deposit preview
-        leverageManager.setMockPreviewDepositData(
-            MockLeverageManager.PreviewDepositParams({
-                strategy: strategyToken,
-                equityInCollateralAsset: equityInCollateralAsset
-            }),
-            MockLeverageManager.MockPreviewDepositData({
-                collateralToAdd: requiredCollateral,
-                debtToBorrow: requiredDebt,
-                shares: shares,
-                sharesFee: 0
-            })
-        );
-
-        // Mock the deposit into leverage manager
-        leverageManager.setMockDepositData(
-            MockLeverageManager.DepositParams({
-                strategy: strategyToken,
-                equityInCollateralAsset: equityInCollateralAsset,
-                minShares: shares
-            }),
-            MockLeverageManager.MockDepositData({
-                collateral: requiredCollateral,
-                debt: requiredDebt,
-                shares: shares,
-                isExecuted: false
-            })
-        );
+        _mockLeverageManagerDeposit(requiredCollateral, equityInCollateralAsset, collateralReceivedFromDebtSwap, shares);
 
         // Execute the deposit
         deal(address(collateralToken), address(this), collateralFromSender);
-        collateralToken.approve(address(leverageRouter), additionalCollateralRequiredForFlashLoanRepay);
+        collateralToken.approve(address(leverageRouter), collateralFromSender);
         leverageRouter.deposit(
             strategyToken,
             equityInCollateralAsset,
@@ -103,73 +72,43 @@ contract DepositTest is LeverageRouterBaseTest {
         assertEq(collateralToken.balanceOf(address(leverageRouter)), requiredFlashLoan);
         assertEq(collateralToken.allowance(address(leverageRouter), address(morpho)), requiredFlashLoan);
 
-        // Sender's collateral is used to help repay the flash loan
+        // Sender's assets are used for the equity and to help repay the flash loan
         assertEq(
             collateralToken.balanceOf(address(this)),
-            collateralFromSender - additionalCollateralRequiredForFlashLoanRepay
+            collateralFromSender - (equityInCollateralAsset + additionalCollateralRequiredForFlashLoanRepay)
         );
     }
 
     function testFuzz_deposit_DebtSwapGteRequiredFlashLoanRepaymentCollateral(
         uint256 requiredCollateral,
+        uint256 equityInCollateralAsset,
         uint256 collateralReceivedFromDebtSwap
     ) public {
         requiredCollateral = bound(requiredCollateral, 1, type(uint256).max);
+        // Ensure that a flash loan is required by making equity less than the required collateral for the deposit
+        equityInCollateralAsset = requiredCollateral > 1 ? bound(equityInCollateralAsset, 1, requiredCollateral - 1) : 0;
 
-        // LeverageRouter will flash loan the required collateral
-        uint256 requiredFlashLoan = requiredCollateral;
+        // LeverageRouter will flash loan the required collateral minus the equity being deposited
+        uint256 requiredFlashLoan = requiredCollateral - equityInCollateralAsset;
         // Mock collateral received from the debt swap to be >= the required flash loan repayment
         collateralReceivedFromDebtSwap = bound(collateralReceivedFromDebtSwap, requiredFlashLoan, type(uint256).max);
         // Sender does not need to send any additional collateral to help repay the flash loan, as the debt swap results in enough collateral
         // to repay the flash loan
-        uint256 requiredCollateralFromSender = 0;
+        uint256 requiredCollateralFromSender = equityInCollateralAsset;
 
-        // Doesn't matter what this value is as the deposit into leverage manager is mocked
-        uint256 equityInCollateralAsset = 100e6;
-        // Mocked debt required to deposit the equity (Doesn't matter for this test as the debt swap is mocked)
-        uint256 requiredDebt = 100e6;
         // Mocked exchange rate of shares (Doesn't matter for this test as the shares received and previewed are mocked)
         uint256 shares = 10 ether;
 
-        // Mock the swap of the debt asset to the collateral asset
-        swapper.mockNextSwap(debtToken, collateralToken, collateralReceivedFromDebtSwap);
-
-        // Mock the deposit preview
-        leverageManager.setMockPreviewDepositData(
-            MockLeverageManager.PreviewDepositParams({
-                strategy: strategyToken,
-                equityInCollateralAsset: equityInCollateralAsset
-            }),
-            MockLeverageManager.MockPreviewDepositData({
-                collateralToAdd: requiredCollateral,
-                debtToBorrow: requiredDebt,
-                shares: shares,
-                sharesFee: 0
-            })
-        );
-
-        // Mock the deposit into leverage manager
-        leverageManager.setMockDepositData(
-            MockLeverageManager.DepositParams({
-                strategy: strategyToken,
-                equityInCollateralAsset: equityInCollateralAsset,
-                minShares: shares
-            }),
-            MockLeverageManager.MockDepositData({
-                collateral: requiredCollateral,
-                debt: requiredDebt,
-                shares: shares,
-                isExecuted: false
-            })
-        );
+        _mockLeverageManagerDeposit(requiredCollateral, equityInCollateralAsset, collateralReceivedFromDebtSwap, shares);
 
         // Execute the deposit
+        deal(address(collateralToken), address(this), requiredCollateralFromSender);
         collateralToken.approve(address(leverageRouter), requiredCollateralFromSender);
         leverageRouter.deposit(
             strategyToken,
             equityInCollateralAsset,
             shares,
-            requiredCollateralFromSender,
+            0, // Sender does not need to send any additional collateral to help repay the flash loan
             // Mock the swap context (doesn't matter for this test as the swap is mocked)
             ISwapAdapter.SwapContext({
                 path: new address[](0),
@@ -201,15 +140,18 @@ contract DepositTest is LeverageRouterBaseTest {
         );
     }
 
-    function testFuzz_deposit_RevertIf_MaxDepositCostExceeded(
+    function testFuzz_deposit_RevertIf_MaxSwapCostExceeded(
         uint256 requiredCollateral,
+        uint256 equityInCollateralAsset,
         uint256 collateralReceivedFromDebtSwap,
         uint256 collateralFromSender
     ) public {
-        requiredCollateral = bound(requiredCollateral, 1, type(uint256).max);
+        requiredCollateral = bound(requiredCollateral, 1, type(uint128).max);
+        // Ensure that a flash loan is required by making equity less than the required collateral for the deposit
+        equityInCollateralAsset = requiredCollateral > 1 ? bound(equityInCollateralAsset, 1, requiredCollateral - 1) : 0;
 
-        // LeverageRouter will flash loan the required collateral
-        uint256 requiredFlashLoan = requiredCollateral;
+        // LeverageRouter will flash loan the required collateral minus the equity being deposited
+        uint256 requiredFlashLoan = requiredCollateral - equityInCollateralAsset;
         // Mock collateral received from the debt swap to be less than the required flash loan repayment
         collateralReceivedFromDebtSwap = bound(collateralReceivedFromDebtSwap, 0, requiredFlashLoan - 1);
         // The delta between the required flash loan repayment and the collateral received from the debt swap is the additional collateral
@@ -217,14 +159,57 @@ contract DepositTest is LeverageRouterBaseTest {
         uint256 additionalCollateralRequiredForFlashLoan = requiredFlashLoan - collateralReceivedFromDebtSwap;
         // User does not approve enough collateral to cover the additional collateral to help with flash loan repayment. We bound the max
         // to avoid overflows when adding the collateral from the sender to the collateral from the debt swap
-        collateralFromSender = bound(collateralFromSender, 0, additionalCollateralRequiredForFlashLoan - 1);
+        collateralFromSender = bound(
+            collateralFromSender,
+            equityInCollateralAsset,
+            equityInCollateralAsset + additionalCollateralRequiredForFlashLoan - 1
+        );
 
-        // Doesn't matter what this value is as the deposit into leverage manager is mocked
-        uint256 equityInCollateralAsset = 100e6;
-        // Mocked debt required to deposit the equity (Doesn't matter for this test as the debt swap is mocked)
-        uint256 requiredDebt = 100e6;
         // Mocked exchange rate of shares (Doesn't matter for this test as the shares received and previewed are mocked)
         uint256 shares = 10 ether;
+
+        _mockLeverageManagerDeposit(requiredCollateral, equityInCollateralAsset, collateralReceivedFromDebtSwap, shares);
+
+        // Execute the deposit
+        deal(address(collateralToken), address(this), collateralFromSender);
+        collateralToken.approve(address(leverageRouter), collateralFromSender);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ILeverageRouter.MaxSwapCostExceeded.selector,
+                additionalCollateralRequiredForFlashLoan,
+                collateralFromSender - equityInCollateralAsset
+            )
+        );
+        leverageRouter.deposit(
+            strategyToken,
+            equityInCollateralAsset,
+            shares,
+            collateralFromSender - equityInCollateralAsset,
+            // Mock the swap context (doesn't matter for this test as the swap is mocked)
+            ISwapAdapter.SwapContext({
+                path: new address[](0),
+                encodedPath: new bytes(0),
+                fees: new uint24[](0),
+                tickSpacing: new int24[](0),
+                exchange: ISwapAdapter.Exchange.AERODROME,
+                exchangeAddresses: ISwapAdapter.ExchangeAddresses({
+                    aerodromeRouter: address(0),
+                    aerodromeFactory: address(0),
+                    aerodromeSlipstreamRouter: address(0),
+                    uniswapRouter02: address(0)
+                })
+            })
+        );
+    }
+
+    function _mockLeverageManagerDeposit(
+        uint256 requiredCollateral,
+        uint256 equityInCollateralAsset,
+        uint256 collateralReceivedFromDebtSwap,
+        uint256 shares
+    ) internal {
+        /// Mocked debt required to deposit the equity (Doesn't matter for this test as the debt swap is mocked)
+        uint256 requiredDebt = 100e6;
 
         // Mock the swap of the debt asset to the collateral asset
         swapper.mockNextSwap(debtToken, collateralToken, collateralReceivedFromDebtSwap);
@@ -255,37 +240,6 @@ contract DepositTest is LeverageRouterBaseTest {
                 debt: requiredDebt,
                 shares: shares,
                 isExecuted: false
-            })
-        );
-
-        // Execute the deposit
-        deal(address(collateralToken), address(this), collateralFromSender);
-        collateralToken.approve(address(leverageRouter), collateralFromSender);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                ILeverageRouter.MaxDepositCostExceeded.selector,
-                collateralFromSender,
-                additionalCollateralRequiredForFlashLoan
-            )
-        );
-        leverageRouter.deposit(
-            strategyToken,
-            equityInCollateralAsset,
-            shares,
-            collateralFromSender,
-            // Mock the swap context (doesn't matter for this test as the swap is mocked)
-            ISwapAdapter.SwapContext({
-                path: new address[](0),
-                encodedPath: new bytes(0),
-                fees: new uint24[](0),
-                tickSpacing: new int24[](0),
-                exchange: ISwapAdapter.Exchange.AERODROME,
-                exchangeAddresses: ISwapAdapter.ExchangeAddresses({
-                    aerodromeRouter: address(0),
-                    aerodromeFactory: address(0),
-                    aerodromeSlipstreamRouter: address(0),
-                    uniswapRouter02: address(0)
-                })
             })
         );
     }

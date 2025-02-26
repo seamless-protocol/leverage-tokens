@@ -31,8 +31,9 @@ contract LeverageRouter is ILeverageRouter {
         uint256 equityInCollateralAsset;
         // Minimum amount of shares to receive
         uint256 minShares;
-        // Maximum amount of collateral asset to use for the deposit of equity, denominated in the collateral asset
-        uint256 maxDepositCostInCollateralAsset;
+        // Maximum cost to the sender for the swap of debt to collateral during the deposit to repay the flash loan,
+        // denominated in the collateral asset
+        uint256 maxSwapCostInCollateralAsset;
         // Address of the sender of the deposit, who will also receive the shares
         address sender;
         // Swap context for the debt swap
@@ -69,7 +70,7 @@ contract LeverageRouter is ILeverageRouter {
         IStrategy strategy,
         uint256 equityInCollateralAsset,
         uint256 minShares,
-        uint256 maxDepositCostInCollateralAsset,
+        uint256 maxSwapCostInCollateralAsset,
         ISwapAdapter.SwapContext memory swapContext
     ) external {
         (uint256 collateralToAdd,,,) = leverageManager.previewDeposit(strategy, equityInCollateralAsset);
@@ -79,16 +80,17 @@ contract LeverageRouter is ILeverageRouter {
                 strategy: strategy,
                 equityInCollateralAsset: equityInCollateralAsset,
                 minShares: minShares,
-                maxDepositCostInCollateralAsset: maxDepositCostInCollateralAsset,
+                maxSwapCostInCollateralAsset: maxSwapCostInCollateralAsset,
                 sender: msg.sender,
                 swapContext: swapContext
             })
         );
 
-        // Flash loan the collateral to add, and pass the required data to the Morpho flash loan callback handler for the deposit
+        // Flash loan the additional required collateral (the sender must supply at least equityInCollateralAsset),
+        // and pass the required data to the Morpho flash loan callback handler for the deposit.
         morpho.flashLoan(
             address(leverageManager.getStrategyCollateralAsset(strategy)),
-            collateralToAdd,
+            collateralToAdd - equityInCollateralAsset,
             abi.encode(MorphoCallbackData({action: ExternalAction.Deposit, data: depositData}))
         );
     }
@@ -115,8 +117,16 @@ contract LeverageRouter is ILeverageRouter {
         IERC20 collateralAsset = leverageManager.getStrategyCollateralAsset(params.strategy);
         IERC20 debtAsset = leverageManager.getStrategyDebtAsset(params.strategy);
 
-        // Use the flash loaned collateral for the deposit
-        collateralAsset.approve(address(leverageManager), collateralLoanAmount);
+        // Transfer the collateral from the sender for the deposit
+        SafeERC20.safeTransferFrom(
+            collateralAsset,
+            params.sender,
+            address(this),
+            params.equityInCollateralAsset + params.maxSwapCostInCollateralAsset
+        );
+
+        // Use the flash loaned collateral for the deposit with the collateral from the sender
+        collateralAsset.approve(address(leverageManager), collateralLoanAmount + params.equityInCollateralAsset);
         (, uint256 debtToBorrow, uint256 sharesReceived,) =
             leverageManager.deposit(params.strategy, params.equityInCollateralAsset, params.minShares);
 
@@ -129,20 +139,14 @@ contract LeverageRouter is ILeverageRouter {
             params.swapContext
         );
 
-        // Transfer additional collateral from the sender to repay the flash loan in the case that the debt swap did not
-        // result in enough collateral to repay the flash loan
-        if (swappedCollateralAmount < collateralLoanAmount) {
-            uint256 senderCollateralRequired = collateralLoanAmount - swappedCollateralAmount;
-
-            // Check if the maximum cost specified by the sender is less than the amount of collateral needed to help repay the flash loan
-            if (params.maxDepositCostInCollateralAsset < senderCollateralRequired) {
-                revert MaxDepositCostExceeded(params.maxDepositCostInCollateralAsset, senderCollateralRequired);
-            }
-
-            SafeERC20.safeTransferFrom(collateralAsset, params.sender, address(this), senderCollateralRequired);
+        uint256 assetsAvailableToRepayFlashLoan = swappedCollateralAmount + params.maxSwapCostInCollateralAsset;
+        if (collateralLoanAmount > assetsAvailableToRepayFlashLoan) {
+            revert MaxSwapCostExceeded(
+                collateralLoanAmount - swappedCollateralAmount, params.maxSwapCostInCollateralAsset
+            );
         } else {
-            // Return any surplus collateral asset received from the swap that was not used to repay the flash loan to the deposit sender
-            uint256 collateralAssetSurplus = swappedCollateralAmount - collateralLoanAmount;
+            // Return any surplus collateral assets to the sender
+            uint256 collateralAssetSurplus = assetsAvailableToRepayFlashLoan - collateralLoanAmount;
             if (collateralAssetSurplus > 0) {
                 SafeERC20.safeTransfer(collateralAsset, params.sender, collateralAssetSurplus);
             }
