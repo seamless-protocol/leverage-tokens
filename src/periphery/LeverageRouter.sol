@@ -23,6 +23,7 @@ contract LeverageRouter is ILeverageRouter {
     using SafeCast for int256;
     using SignedMath for int256;
 
+    /// @notice Deposit related parameters to pass to the Morpho flash loan callback handler for deposits
     struct DepositParams {
         IStrategy strategy;
         uint256 equityInCollateralAsset;
@@ -33,6 +34,7 @@ contract LeverageRouter is ILeverageRouter {
         ISwapAdapter.SwapContext swapContext;
     }
 
+    /// @notice Morpho flash loan callback data to pass to the Morpho flash loan callback handler
     struct MorphoCallbackData {
         ExternalAction action;
         bytes data;

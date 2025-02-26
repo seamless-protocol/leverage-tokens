@@ -17,12 +17,15 @@ interface ILeverageRouter {
     error Unauthorized();
 
     /// @notice The Seamless LeverageManager contract
+    /// @return leverageManager The Seamless LeverageManager contract
     function leverageManager() external view returns (ILeverageManager leverageManager);
 
     /// @notice The Morpho core protocol contract
+    /// @return _morpho The Morpho core protocol contract
     function morpho() external view returns (IMorpho _morpho);
 
     /// @notice The swap adapter contract used to facilitate swaps
+    /// @return _swapper The swap adapter contract
     function swapper() external view returns (ISwapAdapter _swapper);
 
     /// @notice Deposit equity into a strategy

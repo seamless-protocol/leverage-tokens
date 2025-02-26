@@ -3,16 +3,16 @@ pragma solidity ^0.8.26;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {IStrategy} from "./IStrategy.sol";
-
 interface ISwapAdapter {
+    /// @notice The exchanges supported by SwapAdapter
     enum Exchange {
         AERODROME,
         AERODROME_SLIPSTREAM,
-        UNISWAP_V3,
-        UNISWAP_V2
+        UNISWAP_V2,
+        UNISWAP_V3
     }
 
+    /// @notice Addresses required to facilitate swaps on the supported exchanges
     struct ExchangeAddresses {
         address aerodromeRouter;
         address aerodromeFactory;
@@ -20,12 +20,19 @@ interface ISwapAdapter {
         address uniswapRouter02;
     }
 
+    /// @notice Contextextual data required for a swap
     struct SwapContext {
+        // The token swap path
         address[] path;
+        // The encoded path of tokens to swap. Required by Uniswap V3 and Aerodrome Slipstream
         bytes encodedPath;
+        // The fees to use for the swap. For Uniswap V3, fees are used to identify unique pools
         uint24[] fees;
+        // The tick spacing to use for the swap. For Aerodrome Slipstream, tickSpacing is used to identify unique pools
         int24[] tickSpacing;
+        // The exchange to use for the swap
         Exchange exchange;
+        // The addresses required to facilitate swaps on the supported exchanges
         ExchangeAddresses exchangeAddresses;
     }
 
