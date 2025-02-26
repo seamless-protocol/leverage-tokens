@@ -5,13 +5,8 @@ pragma solidity ^0.8.26;
 import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {SignedMath} from "@openzeppelin/contracts/utils/math/SignedMath.sol";
 
 // Internal imports
-import {IFeeManager} from "../interfaces/IFeeManager.sol";
-import {ILendingAdapter} from "../interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "../interfaces/ILeverageManager.sol";
 import {IStrategy} from "../interfaces/IStrategy.sol";
 import {ISwapAdapter} from "../interfaces/periphery/ISwapAdapter.sol";
@@ -19,10 +14,6 @@ import {ILeverageRouter} from "../interfaces/periphery/ILeverageRouter.sol";
 import {ExternalAction} from "../types/DataTypes.sol";
 
 contract LeverageRouter is ILeverageRouter {
-    using SafeCast for uint256;
-    using SafeCast for int256;
-    using SignedMath for int256;
-
     /// @notice Deposit related parameters to pass to the Morpho flash loan callback handler for deposits
     struct DepositParams {
         // Strategy to deposit into
@@ -125,7 +116,7 @@ contract LeverageRouter is ILeverageRouter {
             params.equityInCollateralAsset + params.maxSwapCostInCollateralAsset
         );
 
-        // Use the flash loaned collateral for the deposit with the collateral from the sender
+        // Use the flash loaned collateral and the equity from the sender for the deposit into the strategy
         collateralAsset.approve(address(leverageManager), collateralLoanAmount + params.equityInCollateralAsset);
         (, uint256 debtToBorrow, uint256 sharesReceived,) =
             leverageManager.deposit(params.strategy, params.equityInCollateralAsset, params.minShares);
@@ -139,6 +130,7 @@ contract LeverageRouter is ILeverageRouter {
             params.swapContext
         );
 
+        // Transfer any surplus collateral assets to the sender
         uint256 assetsAvailableToRepayFlashLoan = swappedCollateralAmount + params.maxSwapCostInCollateralAsset;
         if (collateralLoanAmount > assetsAvailableToRepayFlashLoan) {
             revert MaxSwapCostExceeded(
