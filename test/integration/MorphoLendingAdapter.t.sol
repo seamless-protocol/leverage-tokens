@@ -140,7 +140,8 @@ contract MorphoLendingAdapterTest is Test {
     /// forge-config: default.fuzz.runs = 1
     function testForkFuzz_borrow(uint32 amount) public {
         Market memory marketBefore = MORPHO.market(WETH_USDC_MARKET_ID);
-        uint256 maxBorrow = marketBefore.totalSupplyAssets - marketBefore.totalBorrowAssets;
+        uint256 maxBorrow = marketBefore.totalSupplyAssets
+            - MorphoBalancesLib.expectedTotalBorrowAssets(MORPHO, MORPHO.idToMarketParams(WETH_USDC_MARKET_ID));
 
         // Bound amount to max borrow available in the morpho market
         amount = uint32(bound(amount, 0, maxBorrow));
@@ -181,7 +182,8 @@ contract MorphoLendingAdapterTest is Test {
     /// forge-config: default.fuzz.runs = 1
     function testForkFuzz_repay(address caller, uint128 debtBefore, uint128 debtToRepay) public {
         Market memory marketBefore = MORPHO.market(WETH_USDC_MARKET_ID);
-        uint256 maxBorrow = marketBefore.totalSupplyAssets - marketBefore.totalBorrowAssets;
+        uint256 maxBorrow = marketBefore.totalSupplyAssets
+            - MorphoBalancesLib.expectedTotalBorrowAssets(MORPHO, MORPHO.idToMarketParams(WETH_USDC_MARKET_ID));
 
         // Bound amount to max borrow available in the morpho market
         debtBefore = uint32(bound(debtBefore, 1, maxBorrow));
