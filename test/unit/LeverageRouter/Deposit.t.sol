@@ -3,9 +3,9 @@ pragma solidity ^0.8.26;
 
 // Internal imports
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
-import {ILeverageRouter} from "src/interfaces/ILeverageRouter.sol";
+import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
-import {ISwapAdapter} from "src/interfaces/ISwapAdapter.sol";
+import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {LeverageRouterBaseTest} from "./LeverageRouterBase.t.sol";
 import {MockLeverageManager} from "../mock/MockLeverageManager.sol";
 

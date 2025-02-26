@@ -6,7 +6,7 @@ import {Test} from "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
-import {IAerodromeRouter} from "src/interfaces/IAerodromeRouter.sol";
+import {IAerodromeRouter} from "src/interfaces/periphery/IAerodromeRouter.sol";
 
 contract MockAerodromeRouter is Test {
     struct MockSwap {

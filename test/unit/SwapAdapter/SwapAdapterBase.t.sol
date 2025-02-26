@@ -6,7 +6,7 @@ import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 import {Test} from "forge-std/Test.sol";
 
 // Internal imports
-import {ISwapAdapter} from "src/interfaces/ISwapAdapter.sol";
+import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {SwapAdapter} from "src/periphery/SwapAdapter.sol";
 import {SwapAdapterHarness} from "test/unit/SwapAdapter/harness/SwapAdapterHarness.t.sol";
 import {MockAerodromeRouter} from "test/unit/mock/MockAerodromeRouter.sol";

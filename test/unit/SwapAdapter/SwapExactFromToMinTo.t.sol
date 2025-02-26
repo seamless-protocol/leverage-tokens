@@ -2,7 +2,7 @@
 pragma solidity ^0.8.26;
 
 // Internal imports
-import {ISwapAdapter} from "src/interfaces/ISwapAdapter.sol";
+import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {SwapExactFromToMinToAerodromeTest} from "./SwapExactFromToMinToAerodrome.t.sol";
 import {SwapExactFromToMinToAerodromeSlipstreamTest} from "./SwapExactFromToMinToAerodromeSlipstream.t.sol";
 import {SwapExactFromToMinToUniV2Test} from "./SwapExactFromToMinToUniV2.t.sol";

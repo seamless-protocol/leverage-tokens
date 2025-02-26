@@ -5,8 +5,8 @@ pragma solidity ^0.8.26;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
-import {IAerodromeRouter} from "src/interfaces/IAerodromeRouter.sol";
-import {ISwapAdapter} from "src/interfaces/ISwapAdapter.sol";
+import {IAerodromeRouter} from "src/interfaces/periphery/IAerodromeRouter.sol";
+import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {SwapAdapterBaseTest} from "./SwapAdapterBase.t.sol";
 import {MockAerodromeRouter} from "test/unit/mock/MockAerodromeRouter.sol";
 

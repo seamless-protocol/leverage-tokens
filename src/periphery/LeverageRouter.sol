@@ -14,8 +14,8 @@ import {IFeeManager} from "../interfaces/IFeeManager.sol";
 import {ILendingAdapter} from "../interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "../interfaces/ILeverageManager.sol";
 import {IStrategy} from "../interfaces/IStrategy.sol";
-import {ISwapAdapter} from "../interfaces/ISwapAdapter.sol";
-import {ILeverageRouter} from "../interfaces/ILeverageRouter.sol";
+import {ISwapAdapter} from "../interfaces/periphery/ISwapAdapter.sol";
+import {ILeverageRouter} from "../interfaces/periphery/ILeverageRouter.sol";
 import {ExternalAction} from "../types/DataTypes.sol";
 
 contract LeverageRouter is ILeverageRouter {

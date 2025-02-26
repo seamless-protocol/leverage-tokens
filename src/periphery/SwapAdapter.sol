@@ -8,10 +8,10 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // Internal imports
-import {IAerodromeRouter} from "../interfaces/IAerodromeRouter.sol";
-import {IAerodromeSlipstreamRouter} from "../interfaces/IAerodromeSlipstreamRouter.sol";
-import {IUniswapSwapRouter02} from "../interfaces/IUniswapSwapRouter02.sol";
-import {ISwapAdapter} from "../interfaces/ISwapAdapter.sol";
+import {IAerodromeRouter} from "../interfaces/periphery/IAerodromeRouter.sol";
+import {IAerodromeSlipstreamRouter} from "../interfaces/periphery/IAerodromeSlipstreamRouter.sol";
+import {IUniswapSwapRouter02} from "../interfaces/periphery/IUniswapSwapRouter02.sol";
+import {ISwapAdapter} from "../interfaces/periphery/ISwapAdapter.sol";
 
 contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable {
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");

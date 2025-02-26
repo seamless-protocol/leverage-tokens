@@ -5,8 +5,8 @@ pragma solidity ^0.8.26;
 import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 
 // Internal imports
-import {ILeverageManager} from "./ILeverageManager.sol";
-import {IStrategy} from "./IStrategy.sol";
+import {ILeverageManager} from "../ILeverageManager.sol";
+import {IStrategy} from "../IStrategy.sol";
 import {ISwapAdapter} from "./ISwapAdapter.sol";
 
 interface ILeverageRouter {
