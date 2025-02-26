@@ -7,63 +7,63 @@ import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {SwapAdapterBaseTest} from "./SwapAdapterBase.t.sol";
 import {MockAerodromeRouter} from "test/unit/mock/MockAerodromeRouter.sol";
 
-//  Inherited in `SwapMaxFromToExactTo.t.sol` tests
-abstract contract SwapMaxFromToExactToAerodromeTest is SwapAdapterBaseTest {
+//  Inherited in `SwapExactOutput.t.sol` tests
+abstract contract SwapExactOutputAerodromeTest is SwapAdapterBaseTest {
     address public aerodromeFactory = makeAddr("aerodromeFactory");
 
-    function test_SwapMaxFromToExactToAerodrome_SingleHop() public {
-        uint256 toAmount = 10 ether;
-        uint256 maxFromAmount = 100 ether;
+    function test_SwapExactOutputAerodrome_SingleHop() public {
+        uint256 outputAmount = 10 ether;
+        uint256 maxInputAmount = 100 ether;
 
         address[] memory path = new address[](2);
         path[0] = address(fromToken);
         path[1] = address(toToken);
 
-        ISwapAdapter.SwapContext memory swapContext = _mock_SwapMaxFromToExactToAerodrome(path, toAmount, maxFromAmount);
+        ISwapAdapter.SwapContext memory swapContext = _mock_SwapExactOutputAerodrome(path, outputAmount, maxInputAmount);
 
-        // `SwapAdapter._swapMaxFromToExactToAerodrome` does not transfer in the fromToken,
-        // `SwapAdapterHarness.swapMaxFromToExactTo` does which is the external function that calls
-        // `_swapMaxFromToExactToAerodrome`
-        deal(address(fromToken), address(swapAdapter), maxFromAmount);
+        // `SwapAdapter._swapExactOutputAerodrome` does not transfer in the fromToken,
+        // `SwapAdapter.swapExactOutput` does which is the external function that calls
+        // `_swapExactOutputAerodrome`
+        deal(address(fromToken), address(swapAdapter), maxInputAmount);
 
-        uint256 fromAmount = swapAdapter.exposed_swapMaxFromToExactToAerodrome(toAmount, maxFromAmount, swapContext);
+        uint256 inputAmount = swapAdapter.exposed_swapExactOutputAerodrome(outputAmount, maxInputAmount, swapContext);
 
         // Aerodrome receives the fromToken
-        assertEq(fromToken.balanceOf(address(mockAerodromeRouter)), fromAmount);
+        assertEq(fromToken.balanceOf(address(mockAerodromeRouter)), inputAmount);
         // We receive the toToken
-        assertEq(toToken.balanceOf(address(this)), toAmount);
-        assertEq(fromAmount, maxFromAmount);
+        assertEq(toToken.balanceOf(address(this)), outputAmount);
+        assertEq(inputAmount, maxInputAmount);
     }
 
-    function test_SwapMaxFromToExactToAerodrome_MultiHop() public {
-        uint256 toAmount = 10 ether;
-        uint256 maxFromAmount = 100 ether;
+    function test_SwapExactOutputAerodrome_MultiHop() public {
+        uint256 outputAmount = 10 ether;
+        uint256 maxInputAmount = 100 ether;
 
         address[] memory path = new address[](3);
         path[0] = address(fromToken);
         path[1] = makeAddr("additional hop");
         path[2] = address(toToken);
 
-        ISwapAdapter.SwapContext memory swapContext = _mock_SwapMaxFromToExactToAerodrome(path, toAmount, maxFromAmount);
+        ISwapAdapter.SwapContext memory swapContext = _mock_SwapExactOutputAerodrome(path, outputAmount, maxInputAmount);
 
-        // `SwapAdapter._swapMaxFromToExactToAerodrome` does not transfer in the fromToken,
-        // `SwapAdapterHarness.swapMaxFromToExactTo` does which is the external function that calls
-        // `_swapMaxFromToExactToAerodrome`
-        deal(address(fromToken), address(swapAdapter), maxFromAmount);
+        // `SwapAdapter._swapExactOutputAerodrome` does not transfer in the fromToken,
+        // `SwapAdapter.swapExactOutput` does which is the external function that calls
+        // `_swapExactOutputAerodrome`
+        deal(address(fromToken), address(swapAdapter), maxInputAmount);
 
-        uint256 fromAmount = swapAdapter.exposed_swapMaxFromToExactToAerodrome(toAmount, maxFromAmount, swapContext);
+        uint256 inputAmount = swapAdapter.exposed_swapExactOutputAerodrome(outputAmount, maxInputAmount, swapContext);
 
         // Aerodrome receives the fromToken
-        assertEq(fromToken.balanceOf(address(mockAerodromeRouter)), fromAmount);
+        assertEq(fromToken.balanceOf(address(mockAerodromeRouter)), inputAmount);
         // We receive the toToken
-        assertEq(toToken.balanceOf(address(this)), toAmount);
-        assertEq(fromAmount, maxFromAmount);
+        assertEq(toToken.balanceOf(address(this)), outputAmount);
+        assertEq(inputAmount, maxInputAmount);
     }
 
-    function test_SwapMaxFromToExactToAerodrome_SurplusToToken() public {
-        uint256 toAmount = 10 ether;
-        uint256 surplusToAmount = 1 ether;
-        uint256 maxFromAmount = 100 ether;
+    function test_SwapExactOutputAerodrome_SurplusToToken() public {
+        uint256 outputAmount = 10 ether;
+        uint256 surplusOutputAmount = 1 ether;
+        uint256 maxInputAmount = 100 ether;
 
         address[] memory path = new address[](2);
         path[0] = address(fromToken);
@@ -88,8 +88,8 @@ abstract contract SwapMaxFromToExactToAerodromeTest is SwapAdapterBaseTest {
         MockAerodromeRouter.MockSwap memory mockSwap = MockAerodromeRouter.MockSwap({
             fromToken: fromToken,
             toToken: toToken,
-            fromAmount: maxFromAmount,
-            toAmount: toAmount + surplusToAmount,
+            fromAmount: maxInputAmount,
+            toAmount: outputAmount + surplusOutputAmount,
             encodedRoutes: keccak256(abi.encode(routes)),
             deadline: block.timestamp,
             isExecuted: false
@@ -101,7 +101,7 @@ abstract contract SwapMaxFromToExactToAerodromeTest is SwapAdapterBaseTest {
         MockAerodromeRouter.MockSwap memory mockSwap2 = MockAerodromeRouter.MockSwap({
             fromToken: toToken,
             toToken: fromToken,
-            fromAmount: surplusToAmount,
+            fromAmount: surplusOutputAmount,
             toAmount: 0.5 ether,
             encodedRoutes: keccak256(abi.encode(routes)),
             deadline: block.timestamp,
@@ -109,24 +109,24 @@ abstract contract SwapMaxFromToExactToAerodromeTest is SwapAdapterBaseTest {
         });
         mockAerodromeRouter.mockNextSwap(mockSwap2);
 
-        // `SwapAdapter._swapMaxFromToExactToAerodrome` does not transfer in the fromToken,
-        // `SwapAdapterHarness.swapMaxFromToExactTo` does which is the external function that calls
-        // `_swapMaxFromToExactToAerodrome`
-        deal(address(fromToken), address(swapAdapter), maxFromAmount);
+        // `SwapAdapter._swapExactOutputAerodrome` does not transfer in the fromToken,
+        // `SwapAdapter.swapExactOutput` does which is the external function that calls
+        // `_swapExactOutputAerodrome`
+        deal(address(fromToken), address(swapAdapter), maxInputAmount);
 
-        uint256 fromAmount = swapAdapter.exposed_swapMaxFromToExactToAerodrome(toAmount, maxFromAmount, swapContext);
+        uint256 inputAmount = swapAdapter.exposed_swapExactOutputAerodrome(outputAmount, maxInputAmount, swapContext);
 
         // Aerodrome receives the fromToken
-        assertEq(fromToken.balanceOf(address(mockAerodromeRouter)), maxFromAmount);
+        assertEq(fromToken.balanceOf(address(mockAerodromeRouter)), maxInputAmount);
         // We receive the toToken
-        assertEq(toToken.balanceOf(address(this)), toAmount);
+        assertEq(toToken.balanceOf(address(this)), outputAmount);
         // We receive the surplus fromToken
         assertEq(fromToken.balanceOf(address(this)), mockSwap2.toAmount);
-        // The fromAmount should be less than the maxFromAmount by the surplus received from the second swap
-        assertEq(fromAmount, maxFromAmount - mockSwap2.toAmount);
+        // The inputAmount should be less than the maxInputAmount by the surplus received from the second swap
+        assertEq(inputAmount, maxInputAmount - mockSwap2.toAmount);
     }
 
-    function _mock_SwapMaxFromToExactToAerodrome(address[] memory path, uint256 toAmount, uint256 maxFromAmount)
+    function _mock_SwapExactOutputAerodrome(address[] memory path, uint256 outputAmount, uint256 maxInputAmount)
         internal
         returns (ISwapAdapter.SwapContext memory swapContext)
     {
@@ -152,8 +152,8 @@ abstract contract SwapMaxFromToExactToAerodromeTest is SwapAdapterBaseTest {
         MockAerodromeRouter.MockSwap memory mockSwap = MockAerodromeRouter.MockSwap({
             fromToken: fromToken,
             toToken: toToken,
-            fromAmount: maxFromAmount,
-            toAmount: toAmount,
+            fromAmount: maxInputAmount,
+            toAmount: outputAmount,
             encodedRoutes: keccak256(abi.encode(routes)),
             deadline: block.timestamp,
             isExecuted: false

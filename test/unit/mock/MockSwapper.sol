@@ -24,13 +24,13 @@ contract MockSwapper is Test {
         nextSwapToAmount[fromToken].push(MockedSwap({toToken: toToken, toAmount: mockedToAmount, isExecuted: false}));
     }
 
-    function swapExactFromToMinTo(
+    function swapExactInput(
         IERC20 fromToken,
-        uint256, /* toAmount */
-        uint256 maxFromAmount,
+        uint256 inputAmount,
+        uint256, /* minOutputAmount */
         ISwapAdapter.SwapContext memory /* swapContext */
     ) external returns (uint256) {
-        SafeERC20.safeTransferFrom(fromToken, msg.sender, address(this), maxFromAmount);
+        SafeERC20.safeTransferFrom(fromToken, msg.sender, address(this), inputAmount);
 
         MockedSwap[] storage mockedSwaps = nextSwapToAmount[fromToken];
         for (uint256 i = 0; i < mockedSwaps.length; i++) {

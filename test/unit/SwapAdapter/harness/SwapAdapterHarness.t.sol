@@ -13,67 +13,67 @@ contract SwapAdapterHarness is SwapAdapter {
         _authorizeUpgrade(newImplementation);
     }
 
-    function exposed_swapExactFromToMinToAerodrome(
-        uint256 fromAmount,
-        uint256 minToAmount,
+    function exposed_swapExactInputAerodrome(
+        uint256 inputAmount,
+        uint256 minOutputAmount,
         ISwapAdapter.SwapContext memory swapContext
-    ) external returns (uint256 toAmount) {
-        return _swapExactFromToMinToAerodrome(fromAmount, minToAmount, swapContext);
+    ) external returns (uint256 outputAmount) {
+        return _swapExactInputAerodrome(inputAmount, minOutputAmount, swapContext);
     }
 
-    function exposed_swapExactFromToMinToAerodromeSlipstream(
-        uint256 fromAmount,
-        uint256 minToAmount,
+    function exposed_swapExactInputAerodromeSlipstream(
+        uint256 inputAmount,
+        uint256 minOutputAmount,
         ISwapAdapter.SwapContext memory swapContext
-    ) external returns (uint256 toAmount) {
-        return _swapExactFromToMinToAerodromeSlipstream(fromAmount, minToAmount, swapContext);
+    ) external returns (uint256 outputAmount) {
+        return _swapExactInputAerodromeSlipstream(inputAmount, minOutputAmount, swapContext);
     }
 
-    function exposed_swapExactFromToMinToUniV2(
-        uint256 fromAmount,
-        uint256 minToAmount,
+    function exposed_swapExactInputUniV2(
+        uint256 inputAmount,
+        uint256 minOutputAmount,
         ISwapAdapter.SwapContext memory swapContext
-    ) external returns (uint256 toAmount) {
-        return _swapExactFromToMinToUniV2(fromAmount, minToAmount, swapContext);
+    ) external returns (uint256 outputAmount) {
+        return _swapExactInputUniV2(inputAmount, minOutputAmount, swapContext);
     }
 
-    function exposed_swapExactFromToMinToUniV3(
-        uint256 fromAmount,
-        uint256 minToAmount,
+    function exposed_swapExactInputUniV3(
+        uint256 inputAmount,
+        uint256 minOutputAmount,
         ISwapAdapter.SwapContext memory swapContext
-    ) external returns (uint256 toAmount) {
-        return _swapExactFromToMinToUniV3(fromAmount, minToAmount, swapContext);
+    ) external returns (uint256 outputAmount) {
+        return _swapExactInputUniV3(inputAmount, minOutputAmount, swapContext);
     }
 
-    function exposed_swapMaxFromToExactToAerodrome(
-        uint256 toAmount,
-        uint256 maxFromAmount,
+    function exposed_swapExactOutputAerodrome(
+        uint256 outputAmount,
+        uint256 maxInputAmount,
         ISwapAdapter.SwapContext memory swapContext
-    ) external returns (uint256 fromAmount) {
-        return _swapMaxFromToExactToAerodrome(toAmount, maxFromAmount, swapContext);
+    ) external returns (uint256 inputAmount) {
+        return _swapExactOutputAerodrome(outputAmount, maxInputAmount, swapContext);
     }
 
-    function exposed_swapMaxFromToExactToAerodromeSlipstream(
-        uint256 toAmount,
-        uint256 maxFromAmount,
+    function exposed_swapExactOutputAerodromeSlipstream(
+        uint256 outputAmount,
+        uint256 maxInputAmount,
         ISwapAdapter.SwapContext memory swapContext
-    ) external returns (uint256 fromAmount) {
-        return _swapMaxFromToExactToAerodromeSlipstream(toAmount, maxFromAmount, swapContext);
+    ) external returns (uint256 inputAmount) {
+        return _swapExactOutputAerodromeSlipstream(outputAmount, maxInputAmount, swapContext);
     }
 
-    function exposed_swapMaxFromToExactToUniV2(
-        uint256 toAmount,
-        uint256 maxFromAmount,
+    function exposed_swapExactOutputUniV2(
+        uint256 outputAmount,
+        uint256 maxInputAmount,
         ISwapAdapter.SwapContext memory swapContext
-    ) external returns (uint256 fromAmount) {
-        return _swapMaxFromToExactToUniV2(toAmount, maxFromAmount, swapContext);
+    ) external returns (uint256 inputAmount) {
+        return _swapExactOutputUniV2(outputAmount, maxInputAmount, swapContext);
     }
 
-    function exposed_swapMaxFromToExactToUniV3(
-        uint256 toAmount,
-        uint256 maxFromAmount,
+    function exposed_swapExactOutputUniV3(
+        uint256 outputAmount,
+        uint256 maxInputAmount,
         ISwapAdapter.SwapContext memory swapContext
-    ) external returns (uint256 fromAmount) {
-        return _swapMaxFromToExactToUniV3(toAmount, maxFromAmount, swapContext);
+    ) external returns (uint256 inputAmount) {
+        return _swapExactOutputUniV3(outputAmount, maxInputAmount, swapContext);
     }
 }

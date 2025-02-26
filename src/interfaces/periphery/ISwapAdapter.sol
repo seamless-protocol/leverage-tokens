@@ -42,29 +42,29 @@ interface ISwapAdapter {
     /// @notice Error thrown when the number of fees is invalid
     error InvalidNumFees();
 
-    /// @notice Swap tokens from the fromToken to the toToken using the specified provider
-    /// @param fromToken Token to swap from
-    /// @param toAmount Amount of tokens to receive
-    /// @param maxFromAmount Maximum amount of tokens to swap
+    /// @notice Swap tokens from the inputToken to the outputToken using the specified provider
+    /// @param inputToken Token to swap from
+    /// @param outputAmount Amount of tokens to receive
+    /// @param maxInputAmount Maximum amount of tokens to swap
     /// @param swapContext Swap context to use for the swap (which exchange to use, the swap path, tick spacing, etc.)
-    /// @return fromAmount Amount of tokens swapped
-    function swapMaxFromToExactTo(
-        IERC20 fromToken,
-        uint256 toAmount,
-        uint256 maxFromAmount,
+    /// @return inputAmount Amount of tokens swapped
+    function swapExactOutput(
+        IERC20 inputToken,
+        uint256 outputAmount,
+        uint256 maxInputAmount,
         SwapContext memory swapContext
-    ) external returns (uint256 fromAmount);
+    ) external returns (uint256 inputAmount);
 
-    /// @notice Swap tokens from the fromToken to the toToken using the specified provider
-    /// @param fromToken Token to swap from
-    /// @param fromAmount Amount of tokens to swap
-    /// @param minToAmount Minimum amount of tokens to receive
+    /// @notice Swap tokens from the inputToken to the outputToken using the specified provider
+    /// @param inputToken Token to swap from
+    /// @param inputAmount Amount of tokens to swap
+    /// @param minOutputAmount Minimum amount of tokens to receive
     /// @param swapContext Swap context to use for the swap (which exchange to use, the swap path, tick spacing, etc.)
-    /// @return toAmount Amount of tokens received
-    function swapExactFromToMinTo(
-        IERC20 fromToken,
-        uint256 fromAmount,
-        uint256 minToAmount,
+    /// @return outputAmount Amount of tokens received
+    function swapExactInput(
+        IERC20 inputToken,
+        uint256 inputAmount,
+        uint256 minOutputAmount,
         SwapContext memory swapContext
-    ) external returns (uint256 toAmount);
+    ) external returns (uint256 outputAmount);
 }

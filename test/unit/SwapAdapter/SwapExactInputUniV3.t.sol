@@ -9,11 +9,11 @@ import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {SwapAdapterBaseTest} from "./SwapAdapterBase.t.sol";
 import {MockUniswapRouter02} from "test/unit/mock/MockUniswapRouter02.sol";
 
-//  Inherited in `SwapMaxFromToExactTo.t.sol` tests
-abstract contract SwapMaxFromToExactToUniV3Test is SwapAdapterBaseTest {
-    function test_SwapMaxFromToExactToUniV3_SingleHop() public {
-        uint256 toAmount = 10 ether;
-        uint256 maxFromAmount = 100 ether;
+//  Inherited in `SwapExactInput.t.sol` tests
+abstract contract SwapExactInputUniV3Test is SwapAdapterBaseTest {
+    function test_SwapExactInputUniV3_SingleHop() public {
+        uint256 inputAmount = 100 ether;
+        uint256 minOutputAmount = 10 ether;
 
         address[] memory path = new address[](2);
         path[0] = address(fromToken);
@@ -23,25 +23,25 @@ abstract contract SwapMaxFromToExactToUniV3Test is SwapAdapterBaseTest {
         fees[0] = 500;
 
         ISwapAdapter.SwapContext memory swapContext =
-            _mock_SwapMaxFromToExactToUniV3(path, fees, toAmount, maxFromAmount, false);
+            _mock_SwapExactInputUniV3(path, fees, inputAmount, minOutputAmount, false);
 
-        // `SwapAdapter._swapMaxFromToExactToUniswapV3` does not transfer in the fromToken,
-        // `SwapAdapterHarness.swapMaxFromToExactTo` does which is the external function that calls
-        // `_swapMaxFromToExactToUniswapV3`
-        deal(address(fromToken), address(swapAdapter), maxFromAmount);
+        // `SwapAdapter._swapExactInputUniV3` does not transfer in the inputToken,
+        // `SwapAdapter.swapExactInput` does which is the external function that calls
+        // `_swapExactInputUniV3`
+        deal(address(fromToken), address(swapAdapter), inputAmount);
 
-        uint256 fromAmount = swapAdapter.exposed_swapMaxFromToExactToUniV3(toAmount, maxFromAmount, swapContext);
+        uint256 outputAmount = swapAdapter.exposed_swapExactInputUniV3(inputAmount, minOutputAmount, swapContext);
 
         // Uniswap receives the fromToken
-        assertEq(fromToken.balanceOf(address(mockUniswapRouter02)), fromAmount);
+        assertEq(fromToken.balanceOf(address(mockUniswapRouter02)), inputAmount);
         // We receive the toToken
-        assertEq(toToken.balanceOf(address(this)), toAmount);
-        assertEq(fromAmount, maxFromAmount);
+        assertEq(toToken.balanceOf(address(this)), minOutputAmount);
+        assertEq(outputAmount, minOutputAmount);
     }
 
-    function test_SwapMaxFromToExactToUniV3_MultiHop() public {
-        uint256 toAmount = 5 ether;
-        uint256 maxFromAmount = 100 ether;
+    function test_SwapExactInputUniV3_MultiHop() public {
+        uint256 inputAmount = 100 ether;
+        uint256 minOutputAmount = 10 ether;
 
         address[] memory path = new address[](3);
         path[0] = address(fromToken);
@@ -53,25 +53,25 @@ abstract contract SwapMaxFromToExactToUniV3Test is SwapAdapterBaseTest {
         fees[1] = 300;
 
         ISwapAdapter.SwapContext memory swapContext =
-            _mock_SwapMaxFromToExactToUniV3(path, fees, toAmount, maxFromAmount, true);
+            _mock_SwapExactInputUniV3(path, fees, inputAmount, minOutputAmount, true);
 
-        // `SwapAdapter._swapMaxFromToExactToUniswapV3` does not transfer in the fromToken,
-        // `SwapAdapterHarness.swapMaxFromToExactTo` does which is the external function that calls
-        // `_swapMaxFromToExactToUniswapV3`
-        deal(address(fromToken), address(swapAdapter), maxFromAmount);
+        // `SwapAdapter._swapExactInputUniV3` does not transfer in the fromToken,
+        // `SwapAdapterHarness.swapExactInput` does which is the external function that calls
+        // `_swapExactInputUniV3`
+        deal(address(fromToken), address(swapAdapter), inputAmount);
 
-        uint256 fromAmount = swapAdapter.exposed_swapMaxFromToExactToUniV3(toAmount, maxFromAmount, swapContext);
+        uint256 outputAmount = swapAdapter.exposed_swapExactInputUniV3(inputAmount, minOutputAmount, swapContext);
 
         // Uniswap receives the fromToken
-        assertEq(fromToken.balanceOf(address(mockUniswapRouter02)), fromAmount);
+        assertEq(fromToken.balanceOf(address(mockUniswapRouter02)), inputAmount);
         // We receive the toToken
-        assertEq(toToken.balanceOf(address(this)), toAmount);
-        assertEq(fromAmount, maxFromAmount);
+        assertEq(toToken.balanceOf(address(this)), minOutputAmount);
+        assertEq(outputAmount, minOutputAmount);
     }
 
-    function test_SwapMaxFromToExactToUniV3_InvalidNumFees() public {
-        uint256 toAmount = 10 ether;
-        uint256 maxFromAmount = 100 ether;
+    function test_SwapExactInputUniV3_InvalidNumFees() public {
+        uint256 inputAmount = 100 ether;
+        uint256 minOutputAmount = 10 ether;
 
         address[] memory path = new address[](3);
         path[0] = address(fromToken);
@@ -82,34 +82,34 @@ abstract contract SwapMaxFromToExactToUniV3Test is SwapAdapterBaseTest {
         fees[0] = 500;
 
         ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
-            exchange: ISwapAdapter.Exchange.AERODROME_SLIPSTREAM,
+            exchange: ISwapAdapter.Exchange.UNISWAP_V3,
             path: path,
-            encodedPath: _encodeUniswapV3Path(path, fees, true),
+            encodedPath: _encodeUniswapV3Path(path, fees, false),
             fees: fees,
             tickSpacing: new int24[](0),
             exchangeAddresses: ISwapAdapter.ExchangeAddresses({
                 aerodromeRouter: address(0),
                 aerodromeFactory: address(0),
-                aerodromeSlipstreamRouter: address(mockAerodromeSlipstreamRouter),
-                uniswapRouter02: address(0)
+                aerodromeSlipstreamRouter: address(0),
+                uniswapRouter02: address(mockUniswapRouter02)
             })
         });
 
         vm.expectRevert(ISwapAdapter.InvalidNumFees.selector);
-        swapAdapter.exposed_swapMaxFromToExactToUniV3(toAmount, maxFromAmount, swapContext);
+        swapAdapter.exposed_swapExactInputUniV3(inputAmount, minOutputAmount, swapContext);
     }
 
-    function _mock_SwapMaxFromToExactToUniV3(
+    function _mock_SwapExactInputUniV3(
         address[] memory path,
         uint24[] memory fees,
-        uint256 toAmount,
-        uint256 maxFromAmount,
+        uint256 inputAmount,
+        uint256 minOutputAmount,
         bool isMultiHop
     ) internal returns (ISwapAdapter.SwapContext memory swapContext) {
         swapContext = ISwapAdapter.SwapContext({
             exchange: ISwapAdapter.Exchange.UNISWAP_V3,
             path: path,
-            encodedPath: _encodeUniswapV3Path(path, fees, true),
+            encodedPath: _encodeUniswapV3Path(path, fees, false),
             fees: fees,
             tickSpacing: new int24[](0),
             exchangeAddresses: ISwapAdapter.ExchangeAddresses({
@@ -122,11 +122,11 @@ abstract contract SwapMaxFromToExactToUniV3Test is SwapAdapterBaseTest {
 
         if (isMultiHop) {
             MockUniswapRouter02.MockV3MultiHopSwap memory mockSwap = MockUniswapRouter02.MockV3MultiHopSwap({
-                encodedPath: keccak256(_encodeUniswapV3Path(path, fees, true)),
+                encodedPath: keccak256(_encodeUniswapV3Path(path, fees, false)),
                 fromToken: IERC20(path[0]),
                 toToken: IERC20(path[path.length - 1]),
-                fromAmount: maxFromAmount,
-                toAmount: toAmount,
+                fromAmount: inputAmount,
+                toAmount: minOutputAmount,
                 isExecuted: false
             });
             mockUniswapRouter02.mockNextUniswapV3MultiHopSwap(mockSwap);
@@ -134,8 +134,8 @@ abstract contract SwapMaxFromToExactToUniV3Test is SwapAdapterBaseTest {
             MockUniswapRouter02.MockV3SingleHopSwap memory mockSwap = MockUniswapRouter02.MockV3SingleHopSwap({
                 fromToken: path[0],
                 toToken: path[path.length - 1],
-                fromAmount: maxFromAmount,
-                toAmount: toAmount,
+                fromAmount: inputAmount,
+                toAmount: minOutputAmount,
                 fee: fees[0],
                 sqrtPriceLimitX96: 0,
                 isExecuted: false
