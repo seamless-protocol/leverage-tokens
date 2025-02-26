@@ -25,12 +25,17 @@ contract LeverageRouter is ILeverageRouter {
 
     /// @notice Deposit related parameters to pass to the Morpho flash loan callback handler for deposits
     struct DepositParams {
+        // Strategy to deposit into
         IStrategy strategy;
+        // Amount of equity to deposit, denominated in the collateral asset
         uint256 equityInCollateralAsset;
-        uint256 debtToBorrow;
+        // Minimum amount of shares to receive
         uint256 minShares;
+        // Maximum amount of collateral asset to use for the deposit of equity, denominated in the collateral asset
         uint256 maxDepositCostInCollateralAsset;
+        // Address of the sender of the deposit, who will also receive the shares
         address sender;
+        // Swap context for the debt swap
         ISwapAdapter.SwapContext swapContext;
     }
 
@@ -67,14 +72,12 @@ contract LeverageRouter is ILeverageRouter {
         uint256 maxDepositCostInCollateralAsset,
         ISwapAdapter.SwapContext memory swapContext
     ) external {
-        (uint256 collateralToAdd, uint256 debtToBorrow,,) =
-            leverageManager.previewDeposit(strategy, equityInCollateralAsset);
+        (uint256 collateralToAdd,,,) = leverageManager.previewDeposit(strategy, equityInCollateralAsset);
 
         bytes memory depositData = abi.encode(
             DepositParams({
                 strategy: strategy,
                 equityInCollateralAsset: equityInCollateralAsset,
-                debtToBorrow: debtToBorrow,
                 minShares: minShares,
                 maxDepositCostInCollateralAsset: maxDepositCostInCollateralAsset,
                 sender: msg.sender,
@@ -114,14 +117,14 @@ contract LeverageRouter is ILeverageRouter {
 
         // Use the flash loaned collateral for the deposit
         collateralAsset.approve(address(leverageManager), collateralLoanAmount);
-        (,, uint256 sharesReceived,) =
+        (, uint256 debtToBorrow, uint256 sharesReceived,) =
             leverageManager.deposit(params.strategy, params.equityInCollateralAsset, params.minShares);
 
         // Swap the debt asset received from the deposit to the collateral asset, used to repay the flash loan
-        debtAsset.approve(address(swapper), params.debtToBorrow);
+        debtAsset.approve(address(swapper), debtToBorrow);
         uint256 swappedCollateralAmount = swapper.swapExactInput(
             debtAsset,
-            params.debtToBorrow,
+            debtToBorrow,
             0, // Set to zero because additional collateral from the sender is used to help repay the flash loan
             params.swapContext
         );
