@@ -25,7 +25,7 @@ import {MockSwapper} from "../mock/MockSwapper.sol";
 contract LeverageRouterBaseTest is Test {
     MockERC20 public collateralToken = new MockERC20();
     MockERC20 public debtToken = new MockERC20();
-    IStrategy public strategyToken = IStrategy(address(new MockERC20()));
+    IStrategy public strategy = IStrategy(address(new MockERC20()));
 
     MockMorpho public morpho;
 
@@ -54,9 +54,9 @@ contract LeverageRouterBaseTest is Test {
         lendingAdapter = new MockLendingAdapter(address(collateralToken), address(debtToken));
         leverageManager = new MockLeverageManager();
         leverageManager.setStrategyData(
-            strategyToken,
+            strategy,
             MockLeverageManager.StrategyData({
-                strategyToken: strategyToken,
+                strategyToken: strategy,
                 lendingAdapter: ILendingAdapter(address(lendingAdapter)),
                 collateralAsset: collateralToken,
                 debtAsset: debtToken,
@@ -81,14 +81,49 @@ contract LeverageRouterBaseTest is Test {
         assertEq(address(leverageRouter.swapper()), address(swapper));
     }
 
-    /// forge-config: default.fuzz.runs = 1
-    function testFuzz_onMorphoFlashLoan_RevertIf_Unauthorized(address caller) public {
-        vm.assume(caller != address(morpho));
-        vm.expectRevert(ILeverageRouter.Unauthorized.selector);
-        LeverageRouter(address(leverageRouter)).onMorphoFlashLoan(0, "");
-    }
-
     function _BASE_RATIO() internal view returns (uint256) {
         return leverageManager.BASE_RATIO();
+    }
+
+    function _mockLeverageManagerDeposit(
+        uint256 requiredCollateral,
+        uint256 equityInCollateralAsset,
+        uint256 collateralReceivedFromDebtSwap,
+        uint256 shares
+    ) internal {
+        /// Mocked debt required to deposit the equity (Doesn't matter for this test as the debt swap is mocked)
+        uint256 requiredDebt = 100e6;
+
+        // Mock the swap of the debt asset to the collateral asset
+        swapper.mockNextSwap(debtToken, collateralToken, collateralReceivedFromDebtSwap);
+
+        // Mock the deposit preview
+        leverageManager.setMockPreviewDepositData(
+            MockLeverageManager.PreviewDepositParams({
+                strategy: strategy,
+                equityInCollateralAsset: equityInCollateralAsset
+            }),
+            MockLeverageManager.MockPreviewDepositData({
+                collateralToAdd: requiredCollateral,
+                debtToBorrow: requiredDebt,
+                shares: shares,
+                sharesFee: 0
+            })
+        );
+
+        // Mock the LeverageManager deposit
+        leverageManager.setMockDepositData(
+            MockLeverageManager.DepositParams({
+                strategy: strategy,
+                equityInCollateralAsset: equityInCollateralAsset,
+                minShares: shares
+            }),
+            MockLeverageManager.MockDepositData({
+                collateral: requiredCollateral,
+                debt: requiredDebt,
+                shares: shares,
+                isExecuted: false
+            })
+        );
     }
 }

@@ -44,7 +44,7 @@ contract DepositTest is LeverageRouterBaseTest {
         deal(address(collateralToken), address(this), collateralFromSender);
         collateralToken.approve(address(leverageRouter), collateralFromSender);
         leverageRouter.deposit(
-            strategyToken,
+            strategy,
             equityInCollateralAsset,
             shares,
             additionalCollateralRequiredForFlashLoanRepay,
@@ -65,8 +65,8 @@ contract DepositTest is LeverageRouterBaseTest {
         );
 
         // Sender receives the minted shares
-        assertEq(strategyToken.balanceOf(address(this)), shares);
-        assertEq(strategyToken.balanceOf(address(leverageRouter)), 0);
+        assertEq(strategy.balanceOf(address(this)), shares);
+        assertEq(strategy.balanceOf(address(leverageRouter)), 0);
 
         // The LeverageRouter has the required collateral to repay the flash loan and Morpho is approved to spend it
         assertEq(collateralToken.balanceOf(address(leverageRouter)), requiredFlashLoan);
@@ -105,7 +105,7 @@ contract DepositTest is LeverageRouterBaseTest {
         deal(address(collateralToken), address(this), requiredCollateralFromSender);
         collateralToken.approve(address(leverageRouter), requiredCollateralFromSender);
         leverageRouter.deposit(
-            strategyToken,
+            strategy,
             equityInCollateralAsset,
             shares,
             0, // Sender does not need to send any additional collateral to help repay the flash loan
@@ -126,8 +126,8 @@ contract DepositTest is LeverageRouterBaseTest {
         );
 
         // Sender receives the minted shares
-        assertEq(strategyToken.balanceOf(address(this)), shares);
-        assertEq(strategyToken.balanceOf(address(leverageRouter)), 0);
+        assertEq(strategy.balanceOf(address(this)), shares);
+        assertEq(strategy.balanceOf(address(leverageRouter)), 0);
 
         // The LeverageRouter has the required collateral to repay the flash loan and Morpho is approved to spend it
         assertEq(collateralToken.balanceOf(address(leverageRouter)), requiredFlashLoan);
@@ -181,7 +181,7 @@ contract DepositTest is LeverageRouterBaseTest {
             )
         );
         leverageRouter.deposit(
-            strategyToken,
+            strategy,
             equityInCollateralAsset,
             shares,
             collateralFromSender - equityInCollateralAsset,
@@ -198,48 +198,6 @@ contract DepositTest is LeverageRouterBaseTest {
                     aerodromeSlipstreamRouter: address(0),
                     uniswapRouter02: address(0)
                 })
-            })
-        );
-    }
-
-    function _mockLeverageManagerDeposit(
-        uint256 requiredCollateral,
-        uint256 equityInCollateralAsset,
-        uint256 collateralReceivedFromDebtSwap,
-        uint256 shares
-    ) internal {
-        /// Mocked debt required to deposit the equity (Doesn't matter for this test as the debt swap is mocked)
-        uint256 requiredDebt = 100e6;
-
-        // Mock the swap of the debt asset to the collateral asset
-        swapper.mockNextSwap(debtToken, collateralToken, collateralReceivedFromDebtSwap);
-
-        // Mock the deposit preview
-        leverageManager.setMockPreviewDepositData(
-            MockLeverageManager.PreviewDepositParams({
-                strategy: strategyToken,
-                equityInCollateralAsset: equityInCollateralAsset
-            }),
-            MockLeverageManager.MockPreviewDepositData({
-                collateralToAdd: requiredCollateral,
-                debtToBorrow: requiredDebt,
-                shares: shares,
-                sharesFee: 0
-            })
-        );
-
-        // Mock the LeverageManager deposit
-        leverageManager.setMockDepositData(
-            MockLeverageManager.DepositParams({
-                strategy: strategyToken,
-                equityInCollateralAsset: equityInCollateralAsset,
-                minShares: shares
-            }),
-            MockLeverageManager.MockDepositData({
-                collateral: requiredCollateral,
-                debt: requiredDebt,
-                shares: shares,
-                isExecuted: false
             })
         );
     }
