@@ -23,7 +23,8 @@ contract WithdrawTest is LeverageRouterBaseTest {
     ) public {
         vm.assume(requiredDebt < requiredCollateral);
 
-        uint256 shares = 10 ether; // Doesn't matter for this test as the shares received and previewed are mocked
+        uint256 depositShares = 10 ether; // Doesn't matter for this test as the shares received and previewed are mocked
+        uint256 withdrawShares = 5 ether; // Doesn't matter for this test as the shares received and previewed are mocked
 
         equityInCollateralAsset = requiredCollateral - requiredDebt;
         maxSwapCostInCollateralAsset = uint128(bound(maxSwapCostInCollateralAsset, 0, equityInCollateralAsset - 1));
@@ -46,7 +47,7 @@ contract WithdrawTest is LeverageRouterBaseTest {
             MockLeverageManager.MockPreviewWithdrawData({
                 collateralToRemove: requiredCollateral,
                 debtToRepay: requiredDebt,
-                shares: shares,
+                shares: withdrawShares,
                 sharesFee: 0
             })
         );
@@ -56,12 +57,12 @@ contract WithdrawTest is LeverageRouterBaseTest {
             MockLeverageManager.WithdrawParams({
                 strategy: strategy,
                 equityInCollateralAsset: equityInCollateralAsset,
-                maxShares: shares
+                maxShares: withdrawShares
             }),
             MockLeverageManager.MockWithdrawData({
                 collateral: requiredCollateral,
                 debt: requiredDebt,
-                shares: shares,
+                shares: withdrawShares,
                 isExecuted: false
             })
         );
@@ -71,17 +72,17 @@ contract WithdrawTest is LeverageRouterBaseTest {
             requiredCollateral,
             requiredDebt,
             requiredCollateral - equityInCollateralAsset,
-            shares
+            depositShares
         );
 
         // Execute the withdraw
         deal(address(debtToken), address(this), requiredDebt);
         debtToken.approve(address(leverageRouter), requiredDebt);
-        strategy.approve(address(leverageRouter), shares);
+        strategy.approve(address(leverageRouter), withdrawShares);
         leverageRouter.withdraw(
             strategy,
             equityInCollateralAsset,
-            shares,
+            withdrawShares,
             maxSwapCostInCollateralAsset,
             // Mock the swap context (doesn't matter for this test as the swap is mocked)
             ISwapAdapter.SwapContext({
@@ -100,7 +101,7 @@ contract WithdrawTest is LeverageRouterBaseTest {
         );
 
         // Senders shares are burned
-        assertEq(strategy.balanceOf(address(this)), 0);
+        assertEq(strategy.balanceOf(address(this)), depositShares - withdrawShares);
 
         // The LeverageRouter has the required debt to repay the flash loan and Morpho is approved to spend it
         assertEq(debtToken.balanceOf(address(leverageRouter)), requiredDebt);
