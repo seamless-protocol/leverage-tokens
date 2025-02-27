@@ -123,7 +123,7 @@ interface ILeverageManager is IFeeManager {
     /// @notice Returns entire configuration for given strategy
     /// @param strategy Address of the strategy to get config for
     /// @return config Strategy configuration
-    function getStrategyConfig(IStrategy strategy) external returns (Storage.StrategyConfig memory config);
+    function getStrategyConfig(IStrategy strategy) external view returns (Storage.StrategyConfig memory config);
 
     /// @notice Sets factory for creating new strategy tokens
     /// @param factory Factory to set
