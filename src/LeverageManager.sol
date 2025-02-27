@@ -339,6 +339,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     /// @notice Function uses OZ formula for calculating shares
     /// @param strategy Strategy to convert equity for
     /// @param equityInCollateralAsset Equity to convert to shares, denominated in collateral asset
+    /// @return shares Shares
     /// @dev Function should be used to calculate how much shares user should receive for their equity
     function _convertToShares(IStrategy strategy, uint256 equityInCollateralAsset)
         internal
@@ -357,6 +358,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
     /// @notice Returns all data required to describe current strategy state - collateral, debt, equity and collateral ratio
     /// @param strategy Strategy to query state for
+    /// @return state Strategy state
     function _getStrategyState(IStrategy strategy) public view returns (StrategyState memory) {
         ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
 
