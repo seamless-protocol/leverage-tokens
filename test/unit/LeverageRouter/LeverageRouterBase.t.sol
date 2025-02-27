@@ -73,6 +73,9 @@ contract LeverageRouterBaseTest is Test {
         // Setup the mock tokens
         collateralToken.mockSetDecimals(18);
         debtToken.mockSetDecimals(6);
+
+        vm.label(address(collateralToken), "CollateralToken");
+        vm.label(address(debtToken), "DebtToken");
     }
 
     function test_setUp() public view {
@@ -88,21 +91,16 @@ contract LeverageRouterBaseTest is Test {
     function _mockLeverageManagerDeposit(
         uint256 requiredCollateral,
         uint256 equityInCollateralAsset,
+        uint256 requiredDebt,
         uint256 collateralReceivedFromDebtSwap,
         uint256 shares
     ) internal {
-        /// Mocked debt required to deposit the equity (Doesn't matter for this test as the debt swap is mocked)
-        uint256 requiredDebt = 100e6;
-
         // Mock the swap of the debt asset to the collateral asset
-        swapper.mockNextSwap(debtToken, collateralToken, collateralReceivedFromDebtSwap);
+        swapper.mockNextExactInputSwap(debtToken, collateralToken, collateralReceivedFromDebtSwap);
 
         // Mock the deposit preview
         leverageManager.setMockPreviewDepositData(
-            MockLeverageManager.PreviewDepositParams({
-                strategy: strategy,
-                equityInCollateralAsset: equityInCollateralAsset
-            }),
+            MockLeverageManager.PreviewParams({strategy: strategy, equityInCollateralAsset: equityInCollateralAsset}),
             MockLeverageManager.MockPreviewDepositData({
                 collateralToAdd: requiredCollateral,
                 debtToBorrow: requiredDebt,

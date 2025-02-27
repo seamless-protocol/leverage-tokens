@@ -14,8 +14,11 @@ contract OnMorphoFlashLoanTest is LeverageRouterBaseTest {
         uint256 equityInCollateralAsset = 5 ether;
         uint256 collateralReceivedFromDebtSwap = 5 ether;
         uint256 shares = 10 ether;
+        uint256 requiredDebt = 100e6;
 
-        _mockLeverageManagerDeposit(requiredCollateral, equityInCollateralAsset, collateralReceivedFromDebtSwap, shares);
+        _mockLeverageManagerDeposit(
+            requiredCollateral, equityInCollateralAsset, requiredDebt, collateralReceivedFromDebtSwap, shares
+        );
 
         bytes memory depositData = abi.encode(
             LeverageRouter.DepositParams({
