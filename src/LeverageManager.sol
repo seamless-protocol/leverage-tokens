@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-// Dependency imports
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -111,7 +110,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     /// @inheritdoc ILeverageManager
     function createNewStrategy(Storage.StrategyConfig calldata strategyConfig, string memory name, string memory symbol)
         external
-        onlyRole(MANAGER_ROLE)
         returns (IStrategy strategy)
     {
         IBeaconProxyFactory strategyTokenFactory = getStrategyTokenFactory();
@@ -340,6 +338,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     /// @notice Function uses OZ formula for calculating shares
     /// @param strategy Strategy to convert equity for
     /// @param equityInCollateralAsset Equity to convert to shares, denominated in collateral asset
+    /// @return shares Shares
     /// @dev Function should be used to calculate how much shares user should receive for their equity
     function _convertToShares(IStrategy strategy, uint256 equityInCollateralAsset)
         internal
@@ -358,6 +357,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
     /// @notice Returns all data required to describe current strategy state - collateral, debt, equity and collateral ratio
     /// @param strategy Strategy to query state for
+    /// @return state Strategy state
     function _getStrategyState(IStrategy strategy) internal view returns (StrategyState memory) {
         ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
 
