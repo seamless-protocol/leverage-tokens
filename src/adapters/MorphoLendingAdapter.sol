@@ -78,7 +78,7 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
         uint256 collateralAssetPriceInDebtAsset = IOracle(marketParams.oracle).price();
 
         // The result is scaled up by ORACLE_PRICE_SCALE to accommodate the oracle's decimals of precision
-        return Math.mulDiv(debt, ORACLE_PRICE_SCALE, collateralAssetPriceInDebtAsset, Math.Rounding.Ceil);
+        return Math.mulDiv(debt, ORACLE_PRICE_SCALE, collateralAssetPriceInDebtAsset, Math.Rounding.Floor);
     }
 
     /// @inheritdoc ILendingAdapter

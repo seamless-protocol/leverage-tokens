@@ -19,6 +19,10 @@ import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IntegrationTestBase} from "./IntegrationTestBase.t.sol";
 
 contract MorphoLendingAdapterTest is IntegrationTestBase {
+    function setUp() public override {
+        super.setUp();
+    }
+
     /// @dev In this block price on oracle 2376.236961937716262975778546
     function testFork_convertCollateralToDebtAsset() public view {
         uint256 result = morphoLendingAdapter.convertCollateralToDebtAsset(1 ether);

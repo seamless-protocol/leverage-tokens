@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-import {console} from "forge-std/console.sol";
-
 // Dependency imports
 import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -39,6 +37,7 @@ contract LeverageManagerTest is IntegrationTestBase {
                 abi.encodeWithSelector(LeverageManager.initialize.selector, address(this))
             )
         );
+        LeverageManager(address(leverageManager)).grantRole(keccak256("FEE_MANAGER_ROLE"), address(this));
 
         super.setUp();
 
@@ -119,6 +118,8 @@ contract LeverageManagerTest is IntegrationTestBase {
     }
 
     function testFork_deposit_PriceChangedBetweenDeposits_CollateralRatioDoesNotChange() public {
+        leverageManager.setStrategyActionFee(strategy, ExternalAction.Deposit, 1); // 0.01%
+
         // Deposit again like in previous test
         uint256 equityInCollateralAsset = 10 ether;
         uint256 collateralToAdd = 2 * equityInCollateralAsset;
@@ -136,8 +137,8 @@ contract LeverageManagerTest is IntegrationTestBase {
         assertLe(stateBefore.collateralRatio, 4 * BASE_RATIO);
 
         // Deposit based on what preview function says
-        (uint256 collateral,, uint256 shares,) = leverageManager.previewDeposit(strategy, equityInCollateralAsset);
-        _deposit(user, equityInCollateralAsset, collateral);
+        (uint256 collateral,,,) = leverageManager.previewDeposit(strategy, equityInCollateralAsset);
+        uint256 shares = _deposit(user, equityInCollateralAsset, collateral);
 
         // Validate that user never gets more equity than they deposited
         uint256 equityAfterDeposit = _convertToAssets(shares);
@@ -152,14 +153,14 @@ contract LeverageManagerTest is IntegrationTestBase {
         assertGe(stateAfter.collateralRatio, stateBefore.collateralRatio);
         assertLe(stateAfter.collateralRatio, stateBefore.collateralRatio + 1);
 
-        // Price goes down 3x
+        // // Price goes down 3x
         newPrice /= 3;
         vm.mockCall(address(oracle), abi.encodeWithSelector(IOracle.price.selector), abi.encode(newPrice));
 
         stateBefore = _getStrategyState();
 
-        (collateral,, shares,) = leverageManager.previewDeposit(strategy, equityInCollateralAsset);
-        _deposit(user, equityInCollateralAsset, collateral);
+        (collateral,,,) = leverageManager.previewDeposit(strategy, equityInCollateralAsset);
+        shares = _deposit(user, equityInCollateralAsset, collateral);
 
         // Validate that user never gets more equity than they deposited
         equityAfterDeposit = _convertToAssets(shares);
@@ -170,12 +171,17 @@ contract LeverageManagerTest is IntegrationTestBase {
         assertEq(stateAfter.collateralRatio, stateBefore.collateralRatio);
     }
 
-    function _deposit(address caller, uint256 equityInCollateralAsset, uint256 collateralToAdd) internal {
+    function _deposit(address caller, uint256 equityInCollateralAsset, uint256 collateralToAdd)
+        internal
+        returns (uint256)
+    {
         deal(address(WETH), caller, collateralToAdd);
         vm.startPrank(caller);
         WETH.approve(address(leverageManager), collateralToAdd);
-        leverageManager.deposit(strategy, equityInCollateralAsset, 0);
+        (,, uint256 shares,) = leverageManager.deposit(strategy, equityInCollateralAsset, 0);
         vm.stopPrank();
+
+        return shares;
     }
 
     function _getStrategyState() internal view returns (StrategyState memory) {
