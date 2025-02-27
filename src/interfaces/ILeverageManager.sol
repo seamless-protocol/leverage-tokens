@@ -135,8 +135,6 @@ interface ILeverageManager is IFeeManager {
     /// @param name Name of the strategy token
     /// @param symbol Symbol of the strategy token
     /// @return strategy Address of the new strategy
-    /// @dev Only MANAGER role can execute this.
-    ///      If collateralAsset,debtAsset or lendingAdapter are zero addresses function will revert
     function createNewStrategy(Storage.StrategyConfig memory strategyConfig, string memory name, string memory symbol)
         external
         returns (IStrategy strategy);
