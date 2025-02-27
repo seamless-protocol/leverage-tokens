@@ -23,14 +23,13 @@ contract MorphoLendingAdapterTest is Test {
     IMorpho public MORPHO = IMorpho(0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb);
     Id public WETH_USDC_MARKET_ID = Id.wrap(0x8793cf302b8ffd655ab97bd1c695dbd967807e8367a65cb2f4edaf1380ba1bda);
 
-    address public leverageManager = makeAddr("LeverageManager");
+    ILeverageManager public leverageManager = ILeverageManager(makeAddr("LeverageManager"));
     MorphoLendingAdapter morphoLendingAdapter;
 
-    function setUp() public {
+    function setUp() public virtual {
         vm.createSelectFork(vm.envString("FORK_RPC_URL"), 26901252);
 
-        MorphoLendingAdapter morphoLendingAdapterImplementation =
-            new MorphoLendingAdapter(ILeverageManager(leverageManager), MORPHO);
+        MorphoLendingAdapter morphoLendingAdapterImplementation = new MorphoLendingAdapter(leverageManager, MORPHO);
 
         BeaconProxyFactory morphoLendingAdapterFactory =
             new BeaconProxyFactory(address(morphoLendingAdapterImplementation), address(this));
@@ -42,8 +41,8 @@ contract MorphoLendingAdapterTest is Test {
         );
     }
 
-    function testFork_setUp() public view {
-        assertEq(address(morphoLendingAdapter.leverageManager()), leverageManager);
+    function testFork_setUp() public view virtual {
+        assertEq(address(morphoLendingAdapter.leverageManager()), address(leverageManager));
         assertEq(address(morphoLendingAdapter.morpho()), address(MORPHO));
         assertEq(address(morphoLendingAdapter.getCollateralAsset()), address(WETH));
         assertEq(address(morphoLendingAdapter.getDebtAsset()), address(USDC));
@@ -85,7 +84,7 @@ contract MorphoLendingAdapterTest is Test {
         uint256 debt = 2000e6;
 
         _addCollateral(address(this), collateral);
-        _borrow(leverageManager, debt);
+        _borrow(address(leverageManager), debt);
 
         assertEq(morphoLendingAdapter.getEquityInDebtAsset(), 376236960); // 376.236961 but rounded down to 376.236960
     }
@@ -117,7 +116,7 @@ contract MorphoLendingAdapterTest is Test {
         collateralToRemove = uint128(bound(collateralToRemove, 1, collateralBefore));
 
         _addCollateral(address(this), collateralBefore);
-        _removeCollateral(leverageManager, collateralToRemove);
+        _removeCollateral(address(leverageManager), collateralToRemove);
 
         Position memory position = MORPHO.position(WETH_USDC_MARKET_ID, address(morphoLendingAdapter));
         assertEq(position.collateral, collateralBefore - collateralToRemove);
@@ -126,12 +125,12 @@ contract MorphoLendingAdapterTest is Test {
         assertEq(morphoLendingAdapter.getDebt(), 0);
         assertEq(morphoLendingAdapter.getEquityInCollateralAsset(), collateralBefore - collateralToRemove);
 
-        assertEq(WETH.balanceOf(leverageManager), collateralToRemove);
+        assertEq(WETH.balanceOf(address(leverageManager)), collateralToRemove);
     }
 
     /// forge-config: default.fuzz.runs = 1
     function testForkFuzz_removeCollateral_RevertIf_CallerIsNotLeverageManager(address caller, uint256 amount) public {
-        vm.assume(caller != leverageManager);
+        vm.assume(caller != address(leverageManager));
         vm.expectRevert(ILendingAdapter.Unauthorized.selector);
         vm.prank(caller);
         morphoLendingAdapter.removeCollateral(amount);
@@ -152,7 +151,7 @@ contract MorphoLendingAdapterTest is Test {
         // Put max collateral so borrow tx does not revert due to insufficient collateral
         _addCollateral(address(this), type(uint128).max);
 
-        _borrow(leverageManager, amount);
+        _borrow(address(leverageManager), amount);
 
         // Check if borrow actually increased total borrow assets
         // Total borrow assets can be even bigger because of accrue interest call in Morpho during borrow function call
@@ -176,7 +175,7 @@ contract MorphoLendingAdapterTest is Test {
 
     /// forge-config: default.fuzz.runs = 1
     function testForkFuzz_borrow_RevertIf_CallerIsNotLeverageManager(address caller, uint256 amount) public {
-        vm.assume(caller != leverageManager);
+        vm.assume(caller != address(leverageManager));
         vm.expectRevert(ILendingAdapter.Unauthorized.selector);
         vm.prank(caller);
         morphoLendingAdapter.borrow(amount);
@@ -196,7 +195,7 @@ contract MorphoLendingAdapterTest is Test {
         debtToRepay = uint32(bound(debtToRepay, 1, debtBefore));
 
         _addCollateral(caller, type(uint128).max);
-        _borrow(leverageManager, debtBefore);
+        _borrow(address(leverageManager), debtBefore);
         _repay(caller, debtToRepay);
 
         Market memory marketAfter = MORPHO.market(WETH_USDC_MARKET_ID);

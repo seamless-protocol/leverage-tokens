@@ -111,7 +111,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     /// @inheritdoc ILeverageManager
     function createNewStrategy(Storage.StrategyConfig calldata strategyConfig, string memory name, string memory symbol)
         external
-        onlyRole(MANAGER_ROLE)
         returns (IStrategy strategy)
     {
         IBeaconProxyFactory strategyTokenFactory = getStrategyTokenFactory();
@@ -358,7 +357,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
     /// @notice Returns all data required to describe current strategy state - collateral, debt, equity and collateral ratio
     /// @param strategy Strategy to query state for
-    function _getStrategyState(IStrategy strategy) internal view returns (StrategyState memory) {
+    function _getStrategyState(IStrategy strategy) public view returns (StrategyState memory) {
         ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
 
         uint256 collateral = lendingAdapter.getCollateralInDebtAsset();

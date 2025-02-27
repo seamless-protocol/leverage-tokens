@@ -113,7 +113,7 @@ interface ILeverageManager is IFeeManager {
     /// @notice Returns leverage config for a strategy including min, max and target
     /// @param strategy Strategy to get leverage config for
     /// @return ratios Collateral ratios for the strategy
-    function getStrategyCollateralRatios(IStrategy strategy) external returns (CollateralRatios memory ratios);
+    function getStrategyCollateralRatios(IStrategy strategy) external view returns (CollateralRatios memory ratios);
 
     /// @notice Returns target ratio for a strategy
     /// @param strategy Strategy to get target ratio for
