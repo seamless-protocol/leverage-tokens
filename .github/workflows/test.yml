@@ -43,7 +43,7 @@ jobs:
 
       - name: Run Forge tests
         env:
-          FORK_RPC_URL: ${{ secrets.FORK_RPC_URL }}
+          BASE_RPC_URL: ${{ secrets.BASE_RPC_URL }}
         run: |
           forge coverage --report lcov
         id: test

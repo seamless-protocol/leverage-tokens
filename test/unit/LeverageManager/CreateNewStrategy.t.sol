@@ -93,19 +93,4 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
         );
         _createNewStrategy(manager, config, collateralAsset, debtAsset, name, symbol);
     }
-
-    /// forge-config: default.fuzz.runs = 1
-    function testFuzz_CreateNewStrategy_RevertIf_CallerIsNotManager(
-        address caller,
-        Storage.StrategyConfig calldata config
-    ) public {
-        vm.assume(caller != manager);
-
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, caller, leverageManager.MANAGER_ROLE()
-            )
-        );
-        _createNewStrategy(caller, config, address(0), address(0), "", "");
-    }
 }

@@ -113,7 +113,7 @@ interface ILeverageManager is IFeeManager {
     /// @notice Returns leverage config for a strategy including min, max and target
     /// @param strategy Strategy to get leverage config for
     /// @return ratios Collateral ratios for the strategy
-    function getStrategyCollateralRatios(IStrategy strategy) external returns (CollateralRatios memory ratios);
+    function getStrategyCollateralRatios(IStrategy strategy) external view returns (CollateralRatios memory ratios);
 
     /// @notice Returns target ratio for a strategy
     /// @param strategy Strategy to get target ratio for
@@ -135,8 +135,6 @@ interface ILeverageManager is IFeeManager {
     /// @param name Name of the strategy token
     /// @param symbol Symbol of the strategy token
     /// @return strategy Address of the new strategy
-    /// @dev Only MANAGER role can execute this.
-    ///      If collateralAsset,debtAsset or lendingAdapter are zero addresses function will revert
     function createNewStrategy(Storage.StrategyConfig memory strategyConfig, string memory name, string memory symbol)
         external
         returns (IStrategy strategy);
