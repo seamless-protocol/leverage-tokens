@@ -21,7 +21,7 @@ contract IntegrationTestBase is Test {
     MorphoLendingAdapter public morphoLendingAdapter;
 
     function setUp() public virtual {
-        vm.createSelectFork(vm.envString("FORK_RPC_URL"), 26901252);
+        vm.createSelectFork(vm.envString("FORK_RPC_URL"), 26901253);
 
         MorphoLendingAdapter morphoLendingAdapterImplementation =
             new MorphoLendingAdapter(ILeverageManager(leverageManager), MORPHO);
@@ -42,10 +42,10 @@ contract IntegrationTestBase is Test {
         assertEq(address(morphoLendingAdapter.getCollateralAsset()), address(WETH));
         assertEq(address(morphoLendingAdapter.getDebtAsset()), address(USDC));
 
-        // assertEq(morphoLendingAdapter.getCollateral(), 0);
-        // assertEq(morphoLendingAdapter.getCollateralInDebtAsset(), 0);
-        // assertEq(morphoLendingAdapter.getDebt(), 0);
-        // assertEq(morphoLendingAdapter.getEquityInCollateralAsset(), 0);
-        // assertEq(morphoLendingAdapter.getEquityInDebtAsset(), 0);
+        assertEq(morphoLendingAdapter.getCollateral(), 0);
+        assertEq(morphoLendingAdapter.getCollateralInDebtAsset(), 0);
+        assertEq(morphoLendingAdapter.getDebt(), 0);
+        assertEq(morphoLendingAdapter.getEquityInCollateralAsset(), 0);
+        assertEq(morphoLendingAdapter.getEquityInDebtAsset(), 0);
     }
 }
