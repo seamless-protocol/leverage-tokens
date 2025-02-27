@@ -31,6 +31,23 @@ contract LeverageRouter is ILeverageRouter {
         ISwapAdapter.SwapContext swapContext;
     }
 
+    /// @notice Withdraw related parameters to pass to the Morpho flash loan callback handler for withdrawals
+    struct WithdrawParams {
+        // Strategy to withdraw from
+        IStrategy strategy;
+        // Amount of equity to withdraw, denominated in the collateral asset
+        uint256 equityInCollateralAsset;
+        // Maximum amount of shares to be burned during the withdrawal
+        uint256 maxShares;
+        // Maximum cost to the sender for the swap of debt to collateral during the withdrawal to repay the flash loan,
+        // denominated in the collateral asset. This cost is applied to the equity being withdrawn
+        uint256 maxSwapCostInCollateralAsset;
+        // Address of the sender of the withdrawal, whose shares will be burned and the equity will be transferred to
+        address sender;
+        // Swap context for the debt swap
+        ISwapAdapter.SwapContext swapContext;
+    }
+
     /// @notice Morpho flash loan callback data to pass to the Morpho flash loan callback handler
     struct MorphoCallbackData {
         ExternalAction action;
@@ -86,6 +103,34 @@ contract LeverageRouter is ILeverageRouter {
         );
     }
 
+    function withdraw(
+        IStrategy strategy,
+        uint256 equityInCollateralAsset,
+        uint256 maxShares,
+        uint256 maxSwapCostInCollateralAsset,
+        ISwapAdapter.SwapContext memory swapContext
+    ) external {
+        (, uint256 debtToRepay,,) = leverageManager.previewWithdraw(strategy, equityInCollateralAsset);
+
+        bytes memory withdrawData = abi.encode(
+            WithdrawParams({
+                strategy: strategy,
+                equityInCollateralAsset: equityInCollateralAsset,
+                maxShares: maxShares,
+                maxSwapCostInCollateralAsset: maxSwapCostInCollateralAsset,
+                sender: msg.sender,
+                swapContext: swapContext
+            })
+        );
+
+        // Flash loan the debt asset required to repay the flash loan, and pass the required data to the Morpho flash loan callback handler for the withdrawal.
+        morpho.flashLoan(
+            address(leverageManager.getStrategyDebtAsset(strategy)),
+            debtToRepay,
+            abi.encode(MorphoCallbackData({action: ExternalAction.Withdraw, data: withdrawData}))
+        );
+    }
+
     /// @notice Morpho flash loan callback function
     /// @param loanAmount Amount of asset flash loaned
     /// @param data Encoded data passed to `morpho.flashLoan`
@@ -97,6 +142,9 @@ contract LeverageRouter is ILeverageRouter {
         if (callbackData.action == ExternalAction.Deposit) {
             DepositParams memory params = abi.decode(callbackData.data, (DepositParams));
             _depositAndRepayMorphoFlashLoan(params, loanAmount);
+        } else if (callbackData.action == ExternalAction.Withdraw) {
+            WithdrawParams memory params = abi.decode(callbackData.data, (WithdrawParams));
+            _withdrawAndRepayMorphoFlashLoan(params, loanAmount);
         }
     }
 
@@ -149,5 +197,40 @@ contract LeverageRouter is ILeverageRouter {
 
         // Approve morpho to transfer assets to repay the flash loan
         collateralAsset.approve(address(morpho), collateralLoanAmount);
+    }
+
+    /// @notice Executes the withdrawal of equity from a strategy and the swap of debt assets to the collateral asset
+    /// to repay the flash loan from Morpho
+    /// @param params Params for the withdrawal of equity from a strategy
+    /// @param debtLoanAmount Amount of debt asset flash loaned
+    function _withdrawAndRepayMorphoFlashLoan(WithdrawParams memory params, uint256 debtLoanAmount) internal {
+        IERC20 collateralAsset = leverageManager.getStrategyCollateralAsset(params.strategy);
+        IERC20 debtAsset = leverageManager.getStrategyDebtAsset(params.strategy);
+
+        // Transfer the shares from the sender
+        SafeERC20.safeTransferFrom(params.strategy, params.sender, address(this), params.maxShares);
+
+        // Withdraw the equity from the strategy
+        debtAsset.approve(address(leverageManager), debtLoanAmount);
+        (uint256 collateralReceived,,,) =
+            leverageManager.withdraw(params.strategy, params.equityInCollateralAsset, params.maxShares);
+
+        // Swap the collateral asset received from the withdrawal to the debt asset, used to repay the flash loan
+        collateralAsset.approve(address(swapper), collateralReceived);
+        uint256 collateralAmountSwapped =
+            swapper.swapExactOutput(collateralAsset, debtLoanAmount, collateralReceived, params.swapContext);
+
+        // Check if the amount of collateral swapped to repay the flash loan is greater than the allowed cost
+        uint256 remainingCollateral = collateralReceived - collateralAmountSwapped;
+        if (remainingCollateral < params.equityInCollateralAsset - params.maxSwapCostInCollateralAsset) {
+            revert MaxSwapCostExceeded(
+                params.equityInCollateralAsset - remainingCollateral, params.maxSwapCostInCollateralAsset
+            );
+        } else if (remainingCollateral > 0) {
+            SafeERC20.safeTransfer(collateralAsset, params.sender, remainingCollateral);
+        }
+
+        // Approve morpho to transfer assets to repay the flash loan
+        debtAsset.approve(address(morpho), debtLoanAmount);
     }
 }
