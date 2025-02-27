@@ -21,7 +21,9 @@ contract IntegrationTestBase is Test {
     MorphoLendingAdapter public morphoLendingAdapter;
 
     function setUp() public virtual {
-        vm.createSelectFork(vm.envString("FORK_RPC_URL"), 26901253);
+        uint256 forkId = vm.createFork(vm.envString("BASE_RPC_URL"));
+        vm.selectFork(forkId);
+        vm.rollFork(25473904);
 
         MorphoLendingAdapter morphoLendingAdapterImplementation =
             new MorphoLendingAdapter(ILeverageManager(leverageManager), MORPHO);

@@ -19,35 +19,31 @@ import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IntegrationTestBase} from "./IntegrationTestBase.t.sol";
 
 contract MorphoLendingAdapterTest is IntegrationTestBase {
-    function setUp() public override {
-        super.setUp();
-    }
-
-    /// @dev In this block price on oracle 2376.236961937716262975778546
+    /// @dev In this block price on oracle 3392.292471591441746049801068
     function testFork_convertCollateralToDebtAsset() public view {
         uint256 result = morphoLendingAdapter.convertCollateralToDebtAsset(1 ether);
-        assertEq(result, 2376236961); // 2376.236961
+        assertEq(result, 3392_292471);
 
         result = morphoLendingAdapter.convertCollateralToDebtAsset(5 ether);
-        assertEq(result, 11881184809); // 11881.1848097
+        assertEq(result, 16961462357);
 
         result = morphoLendingAdapter.convertCollateralToDebtAsset(10 ether);
-        assertEq(result, 23762369619); // 23762.369619
+        assertEq(result, 33922924715);
 
         result = morphoLendingAdapter.convertCollateralToDebtAsset(0.5 ether);
-        assertEq(result, 1188118480); // 1188.11848097
+        assertEq(result, 1696146235);
     }
 
-    /// @dev In this block price on oracle 2376.236961937716262975778546
+    /// @dev In this block price on oracle 3392.292471591441746049801068
     function testFork_convertDebtToCollateralAsset() public view {
         uint256 result = morphoLendingAdapter.convertDebtToCollateralAsset(1000_000000);
-        assertEq(result, 0.420833450542972861 * 1 ether); // 0.420833450542972861
+        assertEq(result, 294785903153823706);
 
         result = morphoLendingAdapter.convertDebtToCollateralAsset(80_000_000000);
-        assertEq(result, 33.666676043437828823 * 1 ether); // 33.666676043437828823
+        assertEq(result, 23582872252305896433);
     }
 
-    /// @dev In this block price on oracle 2376.236961937716262975778546
+    /// @dev In this block price on oracle 3392.292471591441746049801068
     function testFork_getEquityInDebtAsset() public {
         uint256 collateral = 1e18;
         uint256 debt = 2000e6;
@@ -55,7 +51,7 @@ contract MorphoLendingAdapterTest is IntegrationTestBase {
         _addCollateral(address(this), collateral);
         _borrow(address(leverageManager), debt);
 
-        assertEq(morphoLendingAdapter.getEquityInDebtAsset(), 376236960); // 376.236961 but rounded down to 376.236960
+        assertEq(morphoLendingAdapter.getEquityInDebtAsset(), 1392292470);
     }
 
     /// forge-config: default.fuzz.runs = 1

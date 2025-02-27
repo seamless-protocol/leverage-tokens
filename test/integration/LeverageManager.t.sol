@@ -78,11 +78,11 @@ contract LeverageManagerTest is IntegrationTestBase {
         assertEq(leverageManager.getStrategyTargetCollateralRatio(strategy), 2 * BASE_RATIO);
     }
 
-    /// @dev In this block price on oracle 2376.236961937716262975778546
+    /// @dev In this block price on oracle 3392.292471591441746049801068
     function testFork_deposit_NoFee() public {
         uint256 equityInCollateralAsset = 10 ether;
         uint256 collateralToAdd = 2 * equityInCollateralAsset;
-        uint256 debtToBorrow = 23762_369619; // 23,762.369619
+        uint256 debtToBorrow = 33922_924715; // 33922.924715
 
         deal(address(WETH), user, collateralToAdd);
 
