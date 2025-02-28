@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
+import "forge-std/console.sol";
+
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -192,6 +194,8 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     {
         (uint256 collateral, uint256 debt, uint256 sharesAfterFee, uint256 sharesFee) =
             previewWithdraw(strategy, equityInCollateralAsset);
+
+        console.log("debt to repay", debt);
 
         if (sharesAfterFee > maxShares) {
             revert SlippageTooHigh(sharesAfterFee, maxShares);
@@ -400,18 +404,21 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         uint256 sharesBeforeFee = _convertToShares(strategy, equityInCollateralAsset);
         (sharesAfterFee, sharesFee) = _computeFeeAdjustedShares(strategy, sharesBeforeFee, action);
 
+        uint256 totalDebt = lendingAdapter.getDebt();
         uint256 totalShares = strategy.totalSupply();
 
         Math.Rounding collateralRounding = action == ExternalAction.Deposit ? Math.Rounding.Ceil : Math.Rounding.Floor;
         Math.Rounding debtRounding = action == ExternalAction.Deposit ? Math.Rounding.Floor : Math.Rounding.Ceil;
 
-        if (totalShares == 0) {
+        // If action is deposit there might be some dust in collateral but debt can be 0. In that case we should follow target ratio
+        bool shouldFollowTargetRatio = totalShares == 0 || (action == ExternalAction.Deposit && totalDebt == 0);
+        if (shouldFollowTargetRatio) {
             uint256 targetRatio = getStrategyTargetCollateralRatio(strategy);
             collateral = Math.mulDiv(equityInCollateralAsset, targetRatio, targetRatio - BASE_RATIO, collateralRounding);
             debt = lendingAdapter.convertCollateralToDebtAsset(collateral - equityInCollateralAsset);
         } else {
             collateral = Math.mulDiv(lendingAdapter.getCollateral(), sharesBeforeFee, totalShares, collateralRounding);
-            debt = Math.mulDiv(lendingAdapter.getDebt(), sharesBeforeFee, totalShares, debtRounding);
+            debt = Math.mulDiv(totalDebt, sharesBeforeFee, totalShares, debtRounding);
         }
 
         return (collateral, debt, sharesAfterFee, sharesFee);
