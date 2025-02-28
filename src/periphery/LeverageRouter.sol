@@ -103,6 +103,7 @@ contract LeverageRouter is ILeverageRouter {
         );
     }
 
+    /// @inheritdoc ILeverageRouter
     function withdraw(
         IStrategy strategy,
         uint256 equityInCollateralAsset,
