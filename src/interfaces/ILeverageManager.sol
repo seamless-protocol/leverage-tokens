@@ -11,11 +11,27 @@ import {IStrategy} from "./IStrategy.sol";
 import {CollateralRatios} from "src/types/DataTypes.sol";
 import {IBeaconProxyFactory} from "./IBeaconProxyFactory.sol";
 import {ILendingAdapter} from "./ILendingAdapter.sol";
-import {LeverageManagerStorage as Storage} from "../storage/LeverageManagerStorage.sol";
 import {RebalanceAction, TokenTransfer} from "src/types/DataTypes.sol";
 import {IRebalanceRewardDistributor} from "./IRebalanceRewardDistributor.sol";
 
 interface ILeverageManager is IFeeManager {
+    /// @dev Struct that contains entire strategy config
+    struct StrategyConfig {
+        /// @dev Lending adapter for strategy
+        ILendingAdapter lendingAdapter;
+        /// @dev Minimum collateral ratio allowed for strategy before triggering rebalance on 8 decimals
+        ///      Collateral ratio is calculated as collateral value / debt value
+        uint256 minCollateralRatio;
+        /// @dev Maximum collateral ratio allowed for strategy before triggering rebalance on 8 decimals
+        uint256 maxCollateralRatio;
+        /// @dev Target collateral ratio of the strategy on 8 decimals
+        uint256 targetCollateralRatio;
+        /// @dev Rebalance reward distributor module for strategy
+        IRebalanceRewardDistributor rebalanceRewardDistributor;
+        /// @dev Whitelist module for strategy, if not set rebalance is open for everybody
+        IRebalanceWhitelist rebalanceWhitelist;
+    }
+
     /// @notice Error thrown when someone tries to create strategy with lending adapter that already exists
     error LendingAdapterAlreadyInUse(address adapter);
 
@@ -47,9 +63,7 @@ interface ILeverageManager is IFeeManager {
     event StrategyTokenFactorySet(address factory);
 
     /// @notice Event emitted when new strategy is created
-    event StrategyCreated(
-        IStrategy indexed strategy, IERC20 collateralAsset, IERC20 debtAsset, Storage.StrategyConfig config
-    );
+    event StrategyCreated(IStrategy indexed strategy, IERC20 collateralAsset, IERC20 debtAsset, StrategyConfig config);
 
     /// @notice Event emitted when user deposits assets into strategy
     event Deposit(
@@ -123,7 +137,7 @@ interface ILeverageManager is IFeeManager {
     /// @notice Returns entire configuration for given strategy
     /// @param strategy Address of the strategy to get config for
     /// @return config Strategy configuration
-    function getStrategyConfig(IStrategy strategy) external view returns (Storage.StrategyConfig memory config);
+    function getStrategyConfig(IStrategy strategy) external view returns (StrategyConfig memory config);
 
     /// @notice Sets factory for creating new strategy tokens
     /// @param factory Factory to set
@@ -135,7 +149,7 @@ interface ILeverageManager is IFeeManager {
     /// @param name Name of the strategy token
     /// @param symbol Symbol of the strategy token
     /// @return strategy Address of the new strategy
-    function createNewStrategy(Storage.StrategyConfig memory strategyConfig, string memory name, string memory symbol)
+    function createNewStrategy(StrategyConfig memory strategyConfig, string memory name, string memory symbol)
         external
         returns (IStrategy strategy);
 

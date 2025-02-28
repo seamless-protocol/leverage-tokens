@@ -13,7 +13,6 @@ import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol"
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 import {LeverageManagerBaseTest} from "./LeverageManagerBase.t.sol";
 import {CollateralRatios} from "src/types/DataTypes.sol";
 import {Strategy} from "src/Strategy.sol";
@@ -24,7 +23,7 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
     }
 
     function testFuzz_CreateNewStrategy(
-        Storage.StrategyConfig memory config,
+        ILeverageManager.StrategyConfig memory config,
         address collateralAsset,
         address debtAsset,
         string memory name,
@@ -54,7 +53,7 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
         assertEq(IERC20Metadata(expectedStrategyAddress).symbol(), symbol);
 
         // Check if the strategy core is set correctly
-        Storage.StrategyConfig memory configAfter = leverageManager.getStrategyConfig(strategy);
+        ILeverageManager.StrategyConfig memory configAfter = leverageManager.getStrategyConfig(strategy);
         assertEq(address(configAfter.lendingAdapter), address(config.lendingAdapter));
 
         CollateralRatios memory ratios = leverageManager.getStrategyCollateralRatios(strategy);
@@ -75,7 +74,7 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
     }
 
     function test_CreateNewStrategy_RevertIf_LendingAdapterAlreadyInUse(
-        Storage.StrategyConfig memory config,
+        ILeverageManager.StrategyConfig memory config,
         address collateralAsset,
         address debtAsset,
         string memory name,

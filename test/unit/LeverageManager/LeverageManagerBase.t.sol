@@ -11,7 +11,6 @@ import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IRebalanceRewardDistributor} from "src/interfaces/IRebalanceRewardDistributor.sol";
 import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
-import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 import {LeverageManager} from "src/LeverageManager.sol";
 import {LeverageManagerHarness} from "test/unit/LeverageManager/harness/LeverageManagerHarness.t.sol";
 import {FeeManagerBaseTest} from "test/unit/FeeManager/FeeManagerBase.t.sol";
@@ -22,6 +21,7 @@ import {Strategy} from "src/Strategy.sol";
 import {MockERC20} from "test/unit/mock/MockERC20.sol";
 import {MockLendingAdapter} from "test/unit/mock/MockLendingAdapter.sol";
 import {ExternalAction} from "src/types/DataTypes.sol";
+import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 
 contract LeverageManagerBaseTest is FeeManagerBaseTest {
     IStrategy public strategy;
@@ -61,7 +61,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         ) & ~bytes32(uint256(0xff));
 
         assertTrue(leverageManager.hasRole(leverageManager.DEFAULT_ADMIN_ROLE(), defaultAdmin));
-        assertEq(leverageManager.exposed_leverageManager_layoutSlot(), expectedSlot);
+        assertEq(leverageManager.exposed_getLeverageManagerStorageSlot(), expectedSlot);
     }
 
     function _BASE_RATIO() internal view returns (uint256) {
@@ -80,7 +80,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         strategy = IStrategy(
             _createNewStrategy(
                 manager,
-                Storage.StrategyConfig({
+                ILeverageManager.StrategyConfig({
                     lendingAdapter: ILendingAdapter(address(lendingAdapter)),
                     minCollateralRatio: _BASE_RATIO(),
                     maxCollateralRatio: _BASE_RATIO() + 2,
@@ -98,7 +98,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
 
     function _createNewStrategy(
         address caller,
-        Storage.StrategyConfig memory config,
+        ILeverageManager.StrategyConfig memory config,
         address collateralAsset,
         address debtAsset,
         string memory name,

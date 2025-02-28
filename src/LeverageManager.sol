@@ -19,7 +19,6 @@ import {IBeaconProxyFactory} from "src/interfaces/IBeaconProxyFactory.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {FeeManager} from "src/FeeManager.sol";
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
-import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {CollateralRatios, StrategyState} from "src/types/DataTypes.sol";
 import {Strategy} from "src/Strategy.sol";
@@ -36,6 +35,24 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
 
+    /// @dev Struct containing all state for the LeverageManager contract
+    /// @custom:storage-location erc7201:seamless.contracts.storage.LeverageManager
+    struct LeverageManagerStorage {
+        /// @dev Factory for deploying new strategy tokens when creating new strategies
+        IBeaconProxyFactory strategyTokenFactory;
+        /// @dev Strategy address => Config for strategy
+        mapping(IStrategy strategy => ILeverageManager.StrategyConfig) config;
+        /// @dev Lending adapter address => Is lending adapter registered. Two strategies can't have same lending adapter
+        mapping(address lendingAdapter => bool) isLendingAdapterUsed;
+    }
+
+    function _getLeverageManagerStorage() internal pure returns (LeverageManagerStorage storage $) {
+        assembly {
+            // keccak256(abi.encode(uint256(keccak256("seamless.contracts.storage.LeverageManager")) - 1)) & ~bytes32(uint256(0xff));
+            $.slot := 0x326e20d598a681eb69bc11b5176604d340fccf9864170f09484f3c317edf3600
+        }
+    }
+
     function initialize(address initialAdmin) external initializer {
         _grantRole(DEFAULT_ADMIN_ROLE, initialAdmin);
     }
@@ -44,12 +61,12 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
     /// @inheritdoc ILeverageManager
     function getStrategyTokenFactory() public view returns (IBeaconProxyFactory factory) {
-        return Storage.layout().strategyTokenFactory;
+        return _getLeverageManagerStorage().strategyTokenFactory;
     }
 
     /// @inheritdoc ILeverageManager
     function getIsLendingAdapterUsed(address lendingAdapter) public view returns (bool isUsed) {
-        return Storage.layout().isLendingAdapterUsed[lendingAdapter];
+        return _getLeverageManagerStorage().isLendingAdapterUsed[lendingAdapter];
     }
 
     /// @inheritdoc ILeverageManager
@@ -68,26 +85,26 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         view
         returns (IRebalanceRewardDistributor distributor)
     {
-        return Storage.layout().config[strategy].rebalanceRewardDistributor;
+        return _getLeverageManagerStorage().config[strategy].rebalanceRewardDistributor;
     }
 
     function getStrategyRebalanceWhitelist(IStrategy strategy) public view returns (IRebalanceWhitelist whitelist) {
-        return Storage.layout().config[strategy].rebalanceWhitelist;
+        return _getLeverageManagerStorage().config[strategy].rebalanceWhitelist;
     }
 
     /// @inheritdoc ILeverageManager
-    function getStrategyConfig(IStrategy strategy) external view returns (Storage.StrategyConfig memory config) {
-        return Storage.layout().config[strategy];
+    function getStrategyConfig(IStrategy strategy) external view returns (StrategyConfig memory config) {
+        return _getLeverageManagerStorage().config[strategy];
     }
 
     /// @inheritdoc ILeverageManager
     function getStrategyLendingAdapter(IStrategy strategy) public view returns (ILendingAdapter adapter) {
-        return Storage.layout().config[strategy].lendingAdapter;
+        return _getLeverageManagerStorage().config[strategy].lendingAdapter;
     }
 
     /// @inheritdoc ILeverageManager
     function getStrategyCollateralRatios(IStrategy strategy) public view returns (CollateralRatios memory ratios) {
-        Storage.StrategyConfig storage config = Storage.layout().config[strategy];
+        StrategyConfig memory config = _getLeverageManagerStorage().config[strategy];
 
         return CollateralRatios({
             minCollateralRatio: config.minCollateralRatio,
@@ -98,17 +115,17 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
     /// @inheritdoc ILeverageManager
     function getStrategyTargetCollateralRatio(IStrategy strategy) public view returns (uint256 targetCollateralRatio) {
-        return Storage.layout().config[strategy].targetCollateralRatio;
+        return _getLeverageManagerStorage().config[strategy].targetCollateralRatio;
     }
 
     /// @inheritdoc ILeverageManager
     function setStrategyTokenFactory(address factory) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        Storage.layout().strategyTokenFactory = IBeaconProxyFactory(factory);
+        _getLeverageManagerStorage().strategyTokenFactory = IBeaconProxyFactory(factory);
         emit StrategyTokenFactorySet(factory);
     }
 
     /// @inheritdoc ILeverageManager
-    function createNewStrategy(Storage.StrategyConfig calldata strategyConfig, string memory name, string memory symbol)
+    function createNewStrategy(StrategyConfig calldata strategyConfig, string memory name, string memory symbol)
         external
         returns (IStrategy strategy)
     {
@@ -125,8 +142,8 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             revert LendingAdapterAlreadyInUse(address(strategyConfig.lendingAdapter));
         }
 
-        Storage.layout().config[strategy] = strategyConfig;
-        Storage.layout().isLendingAdapterUsed[address(strategyConfig.lendingAdapter)] = true;
+        _getLeverageManagerStorage().config[strategy] = strategyConfig;
+        _getLeverageManagerStorage().isLendingAdapterUsed[address(strategyConfig.lendingAdapter)] = true;
 
         emit StrategyCreated(
             strategy,

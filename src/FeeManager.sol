@@ -11,13 +11,29 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 // Internal imports
 import {ExternalAction} from "src/types/DataTypes.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
-import {FeeManagerStorage as Storage} from "src/storage/FeeManagerStorage.sol";
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 
 contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
     // Max fee that can be set, 100_00 is 100%
     uint256 public constant MAX_FEE = 100_00;
     bytes32 public constant FEE_MANAGER_ROLE = keccak256("FEE_MANAGER_ROLE");
+
+    /// @dev Struct containing all state for the FeeManager contract
+    /// @custom:storage-location erc7201:seamless.contracts.storage.FeeManager
+    struct FeeManagerStorage {
+        /// @dev Treasury address that receives all the fees
+        address treasury;
+        /// @dev Strategy address => Action => Fee
+        mapping(IStrategy strategy => mapping(ExternalAction action => uint256)) strategyActionFee;
+    }
+
+    function _getFeeManagerStorage() internal pure returns (FeeManagerStorage storage $) {
+        // slither-disable-next-line assembly
+        assembly {
+            // keccak256(abi.encode(uint256(keccak256("seamless.contracts.storage.FeeManagerStorage")) - 1)) & ~bytes32(uint256(0xff));
+            $.slot := 0x6c0d8f7f1305f10aa51c80093531513ff85a99140b414f68890d41ac36949e00
+        }
+    }
 
     function __FeeManager_init(address defaultAdmin) public initializer {
         __AccessControl_init_unchained();
@@ -30,17 +46,17 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
 
     /// @inheritdoc IFeeManager
     function getTreasury() public view returns (address treasury) {
-        return Storage.layout().treasury;
+        return _getFeeManagerStorage().treasury;
     }
 
     /// @inheritdoc IFeeManager
     function getStrategyActionFee(IStrategy strategy, ExternalAction action) public view returns (uint256 fee) {
-        return Storage.layout().strategyActionFee[strategy][action];
+        return _getFeeManagerStorage().strategyActionFee[strategy][action];
     }
 
     /// @inheritdoc IFeeManager
     function setTreasury(address treasury) external onlyRole(FEE_MANAGER_ROLE) {
-        Storage.layout().treasury = treasury;
+        _getFeeManagerStorage().treasury = treasury;
         emit TreasurySet(treasury);
     }
 
@@ -54,7 +70,7 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
             revert FeeTooHigh(fee, MAX_FEE);
         }
 
-        Storage.layout().strategyActionFee[strategy][action] = fee;
+        _getFeeManagerStorage().strategyActionFee[strategy][action] = fee;
         emit StrategyActionFeeSet(strategy, action, fee);
     }
 

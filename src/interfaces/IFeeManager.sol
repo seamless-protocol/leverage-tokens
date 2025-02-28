@@ -3,7 +3,6 @@ pragma solidity ^0.8.26;
 
 import {IStrategy} from "./IStrategy.sol";
 import {ExternalAction} from "src/types/DataTypes.sol";
-import {FeeManagerStorage as Storage} from "../storage/FeeManagerStorage.sol";
 
 interface IFeeManager {
     /// @notice Error emitted when fee manager tries to set fee higher than MAX_FEE

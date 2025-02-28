@@ -32,7 +32,7 @@ contract FeeManagerBaseTest is Test {
             & ~bytes32(uint256(0xff));
 
         assertTrue(feeManager.hasRole(feeManager.FEE_MANAGER_ROLE(), feeManagerRole));
-        assertEq(feeManager.exposed_feeManager_layoutSlot(), expectedSlot);
+        assertEq(feeManager.exposed_getFeeManagerStorageSlot(), expectedSlot);
     }
 
     function _setStrategyActionFee(address caller, IStrategy strategy, ExternalAction action, uint256 fee) internal {

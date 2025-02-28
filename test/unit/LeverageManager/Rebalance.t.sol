@@ -16,7 +16,6 @@ import {MockLendingAdapter} from "test/unit/mock/MockLendingAdapter.sol";
 import {MockRebalanceRewardDistributor} from "test/unit/mock/MockRebalanceRewardDistributor.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 import {RebalanceAction, ActionType, TokenTransfer, StrategyState} from "src/types/DataTypes.sol";
 
 contract RebalanceTest is LeverageManagerBaseTest {
@@ -33,7 +32,7 @@ contract RebalanceTest is LeverageManagerBaseTest {
 
         _createNewStrategy(
             manager,
-            Storage.StrategyConfig({
+            ILeverageManager.StrategyConfig({
                 lendingAdapter: ILendingAdapter(address(adapter)),
                 minCollateralRatio: 15 * _BASE_RATIO() / 10, // 1.5x leverage
                 maxCollateralRatio: 25 * _BASE_RATIO() / 10, // 2.5x leverage
@@ -158,7 +157,7 @@ contract RebalanceTest is LeverageManagerBaseTest {
 
         vm.startPrank(manager);
         IStrategy ethShort = leverageManager.createNewStrategy(
-            Storage.StrategyConfig({
+            ILeverageManager.StrategyConfig({
                 lendingAdapter: ILendingAdapter(address(ethShortAdapter)),
                 minCollateralRatio: 14 * _BASE_RATIO() / 10, // 2.5x leverage
                 maxCollateralRatio: 16 * _BASE_RATIO() / 10, // 3.5x leverage

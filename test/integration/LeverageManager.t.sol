@@ -12,7 +12,6 @@ import {IOracle} from "@morpho-blue/interfaces/IOracle.sol";
 // Internal imports
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {CollateralRatios, StrategyState, ExternalAction} from "src/types/DataTypes.sol";
-import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 import {LeverageManager} from "src/LeverageManager.sol";
 import {BeaconProxyFactory} from "src/BeaconProxyFactory.sol";
 import {Strategy} from "src/Strategy.sol";
@@ -49,7 +48,7 @@ contract LeverageManagerTest is IntegrationTestBase {
         leverageManager.setStrategyTokenFactory(address(strategyFactory));
 
         strategy = leverageManager.createNewStrategy(
-            Storage.StrategyConfig({
+            ILeverageManager.StrategyConfig({
                 lendingAdapter: ILendingAdapter(address(morphoLendingAdapter)),
                 minCollateralRatio: BASE_RATIO,
                 targetCollateralRatio: 2 * BASE_RATIO,
