@@ -114,8 +114,9 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
 
     /// @inheritdoc ILendingAdapter
     function addCollateral(uint256 amount) external {
-        IMorpho _morpho = morpho;
+        if (amount == 0) return;
 
+        IMorpho _morpho = morpho;
         MarketParams memory _marketParams = marketParams;
 
         // Transfer the collateral from msg.sender to this contract
@@ -128,20 +129,23 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
 
     /// @inheritdoc ILendingAdapter
     function removeCollateral(uint256 amount) external onlyLeverageManager {
+        if (amount == 0) return;
         // Withdraw the collateral from the Morpho market and send it to msg.sender
         morpho.withdrawCollateral(marketParams, amount, address(this), msg.sender);
     }
 
     /// @inheritdoc ILendingAdapter
     function borrow(uint256 amount) external onlyLeverageManager {
+        if (amount == 0) return;
         // Borrow the debt asset from the Morpho market and send it to the caller
         morpho.borrow(marketParams, amount, 0, address(this), msg.sender);
     }
 
     /// @inheritdoc ILendingAdapter
     function repay(uint256 amount) external {
-        IMorpho _morpho = morpho;
+        if (amount == 0) return;
 
+        IMorpho _morpho = morpho;
         MarketParams memory _marketParams = marketParams;
 
         // Transfer the debt asset from msg.sender to this contract
