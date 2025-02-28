@@ -117,15 +117,14 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     function addCollateral(uint256 amount) external {
         if (amount == 0) return;
 
-        IMorpho _morpho = morpho;
         MarketParams memory _marketParams = marketParams;
 
         // Transfer the collateral from msg.sender to this contract
         SafeERC20.safeTransferFrom(IERC20(_marketParams.collateralToken), msg.sender, address(this), amount);
 
         // Supply the collateral to the Morpho market
-        IERC20(_marketParams.collateralToken).approve(address(_morpho), amount);
-        _morpho.supplyCollateral(_marketParams, amount, address(this), hex"");
+        IERC20(_marketParams.collateralToken).approve(address(morpho), amount);
+        morpho.supplyCollateral(_marketParams, amount, address(this), hex"");
     }
 
     /// @inheritdoc ILendingAdapter
@@ -146,32 +145,31 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     function repay(uint256 amount) external {
         if (amount == 0) return;
 
-        IMorpho _morpho = morpho;
         MarketParams memory _marketParams = marketParams;
 
         // Transfer the debt asset from msg.sender to this contract
         SafeERC20.safeTransferFrom(IERC20(_marketParams.loanToken), msg.sender, address(this), amount);
 
         // Accrue interest before repaying to make sure interest is included in calculation
-        _morpho.accrueInterest(marketParams);
+        morpho.accrueInterest(marketParams);
 
         // Fetch total borrow assets and total borrow shares. This data is updated because we accrued interest in previous step
-        Market memory market = _morpho.market(morphoMarketId);
+        Market memory market = morpho.market(morphoMarketId);
         uint256 totalBorrowAssets = market.totalBorrowAssets;
         uint256 totalBorrowShares = market.totalBorrowShares;
 
         // Fetch how much borrow shares do we owe
-        Position memory position = _morpho.position(morphoMarketId, address(this));
+        Position memory position = morpho.position(morphoMarketId, address(this));
         uint256 maxSharesToRepay = position.borrowShares;
         uint256 maxAssetsToRepay = SharesMathLib.toAssetsUp(maxSharesToRepay, totalBorrowAssets, totalBorrowShares);
 
-        IERC20(_marketParams.loanToken).approve(address(_morpho), amount);
+        IERC20(_marketParams.loanToken).approve(address(morpho), amount);
 
         // Repay all shares if we are trying to repay more assets than we owe
         if (amount >= maxAssetsToRepay) {
-            _morpho.repay(_marketParams, 0, maxSharesToRepay, address(this), hex"");
+            morpho.repay(_marketParams, 0, maxSharesToRepay, address(this), hex"");
         } else {
-            _morpho.repay(_marketParams, amount, 0, address(this), hex"");
+            morpho.repay(_marketParams, amount, 0, address(this), hex"");
         }
     }
 }
