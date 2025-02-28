@@ -163,14 +163,12 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
         // Fetch how much borrow shares do we owe
         Position memory position = _morpho.position(morphoMarketId, address(this));
         uint256 maxSharesToRepay = position.borrowShares;
-
-        // Calculate how much shares are we currently trying to repay
-        uint256 repayingShares = SharesMathLib.toSharesDown(amount, totalBorrowAssets, totalBorrowShares);
+        uint256 maxAssetsToRepay = SharesMathLib.toAssetsUp(maxSharesToRepay, totalBorrowAssets, totalBorrowShares);
 
         IERC20(_marketParams.loanToken).approve(address(_morpho), amount);
 
         // Repay all shares if we are trying to repay more assets than we owe
-        if (repayingShares > maxSharesToRepay) {
+        if (amount >= maxAssetsToRepay) {
             _morpho.repay(_marketParams, 0, maxSharesToRepay, address(this), hex"");
         } else {
             _morpho.repay(_marketParams, amount, 0, address(this), hex"");
