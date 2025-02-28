@@ -12,6 +12,8 @@ contract MorphoLendingAdapterRepayTest is MorphoLendingAdapterBaseTest {
     address public alice = makeAddr("alice");
 
     function testFuzz_repay(uint256 amount) public {
+        vm.assume(amount > 0);
+
         // Deal alice the required debt
         deal(address(debtToken), alice, amount);
 
@@ -35,5 +37,11 @@ contract MorphoLendingAdapterRepayTest is MorphoLendingAdapterBaseTest {
         vm.stopPrank();
 
         assertEq(debtToken.balanceOf(address(morpho)), amount);
+    }
+
+    function test_repay_ZeroAmount() public {
+        // Nothing should happen
+        lendingAdapter.repay(0);
+        assertEq(debtToken.balanceOf(address(morpho)), 0);
     }
 }

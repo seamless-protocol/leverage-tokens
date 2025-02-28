@@ -12,6 +12,8 @@ contract MorphoLendingAdapterAddCollateralTest is MorphoLendingAdapterBaseTest {
     address public alice = makeAddr("alice");
 
     function testFuzz_addCollateral(uint256 amount) public {
+        vm.assume(amount > 0);
+
         // Deal alice the required collateral
         deal(address(collateralToken), alice, amount);
 
@@ -37,5 +39,11 @@ contract MorphoLendingAdapterAddCollateralTest is MorphoLendingAdapterBaseTest {
         vm.stopPrank();
 
         assertEq(collateralToken.balanceOf(address(morpho)), amount);
+    }
+
+    function test_addCollateral_ZeroAmount() public {
+        // Nothing happens
+        lendingAdapter.addCollateral(0);
+        assertEq(collateralToken.balanceOf(address(morpho)), 0);
     }
 }
