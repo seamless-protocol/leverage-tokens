@@ -81,6 +81,29 @@ contract LeverageManagerWithdrawTest is LeverageManagerBase {
         assertLe(stateAfter.collateralRatio, stateBefore.collateralRatio + 1);
     }
 
+    function testFork_withdraw_fullWithdrawComparedToPartialWithdrawals() public {
+        uint256 equityInCollateralAsset = 10 ether;
+        uint256 collateralToAdd = 2 * equityInCollateralAsset;
+        uint256 sharesAfterDeposit = _deposit(user, equityInCollateralAsset, collateralToAdd);
+
+        uint256 sharesValueAfterDeposit = _convertToAssets(sharesAfterDeposit);
+        (uint256 collateralAfterDeposit, uint256 debtAfterDeposit,,) =
+            leverageManager.previewWithdraw(strategy, sharesValueAfterDeposit);
+
+        uint256 equityToWithdraw = equityInCollateralAsset / 2;
+        (uint256 collateralFirstTime, uint256 debtFirstTime,,) =
+            leverageManager.previewWithdraw(strategy, equityToWithdraw);
+        _withdraw(user, equityToWithdraw, debtFirstTime);
+
+        // Withdraw the rest
+        equityToWithdraw = _convertToAssets(strategy.balanceOf(user));
+        (uint256 collateralSecondTime, uint256 debtSecondTime,,) =
+            leverageManager.previewWithdraw(strategy, equityToWithdraw);
+
+        assertEq(collateralFirstTime + collateralSecondTime, collateralAfterDeposit);
+        assertEq(debtFirstTime + debtSecondTime, debtAfterDeposit);
+    }
+
     function testFork_withdraw_withFee() public {
         leverageManager.setStrategyActionFee(strategy, ExternalAction.Withdraw, 10_00); // 10%
 
