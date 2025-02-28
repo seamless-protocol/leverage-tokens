@@ -12,16 +12,31 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 
 contract MockSwapper is Test {
-    struct MockedSwap {
+    struct MockedExactInputSwap {
         IERC20 toToken;
         uint256 toAmount;
         bool isExecuted;
     }
 
-    mapping(IERC20 fromToken => MockedSwap[]) public nextSwapToAmount;
+    struct MockedExactOutputSwap {
+        IERC20 toToken;
+        uint256 fromAmount;
+        bool isExecuted;
+    }
 
-    function mockNextSwap(IERC20 fromToken, IERC20 toToken, uint256 mockedToAmount) external {
-        nextSwapToAmount[fromToken].push(MockedSwap({toToken: toToken, toAmount: mockedToAmount, isExecuted: false}));
+    mapping(IERC20 fromToken => MockedExactInputSwap[]) public nextExactInputSwap;
+    mapping(IERC20 fromToken => MockedExactOutputSwap[]) public nextExactOutputSwap;
+
+    function mockNextExactInputSwap(IERC20 fromToken, IERC20 toToken, uint256 mockedToAmount) external {
+        nextExactInputSwap[fromToken].push(
+            MockedExactInputSwap({toToken: toToken, toAmount: mockedToAmount, isExecuted: false})
+        );
+    }
+
+    function mockNextExactOutputSwap(IERC20 fromToken, IERC20 toToken, uint256 mockedFromAmount) external {
+        nextExactOutputSwap[fromToken].push(
+            MockedExactOutputSwap({toToken: toToken, fromAmount: mockedFromAmount, isExecuted: false})
+        );
     }
 
     function swapExactInput(
@@ -32,9 +47,9 @@ contract MockSwapper is Test {
     ) external returns (uint256) {
         SafeERC20.safeTransferFrom(fromToken, msg.sender, address(this), inputAmount);
 
-        MockedSwap[] storage mockedSwaps = nextSwapToAmount[fromToken];
+        MockedExactInputSwap[] storage mockedSwaps = nextExactInputSwap[fromToken];
         for (uint256 i = 0; i < mockedSwaps.length; i++) {
-            MockedSwap memory mockedSwap = mockedSwaps[i];
+            MockedExactInputSwap memory mockedSwap = mockedSwaps[i];
 
             if (!mockedSwap.isExecuted) {
                 // Deal the toToken to the sender
@@ -52,6 +67,33 @@ contract MockSwapper is Test {
         }
 
         // If no mocked swap is set, revert by default
-        revert("MockSwapper: No mocked swap set");
+        revert("MockSwapper: No mocked exact input swap set");
+    }
+
+    function swapExactOutput(
+        IERC20 fromToken,
+        uint256 outputAmount,
+        uint256, /* maxInputAmount */
+        ISwapAdapter.SwapContext memory /* swapContext */
+    ) external returns (uint256) {
+        MockedExactOutputSwap[] storage mockedSwaps = nextExactOutputSwap[fromToken];
+        for (uint256 i = 0; i < mockedSwaps.length; i++) {
+            MockedExactOutputSwap memory mockedSwap = mockedSwaps[i];
+
+            if (!mockedSwap.isExecuted) {
+                // Transfer in the fromToken
+                SafeERC20.safeTransferFrom(fromToken, msg.sender, address(this), mockedSwap.fromAmount);
+
+                // Deal the output amount to the sender
+                deal(address(mockedSwap.toToken), msg.sender, mockedSwap.toToken.balanceOf(msg.sender) + outputAmount);
+
+                // Set the swap as executed
+                mockedSwaps[i].isExecuted = true;
+
+                return mockedSwap.fromAmount;
+            }
+        }
+
+        revert("MockSwapper: No mocked exact output swap set");
     }
 }
