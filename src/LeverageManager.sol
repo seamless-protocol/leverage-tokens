@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-import "forge-std/console.sol";
-
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -194,8 +192,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     {
         (uint256 collateral, uint256 debt, uint256 sharesAfterFee, uint256 sharesFee) =
             previewWithdraw(strategy, equityInCollateralAsset);
-
-        console.log("debt to repay", debt);
 
         if (sharesAfterFee > maxShares) {
             revert SlippageTooHigh(sharesAfterFee, maxShares);

@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-import "forge-std/console.sol";
-
 // Dependency imports
 import {Id, IMorpho, MarketParams, Market, Position} from "@morpho-blue/interfaces/IMorpho.sol";
 import {SharesMathLib} from "@morpho-blue/libraries/SharesMathLib.sol";
