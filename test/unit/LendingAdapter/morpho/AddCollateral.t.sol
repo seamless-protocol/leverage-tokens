@@ -35,6 +35,7 @@ contract MorphoLendingAdapterAddCollateralTest is MorphoLendingAdapterBaseTest {
             address(morpho),
             abi.encodeCall(IMorphoBase.supplyCollateral, (defaultMarketParams, amount, address(lendingAdapter), hex""))
         );
+
         lendingAdapter.addCollateral(amount);
         vm.stopPrank();
 
