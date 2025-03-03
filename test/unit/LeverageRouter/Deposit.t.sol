@@ -61,9 +61,10 @@ contract DepositTest is LeverageRouterBaseTest {
                 exchange: ISwapAdapter.Exchange.AERODROME,
                 exchangeAddresses: ISwapAdapter.ExchangeAddresses({
                     aerodromeRouter: address(0),
-                    aerodromeFactory: address(0),
+                    aerodromePoolFactory: address(0),
                     aerodromeSlipstreamRouter: address(0),
-                    uniswapRouter02: address(0)
+                    uniswapSwapRouter02: address(0),
+                    uniswapV2Router02: address(0)
                 })
             })
         );
@@ -126,9 +127,10 @@ contract DepositTest is LeverageRouterBaseTest {
                 exchange: ISwapAdapter.Exchange.AERODROME,
                 exchangeAddresses: ISwapAdapter.ExchangeAddresses({
                     aerodromeRouter: address(0),
-                    aerodromeFactory: address(0),
+                    aerodromePoolFactory: address(0),
                     aerodromeSlipstreamRouter: address(0),
-                    uniswapRouter02: address(0)
+                    uniswapSwapRouter02: address(0),
+                    uniswapV2Router02: address(0)
                 })
             })
         );
@@ -206,9 +208,10 @@ contract DepositTest is LeverageRouterBaseTest {
                 exchange: ISwapAdapter.Exchange.AERODROME,
                 exchangeAddresses: ISwapAdapter.ExchangeAddresses({
                     aerodromeRouter: address(0),
-                    aerodromeFactory: address(0),
+                    aerodromePoolFactory: address(0),
                     aerodromeSlipstreamRouter: address(0),
-                    uniswapRouter02: address(0)
+                    uniswapSwapRouter02: address(0),
+                    uniswapV2Router02: address(0)
                 })
             })
         );

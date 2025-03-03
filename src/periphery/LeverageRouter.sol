@@ -172,7 +172,8 @@ contract LeverageRouter is ILeverageRouter {
 
         // Swap the debt asset received from the deposit to the collateral asset, used to repay the flash loan
         debtAsset.approve(address(swapper), debtToBorrow);
-        uint256 swappedCollateralAmount = swapper.swapExactInput(
+
+        uint256 collateralFromSwap = swapper.swapExactInput(
             debtAsset,
             debtToBorrow,
             0, // Set to zero because additional collateral from the sender is used to help repay the flash loan
@@ -180,11 +181,9 @@ contract LeverageRouter is ILeverageRouter {
         );
 
         // Transfer any surplus collateral assets to the sender
-        uint256 assetsAvailableToRepayFlashLoan = swappedCollateralAmount + params.maxSwapCostInCollateralAsset;
+        uint256 assetsAvailableToRepayFlashLoan = collateralFromSwap + params.maxSwapCostInCollateralAsset;
         if (collateralLoanAmount > assetsAvailableToRepayFlashLoan) {
-            revert MaxSwapCostExceeded(
-                collateralLoanAmount - swappedCollateralAmount, params.maxSwapCostInCollateralAsset
-            );
+            revert MaxSwapCostExceeded(collateralLoanAmount - collateralFromSwap, params.maxSwapCostInCollateralAsset);
         } else {
             // Return any surplus collateral assets to the sender
             uint256 collateralAssetSurplus = assetsAvailableToRepayFlashLoan - collateralLoanAmount;

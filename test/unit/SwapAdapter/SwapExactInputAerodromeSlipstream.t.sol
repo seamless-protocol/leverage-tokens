@@ -8,6 +8,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {SwapAdapterBaseTest} from "./SwapAdapterBase.t.sol";
 import {MockAerodromeSlipstreamRouter} from "test/unit/mock/MockAerodromeSlipstreamRouter.sol";
+import {SwapPathLib} from "test/utils/SwapPathLib.sol";
 
 //  Inherited in `SwapExactInput.t.sol` tests
 abstract contract SwapExactInputAerodromeSlipstreamTest is SwapAdapterBaseTest {
@@ -86,14 +87,15 @@ abstract contract SwapExactInputAerodromeSlipstreamTest is SwapAdapterBaseTest {
         ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
             exchange: ISwapAdapter.Exchange.AERODROME_SLIPSTREAM,
             path: path,
-            encodedPath: _encodeAerodromeSlipstreamPath(path, tickSpacing, false),
+            encodedPath: SwapPathLib._encodeAerodromeSlipstreamPath(path, tickSpacing, false),
             fees: new uint24[](0),
             tickSpacing: tickSpacing,
             exchangeAddresses: ISwapAdapter.ExchangeAddresses({
                 aerodromeRouter: address(0),
-                aerodromeFactory: address(0),
+                aerodromePoolFactory: address(0),
                 aerodromeSlipstreamRouter: address(mockAerodromeSlipstreamRouter),
-                uniswapRouter02: address(0)
+                uniswapSwapRouter02: address(0),
+                uniswapV2Router02: address(0)
             })
         });
 
@@ -111,21 +113,22 @@ abstract contract SwapExactInputAerodromeSlipstreamTest is SwapAdapterBaseTest {
         swapContext = ISwapAdapter.SwapContext({
             exchange: ISwapAdapter.Exchange.AERODROME_SLIPSTREAM,
             path: path,
-            encodedPath: _encodeAerodromeSlipstreamPath(path, tickSpacing, false),
+            encodedPath: SwapPathLib._encodeAerodromeSlipstreamPath(path, tickSpacing, false),
             fees: new uint24[](0),
             tickSpacing: tickSpacing,
             exchangeAddresses: ISwapAdapter.ExchangeAddresses({
                 aerodromeRouter: address(0),
-                aerodromeFactory: address(0),
+                aerodromePoolFactory: address(0),
                 aerodromeSlipstreamRouter: address(mockAerodromeSlipstreamRouter),
-                uniswapRouter02: address(0)
+                uniswapSwapRouter02: address(0),
+                uniswapV2Router02: address(0)
             })
         });
 
         if (isMultiHop) {
             MockAerodromeSlipstreamRouter.MockSwapMultiHop memory mockSwap = MockAerodromeSlipstreamRouter
                 .MockSwapMultiHop({
-                encodedPath: keccak256(_encodeAerodromeSlipstreamPath(path, tickSpacing, false)),
+                encodedPath: keccak256(SwapPathLib._encodeAerodromeSlipstreamPath(path, tickSpacing, false)),
                 fromToken: IERC20(path[0]),
                 toToken: IERC20(path[path.length - 1]),
                 fromAmount: inputAmount,

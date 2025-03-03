@@ -8,16 +8,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 // Internal imports
 import {IUniswapSwapRouter02} from "src/interfaces/periphery/IUniswapSwapRouter02.sol";
 
-contract MockUniswapRouter02 is Test {
-    struct MockV2Swap {
-        IERC20 fromToken;
-        IERC20 toToken;
-        uint256 fromAmount;
-        uint256 toAmount;
-        bytes32 encodedPath;
-        bool isExecuted;
-    }
-
+contract MockUniswapSwapRouter02 is Test {
     struct MockV3SingleHopSwap {
         address fromToken;
         address toToken;
@@ -37,15 +28,9 @@ contract MockUniswapRouter02 is Test {
         bool isExecuted;
     }
 
-    MockV2Swap[] public v2Swaps;
-
     MockV3SingleHopSwap[] public v3SingleHopSwaps;
 
     MockV3MultiHopSwap[] public v3MultiHopSwaps;
-
-    function mockNextUniswapV2Swap(MockV2Swap memory swap) external {
-        v2Swaps.push(swap);
-    }
 
     function mockNextUniswapV3SingleHopSwap(MockV3SingleHopSwap memory swap) external {
         v3SingleHopSwaps.push(swap);
@@ -53,44 +38,6 @@ contract MockUniswapRouter02 is Test {
 
     function mockNextUniswapV3MultiHopSwap(MockV3MultiHopSwap memory swap) external {
         v3MultiHopSwaps.push(swap);
-    }
-
-    function swapExactTokensForTokens(uint256, /* amountIn */ uint256 amountOutMin, address[] calldata path, address to)
-        external
-        payable
-        returns (uint256 amountOut)
-    {
-        for (uint256 i = 0; i < v2Swaps.length; i++) {
-            MockV2Swap memory swap = v2Swaps[i];
-            bytes32 encodedPath = keccak256(abi.encode(path));
-            if (!swap.isExecuted && swap.encodedPath == encodedPath) {
-                require(swap.toAmount >= amountOutMin, "MockUniswapRouter02: INSUFFICIENT_OUTPUT_AMOUNT");
-
-                _executeV2Swap(swap, to, i);
-                return swap.toAmount;
-            }
-        }
-
-        revert("MockUniswapRouter02: No mocked v2 swap set");
-    }
-
-    function swapTokensForExactTokens(uint256, /* amountOut */ uint256 amountInMax, address[] calldata path, address to)
-        external
-        payable
-        returns (uint256 amountIn)
-    {
-        for (uint256 i = 0; i < v2Swaps.length; i++) {
-            MockV2Swap memory swap = v2Swaps[i];
-            bytes32 encodedPath = keccak256(abi.encode(path));
-            if (!swap.isExecuted && swap.encodedPath == encodedPath) {
-                require(swap.fromAmount <= amountInMax, "MockUniswapRouter02: INSUFFICIENT_INPUT_AMOUNT");
-
-                _executeV2Swap(swap, to, i);
-                return swap.fromAmount;
-            }
-        }
-
-        revert("MockUniswapRouter02: No mocked v2 swap set");
     }
 
     function exactInputSingle(IUniswapSwapRouter02.ExactInputSingleParams memory params)
@@ -104,14 +51,14 @@ contract MockUniswapRouter02 is Test {
                 !swap.isExecuted && swap.fromToken == params.tokenIn && swap.toToken == params.tokenOut
                     && swap.fee == params.fee && swap.sqrtPriceLimitX96 == params.sqrtPriceLimitX96
             ) {
-                require(swap.toAmount >= params.amountOutMinimum, "MockUniswapRouter02: INSUFFICIENT_OUTPUT_AMOUNT");
+                require(swap.toAmount >= params.amountOutMinimum, "MockUniswapSwapRouter02: INSUFFICIENT_OUTPUT_AMOUNT");
 
                 _executeV3SingleHopSwap(swap, params.recipient, i);
                 return swap.toAmount;
             }
         }
 
-        revert("MockUniswapRouter02: No mocked v3 swap set");
+        revert("MockUniswapSwapRouter02: No mocked v3 swap set");
     }
 
     function exactInput(IUniswapSwapRouter02.ExactInputParams memory params)
@@ -126,14 +73,14 @@ contract MockUniswapRouter02 is Test {
                 !swap.isExecuted && swap.encodedPath == encodedPath && swap.fromAmount == params.amountIn
                     && swap.toAmount == params.amountOutMinimum
             ) {
-                require(swap.toAmount >= params.amountOutMinimum, "MockUniswapRouter02: INSUFFICIENT_OUTPUT_AMOUNT");
+                require(swap.toAmount >= params.amountOutMinimum, "MockUniswapSwapRouter02: INSUFFICIENT_OUTPUT_AMOUNT");
 
                 _executeV3MultiHopSwap(swap, params.recipient, i);
                 return swap.toAmount;
             }
         }
 
-        revert("MockUniswapRouter02: No mocked v3 swap set");
+        revert("MockUniswapSwapRouter02: No mocked v3 swap set");
     }
 
     function exactOutputSingle(IUniswapSwapRouter02.ExactOutputSingleParams memory params)
@@ -147,14 +94,14 @@ contract MockUniswapRouter02 is Test {
                 !swap.isExecuted && swap.fromToken == params.tokenIn && swap.toToken == params.tokenOut
                     && swap.fee == params.fee && swap.sqrtPriceLimitX96 == params.sqrtPriceLimitX96
             ) {
-                require(swap.fromAmount <= params.amountInMaximum, "MockUniswapRouter02: INSUFFICIENT_INPUT_AMOUNT");
+                require(swap.fromAmount <= params.amountInMaximum, "MockUniswapSwapRouter02: INSUFFICIENT_INPUT_AMOUNT");
 
                 _executeV3SingleHopSwap(swap, params.recipient, i);
                 return swap.fromAmount;
             }
         }
 
-        revert("MockUniswapRouter02: No mocked swap set");
+        revert("MockUniswapSwapRouter02: No mocked swap set");
     }
 
     function exactOutput(IUniswapSwapRouter02.ExactOutputParams memory params)
@@ -169,25 +116,14 @@ contract MockUniswapRouter02 is Test {
                 !swap.isExecuted && swap.encodedPath == encodedPath && swap.fromAmount == params.amountInMaximum
                     && swap.toAmount == params.amountOut
             ) {
-                require(swap.fromAmount <= params.amountInMaximum, "MockUniswapRouter02: INSUFFICIENT_INPUT_AMOUNT");
+                require(swap.fromAmount <= params.amountInMaximum, "MockUniswapSwapRouter02: INSUFFICIENT_INPUT_AMOUNT");
 
                 _executeV3MultiHopSwap(swap, params.recipient, i);
                 return swap.fromAmount;
             }
         }
 
-        revert("MockUniswapRouter02: No mocked swap set");
-    }
-
-    function _executeV2Swap(MockV2Swap memory swap, address recipient, uint256 v2SwapIndex) internal {
-        // Transfer in the fromToken
-        IERC20(swap.fromToken).transferFrom(msg.sender, address(this), swap.fromAmount);
-
-        // Transfer out the toToken
-        deal(address(swap.toToken), address(this), swap.toAmount);
-        IERC20(swap.toToken).transfer(recipient, swap.toAmount);
-
-        v2Swaps[v2SwapIndex].isExecuted = true;
+        revert("MockUniswapSwapRouter02: No mocked swap set");
     }
 
     function _executeV3SingleHopSwap(MockV3SingleHopSwap memory swap, address recipient, uint256 v3SingleHopSwapIndex)

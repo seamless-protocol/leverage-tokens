@@ -11,6 +11,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IAerodromeRouter} from "../interfaces/periphery/IAerodromeRouter.sol";
 import {IAerodromeSlipstreamRouter} from "../interfaces/periphery/IAerodromeSlipstreamRouter.sol";
 import {IUniswapSwapRouter02} from "../interfaces/periphery/IUniswapSwapRouter02.sol";
+import {IUniswapV2Router02} from "../interfaces/periphery/IUniswapV2Router02.sol";
 import {ISwapAdapter} from "../interfaces/periphery/ISwapAdapter.sol";
 
 contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable {
@@ -73,15 +74,17 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
         uint256 minOutputAmount,
         address receiver,
         address aerodromeRouter,
-        address aerodromeFactory,
+        address aerodromePoolFactory,
         address[] memory path
     ) internal returns (uint256 outputAmount) {
-        IAerodromeRouter.Route[] memory routes = _generateAerodromeRoutes(path, aerodromeFactory);
+        IAerodromeRouter.Route[] memory routes = _generateAerodromeRoutes(path, aerodromePoolFactory);
 
         IERC20(path[0]).approve(aerodromeRouter, inputAmount);
-        return IAerodromeRouter(aerodromeRouter).swapExactTokensForTokens(
+        uint256[] memory amounts = IAerodromeRouter(aerodromeRouter).swapExactTokensForTokens(
             inputAmount, minOutputAmount, routes, receiver, block.timestamp
-        )[1];
+        );
+
+        return amounts[amounts.length - 1];
     }
 
     function _swapExactInputAerodrome(uint256 inputAmount, uint256 minOutputAmount, SwapContext memory swapContext)
@@ -93,7 +96,7 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
             minOutputAmount,
             msg.sender,
             swapContext.exchangeAddresses.aerodromeRouter,
-            swapContext.exchangeAddresses.aerodromeFactory,
+            swapContext.exchangeAddresses.aerodromePoolFactory,
             swapContext.path
         );
     }
@@ -142,10 +145,14 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
         internal
         returns (uint256 outputAmount)
     {
-        IUniswapSwapRouter02 uniswapRouter02 = IUniswapSwapRouter02(swapContext.exchangeAddresses.uniswapRouter02);
+        IUniswapV2Router02 uniswapV2Router02 = IUniswapV2Router02(swapContext.exchangeAddresses.uniswapV2Router02);
 
-        IERC20(swapContext.path[0]).approve(address(uniswapRouter02), inputAmount);
-        return uniswapRouter02.swapExactTokensForTokens(inputAmount, minOutputAmount, swapContext.path, msg.sender);
+        IERC20(swapContext.path[0]).approve(address(uniswapV2Router02), inputAmount);
+
+        uint256[] memory amounts = uniswapV2Router02.swapExactTokensForTokens(
+            inputAmount, minOutputAmount, swapContext.path, msg.sender, block.timestamp
+        );
+        return amounts[amounts.length - 1];
     }
 
     function _swapExactInputUniV3(uint256 inputAmount, uint256 minOutputAmount, SwapContext memory swapContext)
@@ -155,9 +162,10 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
         // Check that the number of fees is equal to the number of paths minus one, as required by Uniswap V3
         if (swapContext.path.length != swapContext.fees.length + 1) revert InvalidNumFees();
 
-        IUniswapSwapRouter02 uniswapRouter02 = IUniswapSwapRouter02(swapContext.exchangeAddresses.uniswapRouter02);
+        IUniswapSwapRouter02 uniswapSwapRouter02 =
+            IUniswapSwapRouter02(swapContext.exchangeAddresses.uniswapSwapRouter02);
 
-        IERC20(swapContext.path[0]).approve(address(uniswapRouter02), inputAmount);
+        IERC20(swapContext.path[0]).approve(address(uniswapSwapRouter02), inputAmount);
 
         if (swapContext.path.length == 2) {
             IUniswapSwapRouter02.ExactInputSingleParams memory params = IUniswapSwapRouter02.ExactInputSingleParams({
@@ -170,7 +178,7 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
                 sqrtPriceLimitX96: 0
             });
 
-            return uniswapRouter02.exactInputSingle(params);
+            return uniswapSwapRouter02.exactInputSingle(params);
         } else {
             IUniswapSwapRouter02.ExactInputParams memory params = IUniswapSwapRouter02.ExactInputParams({
                 path: swapContext.encodedPath,
@@ -179,7 +187,7 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
                 amountOutMinimum: minOutputAmount
             });
 
-            return uniswapRouter02.exactInput(params);
+            return uniswapSwapRouter02.exactInput(params);
         }
     }
 
@@ -192,7 +200,7 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
             outputAmount,
             address(this),
             swapContext.exchangeAddresses.aerodromeRouter,
-            swapContext.exchangeAddresses.aerodromeFactory,
+            swapContext.exchangeAddresses.aerodromePoolFactory,
             swapContext.path
         );
 
@@ -203,7 +211,7 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
                 0,
                 address(this),
                 swapContext.exchangeAddresses.aerodromeRouter,
-                swapContext.exchangeAddresses.aerodromeFactory,
+                swapContext.exchangeAddresses.aerodromePoolFactory,
                 _reversePath(swapContext.path)
             );
 
@@ -263,9 +271,14 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
         internal
         returns (uint256 inputAmount)
     {
-        IUniswapSwapRouter02 uniswapRouter02 = IUniswapSwapRouter02(swapContext.exchangeAddresses.uniswapRouter02);
-        IERC20(swapContext.path[0]).approve(address(uniswapRouter02), maxInputAmount);
-        return uniswapRouter02.swapTokensForExactTokens(outputAmount, maxInputAmount, swapContext.path, msg.sender);
+        IUniswapV2Router02 uniswapV2Router02 = IUniswapV2Router02(swapContext.exchangeAddresses.uniswapV2Router02);
+
+        IERC20(swapContext.path[0]).approve(address(uniswapV2Router02), maxInputAmount);
+
+        // `swapTokensForExactTokens` uses the reversed path, so we return the first amount in the array returned by the router
+        return uniswapV2Router02.swapTokensForExactTokens(
+            outputAmount, maxInputAmount, swapContext.path, msg.sender, block.timestamp
+        )[0];
     }
 
     function _swapExactOutputUniV3(uint256 outputAmount, uint256 maxInputAmount, SwapContext memory swapContext)
@@ -275,9 +288,10 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
         // Check that the number of fees is equal to the number of paths minus one, as required by Uniswap V3
         if (swapContext.path.length != swapContext.fees.length + 1) revert InvalidNumFees();
 
-        IUniswapSwapRouter02 uniswapRouter02 = IUniswapSwapRouter02(swapContext.exchangeAddresses.uniswapRouter02);
+        IUniswapSwapRouter02 uniswapSwapRouter02 =
+            IUniswapSwapRouter02(swapContext.exchangeAddresses.uniswapSwapRouter02);
 
-        IERC20(swapContext.path[0]).approve(address(uniswapRouter02), maxInputAmount);
+        IERC20(swapContext.path[0]).approve(address(uniswapSwapRouter02), maxInputAmount);
 
         if (swapContext.path.length == 2) {
             IUniswapSwapRouter02.ExactOutputSingleParams memory params = IUniswapSwapRouter02.ExactOutputSingleParams({
@@ -289,7 +303,7 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
                 amountInMaximum: maxInputAmount,
                 sqrtPriceLimitX96: 0
             });
-            return uniswapRouter02.exactOutputSingle(params);
+            return uniswapSwapRouter02.exactOutputSingle(params);
         } else {
             IUniswapSwapRouter02.ExactOutputParams memory params = IUniswapSwapRouter02.ExactOutputParams({
                 // This should be the encoded reversed path as exactOutput expects the path to be in reverse order
@@ -298,19 +312,19 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
                 amountOut: outputAmount,
                 amountInMaximum: maxInputAmount
             });
-            return uniswapRouter02.exactOutput(params);
+            return uniswapSwapRouter02.exactOutput(params);
         }
     }
 
     /// @notice Generate the array of Routes as required by the Aerodrome router
-    function _generateAerodromeRoutes(address[] memory path, address aerodromeFactory)
+    function _generateAerodromeRoutes(address[] memory path, address aerodromePoolFactory)
         internal
         pure
         returns (IAerodromeRouter.Route[] memory routes)
     {
         routes = new IAerodromeRouter.Route[](path.length - 1);
         for (uint256 i = 0; i < path.length - 1; i++) {
-            routes[i] = IAerodromeRouter.Route(path[i], path[i + 1], false, aerodromeFactory);
+            routes[i] = IAerodromeRouter.Route(path[i], path[i + 1], false, aerodromePoolFactory);
         }
     }
 

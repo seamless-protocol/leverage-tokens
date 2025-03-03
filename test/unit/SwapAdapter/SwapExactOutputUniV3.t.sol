@@ -7,9 +7,10 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 // Internal imports
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {SwapAdapterBaseTest} from "./SwapAdapterBase.t.sol";
-import {MockUniswapRouter02} from "test/unit/mock/MockUniswapRouter02.sol";
-
+import {MockUniswapSwapRouter02} from "test/unit/mock/MockUniswapSwapRouter02.sol";
+import {SwapPathLib} from "test/utils/SwapPathLib.sol";
 //  Inherited in `SwapExactOutput.t.sol` tests
+
 abstract contract SwapExactOutputUniV3Test is SwapAdapterBaseTest {
     function test_SwapExactOutputUniV3_SingleHop() public {
         uint256 outputAmount = 10 ether;
@@ -33,7 +34,7 @@ abstract contract SwapExactOutputUniV3Test is SwapAdapterBaseTest {
         uint256 inputAmount = swapAdapter.exposed_swapExactOutputUniV3(outputAmount, maxInputAmount, swapContext);
 
         // Uniswap receives the fromToken
-        assertEq(fromToken.balanceOf(address(mockUniswapRouter02)), inputAmount);
+        assertEq(fromToken.balanceOf(address(mockUniswapSwapRouter02)), inputAmount);
         // We receive the toToken
         assertEq(toToken.balanceOf(address(this)), outputAmount);
         assertEq(inputAmount, maxInputAmount);
@@ -63,7 +64,7 @@ abstract contract SwapExactOutputUniV3Test is SwapAdapterBaseTest {
         uint256 inputAmount = swapAdapter.exposed_swapExactOutputUniV3(outputAmount, maxInputAmount, swapContext);
 
         // Uniswap receives the fromToken
-        assertEq(fromToken.balanceOf(address(mockUniswapRouter02)), inputAmount);
+        assertEq(fromToken.balanceOf(address(mockUniswapSwapRouter02)), inputAmount);
         // We receive the toToken
         assertEq(toToken.balanceOf(address(this)), outputAmount);
         assertEq(inputAmount, maxInputAmount);
@@ -84,14 +85,15 @@ abstract contract SwapExactOutputUniV3Test is SwapAdapterBaseTest {
         ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
             exchange: ISwapAdapter.Exchange.AERODROME_SLIPSTREAM,
             path: path,
-            encodedPath: _encodeUniswapV3Path(path, fees, true),
+            encodedPath: SwapPathLib._encodeUniswapV3Path(path, fees, true),
             fees: fees,
             tickSpacing: new int24[](0),
             exchangeAddresses: ISwapAdapter.ExchangeAddresses({
                 aerodromeRouter: address(0),
-                aerodromeFactory: address(0),
+                aerodromePoolFactory: address(0),
                 aerodromeSlipstreamRouter: address(mockAerodromeSlipstreamRouter),
-                uniswapRouter02: address(0)
+                uniswapSwapRouter02: address(0),
+                uniswapV2Router02: address(0)
             })
         });
 
@@ -109,29 +111,30 @@ abstract contract SwapExactOutputUniV3Test is SwapAdapterBaseTest {
         swapContext = ISwapAdapter.SwapContext({
             exchange: ISwapAdapter.Exchange.UNISWAP_V3,
             path: path,
-            encodedPath: _encodeUniswapV3Path(path, fees, true),
+            encodedPath: SwapPathLib._encodeUniswapV3Path(path, fees, true),
             fees: fees,
             tickSpacing: new int24[](0),
             exchangeAddresses: ISwapAdapter.ExchangeAddresses({
                 aerodromeRouter: address(0),
-                aerodromeFactory: address(0),
+                aerodromePoolFactory: address(0),
                 aerodromeSlipstreamRouter: address(0),
-                uniswapRouter02: address(mockUniswapRouter02)
+                uniswapSwapRouter02: address(mockUniswapSwapRouter02),
+                uniswapV2Router02: address(0)
             })
         });
 
         if (isMultiHop) {
-            MockUniswapRouter02.MockV3MultiHopSwap memory mockSwap = MockUniswapRouter02.MockV3MultiHopSwap({
-                encodedPath: keccak256(_encodeUniswapV3Path(path, fees, true)),
+            MockUniswapSwapRouter02.MockV3MultiHopSwap memory mockSwap = MockUniswapSwapRouter02.MockV3MultiHopSwap({
+                encodedPath: keccak256(SwapPathLib._encodeUniswapV3Path(path, fees, true)),
                 fromToken: IERC20(path[0]),
                 toToken: IERC20(path[path.length - 1]),
                 fromAmount: maxInputAmount,
                 toAmount: outputAmount,
                 isExecuted: false
             });
-            mockUniswapRouter02.mockNextUniswapV3MultiHopSwap(mockSwap);
+            mockUniswapSwapRouter02.mockNextUniswapV3MultiHopSwap(mockSwap);
         } else {
-            MockUniswapRouter02.MockV3SingleHopSwap memory mockSwap = MockUniswapRouter02.MockV3SingleHopSwap({
+            MockUniswapSwapRouter02.MockV3SingleHopSwap memory mockSwap = MockUniswapSwapRouter02.MockV3SingleHopSwap({
                 fromToken: path[0],
                 toToken: path[path.length - 1],
                 fromAmount: maxInputAmount,
@@ -140,7 +143,7 @@ abstract contract SwapExactOutputUniV3Test is SwapAdapterBaseTest {
                 sqrtPriceLimitX96: 0,
                 isExecuted: false
             });
-            mockUniswapRouter02.mockNextUniswapV3SingleHopSwap(mockSwap);
+            mockUniswapSwapRouter02.mockNextUniswapV3SingleHopSwap(mockSwap);
         }
 
         return swapContext;

@@ -15,9 +15,10 @@ interface ISwapAdapter {
     /// @notice Addresses required to facilitate swaps on the supported exchanges
     struct ExchangeAddresses {
         address aerodromeRouter;
-        address aerodromeFactory;
+        address aerodromePoolFactory;
         address aerodromeSlipstreamRouter;
-        address uniswapRouter02;
+        address uniswapSwapRouter02;
+        address uniswapV2Router02;
     }
 
     /// @notice Contextextual data required for a swap
