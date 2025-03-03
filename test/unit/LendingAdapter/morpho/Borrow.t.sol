@@ -44,4 +44,11 @@ contract MorphoLendingAdapterBorrowTest is MorphoLendingAdapterBaseTest {
         vm.prank(caller);
         lendingAdapter.borrow(1);
     }
+
+    function test_borrow_ZeroAmount() public {
+        // Nothing should happen
+        vm.prank(address(leverageManager));
+        lendingAdapter.borrow(0);
+        assertEq(debtToken.balanceOf(address(leverageManager)), 0);
+    }
 }

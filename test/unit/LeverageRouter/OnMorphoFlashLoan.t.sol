@@ -14,8 +14,11 @@ contract OnMorphoFlashLoanTest is LeverageRouterBaseTest {
         uint256 equityInCollateralAsset = 5 ether;
         uint256 collateralReceivedFromDebtSwap = 5 ether;
         uint256 shares = 10 ether;
+        uint256 requiredDebt = 100e6;
 
-        _mockLeverageManagerDeposit(requiredCollateral, equityInCollateralAsset, collateralReceivedFromDebtSwap, shares);
+        _mockLeverageManagerDeposit(
+            requiredCollateral, equityInCollateralAsset, requiredDebt, collateralReceivedFromDebtSwap, shares
+        );
 
         bytes memory depositData = abi.encode(
             LeverageRouter.DepositParams({
@@ -53,6 +56,61 @@ contract OnMorphoFlashLoanTest is LeverageRouterBaseTest {
             abi.encode(LeverageRouter.MorphoCallbackData({action: ExternalAction.Deposit, data: depositData}))
         );
         assertEq(strategy.balanceOf(address(this)), shares);
+    }
+
+    function test_onMorphoFlashLoan_Withdraw() public {
+        uint256 requiredCollateral = 10 ether;
+        uint256 equityInCollateralAsset = 5 ether;
+        uint256 collateralReceivedFromDebtSwap = 5 ether;
+        uint256 shares = 10 ether;
+        uint256 requiredDebt = 100e6;
+
+        _deposit(equityInCollateralAsset, requiredCollateral, requiredDebt, collateralReceivedFromDebtSwap, shares);
+
+        _mockLeverageManagerWithdraw(
+            requiredCollateral,
+            equityInCollateralAsset,
+            requiredDebt,
+            requiredCollateral - equityInCollateralAsset,
+            shares
+        );
+
+        bytes memory withdrawData = abi.encode(
+            LeverageRouter.WithdrawParams({
+                strategy: strategy,
+                equityInCollateralAsset: equityInCollateralAsset,
+                maxShares: shares,
+                maxSwapCostInCollateralAsset: 0,
+                sender: address(this),
+                swapContext: ISwapAdapter.SwapContext({
+                    path: new address[](0),
+                    encodedPath: new bytes(0),
+                    fees: new uint24[](0),
+                    tickSpacing: new int24[](0),
+                    exchange: ISwapAdapter.Exchange.AERODROME,
+                    exchangeAddresses: ISwapAdapter.ExchangeAddresses({
+                        aerodromeRouter: address(0),
+                        aerodromeFactory: address(0),
+                        aerodromeSlipstreamRouter: address(0),
+                        uniswapRouter02: address(0)
+                    })
+                })
+            })
+        );
+
+        strategy.approve(address(leverageRouter), shares);
+
+        // Mock morpho flash loaning the debt required for the withdraw
+        uint256 flashLoanAmount = requiredDebt;
+        deal(address(debtToken), address(leverageRouter), flashLoanAmount);
+
+        vm.prank(address(morpho));
+        leverageRouter.onMorphoFlashLoan(
+            flashLoanAmount,
+            abi.encode(LeverageRouter.MorphoCallbackData({action: ExternalAction.Withdraw, data: withdrawData}))
+        );
+        assertEq(strategy.balanceOf(address(this)), 0);
+        assertEq(collateralToken.balanceOf(address(this)), equityInCollateralAsset);
     }
 
     /// forge-config: default.fuzz.runs = 1

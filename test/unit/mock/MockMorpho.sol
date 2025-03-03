@@ -35,6 +35,8 @@ contract MockMorpho is Test {
         idToMarketParams[marketId] = marketParams;
     }
 
+    function accrueInterest(MarketParams memory marketParams) external {}
+
     function borrow(
         MarketParams memory marketParams,
         uint256 assets,

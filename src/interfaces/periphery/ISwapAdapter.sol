@@ -54,4 +54,17 @@ interface ISwapAdapter {
         uint256 minOutputAmount,
         SwapContext memory swapContext
     ) external returns (uint256 outputAmount);
+
+    /// @notice Swap tokens from the inputToken to the outputToken using the specified provider
+    /// @param inputToken Token to swap from
+    /// @param outputAmount Amount of tokens to receive
+    /// @param maxInputAmount Maximum amount of tokens to swap
+    /// @param swapContext Swap context to use for the swap (which exchange to use, the swap path, tick spacing, etc.)
+    /// @return inputAmount Amount of tokens swapped
+    function swapExactOutput(
+        IERC20 inputToken,
+        uint256 outputAmount,
+        uint256 maxInputAmount,
+        SwapContext memory swapContext
+    ) external returns (uint256 inputAmount);
 }

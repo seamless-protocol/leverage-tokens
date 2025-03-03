@@ -30,8 +30,8 @@ contract MorphoLendingAdapterRemoveCollateralTest is MorphoLendingAdapterBaseTes
         assertEq(collateralToken.balanceOf(address(leverageManager)), amount);
     }
 
-    function testFork_removeCollateral_ZeroAmount() public {
-        // Nothing happens
+    function test_removeCollateral_ZeroAmount() public {
+        // Nothing should happen
         vm.prank(address(leverageManager));
         lendingAdapter.removeCollateral(0);
         assertEq(collateralToken.balanceOf(address(morpho)), 0);

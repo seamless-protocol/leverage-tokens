@@ -42,7 +42,7 @@ contract MorphoLendingAdapterAddCollateralTest is MorphoLendingAdapterBaseTest {
         assertEq(collateralToken.balanceOf(address(morpho)), amount);
     }
 
-    function testFork_addCollateral_ZeroAmount() public {
+    function test_addCollateral_ZeroAmount() public {
         // Nothing happens
         lendingAdapter.addCollateral(0);
         assertEq(collateralToken.balanceOf(address(morpho)), 0);

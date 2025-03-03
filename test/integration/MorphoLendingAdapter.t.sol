@@ -129,7 +129,7 @@ contract MorphoLendingAdapterTest is IntegrationTestBase {
             MORPHO, MORPHO.idToMarketParams(WETH_USDC_MARKET_ID), address(morphoLendingAdapter)
         );
         assertGe(expectedBorrowAssets, amount);
-        assertLe(expectedBorrowAssets, amount + 1);
+        assertLe(expectedBorrowAssets, uint256(amount) + 1);
 
         assertEq(morphoLendingAdapter.getCollateral(), type(uint128).max);
         assertEq(morphoLendingAdapter.getDebt(), expectedBorrowAssets);

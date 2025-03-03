@@ -37,8 +37,12 @@ contract DepositTest is LeverageRouterBaseTest {
 
         // Mocked exchange rate of shares (Doesn't matter for this test as the shares received and previewed are mocked)
         uint256 shares = 10 ether;
+        /// Mocked debt required to deposit the equity (Doesn't matter for this test as the debt swap is mocked)
+        uint256 requiredDebt = 100e6;
 
-        _mockLeverageManagerDeposit(requiredCollateral, equityInCollateralAsset, collateralReceivedFromDebtSwap, shares);
+        _mockLeverageManagerDeposit(
+            requiredCollateral, equityInCollateralAsset, requiredDebt, collateralReceivedFromDebtSwap, shares
+        );
 
         // Execute the deposit
         deal(address(collateralToken), address(this), collateralFromSender);
@@ -98,8 +102,12 @@ contract DepositTest is LeverageRouterBaseTest {
 
         // Mocked exchange rate of shares (Doesn't matter for this test as the shares received and previewed are mocked)
         uint256 shares = 10 ether;
+        /// Mocked debt required to deposit the equity (Doesn't matter for this test as the debt swap is mocked)
+        uint256 requiredDebt = 100e6;
 
-        _mockLeverageManagerDeposit(requiredCollateral, equityInCollateralAsset, collateralReceivedFromDebtSwap, shares);
+        _mockLeverageManagerDeposit(
+            requiredCollateral, equityInCollateralAsset, requiredDebt, collateralReceivedFromDebtSwap, shares
+        );
 
         // Execute the deposit
         deal(address(collateralToken), address(this), requiredCollateralFromSender);
@@ -167,8 +175,12 @@ contract DepositTest is LeverageRouterBaseTest {
 
         // Mocked exchange rate of shares (Doesn't matter for this test as the shares received and previewed are mocked)
         uint256 shares = 10 ether;
+        /// Mocked debt required to deposit the equity (Doesn't matter for this test as the debt swap is mocked)
+        uint256 requiredDebt = 100e6;
 
-        _mockLeverageManagerDeposit(requiredCollateral, equityInCollateralAsset, collateralReceivedFromDebtSwap, shares);
+        _mockLeverageManagerDeposit(
+            requiredCollateral, equityInCollateralAsset, requiredDebt, collateralReceivedFromDebtSwap, shares
+        );
 
         // Execute the deposit
         deal(address(collateralToken), address(this), collateralFromSender);
