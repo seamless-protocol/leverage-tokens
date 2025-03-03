@@ -35,7 +35,7 @@ contract MockUniswapV2Router02 is Test {
             MockV2Swap memory swap = v2Swaps[i];
             bytes32 encodedPath = keccak256(abi.encode(path));
             if (!swap.isExecuted && swap.encodedPath == encodedPath) {
-                require(swap.toAmount >= amountOutMin, "MockUniswapSwapRouter02: INSUFFICIENT_OUTPUT_AMOUNT");
+                require(swap.toAmount >= amountOutMin, "MockUniswapV2Router02: INSUFFICIENT_OUTPUT_AMOUNT");
 
                 _executeV2Swap(swap, to, i);
                 amounts = new uint256[](path.length);
@@ -45,7 +45,7 @@ contract MockUniswapV2Router02 is Test {
             }
         }
 
-        revert("MockUniswapSwapRouter02: No mocked v2 swap set");
+        revert("MockUniswapV2Router02: No mocked v2 swap set");
     }
 
     function swapTokensForExactTokens(
@@ -59,7 +59,7 @@ contract MockUniswapV2Router02 is Test {
             MockV2Swap memory swap = v2Swaps[i];
             bytes32 encodedPath = keccak256(abi.encode(path));
             if (!swap.isExecuted && swap.encodedPath == encodedPath) {
-                require(swap.fromAmount <= amountInMax, "MockUniswapSwapRouter02: INSUFFICIENT_INPUT_AMOUNT");
+                require(swap.fromAmount <= amountInMax, "MockUniswapV2Router02: INSUFFICIENT_INPUT_AMOUNT");
 
                 _executeV2Swap(swap, to, i);
                 amounts = new uint256[](path.length);
@@ -69,7 +69,7 @@ contract MockUniswapV2Router02 is Test {
             }
         }
 
-        revert("MockUniswapSwapRouter02: No mocked v2 swap set");
+        revert("MockUniswapV2Router02: No mocked v2 swap set");
     }
 
     function _executeV2Swap(MockV2Swap memory swap, address recipient, uint256 v2SwapIndex) internal {
