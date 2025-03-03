@@ -119,7 +119,6 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     function addCollateral(uint256 amount) external {
         if (amount == 0) return;
 
-        IMorpho _morpho = morpho;
         MarketParams memory _marketParams = marketParams;
 
         // Transfer the collateral from msg.sender to this contract
@@ -148,7 +147,6 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     function repay(uint256 amount) external {
         if (amount == 0) return;
 
-        IMorpho _morpho = morpho;
         MarketParams memory _marketParams = marketParams;
 
         // Transfer the debt asset from msg.sender to this contract
