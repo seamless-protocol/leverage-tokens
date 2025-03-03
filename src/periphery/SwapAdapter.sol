@@ -275,7 +275,7 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
 
         IERC20(swapContext.path[0]).approve(address(uniswapV2Router02), maxInputAmount);
 
-        // `swapTokensForExactTokens` uses the reversed path, so we return the first amount in the array returned by the router
+        // `swapTokensForExactTokens` returns the amounts in reverse, so we return the first amount in the array returned by the router
         return uniswapV2Router02.swapTokensForExactTokens(
             outputAmount, maxInputAmount, swapContext.path, msg.sender, block.timestamp
         )[0];

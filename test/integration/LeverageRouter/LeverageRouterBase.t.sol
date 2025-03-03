@@ -3,7 +3,6 @@ pragma solidity ^0.8.26;
 
 // Dependency imports
 import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // Internal imports
 import {BeaconProxyFactory} from "src/BeaconProxyFactory.sol";
@@ -19,10 +18,9 @@ import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {LeverageManagerHarness} from "test/unit/LeverageManager/harness/LeverageManagerHarness.t.sol";
-import {MorphoLendingAdapterTest} from "../MorphoLendingAdapter.t.sol";
 import {IRebalanceRewardDistributor} from "src/interfaces/IRebalanceRewardDistributor.sol";
 import {IntegrationTestBase} from "../IntegrationTestBase.t.sol";
-import {StrategyState, CollateralRatios} from "src/types/DataTypes.sol";
+import {CollateralRatios} from "src/types/DataTypes.sol";
 
 contract LeverageRouterBase is IntegrationTestBase {
     uint256 public BASE_RATIO;

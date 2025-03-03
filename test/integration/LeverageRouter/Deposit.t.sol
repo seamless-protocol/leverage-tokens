@@ -57,6 +57,11 @@ contract LeverageRouterDepositTest is LeverageRouterBase {
             WETH.balanceOf(user),
             userBalanceOfCollateralAsset - (equityInCollateralAsset + additionalCollateralRequired)
         );
+        // No leftover assets in the LeverageRouter or the SwapAdapter
+        assertEq(WETH.balanceOf(address(leverageRouter)), 0);
+        assertEq(WETH.balanceOf(address(swapAdapter)), 0);
+        assertEq(USDC.balanceOf(address(leverageRouter)), 0);
+        assertEq(USDC.balanceOf(address(swapAdapter)), 0);
     }
 
     /// @dev In this block price on oracle 3392.292471591441746049801068
@@ -108,6 +113,11 @@ contract LeverageRouterDepositTest is LeverageRouterBase {
             WETH.balanceOf(user),
             userBalanceOfCollateralAsset - (equityInCollateralAsset + additionalCollateralRequired)
         );
+        // No leftover assets in the LeverageRouter or the SwapAdapter
+        assertEq(WETH.balanceOf(address(leverageRouter)), 0);
+        assertEq(WETH.balanceOf(address(swapAdapter)), 0);
+        assertEq(USDC.balanceOf(address(leverageRouter)), 0);
+        assertEq(USDC.balanceOf(address(swapAdapter)), 0);
     }
 
     /// @dev In this block price on oracle 3392.292471591441746049801068
@@ -154,6 +164,11 @@ contract LeverageRouterDepositTest is LeverageRouterBase {
             WETH.balanceOf(user),
             userBalanceOfCollateralAsset - (equityInCollateralAsset + additionalCollateralRequired)
         );
+        // No leftover assets in the LeverageRouter or the SwapAdapter
+        assertEq(WETH.balanceOf(address(leverageRouter)), 0);
+        assertEq(WETH.balanceOf(address(swapAdapter)), 0);
+        assertEq(USDC.balanceOf(address(leverageRouter)), 0);
+        assertEq(USDC.balanceOf(address(swapAdapter)), 0);
     }
 
     /// @dev In this block price on oracle 3392.292471591441746049801068
@@ -204,5 +219,10 @@ contract LeverageRouterDepositTest is LeverageRouterBase {
             WETH.balanceOf(user),
             userBalanceOfCollateralAsset - equityInCollateralAsset + additionalCollateralReceivedFromSwap
         );
+        // No leftover assets in the LeverageRouter or the SwapAdapter
+        assertEq(WETH.balanceOf(address(leverageRouter)), 0);
+        assertEq(WETH.balanceOf(address(swapAdapter)), 0);
+        assertEq(USDC.balanceOf(address(leverageRouter)), 0);
+        assertEq(USDC.balanceOf(address(swapAdapter)), 0);
     }
 }
