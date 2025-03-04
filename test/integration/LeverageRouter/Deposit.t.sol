@@ -54,6 +54,8 @@ contract LeverageRouterDepositTest is LeverageRouterBase {
             WETH.balanceOf(user),
             userBalanceOfCollateralAsset - (equityInCollateralAsset + additionalCollateralRequired)
         );
+        assertEq(morphoLendingAdapter.getCollateral(), collateralToAdd);
+        assertEq(morphoLendingAdapter.getDebt(), 3392_292472); // 3392.292471591441746049801068, rounded up by MorphoBalancesLib.expectedBorrowAssets
     }
 
     /// @dev In this block price on oracle 3392.292471591441746049801068
@@ -102,6 +104,8 @@ contract LeverageRouterDepositTest is LeverageRouterBase {
             WETH.balanceOf(user),
             userBalanceOfCollateralAsset - (equityInCollateralAsset + additionalCollateralRequired)
         );
+        assertEq(morphoLendingAdapter.getCollateral(), collateralToAdd);
+        assertEq(morphoLendingAdapter.getDebt(), 3392_292472); // 3392.292471591441746049801068, rounded up by MorphoBalancesLib.expectedBorrowAssets
     }
 
     /// @dev In this block price on oracle 3392.292471591441746049801068
@@ -145,6 +149,8 @@ contract LeverageRouterDepositTest is LeverageRouterBase {
             WETH.balanceOf(user),
             userBalanceOfCollateralAsset - (equityInCollateralAsset + additionalCollateralRequired)
         );
+        assertEq(morphoLendingAdapter.getCollateral(), collateralToAdd);
+        assertEq(morphoLendingAdapter.getDebt(), 3392_292472); // 3392.292471591441746049801068, rounded up by MorphoBalancesLib.expectedBorrowAssets
     }
 
     /// @dev In this block price on oracle 3392.292471591441746049801068
@@ -190,6 +196,8 @@ contract LeverageRouterDepositTest is LeverageRouterBase {
             WETH.balanceOf(user),
             userBalanceOfCollateralAsset - equityInCollateralAsset + additionalCollateralReceivedFromSwap
         );
+        assertEq(morphoLendingAdapter.getCollateral(), collateralToAdd);
+        assertEq(morphoLendingAdapter.getDebt(), 3392_292472); // 3392.292471591441746049801068, rounded up by MorphoBalancesLib.expectedBorrowAssets
     }
 
     function testFork_deposit_UniswapV2_MultiHop() public {
@@ -234,6 +242,8 @@ contract LeverageRouterDepositTest is LeverageRouterBase {
             WETH.balanceOf(user),
             userBalanceOfCollateralAsset - (equityInCollateralAsset + additionalCollateralRequired)
         );
+        assertEq(morphoLendingAdapter.getCollateral(), collateralToAdd);
+        assertEq(morphoLendingAdapter.getDebt(), 3392_292472); // 3392.292471591441746049801068, rounded up by MorphoBalancesLib.expectedBorrowAssets
     }
 
     function testFork_deposit_UniswapV3_MultiHop() public {
@@ -283,6 +293,8 @@ contract LeverageRouterDepositTest is LeverageRouterBase {
             WETH.balanceOf(user),
             userBalanceOfCollateralAsset - (equityInCollateralAsset + additionalCollateralRequired)
         );
+        assertEq(morphoLendingAdapter.getCollateral(), collateralToAdd);
+        assertEq(morphoLendingAdapter.getDebt(), 3392_292472); // 3392.292471591441746049801068, rounded up by MorphoBalancesLib.expectedBorrowAssets
     }
 
     function testFork_deposit_Aerodrome_MultiHop() public {
@@ -327,6 +339,8 @@ contract LeverageRouterDepositTest is LeverageRouterBase {
             WETH.balanceOf(user),
             userBalanceOfCollateralAsset - (equityInCollateralAsset + additionalCollateralRequired)
         );
+        assertEq(morphoLendingAdapter.getCollateral(), collateralToAdd);
+        assertEq(morphoLendingAdapter.getDebt(), 3392_292472); // 3392.292471591441746049801068, rounded up by MorphoBalancesLib.expectedBorrowAssets
     }
 
     function testFork_deposit_AerodromeSlipstream_MultiHop() public {
@@ -376,6 +390,8 @@ contract LeverageRouterDepositTest is LeverageRouterBase {
             WETH.balanceOf(user),
             userBalanceOfCollateralAsset - (equityInCollateralAsset + additionalCollateralRequired)
         );
+        assertEq(morphoLendingAdapter.getCollateral(), collateralToAdd);
+        assertEq(morphoLendingAdapter.getDebt(), 3392_292472); // 3392.292471591441746049801068, rounded up by MorphoBalancesLib.expectedBorrowAssets
     }
 
     function _dealAndDeposit(
