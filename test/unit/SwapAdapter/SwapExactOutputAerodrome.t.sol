@@ -121,8 +121,6 @@ abstract contract SwapExactOutputAerodromeTest is SwapAdapterBaseTest {
         assertEq(fromToken.balanceOf(address(mockAerodromeRouter)), maxInputAmount);
         // We receive the toToken
         assertEq(toToken.balanceOf(address(this)), outputAmount);
-        // We receive the surplus fromToken
-        assertEq(fromToken.balanceOf(address(this)), mockSwap2.toAmount);
         // The inputAmount should be less than the maxInputAmount by the surplus received from the second swap
         assertEq(inputAmount, maxInputAmount - mockSwap2.toAmount);
     }

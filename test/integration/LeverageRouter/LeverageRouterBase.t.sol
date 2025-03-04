@@ -3,7 +3,7 @@ pragma solidity ^0.8.26;
 
 // Dependency imports
 import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
-
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 // Internal imports
 import {BeaconProxyFactory} from "src/BeaconProxyFactory.sol";
 import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
@@ -28,6 +28,9 @@ contract LeverageRouterBase is IntegrationTestBase {
     address public constant AERODROME_POOL_FACTORY = 0x420DD381b31aEf6683db6B902084cB0FFECe40Da;
     address public constant UNISWAP_V2_ROUTER02 = 0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24;
     address public constant UNISWAP_SWAP_ROUTER02 = 0x2626664c2603336E57B271c5C0b26F421741e481;
+
+    address public constant DAI = 0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb;
+    address public constant cbBTC = 0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf;
 
     ILeverageRouter public leverageRouter;
     ISwapAdapter public swapAdapter;
@@ -66,5 +69,27 @@ contract LeverageRouterBase is IntegrationTestBase {
         assertEq(address(leverageRouter.leverageManager()), address(leverageManager));
         assertEq(address(leverageRouter.morpho()), address(MORPHO));
         assertEq(address(leverageRouter.swapper()), address(swapAdapter));
+    }
+
+    function _dealAndDeposit(
+        IERC20 collateralAsset,
+        IERC20 debtAsset,
+        uint256 dealAmount,
+        uint256 equityInCollateralAsset,
+        uint256 maxSwapCostInCollateralAsset,
+        ISwapAdapter.SwapContext memory swapContext
+    ) internal {
+        deal(address(collateralAsset), user, dealAmount);
+
+        vm.startPrank(user);
+        collateralAsset.approve(address(leverageRouter), equityInCollateralAsset + maxSwapCostInCollateralAsset);
+        leverageRouter.deposit(strategy, equityInCollateralAsset, 0, maxSwapCostInCollateralAsset, swapContext);
+        vm.stopPrank();
+
+        // No leftover assets in the LeverageRouter or the SwapAdapter
+        assertEq(collateralAsset.balanceOf(address(leverageRouter)), 0);
+        assertEq(collateralAsset.balanceOf(address(swapAdapter)), 0);
+        assertEq(debtAsset.balanceOf(address(leverageRouter)), 0);
+        assertEq(debtAsset.balanceOf(address(swapAdapter)), 0);
     }
 }
