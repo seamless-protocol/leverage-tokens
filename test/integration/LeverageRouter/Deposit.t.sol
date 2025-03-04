@@ -394,6 +394,69 @@ contract LeverageRouterDepositTest is LeverageRouterBase {
         assertEq(morphoLendingAdapter.getDebt(), 3392_292472); // 3392.292471591441746049801068, rounded up by MorphoBalancesLib.expectedBorrowAssets
     }
 
+    function testFork_deposit_RevertIf_InsufficientSenderCollateralAssetsForEquity() public {
+        uint256 equityInCollateralAsset = 1 ether;
+        uint256 userBalanceOfCollateralAsset = equityInCollateralAsset - 1; // User does not have enough assets for the deposit of equity
+
+        // Doesn't matter for this test (the user's assets are transferred to the LeverageRouter before the swap occurs, which reverts)
+        ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
+            exchange: ISwapAdapter.Exchange.UNISWAP_V2,
+            encodedPath: new bytes(0),
+            path: new address[](0),
+            fees: new uint24[](0),
+            tickSpacing: new int24[](0),
+            exchangeAddresses: ISwapAdapter.ExchangeAddresses({
+                aerodromeRouter: address(0),
+                aerodromePoolFactory: address(0),
+                aerodromeSlipstreamRouter: address(0),
+                uniswapSwapRouter02: address(0),
+                uniswapV2Router02: UNISWAP_V2_ROUTER02
+            })
+        });
+
+        deal(address(WETH), user, userBalanceOfCollateralAsset);
+
+        vm.startPrank(user);
+        WETH.approve(address(leverageRouter), userBalanceOfCollateralAsset);
+
+        // Transfering the collateral assets from the user to the LeverageRouter reverts if the transfer fails (`SafeERC20.safeTransferFrom` reverts with generic `EvmError: Revert`)
+        vm.expectRevert(address(WETH));
+        leverageRouter.deposit(strategy, equityInCollateralAsset, 0, 0, swapContext);
+        vm.stopPrank();
+    }
+
+    function testFork_deposit_RevertIf_InsufficientSenderCollateralAssetsForMaxSwapCost() public {
+        uint256 equityInCollateralAsset = 1 ether;
+        uint256 maxSwapCostInCollateralAsset = 1;
+        uint256 userBalanceOfCollateralAsset = equityInCollateralAsset; // User has enough for the equity but not the max swap cost
+
+        // Doesn't matter for this test (the user's assets are transferred to the LeverageRouter before the swap occurs, which reverts)
+        ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
+            exchange: ISwapAdapter.Exchange.UNISWAP_V2,
+            encodedPath: new bytes(0),
+            path: new address[](0),
+            fees: new uint24[](0),
+            tickSpacing: new int24[](0),
+            exchangeAddresses: ISwapAdapter.ExchangeAddresses({
+                aerodromeRouter: address(0),
+                aerodromePoolFactory: address(0),
+                aerodromeSlipstreamRouter: address(0),
+                uniswapSwapRouter02: address(0),
+                uniswapV2Router02: UNISWAP_V2_ROUTER02
+            })
+        });
+
+        deal(address(WETH), user, userBalanceOfCollateralAsset);
+
+        vm.startPrank(user);
+        WETH.approve(address(leverageRouter), userBalanceOfCollateralAsset);
+
+        // Transfering the collateral assets from the user to the LeverageRouter reverts if the transfer fails (`SafeERC20.safeTransferFrom` reverts with generic `EvmError: Revert`)
+        vm.expectRevert(address(WETH));
+        leverageRouter.deposit(strategy, equityInCollateralAsset, 0, maxSwapCostInCollateralAsset, swapContext);
+        vm.stopPrank();
+    }
+
     function _dealAndDeposit(
         IERC20 collateralAsset,
         IERC20 debtAsset,
