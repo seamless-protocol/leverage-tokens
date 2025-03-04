@@ -7,7 +7,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 // Internal imports
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {SwapAdapterBaseTest} from "./SwapAdapterBase.t.sol";
-import {MockUniswapRouter02} from "test/unit/mock/MockUniswapRouter02.sol";
+import {MockUniswapV2Router02} from "test/unit/mock/MockUniswapV2Router02.sol";
 
 //  Inherited in `SwapExactInput.t.sol` tests
 abstract contract SwapExactInputUniV2Test is SwapAdapterBaseTest {
@@ -29,7 +29,7 @@ abstract contract SwapExactInputUniV2Test is SwapAdapterBaseTest {
         uint256 outputAmount = swapAdapter.exposed_swapExactInputUniV2(inputAmount, minOutputAmount, swapContext);
 
         // Uniswap receives the fromToken
-        assertEq(fromToken.balanceOf(address(mockUniswapRouter02)), inputAmount);
+        assertEq(fromToken.balanceOf(address(mockUniswapV2Router02)), inputAmount);
         // We receive the toToken
         assertEq(toToken.balanceOf(address(this)), minOutputAmount);
         assertEq(outputAmount, minOutputAmount);
@@ -54,7 +54,7 @@ abstract contract SwapExactInputUniV2Test is SwapAdapterBaseTest {
         uint256 outputAmount = swapAdapter.exposed_swapExactInputUniV2(inputAmount, minOutputAmount, swapContext);
 
         // Uniswap receives the fromToken
-        assertEq(fromToken.balanceOf(address(mockUniswapRouter02)), inputAmount);
+        assertEq(fromToken.balanceOf(address(mockUniswapV2Router02)), inputAmount);
         // We receive the toToken
         assertEq(toToken.balanceOf(address(this)), minOutputAmount);
         assertEq(outputAmount, minOutputAmount);
@@ -72,13 +72,14 @@ abstract contract SwapExactInputUniV2Test is SwapAdapterBaseTest {
             tickSpacing: new int24[](0),
             exchangeAddresses: ISwapAdapter.ExchangeAddresses({
                 aerodromeRouter: address(0),
-                aerodromeFactory: address(0),
+                aerodromePoolFactory: address(0),
                 aerodromeSlipstreamRouter: address(0),
-                uniswapRouter02: address(mockUniswapRouter02)
+                uniswapSwapRouter02: address(0),
+                uniswapV2Router02: address(mockUniswapV2Router02)
             })
         });
 
-        MockUniswapRouter02.MockV2Swap memory mockSwap = MockUniswapRouter02.MockV2Swap({
+        MockUniswapV2Router02.MockV2Swap memory mockSwap = MockUniswapV2Router02.MockV2Swap({
             fromToken: IERC20(path[0]),
             toToken: IERC20(path[path.length - 1]),
             fromAmount: inputAmount,
@@ -86,7 +87,7 @@ abstract contract SwapExactInputUniV2Test is SwapAdapterBaseTest {
             encodedPath: keccak256(abi.encode(path)),
             isExecuted: false
         });
-        mockUniswapRouter02.mockNextUniswapV2Swap(mockSwap);
+        mockUniswapV2Router02.mockNextUniswapV2Swap(mockSwap);
 
         return swapContext;
     }
