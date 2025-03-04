@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
+// Dependency imports
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 // Internal imports
 import {IAerodromeRouter} from "src/interfaces/periphery/IAerodromeRouter.sol";
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
@@ -87,10 +90,10 @@ abstract contract SwapExactOutputAerodromeTest is SwapAdapterBaseTest {
         IAerodromeRouter.Route[] memory routes = new IAerodromeRouter.Route[](1);
         routes[0] = IAerodromeRouter.Route(address(fromToken), address(toToken), false, aerodromePoolFactory);
         MockAerodromeRouter.MockSwap memory mockSwap = MockAerodromeRouter.MockSwap({
-            fromToken: fromToken,
-            toToken: toToken,
-            fromAmount: maxInputAmount,
-            toAmount: outputAmount + surplusOutputAmount,
+            inputToken: fromToken,
+            outputToken: toToken,
+            inputAmount: maxInputAmount,
+            outputAmount: outputAmount + surplusOutputAmount,
             encodedRoutes: keccak256(abi.encode(routes)),
             deadline: block.timestamp,
             isExecuted: false
@@ -100,10 +103,10 @@ abstract contract SwapExactOutputAerodromeTest is SwapAdapterBaseTest {
         // Mock the additional expected swap of the surplus toToken
         routes[0] = IAerodromeRouter.Route(path[1], path[0], false, aerodromePoolFactory);
         MockAerodromeRouter.MockSwap memory mockSwap2 = MockAerodromeRouter.MockSwap({
-            fromToken: toToken,
-            toToken: fromToken,
-            fromAmount: surplusOutputAmount,
-            toAmount: 0.5 ether,
+            inputToken: toToken,
+            outputToken: fromToken,
+            inputAmount: surplusOutputAmount,
+            outputAmount: 0.5 ether,
             encodedRoutes: keccak256(abi.encode(routes)),
             deadline: block.timestamp,
             isExecuted: false
@@ -122,7 +125,7 @@ abstract contract SwapExactOutputAerodromeTest is SwapAdapterBaseTest {
         // We receive the toToken
         assertEq(toToken.balanceOf(address(this)), outputAmount);
         // The inputAmount should be less than the maxInputAmount by the surplus received from the second swap
-        assertEq(inputAmount, maxInputAmount - mockSwap2.toAmount);
+        assertEq(inputAmount, maxInputAmount - mockSwap2.outputAmount);
     }
 
     function _mock_SwapExactOutputAerodrome(address[] memory path, uint256 outputAmount, uint256 maxInputAmount)
@@ -150,10 +153,10 @@ abstract contract SwapExactOutputAerodromeTest is SwapAdapterBaseTest {
         }
 
         MockAerodromeRouter.MockSwap memory mockSwap = MockAerodromeRouter.MockSwap({
-            fromToken: fromToken,
-            toToken: toToken,
-            fromAmount: maxInputAmount,
-            toAmount: outputAmount,
+            inputToken: IERC20(path[0]),
+            outputToken: IERC20(path[path.length - 1]),
+            inputAmount: maxInputAmount,
+            outputAmount: outputAmount,
             encodedRoutes: keccak256(abi.encode(routes)),
             deadline: block.timestamp,
             isExecuted: false

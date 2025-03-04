@@ -101,4 +101,106 @@ contract SwapExactOutputTest is
         assertEq(toToken.balanceOf(address(this)), outputAmount);
         assertEq(inputAmount, maxInputAmount);
     }
+
+    function test_swapExactOutput_UniV2_SenderReceivesExcessInputToken() public {
+        uint256 outputAmount = 10 ether;
+        uint256 maxInputAmount = 100 ether;
+        uint256 excessInputAmount = 1;
+
+        address[] memory path = new address[](2);
+        path[0] = address(fromToken);
+        path[1] = address(toToken);
+
+        ISwapAdapter.SwapContext memory swapContext =
+            _mock_SwapExactOutputUniV2(path, outputAmount, maxInputAmount - excessInputAmount);
+
+        deal(address(fromToken), address(this), maxInputAmount);
+        fromToken.approve(address(swapAdapter), maxInputAmount);
+
+        uint256 inputAmount = swapAdapter.swapExactOutput(fromToken, outputAmount, maxInputAmount, swapContext);
+
+        assertEq(fromToken.balanceOf(address(this)), 1);
+        assertEq(toToken.balanceOf(address(this)), outputAmount);
+        assertEq(inputAmount, maxInputAmount - excessInputAmount);
+    }
+
+    function test_swapExactOutput_UniV3_SenderReceivesExcessInputToken() public {
+        uint256 outputAmount = 10 ether;
+        uint256 maxInputAmount = 100 ether;
+        uint256 excessInputAmount = 1;
+
+        address[] memory path = new address[](2);
+        path[0] = address(fromToken);
+        path[1] = address(toToken);
+
+        uint24[] memory fees = new uint24[](1);
+        fees[0] = 500;
+
+        ISwapAdapter.SwapContext memory swapContext =
+            _mock_SwapExactOutputUniV3(path, fees, outputAmount, maxInputAmount - excessInputAmount, false);
+
+        deal(address(fromToken), address(this), maxInputAmount);
+        fromToken.approve(address(swapAdapter), maxInputAmount);
+
+        uint256 inputAmount = swapAdapter.swapExactOutput(fromToken, outputAmount, maxInputAmount, swapContext);
+
+        assertEq(fromToken.balanceOf(address(this)), excessInputAmount);
+        assertEq(toToken.balanceOf(address(this)), outputAmount);
+        assertEq(inputAmount, maxInputAmount - excessInputAmount);
+    }
+
+    function test_swapExactOutput_Aerodrome_SenderReceivesExcessInputToken() public {
+        uint256 outputAmount = 10 ether;
+        uint256 maxInputAmount = 100 ether;
+        uint256 excessOutputAmount = 1;
+        uint256 excessInputAmount = 1;
+
+        address[] memory path = new address[](2);
+        path[0] = address(fromToken);
+        path[1] = address(toToken);
+
+        ISwapAdapter.SwapContext memory swapContext =
+            _mock_SwapExactOutputAerodrome(path, outputAmount + excessOutputAmount, maxInputAmount);
+
+        // Mock the additional expected swap of the surplus toToken from the first swap
+        address[] memory path2 = new address[](2);
+        path2[0] = address(toToken);
+        path2[1] = address(fromToken);
+        _mock_SwapExactOutputAerodrome(path2, excessInputAmount, excessOutputAmount);
+
+        deal(address(fromToken), address(this), maxInputAmount);
+        fromToken.approve(address(swapAdapter), maxInputAmount);
+
+        uint256 inputAmount = swapAdapter.swapExactOutput(fromToken, outputAmount, maxInputAmount, swapContext);
+
+        assertEq(fromToken.balanceOf(address(this)), excessInputAmount);
+        assertEq(toToken.balanceOf(address(this)), outputAmount);
+        assertEq(inputAmount, maxInputAmount - excessInputAmount);
+    }
+
+    function test_swapExactOutput_AerodromeSlipstream_SenderReceivesExcessInputToken() public {
+        uint256 outputAmount = 10 ether;
+        uint256 maxInputAmount = 100 ether;
+        uint256 excessInputAmount = 1;
+
+        address[] memory path = new address[](2);
+        path[0] = address(fromToken);
+        path[1] = address(toToken);
+
+        int24[] memory tickSpacing = new int24[](1);
+        tickSpacing[0] = 500;
+
+        ISwapAdapter.SwapContext memory swapContext = _mock_SwapExactOutputAerodromeSlipstream(
+            path, tickSpacing, outputAmount, maxInputAmount - excessInputAmount, false
+        );
+
+        deal(address(fromToken), address(this), maxInputAmount);
+        fromToken.approve(address(swapAdapter), maxInputAmount);
+
+        uint256 inputAmount = swapAdapter.swapExactOutput(fromToken, outputAmount, maxInputAmount, swapContext);
+
+        assertEq(fromToken.balanceOf(address(this)), excessInputAmount);
+        assertEq(toToken.balanceOf(address(this)), outputAmount);
+        assertEq(inputAmount, maxInputAmount - excessInputAmount);
+    }
 }
