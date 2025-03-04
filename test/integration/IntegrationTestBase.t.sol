@@ -34,6 +34,7 @@ contract IntegrationTestBase is Test {
     address public user = makeAddr("user");
     IStrategy public strategy;
 
+    BeaconProxyFactory public morphoLendingAdapterFactory;
     ILeverageManager public leverageManager = ILeverageManager(makeAddr("leverageManager"));
     MorphoLendingAdapter public morphoLendingAdapter;
 
@@ -52,8 +53,7 @@ contract IntegrationTestBase is Test {
         MorphoLendingAdapter morphoLendingAdapterImplementation =
             new MorphoLendingAdapter(ILeverageManager(leverageManager), MORPHO);
 
-        BeaconProxyFactory morphoLendingAdapterFactory =
-            new BeaconProxyFactory(address(morphoLendingAdapterImplementation), address(this));
+        morphoLendingAdapterFactory = new BeaconProxyFactory(address(morphoLendingAdapterImplementation), address(this));
 
         morphoLendingAdapter = MorphoLendingAdapter(
             morphoLendingAdapterFactory.createProxy(
