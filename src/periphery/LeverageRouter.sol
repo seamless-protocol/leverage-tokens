@@ -199,7 +199,7 @@ contract LeverageRouter is ILeverageRouter {
         collateralAsset.approve(address(morpho), collateralLoanAmount);
     }
 
-    /// @notice Executes the withdrawal of equity from a strategy and the swap of debt assets to the collateral asset
+    /// @notice Executes the withdrawal of equity from a strategy and the swap of collateral assets to the debt asset
     /// to repay the flash loan from Morpho
     /// @param params Params for the withdrawal of equity from a strategy
     /// @param debtLoanAmount Amount of debt asset flash loaned
