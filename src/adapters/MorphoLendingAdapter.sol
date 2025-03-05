@@ -2,7 +2,8 @@
 pragma solidity ^0.8.26;
 
 // Dependency imports
-import {Id, IMorpho, MarketParams} from "@morpho-blue/interfaces/IMorpho.sol";
+import {Id, IMorpho, MarketParams, Market, Position} from "@morpho-blue/interfaces/IMorpho.sol";
+import {SharesMathLib} from "@morpho-blue/libraries/SharesMathLib.sol";
 import {IOracle} from "@morpho-blue/interfaces/IOracle.sol";
 import {ORACLE_PRICE_SCALE} from "@morpho-blue/libraries/ConstantsLib.sol";
 import {MorphoBalancesLib} from "@morpho-blue/libraries/periphery/MorphoBalancesLib.sol";
@@ -114,7 +115,7 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
 
     /// @inheritdoc ILendingAdapter
     function addCollateral(uint256 amount) external {
-        IMorpho _morpho = morpho;
+        if (amount == 0) return;
 
         MarketParams memory _marketParams = marketParams;
 
@@ -122,33 +123,53 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
         SafeERC20.safeTransferFrom(IERC20(_marketParams.collateralToken), msg.sender, address(this), amount);
 
         // Supply the collateral to the Morpho market
-        IERC20(_marketParams.collateralToken).approve(address(_morpho), amount);
-        _morpho.supplyCollateral(_marketParams, amount, address(this), hex"");
+        IERC20(_marketParams.collateralToken).approve(address(morpho), amount);
+        morpho.supplyCollateral(_marketParams, amount, address(this), hex"");
     }
 
     /// @inheritdoc ILendingAdapter
     function removeCollateral(uint256 amount) external onlyLeverageManager {
+        if (amount == 0) return;
         // Withdraw the collateral from the Morpho market and send it to msg.sender
         morpho.withdrawCollateral(marketParams, amount, address(this), msg.sender);
     }
 
     /// @inheritdoc ILendingAdapter
     function borrow(uint256 amount) external onlyLeverageManager {
+        if (amount == 0) return;
         // Borrow the debt asset from the Morpho market and send it to the caller
         morpho.borrow(marketParams, amount, 0, address(this), msg.sender);
     }
 
     /// @inheritdoc ILendingAdapter
     function repay(uint256 amount) external {
-        IMorpho _morpho = morpho;
+        if (amount == 0) return;
 
         MarketParams memory _marketParams = marketParams;
 
         // Transfer the debt asset from msg.sender to this contract
         SafeERC20.safeTransferFrom(IERC20(_marketParams.loanToken), msg.sender, address(this), amount);
 
-        // Repay the debt asset to the Morpho market
-        IERC20(_marketParams.loanToken).approve(address(_morpho), amount);
-        _morpho.repay(_marketParams, amount, 0, address(this), hex"");
+        // Accrue interest before repaying to make sure interest is included in calculation
+        morpho.accrueInterest(marketParams);
+
+        // Fetch total borrow assets and total borrow shares. This data is updated because we accrued interest in previous step
+        Market memory market = morpho.market(morphoMarketId);
+        uint256 totalBorrowAssets = market.totalBorrowAssets;
+        uint256 totalBorrowShares = market.totalBorrowShares;
+
+        // Fetch how much borrow shares do we owe
+        Position memory position = morpho.position(morphoMarketId, address(this));
+        uint256 maxSharesToRepay = position.borrowShares;
+        uint256 maxAssetsToRepay = SharesMathLib.toAssetsUp(maxSharesToRepay, totalBorrowAssets, totalBorrowShares);
+
+        IERC20(_marketParams.loanToken).approve(address(morpho), amount);
+
+        // Repay all shares if we are trying to repay more assets than we owe
+        if (amount >= maxAssetsToRepay) {
+            morpho.repay(_marketParams, 0, maxSharesToRepay, address(this), hex"");
+        } else {
+            morpho.repay(_marketParams, amount, 0, address(this), hex"");
+        }
     }
 }

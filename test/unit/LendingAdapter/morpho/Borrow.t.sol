@@ -10,6 +10,8 @@ import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
 
 contract MorphoLendingAdapterBorrowTest is MorphoLendingAdapterBaseTest {
     function testFuzz_borrow(uint256 amount) public {
+        vm.assume(amount > 0);
+
         // Deal Morpho the required debt token amount
         deal(address(debtToken), address(morpho), amount);
 
@@ -27,6 +29,13 @@ contract MorphoLendingAdapterBorrowTest is MorphoLendingAdapterBaseTest {
         assertEq(debtToken.balanceOf(address(leverageManager)), amount);
     }
 
+    function testFork_borrow_ZeroAmount() public {
+        // Nothing happens
+        vm.prank(address(leverageManager));
+        lendingAdapter.borrow(0);
+        assertEq(debtToken.balanceOf(address(leverageManager)), 0);
+    }
+
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_borrow_RevertIf_NotLeverageManager(address caller) public {
         vm.assume(caller != address(leverageManager));
@@ -34,5 +43,12 @@ contract MorphoLendingAdapterBorrowTest is MorphoLendingAdapterBaseTest {
         vm.expectRevert(ILendingAdapter.Unauthorized.selector);
         vm.prank(caller);
         lendingAdapter.borrow(1);
+    }
+
+    function test_borrow_ZeroAmount() public {
+        // Nothing should happen
+        vm.prank(address(leverageManager));
+        lendingAdapter.borrow(0);
+        assertEq(debtToken.balanceOf(address(leverageManager)), 0);
     }
 }

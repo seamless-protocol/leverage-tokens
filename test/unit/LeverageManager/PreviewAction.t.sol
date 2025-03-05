@@ -204,6 +204,12 @@ contract PreviewActionTest is LeverageManagerBaseTest {
             return;
         }
 
+        // If initially strategy had something in collateral but no debt ratio should change for the better
+        if (initialDebtInCollateralAsset == 0) {
+            assertLe(newCollateralRatio, prevState.collateralRatio);
+            return;
+        }
+
         // Otherwise, the action should be done by respecting the current collateral ratio
         // There is some tolerance on collateral ratio due to rounding depending on debt size
         // It is important to calculate tolerance with smaller debt (for deposit before action for withdraw after action)
@@ -211,6 +217,7 @@ contract PreviewActionTest is LeverageManagerBaseTest {
         uint256 respectiveDebt = action == ExternalAction.Deposit ? initialDebtInCollateralAsset : newDebt;
         uint256 from = action == ExternalAction.Deposit ? newCollateralRatio : prevState.collateralRatio;
         uint256 to = action == ExternalAction.Deposit ? prevState.collateralRatio : newCollateralRatio;
+
         assertApproxEqRel(
             from,
             to,
@@ -312,7 +319,7 @@ contract PreviewActionTest is LeverageManagerBaseTest {
         returns (uint256 allowedSlippagePercentage)
     {
         if (initialDebt == 0) {
-            return 0;
+            return 1e18;
         }
 
         uint256 i = Math.log10(initialDebt);

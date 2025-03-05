@@ -190,16 +190,20 @@ contract DepositTest is PreviewActionTest {
         assertEq(debtBorrowed, debtToBorrow, "Debt borrowed mismatch");
         assertEq(debtToken.balanceOf(address(this)), debtToBorrow, "Debt tokens received mismatch");
 
-        assertApproxEqRel(
-            afterState.collateralRatio,
-            beforeState.collateralRatio,
-            collateralRatioDeltaRelative,
-            "Collateral ratio after deposit mismatch"
-        );
-        assertGe(
-            afterState.collateralRatio,
-            beforeState.collateralRatio,
-            "Collateral ratio after deposit should be greater than or equal to before"
-        );
+        if (beforeState.collateralRatio == type(uint256).max) {
+            assertLe(afterState.collateralRatio, beforeState.collateralRatio);
+        } else {
+            assertApproxEqRel(
+                afterState.collateralRatio,
+                beforeState.collateralRatio,
+                collateralRatioDeltaRelative,
+                "Collateral ratio after deposit mismatch"
+            );
+            assertGe(
+                afterState.collateralRatio,
+                beforeState.collateralRatio,
+                "Collateral ratio after deposit should be greater than or equal to before"
+            );
+        }
     }
 }

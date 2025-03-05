@@ -12,7 +12,7 @@ import {MockAerodromeRouter} from "test/unit/mock/MockAerodromeRouter.sol";
 
 //  Inherited in `SwapExactInput.t.sol` tests
 abstract contract SwapExactInputAerodromeTest is SwapAdapterBaseTest {
-    address public aerodromeFactory = makeAddr("aerodromeFactory");
+    address public aerodromePoolFactory = makeAddr("aerodromePoolFactory");
 
     function test_SwapExactInputAerodrome_SingleHop() public {
         uint256 inputAmount = 100 ether;
@@ -75,15 +75,16 @@ abstract contract SwapExactInputAerodromeTest is SwapAdapterBaseTest {
             tickSpacing: new int24[](0),
             exchangeAddresses: ISwapAdapter.ExchangeAddresses({
                 aerodromeRouter: address(mockAerodromeRouter),
-                aerodromeFactory: aerodromeFactory,
+                aerodromePoolFactory: aerodromePoolFactory,
                 aerodromeSlipstreamRouter: address(0),
-                uniswapRouter02: address(0)
+                uniswapSwapRouter02: address(0),
+                uniswapV2Router02: address(0)
             })
         });
 
         IAerodromeRouter.Route[] memory routes = new IAerodromeRouter.Route[](path.length - 1);
         for (uint256 i = 0; i < path.length - 1; i++) {
-            routes[i] = IAerodromeRouter.Route(path[i], path[i + 1], false, aerodromeFactory);
+            routes[i] = IAerodromeRouter.Route(path[i], path[i + 1], false, aerodromePoolFactory);
         }
 
         MockAerodromeRouter.MockSwap memory mockSwap = MockAerodromeRouter.MockSwap({

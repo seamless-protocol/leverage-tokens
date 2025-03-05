@@ -12,7 +12,8 @@ import {SwapAdapterHarness} from "test/unit/SwapAdapter/harness/SwapAdapterHarne
 import {MockAerodromeRouter} from "test/unit/mock/MockAerodromeRouter.sol";
 import {MockAerodromeSlipstreamRouter} from "test/unit/mock/MockAerodromeSlipstreamRouter.sol";
 import {MockERC20} from "test/unit/mock/MockERC20.sol";
-import {MockUniswapRouter02} from "test/unit/mock/MockUniswapRouter02.sol";
+import {MockUniswapSwapRouter02} from "test/unit/mock/MockUniswapSwapRouter02.sol";
+import {MockUniswapV2Router02} from "test/unit/mock/MockUniswapV2Router02.sol";
 
 contract SwapAdapterBaseTest is Test {
     address public defaultAdmin = makeAddr("defaultAdmin");
@@ -22,7 +23,9 @@ contract SwapAdapterBaseTest is Test {
 
     SwapAdapterHarness public swapAdapter;
 
-    MockUniswapRouter02 public mockUniswapRouter02;
+    MockUniswapSwapRouter02 public mockUniswapSwapRouter02;
+
+    MockUniswapV2Router02 public mockUniswapV2Router02;
 
     MockAerodromeRouter public mockAerodromeRouter;
 
@@ -35,7 +38,8 @@ contract SwapAdapterBaseTest is Test {
         );
 
         swapAdapter = SwapAdapterHarness(swapAdapterProxy);
-        mockUniswapRouter02 = new MockUniswapRouter02();
+        mockUniswapSwapRouter02 = new MockUniswapSwapRouter02();
+        mockUniswapV2Router02 = new MockUniswapV2Router02();
         mockAerodromeRouter = new MockAerodromeRouter();
         mockAerodromeSlipstreamRouter = new MockAerodromeSlipstreamRouter();
     }
@@ -43,45 +47,5 @@ contract SwapAdapterBaseTest is Test {
     function test_setUp() public view virtual {
         SwapAdapter swapAdapterContract = SwapAdapter(address(swapAdapter));
         assertTrue(swapAdapterContract.hasRole(swapAdapterContract.DEFAULT_ADMIN_ROLE(), defaultAdmin));
-    }
-
-    /// @notice Encode the path as required by the Aerodrome Slipstream router
-    function _encodeAerodromeSlipstreamPath(address[] memory path, int24[] memory tickSpacing, bool reverseOrder)
-        internal
-        pure
-        returns (bytes memory encodedPath)
-    {
-        if (reverseOrder) {
-            encodedPath = abi.encodePacked(path[path.length - 1]);
-            for (uint256 i = tickSpacing.length; i > 0; i--) {
-                uint256 indexToAppend = i - 1;
-                encodedPath = abi.encodePacked(encodedPath, tickSpacing[indexToAppend], path[indexToAppend]);
-            }
-        } else {
-            encodedPath = abi.encodePacked(path[0]);
-            for (uint256 i = 0; i < tickSpacing.length; i++) {
-                encodedPath = abi.encodePacked(encodedPath, tickSpacing[i], path[i + 1]);
-            }
-        }
-    }
-
-    /// @notice Encode the path as required by the Uniswap V3 router
-    function _encodeUniswapV3Path(address[] memory path, uint24[] memory fees, bool reverseOrder)
-        internal
-        pure
-        returns (bytes memory encodedPath)
-    {
-        if (reverseOrder) {
-            encodedPath = abi.encodePacked(path[path.length - 1]);
-            for (uint256 i = fees.length; i > 0; i--) {
-                uint256 indexToAppend = i - 1;
-                encodedPath = abi.encodePacked(encodedPath, fees[indexToAppend], path[indexToAppend]);
-            }
-        } else {
-            encodedPath = abi.encodePacked(path[0]);
-            for (uint256 i = 0; i < fees.length; i++) {
-                encodedPath = abi.encodePacked(encodedPath, fees[i], path[i + 1]);
-            }
-        }
     }
 }

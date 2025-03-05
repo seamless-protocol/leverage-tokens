@@ -9,7 +9,7 @@ import {MockAerodromeRouter} from "test/unit/mock/MockAerodromeRouter.sol";
 
 //  Inherited in `SwapExactOutput.t.sol` tests
 abstract contract SwapExactOutputAerodromeTest is SwapAdapterBaseTest {
-    address public aerodromeFactory = makeAddr("aerodromeFactory");
+    address public aerodromePoolFactory = makeAddr("aerodromePoolFactory");
 
     function test_SwapExactOutputAerodrome_SingleHop() public {
         uint256 outputAmount = 10 ether;
@@ -77,14 +77,15 @@ abstract contract SwapExactOutputAerodromeTest is SwapAdapterBaseTest {
             tickSpacing: new int24[](0),
             exchangeAddresses: ISwapAdapter.ExchangeAddresses({
                 aerodromeRouter: address(mockAerodromeRouter),
-                aerodromeFactory: aerodromeFactory,
+                aerodromePoolFactory: aerodromePoolFactory,
                 aerodromeSlipstreamRouter: address(0),
-                uniswapRouter02: address(0)
+                uniswapSwapRouter02: address(0),
+                uniswapV2Router02: address(0)
             })
         });
 
         IAerodromeRouter.Route[] memory routes = new IAerodromeRouter.Route[](1);
-        routes[0] = IAerodromeRouter.Route(address(fromToken), address(toToken), false, aerodromeFactory);
+        routes[0] = IAerodromeRouter.Route(address(fromToken), address(toToken), false, aerodromePoolFactory);
         MockAerodromeRouter.MockSwap memory mockSwap = MockAerodromeRouter.MockSwap({
             fromToken: fromToken,
             toToken: toToken,
@@ -97,7 +98,7 @@ abstract contract SwapExactOutputAerodromeTest is SwapAdapterBaseTest {
         mockAerodromeRouter.mockNextSwap(mockSwap);
 
         // Mock the additional expected swap of the surplus toToken
-        routes[0] = IAerodromeRouter.Route(path[1], path[0], false, aerodromeFactory);
+        routes[0] = IAerodromeRouter.Route(path[1], path[0], false, aerodromePoolFactory);
         MockAerodromeRouter.MockSwap memory mockSwap2 = MockAerodromeRouter.MockSwap({
             fromToken: toToken,
             toToken: fromToken,
@@ -138,15 +139,16 @@ abstract contract SwapExactOutputAerodromeTest is SwapAdapterBaseTest {
             tickSpacing: new int24[](0),
             exchangeAddresses: ISwapAdapter.ExchangeAddresses({
                 aerodromeRouter: address(mockAerodromeRouter),
-                aerodromeFactory: aerodromeFactory,
+                aerodromePoolFactory: aerodromePoolFactory,
                 aerodromeSlipstreamRouter: address(0),
-                uniswapRouter02: address(0)
+                uniswapSwapRouter02: address(0),
+                uniswapV2Router02: address(0)
             })
         });
 
         IAerodromeRouter.Route[] memory routes = new IAerodromeRouter.Route[](path.length - 1);
         for (uint256 i = 0; i < path.length - 1; i++) {
-            routes[i] = IAerodromeRouter.Route(path[i], path[i + 1], false, aerodromeFactory);
+            routes[i] = IAerodromeRouter.Route(path[i], path[i + 1], false, aerodromePoolFactory);
         }
 
         MockAerodromeRouter.MockSwap memory mockSwap = MockAerodromeRouter.MockSwap({

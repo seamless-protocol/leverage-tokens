@@ -11,6 +11,8 @@ import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
 
 contract MorphoLendingAdapterRemoveCollateralTest is MorphoLendingAdapterBaseTest {
     function testFuzz_removeCollateral(uint256 amount) public {
+        vm.assume(amount > 0);
+
         // Deal Morpho the required collateral token amount
         deal(address(collateralToken), address(morpho), amount);
 
@@ -26,6 +28,13 @@ contract MorphoLendingAdapterRemoveCollateralTest is MorphoLendingAdapterBaseTes
         lendingAdapter.removeCollateral(amount);
 
         assertEq(collateralToken.balanceOf(address(leverageManager)), amount);
+    }
+
+    function test_removeCollateral_ZeroAmount() public {
+        // Nothing should happen
+        vm.prank(address(leverageManager));
+        lendingAdapter.removeCollateral(0);
+        assertEq(collateralToken.balanceOf(address(morpho)), 0);
     }
 
     /// forge-config: default.fuzz.runs = 1

@@ -30,14 +30,15 @@ interface ILeverageRouter {
 
     /// @notice Deposit equity into a strategy
     /// @param strategy Strategy to deposit equity into
-    /// @param equityInCollateralAsset The amount of equity in the collateral asset to deposit into the strategy
+    /// @param equityInCollateralAsset The amount of equity to deposit into the strategy. Denominated in the collateral
+    ///        asset of the strategy
     /// @param minShares Minimum shares to receive from the deposit
     /// @param maxSwapCostInCollateralAsset The maximum amount of collateral from the sender to use to help repay the flash loan
     ///        due to the swap of debt to collateral being unfavorable
     /// @param swapContext Swap context to use for the swap (which DEX to use, the route, tick spacing, etc.)
     /// @dev Flash loans the collateral required to add the equity to the strategy, receives debt, then swaps the debt to the
     ///      strategy's collateral asset. The swapped assets and the sender's supplied collateral are used to repay the flash loan
-    /// @dev The sender should approve the LeverageRouter an amount of collateral assets greater than the equity being added
+    /// @dev The sender should approve the LeverageRouter to spend an amount of collateral assets greater than the equity being added
     ///      to facilitate the deposit in the case that the deposit requires additional collateral to cover swap slippage when swapping
     ///      debt to collateral to repay the flash loan. The approved amount should equal at least `equityInCollateralAsset + maxSwapCostInCollateralAsset`.
     ///      To see the preview of the deposit, `LeverageRouter.leverageManager().previewDeposit(...)` can be used.
@@ -45,6 +46,22 @@ interface ILeverageRouter {
         IStrategy strategy,
         uint256 equityInCollateralAsset,
         uint256 minShares,
+        uint256 maxSwapCostInCollateralAsset,
+        ISwapAdapter.SwapContext memory swapContext
+    ) external;
+
+    /// @notice Withdraw equity from a strategy
+    /// @param strategy Strategy to withdraw equity from
+    /// @param equityInCollateralAsset The amount of equity to withdraw from the strategy. Denominated in the collateral
+    ///        asset of the strategy
+    /// @param maxShares Maximum shares to burn for the withdrawal
+    /// @param maxSwapCostInCollateralAsset The maximum amount of equity received from the withdrawal from the strategy
+    ///        to use to help repay the debt flash loan due to the swap of debt to collateral being unfavorable
+    /// @param swapContext Swap context to use for the swap (which DEX to use, the route, tick spacing, etc.)
+    function withdraw(
+        IStrategy strategy,
+        uint256 equityInCollateralAsset,
+        uint256 maxShares,
         uint256 maxSwapCostInCollateralAsset,
         ISwapAdapter.SwapContext memory swapContext
     ) external;
