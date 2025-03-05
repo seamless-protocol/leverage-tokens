@@ -6,7 +6,6 @@ import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 
 // Internal imports
 import {IStrategy} from "src/interfaces/IStrategy.sol";
-import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 import {LeverageManager} from "src/LeverageManager.sol";
 import {BeaconProxyFactory} from "src/BeaconProxyFactory.sol";
 import {Strategy} from "src/Strategy.sol";

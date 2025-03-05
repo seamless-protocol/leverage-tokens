@@ -9,7 +9,6 @@ import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
 import {IRebalanceRewardDistributor} from "src/interfaces/IRebalanceRewardDistributor.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 import {LeverageManagerBaseTest} from "./LeverageManagerBase.t.sol";
 
 contract ValidateRebalanceEligibility is LeverageManagerBaseTest {
@@ -26,7 +25,7 @@ contract ValidateRebalanceEligibility is LeverageManagerBaseTest {
 
         vm.startPrank(manager);
         strategy = leverageManager.createNewStrategy(
-            Storage.StrategyConfig({
+            ILeverageManager.StrategyConfig({
                 lendingAdapter: ILendingAdapter(address(lendingAdapter)),
                 minCollateralRatio: minRatio,
                 maxCollateralRatio: maxRatio,

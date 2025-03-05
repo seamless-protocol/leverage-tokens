@@ -18,7 +18,6 @@ import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
 import {BeaconProxyFactory} from "src/BeaconProxyFactory.sol";
-import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 import {LeverageManager} from "src/LeverageManager.sol";
 import {Strategy} from "src/Strategy.sol";
 import {LeverageManagerHarness} from "test/unit/LeverageManager/harness/LeverageManagerHarness.t.sol";
@@ -70,7 +69,7 @@ contract IntegrationTestBase is Test {
         leverageManager.setStrategyTokenFactory(address(strategyFactory));
 
         strategy = leverageManager.createNewStrategy(
-            Storage.StrategyConfig({
+            ILeverageManager.StrategyConfig({
                 lendingAdapter: ILendingAdapter(address(morphoLendingAdapter)),
                 minCollateralRatio: BASE_RATIO,
                 targetCollateralRatio: 2 * BASE_RATIO,

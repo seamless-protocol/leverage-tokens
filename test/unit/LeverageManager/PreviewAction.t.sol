@@ -9,16 +9,16 @@ import {ExternalAction} from "src/types/DataTypes.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IRebalanceRewardDistributor} from "src/interfaces/IRebalanceRewardDistributor.sol";
 import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
-import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 import {StrategyState} from "src/types/DataTypes.sol";
 import {LeverageManagerBaseTest} from "../LeverageManager/LeverageManagerBase.t.sol";
+import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 
 contract PreviewActionTest is LeverageManagerBaseTest {
     function setUp() public override {
         super.setUp();
         _createNewStrategy(
             manager,
-            Storage.StrategyConfig({
+            ILeverageManager.StrategyConfig({
                 lendingAdapter: ILendingAdapter(address(lendingAdapter)),
                 minCollateralRatio: _BASE_RATIO() + 1,
                 maxCollateralRatio: 3 * _BASE_RATIO(),

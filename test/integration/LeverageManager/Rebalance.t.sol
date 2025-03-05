@@ -14,7 +14,7 @@ import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {IRebalanceRewardDistributor} from "src/interfaces/IRebalanceRewardDistributor.sol";
 import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
-import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
+import {LeverageManagerBase} from "test/integration/LeverageManager/LeverageManagerBase.t.sol";
 import {LeverageManagerBase} from "test/integration/LeverageManager/LeverageManagerBase.t.sol";
 import {MockRebalanceRewardDistributor} from "test/unit/mock/MockRebalanceRewardDistributor.sol";
 import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
@@ -53,7 +53,7 @@ contract RebalanceTest is LeverageManagerBase {
         );
 
         ethLong2x = leverageManager.createNewStrategy(
-            Storage.StrategyConfig({
+            ILeverageManager.StrategyConfig({
                 lendingAdapter: ILendingAdapter(address(ethLong2xAdapter)),
                 minCollateralRatio: 18 * BASE_RATIO / 10, // 1.8x
                 targetCollateralRatio: 2 * BASE_RATIO, // 2x
@@ -66,7 +66,7 @@ contract RebalanceTest is LeverageManagerBase {
         );
 
         ethShort2x = leverageManager.createNewStrategy(
-            Storage.StrategyConfig({
+            ILeverageManager.StrategyConfig({
                 lendingAdapter: ILendingAdapter(address(ethShort2xAdapter)),
                 minCollateralRatio: 13 * BASE_RATIO / 10, // 1.3x
                 targetCollateralRatio: 15 * BASE_RATIO / 10, // 1.5x

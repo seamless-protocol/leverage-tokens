@@ -5,13 +5,12 @@ import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {FeeManagerHarness} from "test/unit/FeeManager/harness/FeeManagerHarness.sol";
 import {LeverageManager} from "src/LeverageManager.sol";
-import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 import {ActionType, ExternalAction, RebalanceAction, TokenTransfer, StrategyState} from "src/types/DataTypes.sol";
 
 /// @notice Wrapper contract that exposes all internal functions of LeverageManager
 contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
-    function exposed_leverageManager_layoutSlot() external pure returns (bytes32 slot) {
-        Storage.Layout storage $ = Storage.layout();
+    function exposed_getLeverageManagerStorageSlot() external pure returns (bytes32 slot) {
+        LeverageManager.LeverageManagerStorage storage $ = _getLeverageManagerStorage();
 
         assembly {
             slot := $.slot

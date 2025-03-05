@@ -6,7 +6,6 @@ import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 // Internal imports
 import {BeaconProxyFactory} from "src/BeaconProxyFactory.sol";
-import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 import {LeverageManager} from "src/LeverageManager.sol";
 import {LeverageRouter} from "src/periphery/LeverageRouter.sol";
 import {Strategy} from "src/Strategy.sol";

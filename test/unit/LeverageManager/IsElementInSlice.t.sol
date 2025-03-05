@@ -7,9 +7,7 @@ import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 
 // Internal imports
 import {IStrategy} from "src/interfaces/IStrategy.sol";
-import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {LeverageManagerStorage as Storage} from "src/storage/LeverageManagerStorage.sol";
 import {LeverageManagerBaseTest} from "./LeverageManagerBase.t.sol";
 import {RebalanceAction, ActionType} from "src/types/DataTypes.sol";
 

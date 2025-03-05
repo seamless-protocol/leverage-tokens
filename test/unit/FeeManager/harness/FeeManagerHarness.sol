@@ -5,12 +5,11 @@ pragma solidity ^0.8.26;
 import {ExternalAction} from "src/types/DataTypes.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {FeeManager} from "src/FeeManager.sol";
-import {FeeManagerStorage} from "src/storage/FeeManagerStorage.sol";
 
 /// @notice Wrapper contract that exposes all internal functions ofFeeManager
 contract FeeManagerHarness is FeeManager {
-    function exposed_feeManager_layoutSlot() external pure returns (bytes32 slot) {
-        FeeManagerStorage.Layout storage $ = FeeManagerStorage.layout();
+    function exposed_getFeeManagerStorageSlot() external pure returns (bytes32 slot) {
+        FeeManager.FeeManagerStorage storage $ = _getFeeManagerStorage();
 
         assembly {
             slot := $.slot
