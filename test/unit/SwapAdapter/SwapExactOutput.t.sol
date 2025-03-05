@@ -119,7 +119,7 @@ contract SwapExactOutputTest is
 
         uint256 inputAmount = swapAdapter.swapExactOutput(fromToken, outputAmount, maxInputAmount, swapContext);
 
-        assertEq(fromToken.balanceOf(address(this)), 1);
+        assertEq(fromToken.balanceOf(address(this)), excessInputAmount);
         assertEq(toToken.balanceOf(address(this)), outputAmount);
         assertEq(inputAmount, maxInputAmount - excessInputAmount);
     }
