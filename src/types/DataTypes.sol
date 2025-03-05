@@ -19,12 +19,12 @@ enum ActionType {
 
 /// @dev Struct that contains all data related to collateral ratios for a strategy
 struct CollateralRatios {
-    /// @dev Minimum collateral ratio allowed for strategy before triggering rebalance on 8 decimals
+    /// @dev Minimum collateral ratio allowed for strategy before a rebalance can occur. 8 decimals of precision
     ///      Collateral ratio is calculated as collateral value / debt value
     uint256 minCollateralRatio;
-    /// @dev Maximum collateral ratio allowed for strategy before triggering rebalance on 8 decimals
+    /// @dev Maximum collateral ratio allowed for strategy before a rebalance can occur. 8 decimals of precision
     uint256 maxCollateralRatio;
-    /// @dev Target collateral ratio allowed for strategy before triggering rebalance on 8 decimals
+    /// @dev Target collateral ratio of the strategy on 8 decimals
     uint256 targetCollateralRatio;
 }
 
