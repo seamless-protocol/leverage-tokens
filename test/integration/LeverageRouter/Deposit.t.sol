@@ -10,9 +10,6 @@ import {LeverageRouterBase} from "./LeverageRouterBase.t.sol";
 import {SwapPathLib} from "../../utils/SwapPathLib.sol";
 
 contract LeverageRouterDepositTest is LeverageRouterBase {
-    address public constant DAI = 0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb;
-    address public constant cbBTC = 0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf;
-
     /// @dev In this block price on oracle 3392.292471591441746049801068
     function testFork_deposit_UniswapV2() public {
         uint256 equityInCollateralAsset = 1 ether;
@@ -455,27 +452,5 @@ contract LeverageRouterDepositTest is LeverageRouterBase {
         vm.expectRevert(address(WETH));
         leverageRouter.deposit(strategy, equityInCollateralAsset, 0, maxSwapCostInCollateralAsset, swapContext);
         vm.stopPrank();
-    }
-
-    function _dealAndDeposit(
-        IERC20 collateralAsset,
-        IERC20 debtAsset,
-        uint256 dealAmount,
-        uint256 equityInCollateralAsset,
-        uint256 maxSwapCostInCollateralAsset,
-        ISwapAdapter.SwapContext memory swapContext
-    ) internal {
-        deal(address(collateralAsset), user, dealAmount);
-
-        vm.startPrank(user);
-        collateralAsset.approve(address(leverageRouter), equityInCollateralAsset + maxSwapCostInCollateralAsset);
-        leverageRouter.deposit(strategy, equityInCollateralAsset, 0, maxSwapCostInCollateralAsset, swapContext);
-        vm.stopPrank();
-
-        // No leftover assets in the LeverageRouter or the SwapAdapter
-        assertEq(collateralAsset.balanceOf(address(leverageRouter)), 0);
-        assertEq(collateralAsset.balanceOf(address(swapAdapter)), 0);
-        assertEq(debtAsset.balanceOf(address(leverageRouter)), 0);
-        assertEq(debtAsset.balanceOf(address(swapAdapter)), 0);
     }
 }

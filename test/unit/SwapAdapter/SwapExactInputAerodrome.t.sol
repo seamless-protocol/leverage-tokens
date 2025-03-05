@@ -88,10 +88,10 @@ abstract contract SwapExactInputAerodromeTest is SwapAdapterBaseTest {
         }
 
         MockAerodromeRouter.MockSwap memory mockSwap = MockAerodromeRouter.MockSwap({
-            fromToken: IERC20(path[0]),
-            toToken: IERC20(path[path.length - 1]),
-            fromAmount: inputAmount,
-            toAmount: minOutputAmount,
+            inputToken: IERC20(path[0]),
+            outputToken: IERC20(path[path.length - 1]),
+            inputAmount: inputAmount,
+            outputAmount: minOutputAmount,
             encodedRoutes: keccak256(abi.encode(routes)),
             deadline: block.timestamp,
             isExecuted: false

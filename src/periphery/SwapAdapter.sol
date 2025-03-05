@@ -66,6 +66,12 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
             inputAmount = _swapExactOutputUniV3(outputAmount, maxInputAmount, swapContext);
         }
 
+        // Transfer back excess inputToken not used for the swap to the sender
+        uint256 excessInputAmount = maxInputAmount - inputAmount;
+        if (excessInputAmount > 0) {
+            SafeERC20.safeTransfer(inputToken, msg.sender, excessInputAmount);
+        }
+
         return inputAmount;
     }
 
@@ -215,8 +221,6 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
                 _reversePath(swapContext.path)
             );
 
-            // We need to transfer the outputToken and the surplus inputToken to the sender
-            SafeERC20.safeTransfer(IERC20(swapContext.path[0]), msg.sender, surplusInputAmount);
             SafeERC20.safeTransfer(IERC20(swapContext.path[swapContext.path.length - 1]), msg.sender, outputAmount);
 
             return maxInputAmount - surplusInputAmount;

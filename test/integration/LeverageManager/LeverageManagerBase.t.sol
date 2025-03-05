@@ -3,7 +3,6 @@ pragma solidity ^0.8.26;
 
 // Dependency imports
 import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // Internal imports
 import {IStrategy} from "src/interfaces/IStrategy.sol";
@@ -65,14 +64,5 @@ contract LeverageManagerBase is IntegrationTestBase {
 
     function _getStrategyState() internal view returns (StrategyState memory) {
         return LeverageManagerHarness(address(leverageManager)).exposed_getStrategyState(strategy);
-    }
-
-    function _convertToAssets(uint256 shares) internal view returns (uint256) {
-        return Math.mulDiv(
-            shares,
-            morphoLendingAdapter.getEquityInCollateralAsset() + 1,
-            strategy.totalSupply() + 1,
-            Math.Rounding.Floor
-        );
     }
 }

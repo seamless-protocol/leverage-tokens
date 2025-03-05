@@ -10,10 +10,10 @@ import {IAerodromeRouter} from "src/interfaces/periphery/IAerodromeRouter.sol";
 
 contract MockAerodromeRouter is Test {
     struct MockSwap {
-        IERC20 fromToken;
-        IERC20 toToken;
-        uint256 fromAmount;
-        uint256 toAmount;
+        IERC20 inputToken;
+        IERC20 outputToken;
+        uint256 inputAmount;
+        uint256 outputAmount;
         bytes32 encodedRoutes;
         uint256 deadline;
         bool isExecuted;
@@ -36,20 +36,24 @@ contract MockAerodromeRouter is Test {
             MockSwap memory swap = swaps[i];
             bytes32 encodedRoute = keccak256(abi.encode(routes));
             if (!swap.isExecuted && swap.encodedRoutes == encodedRoute && swap.deadline == deadline) {
-                require(swap.toAmount >= amountOutMin, "MockAerodromeRouter: INSUFFICIENT_OUTPUT_AMOUNT");
+                require(swap.outputAmount >= amountOutMin, "MockAerodromeRouter: INSUFFICIENT_OUTPUT_AMOUNT");
 
-                // Transfer in the fromToken
-                swap.fromToken.transferFrom(msg.sender, address(this), swap.fromAmount);
+                // Transfer in the inputToken
+                swap.inputToken.transferFrom(msg.sender, address(this), swap.inputAmount);
 
-                // Transfer out the toToken
-                deal(address(swap.toToken), address(this), swap.toToken.balanceOf(address(this)) + swap.toAmount);
-                swap.toToken.transfer(to, swap.toAmount);
+                // Transfer out the outputToken
+                deal(
+                    address(swap.outputToken),
+                    address(this),
+                    swap.outputToken.balanceOf(address(this)) + swap.outputAmount
+                );
+                swap.outputToken.transfer(to, swap.outputAmount);
 
                 swaps[i].isExecuted = true;
 
                 uint256[] memory returnAmounts = new uint256[](2);
                 returnAmounts[0] = amountIn;
-                returnAmounts[1] = swap.toAmount;
+                returnAmounts[1] = swap.outputAmount;
                 return returnAmounts;
             }
         }
