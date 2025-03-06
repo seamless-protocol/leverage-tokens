@@ -312,15 +312,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         _transferTokens(tokensOut, address(this), msg.sender);
     }
 
-    /// @notice Charges treasury fee, sending the asset to the treasury
-    /// @param asset Asset to charge fee for
-    /// @param amount Amount of fee to charge
-    function _chargeTreasuryFee(IERC20 asset, uint256 amount) internal {
-        if (amount > 0) {
-            SafeERC20.safeTransfer(asset, getTreasury(), amount);
-        }
-    }
-
     /// @notice Validates if caller is allowed to rebalance strategy
     /// @param strategy Strategy to validate caller for
     /// @dev Caller is not allowed to rebalance strategy if they are not whitelisted in the strategy's rebalance whitelist module
@@ -524,6 +515,15 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         }
 
         return false;
+    }
+
+    /// @notice Charges treasury fee, sending the asset to the treasury
+    /// @param asset Asset to charge fee for
+    /// @param amount Amount of fee to charge
+    function _chargeTreasuryFee(IERC20 asset, uint256 amount) internal {
+        if (amount > 0) {
+            SafeERC20.safeTransfer(asset, getTreasury(), amount);
+        }
     }
 
     /// @notice Executes action on lending adapter from specific strategy
