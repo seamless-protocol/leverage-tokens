@@ -522,6 +522,8 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             collateral = Math.mulDiv(lendingAdapter.getCollateral(), shares, totalShares, collateralRounding);
             debt = Math.mulDiv(totalDebt, shares, totalShares, debtRounding);
         }
+
+        return (collateral, debt);
     }
 
     /// @notice Function that checks if specific element has already been processed in the slice up to the given index
