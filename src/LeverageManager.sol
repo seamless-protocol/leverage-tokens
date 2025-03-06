@@ -12,14 +12,14 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {SignedMath} from "@openzeppelin/contracts/utils/math/SignedMath.sol";
 
 // Internal imports
+import {IBeaconProxyFactory} from "src/interfaces/IBeaconProxyFactory.sol";
+import {IFeeManager} from "src/interfaces/IFeeManager.sol";
+import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
+import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IRebalanceRewardDistributor} from "src/interfaces/IRebalanceRewardDistributor.sol";
 import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
-import {IBeaconProxyFactory} from "src/interfaces/IBeaconProxyFactory.sol";
-import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {FeeManager} from "src/FeeManager.sol";
-import {IFeeManager} from "src/interfaces/IFeeManager.sol";
-import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {CollateralRatios, StrategyState} from "src/types/DataTypes.sol";
 import {Strategy} from "src/Strategy.sol";
 import {RebalanceAction, TokenTransfer, ActionType, ExternalAction, StrategyState} from "src/types/DataTypes.sol";
@@ -158,7 +158,13 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     function previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
         public
         view
-        returns (uint256 collateralToAdd, uint256 debtToBorrow, uint256 sharesAfterFee, uint256 sharesFee)
+        returns (
+            uint256 collateralToAdd,
+            uint256 debtToBorrow,
+            uint256 sharesAfterFee,
+            uint256 sharesFee,
+            uint256 treasuryFee
+        )
     {
         return _previewAction(strategy, equityInCollateralAsset, ExternalAction.Deposit);
     }
@@ -167,7 +173,13 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     function previewWithdraw(IStrategy strategy, uint256 equityInCollateralAsset)
         public
         view
-        returns (uint256 collateralToRemove, uint256 debtToRepay, uint256 sharesAfterFee, uint256 sharesFee)
+        returns (
+            uint256 collateralToRemove,
+            uint256 debtToRepay,
+            uint256 sharesAfterFee,
+            uint256 sharesFee,
+            uint256 treasuryFee
+        )
     {
         return _previewAction(strategy, equityInCollateralAsset, ExternalAction.Withdraw);
     }
@@ -175,18 +187,29 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     /// @inheritdoc ILeverageManager
     function deposit(IStrategy strategy, uint256 equityInCollateralAsset, uint256 minShares)
         external
-        returns (uint256, uint256, uint256, uint256)
+        returns (uint256, uint256, uint256, uint256, uint256)
     {
-        (uint256 collateralToAdd, uint256 debtToBorrow, uint256 sharesAfterFee, uint256 sharesFee) =
-            previewDeposit(strategy, equityInCollateralAsset);
+        (
+            uint256 collateralToAdd,
+            uint256 debtToBorrow,
+            uint256 sharesAfterFee,
+            uint256 sharesFee,
+            uint256 treasuryFeeInCollateralAsset
+        ) = previewDeposit(strategy, equityInCollateralAsset);
 
         if (sharesAfterFee < minShares) {
             revert SlippageTooHigh(sharesAfterFee, minShares);
         }
 
-        // Take asset from sender and supply it as collateral
-        SafeERC20.safeTransferFrom(getStrategyCollateralAsset(strategy), msg.sender, address(this), collateralToAdd);
+        // Take collateral asset from sender
+        IERC20 collateralAsset = getStrategyCollateralAsset(strategy);
+        SafeERC20.safeTransferFrom(collateralAsset, msg.sender, address(this), collateralToAdd);
+
+        // Add collateral to strategy
         _executeLendingAdapterAction(strategy, ActionType.AddCollateral, collateralToAdd);
+
+        // Take treasury fee
+        SafeERC20.safeTransferFrom(collateralAsset, msg.sender, getTreasury(), treasuryFeeInCollateralAsset);
 
         // Borrow and send debt assets to caller
         _executeLendingAdapterAction(strategy, ActionType.Borrow, debtToBorrow);
@@ -197,18 +220,30 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
         // Emit event and explicit return statement
         emit Deposit(
-            strategy, msg.sender, collateralToAdd, debtToBorrow, equityInCollateralAsset, sharesAfterFee, sharesFee
+            strategy,
+            msg.sender,
+            collateralToAdd,
+            debtToBorrow,
+            equityInCollateralAsset,
+            sharesAfterFee,
+            sharesFee,
+            treasuryFeeInCollateralAsset
         );
-        return (collateralToAdd, debtToBorrow, sharesAfterFee, sharesFee);
+        return (collateralToAdd, debtToBorrow, sharesAfterFee, sharesFee, treasuryFeeInCollateralAsset);
     }
 
     /// @inheritdoc ILeverageManager
     function withdraw(IStrategy strategy, uint256 equityInCollateralAsset, uint256 maxShares)
         external
-        returns (uint256, uint256, uint256, uint256)
+        returns (uint256, uint256, uint256, uint256, uint256)
     {
-        (uint256 collateral, uint256 debt, uint256 sharesAfterFee, uint256 sharesFee) =
-            previewWithdraw(strategy, equityInCollateralAsset);
+        (
+            uint256 collateral,
+            uint256 debt,
+            uint256 sharesAfterFee,
+            uint256 sharesFee,
+            uint256 treasuryFeeInCollateralAsset
+        ) = previewWithdraw(strategy, equityInCollateralAsset);
 
         if (sharesAfterFee > maxShares) {
             revert SlippageTooHigh(sharesAfterFee, maxShares);
@@ -221,13 +256,26 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         SafeERC20.safeTransferFrom(getStrategyDebtAsset(strategy), msg.sender, address(this), debt);
         _executeLendingAdapterAction(strategy, ActionType.Repay, debt);
 
-        // Withdraw from lending pool and send assets to user
-        _executeLendingAdapterAction(strategy, ActionType.RemoveCollateral, collateral);
-        SafeERC20.safeTransfer(getStrategyCollateralAsset(strategy), msg.sender, collateral);
+        // Withdraw collateral from lending pool
+        _executeLendingAdapterAction(strategy, ActionType.RemoveCollateral, collateral + treasuryFeeInCollateralAsset);
+
+        // Send collateral assets to sender and treasury
+        IERC20 collateralAsset = getStrategyCollateralAsset(strategy);
+        SafeERC20.safeTransfer(collateralAsset, msg.sender, collateral);
+        SafeERC20.safeTransfer(collateralAsset, getTreasury(), treasuryFeeInCollateralAsset);
 
         // Emit event and explicit return statement
-        emit Withdraw(strategy, msg.sender, collateral, debt, equityInCollateralAsset, sharesAfterFee, sharesFee);
-        return (collateral, debt, sharesAfterFee, sharesFee);
+        emit Withdraw(
+            strategy,
+            msg.sender,
+            collateral,
+            debt,
+            equityInCollateralAsset,
+            sharesAfterFee,
+            sharesFee,
+            treasuryFeeInCollateralAsset
+        );
+        return (collateral, debt, sharesAfterFee, sharesFee, treasuryFeeInCollateralAsset);
     }
 
     /// @inheritdoc ILeverageManager
@@ -401,6 +449,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     /// @return debt Amount of debt to borrow or repay
     /// @return sharesAfterFee Amount of shares to mint or burn after fee
     /// @return sharesFee Amount of fee to pay for the action
+    /// @return treasuryFeeInCollateralAsset Amount of collateral that will be charged for the action
     /// @dev If the strategy has zero total supply of shares (so the strategy does not hold any collateral or debt,
     ///      or holds some leftover dust after all shares are redeemed), then the preview will use the target
     ///      collateral ratio for determining how much collateral and debt is required instead of the current collateral ratio.
@@ -408,7 +457,13 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     function _previewAction(IStrategy strategy, uint256 equityInCollateralAsset, ExternalAction action)
         internal
         view
-        returns (uint256 collateral, uint256 debt, uint256 sharesAfterFee, uint256 sharesFee)
+        returns (
+            uint256 collateral,
+            uint256 debt,
+            uint256 sharesAfterFee,
+            uint256 sharesFee,
+            uint256 treasuryFeeInCollateralAsset
+        )
     {
         // Cache
         ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
@@ -434,7 +489,13 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             debt = Math.mulDiv(totalDebt, sharesBeforeFee, totalShares, debtRounding);
         }
 
-        return (collateral, debt, sharesAfterFee, sharesFee);
+        // Add treasury fee to the collateral to be added if action is deposit, subtract if action is withdraw
+        treasuryFeeInCollateralAsset = _computeTreasuryFee(collateral, action);
+        collateral = action == ExternalAction.Deposit
+            ? collateral + treasuryFeeInCollateralAsset
+            : collateral - treasuryFeeInCollateralAsset;
+
+        return (collateral, debt, sharesAfterFee, sharesFee, treasuryFeeInCollateralAsset);
     }
 
     /// @notice Function that checks if specific element has already been processed in the slice up to the given index

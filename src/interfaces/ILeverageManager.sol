@@ -73,7 +73,8 @@ interface ILeverageManager is IFeeManager {
         uint256 borrowedDebt,
         uint256 equityInCollateralAsset,
         uint256 sharesMinted,
-        uint256 sharesFee
+        uint256 sharesFee,
+        uint256 treasuryFeeInCollateralAsset
     );
 
     /// @notice Event emitted when user withdraws assets from strategy
@@ -84,7 +85,8 @@ interface ILeverageManager is IFeeManager {
         uint256 repaidDebt,
         uint256 equityInCollateralAsset,
         uint256 sharesBurned,
-        uint256 sharesFee
+        uint256 sharesFee,
+        uint256 treasuryFeeInCollateralAsset
     );
 
     /// @notice Returns factory for creating new strategy tokens
@@ -160,11 +162,18 @@ interface ILeverageManager is IFeeManager {
     /// @return debtToBorrow Amount of debt that will be borrowed and sent to sender
     /// @return sharesAfterFee Amount of shares that will be minted to the sender after fee
     /// @return sharesFee Amount of shares that will be charged for the deposit
+    /// @return treasuryFeeInCollateralAsset Amount of collateral that will be charged for the deposit
     /// @dev Sender should approve leverage manager to spend collateralToAdd amount of collateral asset
     function previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
         external
         view
-        returns (uint256 collateralToAdd, uint256 debtToBorrow, uint256 sharesAfterFee, uint256 sharesFee);
+        returns (
+            uint256 collateralToAdd,
+            uint256 debtToBorrow,
+            uint256 sharesAfterFee,
+            uint256 sharesFee,
+            uint256 treasuryFeeInCollateralAsset
+        );
 
     /// @notice Previews withdraw function call and returns all required data
     /// @param strategy Strategy to preview withdraw for
@@ -173,11 +182,18 @@ interface ILeverageManager is IFeeManager {
     /// @return debtToRepay Amount of debt that will be taken from sender and repaid to the strategy
     /// @return sharesAfterFee Amount of shares that will be burned from sender
     /// @return sharesFee Amount of shares that will be charged for the withdraw
+    /// @return treasuryFeeInCollateralAsset Amount of collateral that will be charged for the withdraw
     /// @dev Sender should approve leverage manager to spend debtToRepay amount of debt asset
     function previewWithdraw(IStrategy strategy, uint256 equityInCollateralAsset)
         external
         view
-        returns (uint256 collateralToRemove, uint256 debtToRepay, uint256 sharesAfterFee, uint256 sharesFee);
+        returns (
+            uint256 collateralToRemove,
+            uint256 debtToRepay,
+            uint256 sharesAfterFee,
+            uint256 sharesFee,
+            uint256 treasuryFeeInCollateralAsset
+        );
 
     /// @notice Deposits equity into a strategy and mints shares to the sender
     /// @param strategy The strategy to deposit into
@@ -187,9 +203,16 @@ interface ILeverageManager is IFeeManager {
     /// @return debt Amount of debt that was added
     /// @return sharesMinted The amount of shares minted to the sender
     /// @return sharesFee Share fee for deposit
+    /// @return treasuryFeeInCollateralAsset Amount of collateral that was charged for the deposit
     function deposit(IStrategy strategy, uint256 equityInCollateralAsset, uint256 minShares)
         external
-        returns (uint256 collateral, uint256 debt, uint256 sharesMinted, uint256 sharesFee);
+        returns (
+            uint256 collateral,
+            uint256 debt,
+            uint256 sharesMinted,
+            uint256 sharesFee,
+            uint256 treasuryFeeInCollateralAsset
+        );
 
     /// @notice Withdraws equity from a strategy and burns shares from sender
     /// @param strategy The strategy to withdraw from
@@ -199,9 +222,16 @@ interface ILeverageManager is IFeeManager {
     /// @return debt Amount of debt that was repaid to strategy, taken from sender
     /// @return sharesBurned The amount of the sender's shares that were burned for the withdrawal
     /// @return sharesFee Share fee for withdraw
+    /// @return treasuryFeeInCollateralAsset Amount of collateral that was charged for the withdraw
     function withdraw(IStrategy strategy, uint256 equityInCollateralAsset, uint256 maxShares)
         external
-        returns (uint256 collateral, uint256 debt, uint256 sharesBurned, uint256 sharesFee);
+        returns (
+            uint256 collateral,
+            uint256 debt,
+            uint256 sharesBurned,
+            uint256 sharesFee,
+            uint256 treasuryFeeInCollateralAsset
+        );
 
     /// @notice Rebalances strategies based on provided actions
     /// @param actions Array of rebalance actions to execute (add collateral, remove collateral, borrow or repay)

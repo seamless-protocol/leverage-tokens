@@ -21,8 +21,10 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
     /// @dev Struct containing all state for the FeeManager contract
     /// @custom:storage-location erc7201:seamless.contracts.storage.FeeManager
     struct FeeManagerStorage {
-        /// @dev Treasury address that receives all the fees
+        /// @dev Treasury address that receives treasury fees
         address treasury;
+        /// @dev Treasury fee for each action
+        mapping(ExternalAction action => uint256) treasuryActionFee;
         /// @dev Strategy address => Action => Fee
         mapping(IStrategy strategy => mapping(ExternalAction action => uint256)) strategyActionFee;
     }
@@ -45,19 +47,18 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
     function __FeeManager_init_unchained() internal onlyInitializing {}
 
     /// @inheritdoc IFeeManager
-    function getTreasury() public view returns (address treasury) {
-        return _getFeeManagerStorage().treasury;
-    }
-
-    /// @inheritdoc IFeeManager
     function getStrategyActionFee(IStrategy strategy, ExternalAction action) public view returns (uint256 fee) {
         return _getFeeManagerStorage().strategyActionFee[strategy][action];
     }
 
     /// @inheritdoc IFeeManager
-    function setTreasury(address treasury) external onlyRole(FEE_MANAGER_ROLE) {
-        _getFeeManagerStorage().treasury = treasury;
-        emit TreasurySet(treasury);
+    function getTreasury() public view returns (address treasury) {
+        return _getFeeManagerStorage().treasury;
+    }
+
+    /// @inheritdoc IFeeManager
+    function getTreasuryActionFee(ExternalAction action) public view returns (uint256 fee) {
+        return _getFeeManagerStorage().treasuryActionFee[action];
     }
 
     /// @inheritdoc IFeeManager
@@ -72,6 +73,30 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
 
         _getFeeManagerStorage().strategyActionFee[strategy][action] = fee;
         emit StrategyActionFeeSet(strategy, action, fee);
+    }
+
+    /// @inheritdoc IFeeManager
+    function setTreasury(address treasury) external onlyRole(FEE_MANAGER_ROLE) {
+        _getFeeManagerStorage().treasury = treasury;
+        emit TreasurySet(treasury);
+    }
+
+    /// @inheritdoc IFeeManager
+    function setTreasuryActionFee(ExternalAction action, uint256 fee) external onlyRole(FEE_MANAGER_ROLE) {
+        if (fee > MAX_FEE) {
+            revert FeeTooHigh(fee, MAX_FEE);
+        }
+
+        _getFeeManagerStorage().treasuryActionFee[action] = fee;
+        emit TreasuryActionFeeSet(action, fee);
+    }
+
+    /// @notice Computes treasury fee based on amount and action
+    /// @param amount Amount to compute fee for
+    /// @param action Action to compute fee for
+    /// @return feeAmount Fee amount
+    function _computeTreasuryFee(uint256 amount, ExternalAction action) internal view returns (uint256 feeAmount) {
+        return Math.mulDiv(amount, getTreasuryActionFee(action), MAX_FEE, Math.Rounding.Ceil);
     }
 
     /// @notice Computes fee based on user action
