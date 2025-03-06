@@ -469,7 +469,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         returns (PreviewActionData memory data)
     {
         (
-            uint256 equityForStrategyInCollateralAsset,
+            uint256 equityForStrategyAfterFeesInCollateralAsset,
             uint256 equityForSharesAfterFeesInCollateralAsset,
             uint256 strategyFeeInCollateralAsset,
             uint256 treasuryFeeInCollateralAsset
@@ -478,7 +478,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         data.shares = _convertToShares(strategy, equityForSharesAfterFeesInCollateralAsset);
 
         (uint256 collateralForStrategy, uint256 debtForStrategy) =
-            _computeCollateralAndDebtForStrategyAction(strategy, equityForStrategyInCollateralAsset, action);
+            _computeCollateralAndDebtForStrategyAction(strategy, equityForStrategyAfterFeesInCollateralAsset, action);
 
         data.collateral = collateralForStrategy;
         data.debt = debtForStrategy;
