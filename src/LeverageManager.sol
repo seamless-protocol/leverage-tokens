@@ -491,9 +491,10 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             ? equityForStrategyInCollateralAsset - strategyFeeInCollateralAsset
             : equityForStrategyInCollateralAsset + strategyFeeInCollateralAsset;
         data.sharesAfterFee = _convertToShares(strategy, equityForSharesAfterFeesInCollateralAsset);
+        uint256 sharesBeforeFees = _convertToShares(strategy, equityInCollateralAsset);
         data.sharesFee = action == ExternalAction.Deposit
-            ? _convertToShares(strategy, equityInCollateralAsset) - data.sharesAfterFee
-            : data.sharesAfterFee - _convertToShares(strategy, equityInCollateralAsset);
+            ? sharesBeforeFees - data.sharesAfterFee
+            : data.sharesAfterFee - sharesBeforeFees;
 
         return data;
     }
