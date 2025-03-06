@@ -28,16 +28,16 @@ struct CollateralRatios {
     uint256 targetCollateralRatio;
 }
 
-struct PreviewActionData {
+struct ActionData {
     /// @dev Amount of collateral to add or withdraw
     uint256 collateral;
     /// @dev Amount of debt to borrow or repay
     uint256 debt;
-    /// @dev Amount of shares to mint or burn after fee
+    /// @dev Amount of shares to mint or burn
     uint256 shares;
-    /// @dev Amount of collateral that will be charged for the action to the strategy
+    /// @dev Amount of collateral charged for the action to the strategy
     uint256 strategyFeeInCollateralAsset;
-    /// @dev Amount of collateral that will be charged for the action to the treasury
+    /// @dev Amount of collateral charged for the action to the treasury
     uint256 treasuryFeeInCollateralAsset;
 }
 

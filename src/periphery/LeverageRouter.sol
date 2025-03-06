@@ -11,7 +11,7 @@ import {ILeverageManager} from "../interfaces/ILeverageManager.sol";
 import {IStrategy} from "../interfaces/IStrategy.sol";
 import {ISwapAdapter} from "../interfaces/periphery/ISwapAdapter.sol";
 import {ILeverageRouter} from "../interfaces/periphery/ILeverageRouter.sol";
-import {ExternalAction, PreviewActionData} from "../types/DataTypes.sol";
+import {ActionData, ExternalAction} from "../types/DataTypes.sol";
 
 contract LeverageRouter is ILeverageRouter {
     /// @notice Deposit related parameters to pass to the Morpho flash loan callback handler for deposits
@@ -81,7 +81,7 @@ contract LeverageRouter is ILeverageRouter {
         uint256 maxSwapCostInCollateralAsset,
         ISwapAdapter.SwapContext memory swapContext
     ) external {
-        PreviewActionData memory previewData = leverageManager.previewDeposit(strategy, equityInCollateralAsset);
+        ActionData memory previewData = leverageManager.previewDeposit(strategy, equityInCollateralAsset);
 
         bytes memory depositData = abi.encode(
             DepositParams({
@@ -111,7 +111,7 @@ contract LeverageRouter is ILeverageRouter {
         uint256 maxSwapCostInCollateralAsset,
         ISwapAdapter.SwapContext memory swapContext
     ) external {
-        PreviewActionData memory previewData = leverageManager.previewWithdraw(strategy, equityInCollateralAsset);
+        ActionData memory previewData = leverageManager.previewWithdraw(strategy, equityInCollateralAsset);
 
         bytes memory withdrawData = abi.encode(
             WithdrawParams({
@@ -167,15 +167,15 @@ contract LeverageRouter is ILeverageRouter {
 
         // Use the flash loaned collateral and the equity from the sender for the deposit into the strategy
         collateralAsset.approve(address(leverageManager), collateralLoanAmount + params.equityInCollateralAsset);
-        (, uint256 debtToBorrow, uint256 sharesReceived,,) =
+        ActionData memory actionData =
             leverageManager.deposit(params.strategy, params.equityInCollateralAsset, params.minShares);
 
         // Swap the debt asset received from the deposit to the collateral asset, used to repay the flash loan
-        debtAsset.approve(address(swapper), debtToBorrow);
+        debtAsset.approve(address(swapper), actionData.debt);
 
         uint256 collateralFromSwap = swapper.swapExactInput(
             debtAsset,
-            debtToBorrow,
+            actionData.debt,
             0, // Set to zero because additional collateral from the sender is used to help repay the flash loan
             params.swapContext
         );
@@ -193,7 +193,7 @@ contract LeverageRouter is ILeverageRouter {
         }
 
         // Transfer shares received from the deposit to the deposit sender
-        SafeERC20.safeTransfer(params.strategy, params.sender, sharesReceived);
+        SafeERC20.safeTransfer(params.strategy, params.sender, actionData.shares);
 
         // Approve morpho to transfer assets to repay the flash loan
         collateralAsset.approve(address(morpho), collateralLoanAmount);
@@ -212,16 +212,16 @@ contract LeverageRouter is ILeverageRouter {
 
         // Withdraw the equity from the strategy
         debtAsset.approve(address(leverageManager), debtLoanAmount);
-        (uint256 collateralReceived,,,,) =
+        ActionData memory actionData =
             leverageManager.withdraw(params.strategy, params.equityInCollateralAsset, params.maxShares);
 
         // Swap the collateral asset received from the withdrawal to the debt asset, used to repay the flash loan
-        collateralAsset.approve(address(swapper), collateralReceived);
+        collateralAsset.approve(address(swapper), actionData.collateral);
         uint256 collateralAmountSwapped =
-            swapper.swapExactOutput(collateralAsset, debtLoanAmount, collateralReceived, params.swapContext);
+            swapper.swapExactOutput(collateralAsset, debtLoanAmount, actionData.collateral, params.swapContext);
 
         // Check if the amount of collateral swapped to repay the flash loan is greater than the allowed cost
-        uint256 remainingCollateral = collateralReceived - collateralAmountSwapped;
+        uint256 remainingCollateral = actionData.collateral - collateralAmountSwapped;
         if (remainingCollateral < params.equityInCollateralAsset - params.maxSwapCostInCollateralAsset) {
             revert MaxSwapCostExceeded(
                 params.equityInCollateralAsset - remainingCollateral, params.maxSwapCostInCollateralAsset
