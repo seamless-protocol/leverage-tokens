@@ -468,7 +468,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         data.treasuryFeeInCollateralAsset = _computeTreasuryFee(equityInCollateralAsset, action);
 
         // For deposits we need to subtract the treasury fee from the equity amount used to
-        // calculate the shares, collateral to add to the strategy, and debt to borrow from the strategy.
+        // calculate the shares, collateral to add to the strategy, and debt to borrow from the strategy
         if (action == ExternalAction.Deposit) {
             equityInCollateralAsset -= data.treasuryFeeInCollateralAsset;
         }
@@ -496,6 +496,9 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             data.debt = Math.mulDiv(totalDebt, sharesBeforeFee, totalShares, debtRounding);
         }
 
+        // For deposits, the collateral amount returned is the total collateral required to execute the deposit, so we
+        // add the treasury fee to it. For withdrawals, the collateral amount returned is the collateral sent to the user,
+        // so we subtract the treasury fee from it
         data.collateral = action == ExternalAction.Deposit
             ? data.collateral + data.treasuryFeeInCollateralAsset
             : data.collateral - data.treasuryFeeInCollateralAsset;
