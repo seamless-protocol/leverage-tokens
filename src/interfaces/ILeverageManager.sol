@@ -11,7 +11,7 @@ import {IStrategy} from "./IStrategy.sol";
 import {CollateralRatios} from "src/types/DataTypes.sol";
 import {IBeaconProxyFactory} from "./IBeaconProxyFactory.sol";
 import {ILendingAdapter} from "./ILendingAdapter.sol";
-import {RebalanceAction, TokenTransfer} from "src/types/DataTypes.sol";
+import {PreviewActionData, RebalanceAction, TokenTransfer} from "src/types/DataTypes.sol";
 import {IRebalanceRewardDistributor} from "./IRebalanceRewardDistributor.sol";
 
 interface ILeverageManager is IFeeManager {
@@ -158,44 +158,34 @@ interface ILeverageManager is IFeeManager {
     /// @notice Previews deposit function call and returns all required data
     /// @param strategy Strategy to preview deposit for
     /// @param equityInCollateralAsset Equity to deposit denominated in collateral asset
-    /// @return collateralToAdd Amount of collateral that sender needs to add to the strategy, including the treasury
+    /// @return data Preview data for deposit
+    ///         - collateralToAdd Amount of collateral that sender needs to add to the strategy, including the treasury
     ///         fee
-    /// @return debtToBorrow Amount of debt that will be borrowed and sent to sender
-    /// @return sharesAfterFee Amount of shares that will be minted to the sender after fee
-    /// @return sharesFee Amount of shares that will be charged for the deposit
-    /// @return treasuryFeeInCollateralAsset Amount of collateral that will be charged for the deposit
+    ///         - debtToBorrow Amount of debt that will be borrowed and sent to sender
+    ///         - sharesAfterFee Amount of shares that will be minted to the sender after fee
+    ///         - sharesFee Amount of shares that will be charged for the deposit
+    ///         - treasuryFeeInCollateralAsset Amount of collateral that will be charged for the deposit
     /// @dev Sender should approve leverage manager to spend collateralToAdd amount of collateral asset
     function previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
         external
         view
-        returns (
-            uint256 collateralToAdd,
-            uint256 debtToBorrow,
-            uint256 sharesAfterFee,
-            uint256 sharesFee,
-            uint256 treasuryFeeInCollateralAsset
-        );
+        returns (PreviewActionData memory data);
 
     /// @notice Previews withdraw function call and returns all required data
     /// @param strategy Strategy to preview withdraw for
     /// @param equityInCollateralAsset Equity to withdraw denominated in collateral asset
-    /// @return collateralToRemove Amount of collateral that will be removed from the strategy and sent to sender
-    /// @return debtToRepay Amount of debt that will be taken from sender and repaid to the strategy
-    /// @return sharesAfterFee Amount of shares that will be burned from sender
-    /// @return sharesFee Amount of shares that will be charged for the withdraw
-    /// @return treasuryFeeInCollateralAsset Amount of collateral that will be removed from strategy and sent to
+    /// @return data Preview data for withdraw
+    ///         - collateralToRemove Amount of collateral that will be removed from the strategy and sent to sender
+    ///         - debtToRepay Amount of debt that will be taken from sender and repaid to the strategy
+    ///         - sharesAfterFee Amount of shares that will be burned from sender
+    ///         - sharesFee Amount of shares that will be charged for the withdraw
+    ///         - treasuryFeeInCollateralAsset Amount of collateral that will be removed from strategy and sent to
     ///         the treasury
     /// @dev Sender should approve leverage manager to spend debtToRepay amount of debt asset
     function previewWithdraw(IStrategy strategy, uint256 equityInCollateralAsset)
         external
         view
-        returns (
-            uint256 collateralToRemove,
-            uint256 debtToRepay,
-            uint256 sharesAfterFee,
-            uint256 sharesFee,
-            uint256 treasuryFeeInCollateralAsset
-        );
+        returns (PreviewActionData memory data);
 
     /// @notice Deposits equity into a strategy and mints shares to the sender
     /// @param strategy The strategy to deposit into

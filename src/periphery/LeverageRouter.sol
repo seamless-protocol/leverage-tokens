@@ -11,7 +11,7 @@ import {ILeverageManager} from "../interfaces/ILeverageManager.sol";
 import {IStrategy} from "../interfaces/IStrategy.sol";
 import {ISwapAdapter} from "../interfaces/periphery/ISwapAdapter.sol";
 import {ILeverageRouter} from "../interfaces/periphery/ILeverageRouter.sol";
-import {ExternalAction} from "../types/DataTypes.sol";
+import {ExternalAction, PreviewActionData} from "../types/DataTypes.sol";
 
 contract LeverageRouter is ILeverageRouter {
     /// @notice Deposit related parameters to pass to the Morpho flash loan callback handler for deposits
@@ -81,7 +81,7 @@ contract LeverageRouter is ILeverageRouter {
         uint256 maxSwapCostInCollateralAsset,
         ISwapAdapter.SwapContext memory swapContext
     ) external {
-        (uint256 collateralToAdd,,,,) = leverageManager.previewDeposit(strategy, equityInCollateralAsset);
+        PreviewActionData memory previewData = leverageManager.previewDeposit(strategy, equityInCollateralAsset);
 
         bytes memory depositData = abi.encode(
             DepositParams({
@@ -98,7 +98,7 @@ contract LeverageRouter is ILeverageRouter {
         // and pass the required data to the Morpho flash loan callback handler for the deposit.
         morpho.flashLoan(
             address(leverageManager.getStrategyCollateralAsset(strategy)),
-            collateralToAdd - equityInCollateralAsset,
+            previewData.collateral - equityInCollateralAsset,
             abi.encode(MorphoCallbackData({action: ExternalAction.Deposit, data: depositData}))
         );
     }
@@ -111,7 +111,7 @@ contract LeverageRouter is ILeverageRouter {
         uint256 maxSwapCostInCollateralAsset,
         ISwapAdapter.SwapContext memory swapContext
     ) external {
-        (, uint256 debtToRepay,,,) = leverageManager.previewWithdraw(strategy, equityInCollateralAsset);
+        PreviewActionData memory previewData = leverageManager.previewWithdraw(strategy, equityInCollateralAsset);
 
         bytes memory withdrawData = abi.encode(
             WithdrawParams({
@@ -127,7 +127,7 @@ contract LeverageRouter is ILeverageRouter {
         // Flash loan the debt asset required to repay the flash loan, and pass the required data to the Morpho flash loan callback handler for the withdrawal.
         morpho.flashLoan(
             address(leverageManager.getStrategyDebtAsset(strategy)),
-            debtToRepay,
+            previewData.debt,
             abi.encode(MorphoCallbackData({action: ExternalAction.Withdraw, data: withdrawData}))
         );
     }
