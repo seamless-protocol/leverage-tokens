@@ -34,9 +34,9 @@ struct PreviewActionData {
     /// @dev Amount of debt to borrow or repay
     uint256 debt;
     /// @dev Amount of shares to mint or burn after fee
-    uint256 sharesAfterFee;
-    /// @dev Shares fee to pay for the action
-    uint256 sharesFee;
+    uint256 shares;
+    /// @dev Amount of collateral that will be charged for the action to the strategy
+    uint256 strategyFeeInCollateralAsset;
     /// @dev Amount of collateral that will be charged for the action to the treasury
     uint256 treasuryFeeInCollateralAsset;
 }

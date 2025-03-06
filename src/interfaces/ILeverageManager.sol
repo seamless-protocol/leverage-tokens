@@ -73,7 +73,7 @@ interface ILeverageManager is IFeeManager {
         uint256 borrowedDebt,
         uint256 equityInCollateralAsset,
         uint256 sharesMinted,
-        uint256 sharesFee,
+        uint256 strategyFeeInCollateralAsset,
         uint256 treasuryFeeInCollateralAsset
     );
 
@@ -85,7 +85,7 @@ interface ILeverageManager is IFeeManager {
         uint256 repaidDebt,
         uint256 equityInCollateralAsset,
         uint256 sharesBurned,
-        uint256 sharesFee,
+        uint256 strategyFeeInCollateralAsset,
         uint256 treasuryFeeInCollateralAsset
     );
 

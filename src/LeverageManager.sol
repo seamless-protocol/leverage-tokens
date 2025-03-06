@@ -186,8 +186,8 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     {
         PreviewActionData memory previewData = previewDeposit(strategy, equityInCollateralAsset);
 
-        if (previewData.sharesAfterFee < minShares) {
-            revert SlippageTooHigh(previewData.sharesAfterFee, minShares);
+        if (previewData.shares < minShares) {
+            revert SlippageTooHigh(previewData.shares, minShares);
         }
 
         // Take collateral asset from sender
@@ -207,7 +207,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         SafeERC20.safeTransfer(getStrategyDebtAsset(strategy), msg.sender, previewData.debt);
 
         // Mint shares to user
-        strategy.mint(msg.sender, previewData.sharesAfterFee);
+        strategy.mint(msg.sender, previewData.shares);
 
         // Emit event and explicit return statement
         emit Deposit(
@@ -216,15 +216,15 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             previewData.collateral,
             previewData.debt,
             equityInCollateralAsset,
-            previewData.sharesAfterFee,
-            previewData.sharesFee,
+            previewData.shares,
+            previewData.strategyFeeInCollateralAsset,
             previewData.treasuryFeeInCollateralAsset
         );
         return (
             previewData.collateral,
             previewData.debt,
-            previewData.sharesAfterFee,
-            previewData.sharesFee,
+            previewData.shares,
+            previewData.strategyFeeInCollateralAsset,
             previewData.treasuryFeeInCollateralAsset
         );
     }
@@ -236,12 +236,12 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     {
         PreviewActionData memory previewData = previewWithdraw(strategy, equityInCollateralAsset);
 
-        if (previewData.sharesAfterFee > maxShares) {
-            revert SlippageTooHigh(previewData.sharesAfterFee, maxShares);
+        if (previewData.shares > maxShares) {
+            revert SlippageTooHigh(previewData.shares, maxShares);
         }
 
         // Burn shares from user and total supply
-        strategy.burn(msg.sender, previewData.sharesAfterFee);
+        strategy.burn(msg.sender, previewData.shares);
 
         // Take assets from sender and repay the debt
         SafeERC20.safeTransferFrom(getStrategyDebtAsset(strategy), msg.sender, address(this), previewData.debt);
@@ -264,15 +264,15 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             previewData.collateral,
             previewData.debt,
             equityInCollateralAsset,
-            previewData.sharesAfterFee,
-            previewData.sharesFee,
+            previewData.shares,
+            previewData.strategyFeeInCollateralAsset,
             previewData.treasuryFeeInCollateralAsset
         );
         return (
             previewData.collateral,
             previewData.debt,
-            previewData.sharesAfterFee,
-            previewData.sharesFee,
+            previewData.shares,
+            previewData.strategyFeeInCollateralAsset,
             previewData.treasuryFeeInCollateralAsset
         );
     }
@@ -454,47 +454,32 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         view
         returns (PreviewActionData memory data)
     {
-        (uint256 strategyFeeInCollateralAsset, uint256 treasuryFeeInCollateralAsset) =
-            _computeFees(strategy, equityInCollateralAsset, action);
+        (
+            uint256 equityForStrategyInCollateralAsset,
+            uint256 equityForSharesAfterFeesInCollateralAsset,
+            uint256 treasuryFeeInCollateralAsset
+        ) = _computeEquityFees(strategy, equityInCollateralAsset, action);
 
-        // For the collateral and debt required by the position held by the strategy, we need to use the equity amount
-        // without the strategy fee applied because the strategy fee is used to increase share value among existing
-        // strategy shares. So, the strategy fee is applied on the shares received / burned but not on the collateral
-        // supplied / removed and debt borrowed / repaid.
-        //
-        // For deposits we need to subtract the treasury fee from the equity amount used for the calculation of the
-        // collateral and debt because the treasury fee should not be supplied to the position held by the strategy,
-        // it should be simply transferred to the treasury.
-        //
-        // For withdrawals, the treasury fee should be included in the calculation of the collateral and debt because
-        // it comes from the collateral removed from the position held by the strategy.
-        uint256 equityForStrategyInCollateralAsset = action == ExternalAction.Deposit
-            ? equityInCollateralAsset - treasuryFeeInCollateralAsset
-            : equityInCollateralAsset;
+        data.shares = _convertToShares(strategy, equityForSharesAfterFeesInCollateralAsset);
+
         (uint256 collateralForStrategy, uint256 debtForStrategy) =
             _computeCollateralAndDebtForStrategyAction(strategy, equityForStrategyInCollateralAsset, action);
+
+        data.debt = debtForStrategy;
+        data.treasuryFeeInCollateralAsset = treasuryFeeInCollateralAsset;
 
         // For deposits, the collateral amount returned by the preview is the total collateral required to execute the
         // deposit, so we add the treasury fee to it, since the collateral computed above is wrt the equity amount with
         // the treasury fee subtracted.
         // For withdrawals, the collateral amount returned is the collateral transferred to the sender, so we subtract the
         // treasury fee, since the collateral computed above is wrt the equity amount without the treasury fee subtracted
-        data.collateral = action == ExternalAction.Deposit
-            ? collateralForStrategy + treasuryFeeInCollateralAsset
-            : collateralForStrategy - treasuryFeeInCollateralAsset;
-        data.debt = debtForStrategy;
-        data.treasuryFeeInCollateralAsset = treasuryFeeInCollateralAsset;
-
-        // To increase share value for existing users, less shares are minted on deposits and more shares are burned on
-        // withdrawals.
-        uint256 equityForSharesAfterFeesInCollateralAsset = action == ExternalAction.Deposit
-            ? equityForStrategyInCollateralAsset - strategyFeeInCollateralAsset
-            : equityForStrategyInCollateralAsset + strategyFeeInCollateralAsset;
-        data.sharesAfterFee = _convertToShares(strategy, equityForSharesAfterFeesInCollateralAsset);
-        uint256 sharesBeforeFees = _convertToShares(strategy, equityInCollateralAsset);
-        data.sharesFee = action == ExternalAction.Deposit
-            ? sharesBeforeFees - data.sharesAfterFee
-            : data.sharesAfterFee - sharesBeforeFees;
+        if (action == ExternalAction.Deposit) {
+            data.collateral = collateralForStrategy + treasuryFeeInCollateralAsset;
+            data.strategyFeeInCollateralAsset = equityInCollateralAsset - equityForSharesAfterFeesInCollateralAsset;
+        } else {
+            data.collateral = collateralForStrategy - treasuryFeeInCollateralAsset;
+            data.strategyFeeInCollateralAsset = equityForSharesAfterFeesInCollateralAsset - equityInCollateralAsset;
+        }
 
         return data;
     }
