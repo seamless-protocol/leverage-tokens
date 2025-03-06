@@ -209,7 +209,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         _executeLendingAdapterAction(strategy, ActionType.AddCollateral, collateralToAdd);
 
         // Take treasury fee
-        SafeERC20.safeTransferFrom(collateralAsset, msg.sender, getTreasury(), treasuryFeeInCollateralAsset);
+        _chargeTreasuryFee(collateralAsset, treasuryFeeInCollateralAsset);
 
         // Borrow and send debt assets to caller
         _executeLendingAdapterAction(strategy, ActionType.Borrow, debtToBorrow);
@@ -262,7 +262,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         // Send collateral assets to sender and treasury
         IERC20 collateralAsset = getStrategyCollateralAsset(strategy);
         SafeERC20.safeTransfer(collateralAsset, msg.sender, collateral);
-        SafeERC20.safeTransfer(collateralAsset, getTreasury(), treasuryFeeInCollateralAsset);
+        _chargeTreasuryFee(collateralAsset, treasuryFeeInCollateralAsset);
 
         // Emit event and explicit return statement
         emit Withdraw(
@@ -311,6 +311,15 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         }
 
         _transferTokens(tokensOut, address(this), msg.sender);
+    }
+
+    /// @notice Charges treasury fee, sending the asset to the treasury
+    /// @param asset Asset to charge fee for
+    /// @param amount Amount of fee to charge
+    function _chargeTreasuryFee(IERC20 asset, uint256 amount) internal {
+        if (amount > 0) {
+            SafeERC20.safeTransfer(asset, getTreasury(), amount);
+        }
     }
 
     /// @notice Validates if caller is allowed to rebalance strategy

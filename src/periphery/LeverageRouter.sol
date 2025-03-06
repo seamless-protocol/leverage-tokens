@@ -81,7 +81,7 @@ contract LeverageRouter is ILeverageRouter {
         uint256 maxSwapCostInCollateralAsset,
         ISwapAdapter.SwapContext memory swapContext
     ) external {
-        (uint256 collateralToAdd,,,) = leverageManager.previewDeposit(strategy, equityInCollateralAsset);
+        (uint256 collateralToAdd,,,,) = leverageManager.previewDeposit(strategy, equityInCollateralAsset);
 
         bytes memory depositData = abi.encode(
             DepositParams({
@@ -111,7 +111,7 @@ contract LeverageRouter is ILeverageRouter {
         uint256 maxSwapCostInCollateralAsset,
         ISwapAdapter.SwapContext memory swapContext
     ) external {
-        (, uint256 debtToRepay,,) = leverageManager.previewWithdraw(strategy, equityInCollateralAsset);
+        (, uint256 debtToRepay,,,) = leverageManager.previewWithdraw(strategy, equityInCollateralAsset);
 
         bytes memory withdrawData = abi.encode(
             WithdrawParams({
@@ -167,7 +167,7 @@ contract LeverageRouter is ILeverageRouter {
 
         // Use the flash loaned collateral and the equity from the sender for the deposit into the strategy
         collateralAsset.approve(address(leverageManager), collateralLoanAmount + params.equityInCollateralAsset);
-        (, uint256 debtToBorrow, uint256 sharesReceived,) =
+        (, uint256 debtToBorrow, uint256 sharesReceived,,) =
             leverageManager.deposit(params.strategy, params.equityInCollateralAsset, params.minShares);
 
         // Swap the debt asset received from the deposit to the collateral asset, used to repay the flash loan
@@ -212,7 +212,7 @@ contract LeverageRouter is ILeverageRouter {
 
         // Withdraw the equity from the strategy
         debtAsset.approve(address(leverageManager), debtLoanAmount);
-        (uint256 collateralReceived,,,) =
+        (uint256 collateralReceived,,,,) =
             leverageManager.withdraw(params.strategy, params.equityInCollateralAsset, params.maxShares);
 
         // Swap the collateral asset received from the withdrawal to the debt asset, used to repay the flash loan
