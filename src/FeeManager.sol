@@ -117,10 +117,10 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
             strategyFee = equityAmount - treasuryFee;
         }
 
-        // For the collateral and debt required by the position held by the strategy, we need to use the equity amount
-        // without the strategy fee applied because the strategy fee is used to increase share value among existing
-        // strategy shares. So, the strategy fee is applied on the shares received / burned but not on the collateral
-        // supplied / removed and debt borrowed / repaid.
+        // For the collateral and debt required by the position held by the strategy for the action, we need to use
+        // the equity amount without the strategy fee applied because the strategy fee is used to increase share value
+        // among existing strategy shares. So, the strategy fee is applied on the shares received / burned but not on
+        // the collateral supplied / removed and debt borrowed / repaid.
         //
         // For deposits we need to subtract the treasury fee from the equity amount used for the calculation of the
         // collateral and debt because the treasury fee should not be supplied to the position held by the strategy,
