@@ -158,7 +158,8 @@ interface ILeverageManager is IFeeManager {
     /// @notice Previews deposit function call and returns all required data
     /// @param strategy Strategy to preview deposit for
     /// @param equityInCollateralAsset Equity to deposit denominated in collateral asset
-    /// @return collateralToAdd Amount of collateral that sender needs to add to the strategy
+    /// @return collateralToAdd Amount of collateral that sender needs to add to the strategy, including the treasury
+    ///         fee
     /// @return debtToBorrow Amount of debt that will be borrowed and sent to sender
     /// @return sharesAfterFee Amount of shares that will be minted to the sender after fee
     /// @return sharesFee Amount of shares that will be charged for the deposit
@@ -178,11 +179,12 @@ interface ILeverageManager is IFeeManager {
     /// @notice Previews withdraw function call and returns all required data
     /// @param strategy Strategy to preview withdraw for
     /// @param equityInCollateralAsset Equity to withdraw denominated in collateral asset
-    /// @return collateralToRemove Amount of collateral that will be removed from strategy and sent to sender
+    /// @return collateralToRemove Amount of collateral that will be removed from the strategy and sent to sender
     /// @return debtToRepay Amount of debt that will be taken from sender and repaid to the strategy
     /// @return sharesAfterFee Amount of shares that will be burned from sender
     /// @return sharesFee Amount of shares that will be charged for the withdraw
-    /// @return treasuryFeeInCollateralAsset Amount of collateral that will be charged for the withdraw
+    /// @return treasuryFeeInCollateralAsset Amount of collateral that will be removed from strategy and sent to
+    ///         the treasury
     /// @dev Sender should approve leverage manager to spend debtToRepay amount of debt asset
     function previewWithdraw(IStrategy strategy, uint256 equityInCollateralAsset)
         external

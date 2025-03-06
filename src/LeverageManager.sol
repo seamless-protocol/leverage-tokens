@@ -489,7 +489,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             debt = Math.mulDiv(totalDebt, sharesBeforeFee, totalShares, debtRounding);
         }
 
-        // Add treasury fee to the collateral to be added if action is deposit, subtract if action is withdraw
+        // Add treasury fee to the required collateral if the action is deposit, subtract if action is withdraw
         treasuryFeeInCollateralAsset = _computeTreasuryFee(collateral, action);
         collateral = action == ExternalAction.Deposit
             ? collateral + treasuryFeeInCollateralAsset
