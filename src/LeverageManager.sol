@@ -485,7 +485,8 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         data.debt = debtForStrategy;
         data.treasuryFeeInCollateralAsset = treasuryFeeInCollateralAsset;
 
-        // For deposits, less shares are minted. For withdrawals, more shares are burned.
+        // To increase share value for existing users, less shares are minted on deposits and more shares are burned on
+        // withdrawals.
         uint256 equityForSharesAfterFeesInCollateralAsset = action == ExternalAction.Deposit
             ? equityForStrategyInCollateralAsset - strategyFeeInCollateralAsset
             : equityForStrategyInCollateralAsset + strategyFeeInCollateralAsset;
