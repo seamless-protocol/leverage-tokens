@@ -456,21 +456,16 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     {
         ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
 
-        data.treasuryFeeInCollateralAsset = _computeTreasuryFee(equityInCollateralAsset, action);
+        (uint256 equityAfterFeesInCollateralAsset, uint256 equityAfterTreasuryFeeInCollateralAsset, uint256 treasuryFee)
+        = _computeFees(strategy, equityInCollateralAsset, action);
+        data.treasuryFeeInCollateralAsset = treasuryFee;
 
-        // For deposits we need to subtract the treasury fee from the equity amount used to
-        // calculate the shares, collateral to add to the strategy, and debt to borrow from the strategy
-        if (action == ExternalAction.Deposit) {
-            equityInCollateralAsset -= data.treasuryFeeInCollateralAsset;
-        }
-
-        // Convert equity and charge fee
-        uint256 sharesBeforeFee = _convertToShares(strategy, equityInCollateralAsset);
-        (data.sharesAfterFee, data.sharesFee) = _computeFeeAdjustedShares(strategy, sharesBeforeFee, action);
+        uint256 sharesBeforeStrategyFee = _convertToShares(strategy, equityAfterTreasuryFeeInCollateralAsset);
+        data.sharesAfterFee = _convertToShares(strategy, equityAfterFeesInCollateralAsset);
+        data.sharesFee = sharesBeforeStrategyFee - data.sharesAfterFee;
 
         uint256 totalDebt = lendingAdapter.getDebt();
         uint256 totalShares = strategy.totalSupply();
-
         Math.Rounding collateralRounding = action == ExternalAction.Deposit ? Math.Rounding.Ceil : Math.Rounding.Floor;
         Math.Rounding debtRounding = action == ExternalAction.Deposit ? Math.Rounding.Floor : Math.Rounding.Ceil;
 
@@ -478,21 +473,25 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         bool shouldFollowTargetRatio = totalShares == 0 || (action == ExternalAction.Deposit && totalDebt == 0);
         if (shouldFollowTargetRatio) {
             uint256 targetRatio = getStrategyTargetCollateralRatio(strategy);
-            data.collateral =
-                Math.mulDiv(equityInCollateralAsset, targetRatio, targetRatio - BASE_RATIO, collateralRounding);
-            data.debt = lendingAdapter.convertCollateralToDebtAsset(data.collateral - equityInCollateralAsset);
+            data.collateral = Math.mulDiv(
+                equityAfterTreasuryFeeInCollateralAsset, targetRatio, targetRatio - BASE_RATIO, collateralRounding
+            );
+            data.debt =
+                lendingAdapter.convertCollateralToDebtAsset(data.collateral - equityAfterTreasuryFeeInCollateralAsset);
         } else {
             data.collateral =
-                Math.mulDiv(lendingAdapter.getCollateral(), sharesBeforeFee, totalShares, collateralRounding);
-            data.debt = Math.mulDiv(totalDebt, sharesBeforeFee, totalShares, debtRounding);
+                Math.mulDiv(lendingAdapter.getCollateral(), sharesBeforeStrategyFee, totalShares, collateralRounding);
+            data.debt = Math.mulDiv(totalDebt, sharesBeforeStrategyFee, totalShares, debtRounding);
         }
 
         // For deposits, the collateral amount returned is the total collateral required to execute the deposit, so we
-        // add the treasury fee to it. For withdrawals, the collateral amount returned is the collateral sent to the user,
-        // so we subtract the treasury fee from it
-        data.collateral = action == ExternalAction.Deposit
-            ? data.collateral + data.treasuryFeeInCollateralAsset
-            : data.collateral - data.treasuryFeeInCollateralAsset;
+        // add the treasury fee to it, since the collateral computed above is wrt the equity amount after all fees have
+        // been applied.
+        // For withdrawals, the collateral amount returned is the collateral sent to the sender, so we don't need to do
+        // anything there, since the collateral computed above is wrt the equity amount after all fees have been applied.
+        if (action == ExternalAction.Deposit) {
+            data.collateral += data.treasuryFeeInCollateralAsset;
+        }
 
         return data;
     }

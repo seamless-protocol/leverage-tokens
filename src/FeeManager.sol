@@ -91,31 +91,32 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
         emit TreasuryActionFeeSet(action, fee);
     }
 
-    /// @notice Computes treasury fee based on amount and action
-    /// @param amount Amount to compute fee for
-    /// @param action Action to compute fee for
-    /// @return feeAmount Fee amount
-    function _computeTreasuryFee(uint256 amount, ExternalAction action) internal view returns (uint256 feeAmount) {
-        return Math.mulDiv(amount, getTreasuryActionFee(action), MAX_FEE, Math.Rounding.Ceil);
-    }
-
     /// @notice Computes fee based on user action
-    /// @param strategy Strategy to compute fee for
-    /// @param amount Shares to charge fee on
-    /// @param action Action to compute fee for, Deposit or Withdraw
-    /// @return amountAfterFee Shares amount after fee
-    /// @return feeAmount Fee amount in shares
-    /// @dev Fee is always rounded up.
-    ///      If action is deposit, fee is subtracted from amount, if action is withdraw, fee is added to amount.
-    ///      Which means that on deposit user will receive less shares and on withdraw more shares will be burned from user
-    function _computeFeeAdjustedShares(IStrategy strategy, uint256 amount, ExternalAction action)
+    /// @param strategy Strategy to compute fees for
+    /// @param amount Amount to compute fees for
+    /// @param action Action to compute fees for, Deposit or Withdraw
+    /// @return amountAfterFees Amount after fees are applied (treasury and strategy)
+    /// @return amountAfterTreasuryFee Amount after only the treasury fee is applied
+    /// @return treasuryFee Treasury fee amount
+    /// @dev Fees are always rounded up.
+    ///      If action is deposit, strategy fee is subtracted from amount, if action is withdraw, strategy fee is added to amount.
+    ///      Treasury fee is always subtracted from amount.
+    function _computeFees(IStrategy strategy, uint256 amount, ExternalAction action)
         internal
         view
-        returns (uint256, uint256)
+        returns (uint256, uint256, uint256)
     {
-        // Calculate deposit fee (always round up) and send it to treasury
-        uint256 feeAmount = Math.mulDiv(amount, getStrategyActionFee(strategy, action), MAX_FEE, Math.Rounding.Ceil);
-        uint256 amountAfterFee = action == ExternalAction.Deposit ? amount - feeAmount : amount + feeAmount;
-        return (amountAfterFee, feeAmount);
+        uint256 treasuryFee = Math.mulDiv(amount, getTreasuryActionFee(action), MAX_FEE, Math.Rounding.Ceil);
+        uint256 strategyFee = Math.mulDiv(amount, getStrategyActionFee(strategy, action), MAX_FEE, Math.Rounding.Ceil);
+
+        uint256 amountAfterTreasuryFee = amount - treasuryFee;
+        uint256 amountAfterFees;
+        if (action == ExternalAction.Deposit) {
+            amountAfterFees = amountAfterTreasuryFee > strategyFee ? amountAfterTreasuryFee - strategyFee : 0;
+        } else {
+            amountAfterFees = amountAfterTreasuryFee + strategyFee;
+        }
+
+        return (amountAfterFees, amountAfterTreasuryFee, treasuryFee);
     }
 }
