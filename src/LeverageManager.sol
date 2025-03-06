@@ -475,11 +475,9 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         // the treasury fee subtracted.
         // For withdrawals, the collateral amount returned is the collateral transferred to the sender, so we subtract the
         // treasury fee, since the collateral computed above is wrt the equity amount without the treasury fee subtracted
-        if (action == ExternalAction.Deposit) {
-            data.collateral = collateralForStrategy + treasuryFeeInCollateralAsset;
-        } else {
-            data.collateral = collateralForStrategy - treasuryFeeInCollateralAsset;
-        }
+        data.collateral = action == ExternalAction.Deposit
+            ? collateralForStrategy + treasuryFeeInCollateralAsset
+            : collateralForStrategy - treasuryFeeInCollateralAsset;
 
         return data;
     }
