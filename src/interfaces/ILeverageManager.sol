@@ -159,12 +159,12 @@ interface ILeverageManager is IFeeManager {
     /// @param strategy Strategy to preview deposit for
     /// @param equityInCollateralAsset Equity to deposit denominated in collateral asset
     /// @return data Preview data for deposit
-    ///         - collateralToAdd Amount of collateral that sender needs to add to the strategy, including the treasury
-    ///         fee
+    ///         - collateralToAdd Amount of collateral that sender needs to approve the LeverageManager to spend.
+    ///           This includes the treasury fee
     ///         - debtToBorrow Amount of debt that will be borrowed and sent to sender
     ///         - sharesAfterFee Amount of shares that will be minted to the sender after fee
     ///         - sharesFee Amount of shares that will be charged for the deposit
-    ///         - treasuryFeeInCollateralAsset Amount of collateral that will be charged for the deposit
+    ///         - treasuryFeeInCollateralAsset Amount of collateral asset that will be charged for the deposit
     /// @dev Sender should approve leverage manager to spend collateralToAdd amount of collateral asset
     function previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
         external
@@ -175,12 +175,12 @@ interface ILeverageManager is IFeeManager {
     /// @param strategy Strategy to preview withdraw for
     /// @param equityInCollateralAsset Equity to withdraw denominated in collateral asset
     /// @return data Preview data for withdraw
-    ///         - collateralToRemove Amount of collateral that will be removed from the strategy and sent to sender
+    ///         - collateralToRemove Amount of collateral that will be removed from the strategy and sent to the sender
     ///         - debtToRepay Amount of debt that will be taken from sender and repaid to the strategy
     ///         - sharesAfterFee Amount of shares that will be burned from sender
     ///         - sharesFee Amount of shares that will be charged for the withdraw
-    ///         - treasuryFeeInCollateralAsset Amount of collateral that will be removed from strategy and sent to
-    ///         the treasury
+    ///         - treasuryFeeInCollateralAsset Amount of collateral that will be removed from the strategy and sent to
+    ///           the treasury
     /// @dev Sender should approve leverage manager to spend debtToRepay amount of debt asset
     function previewWithdraw(IStrategy strategy, uint256 equityInCollateralAsset)
         external

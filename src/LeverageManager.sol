@@ -463,8 +463,15 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         view
         returns (PreviewActionData memory data)
     {
-        // Cache
         ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
+
+        data.treasuryFeeInCollateralAsset = _computeTreasuryFee(equityInCollateralAsset, action);
+
+        // For deposits we need to subtract the treasury fee from the equity amount used to
+        // calculate the shares, collateral to add to the strategy, and debt to borrow from the strategy.
+        if (action == ExternalAction.Deposit) {
+            equityInCollateralAsset -= data.treasuryFeeInCollateralAsset;
+        }
 
         // Convert equity and charge fee
         uint256 sharesBeforeFee = _convertToShares(strategy, equityInCollateralAsset);
@@ -489,8 +496,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             data.debt = Math.mulDiv(totalDebt, sharesBeforeFee, totalShares, debtRounding);
         }
 
-        // Add treasury fee to the required collateral if the action is deposit, subtract if action is withdraw
-        data.treasuryFeeInCollateralAsset = _computeTreasuryFee(data.collateral, action);
         data.collateral = action == ExternalAction.Deposit
             ? data.collateral + data.treasuryFeeInCollateralAsset
             : data.collateral - data.treasuryFeeInCollateralAsset;
