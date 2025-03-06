@@ -11,7 +11,7 @@ import {IStrategy} from "./IStrategy.sol";
 import {CollateralRatios} from "src/types/DataTypes.sol";
 import {IBeaconProxyFactory} from "./IBeaconProxyFactory.sol";
 import {ILendingAdapter} from "./ILendingAdapter.sol";
-import {ActionData, RebalanceAction, TokenTransfer} from "src/types/DataTypes.sol";
+import {ActionData, PreviewActionData, RebalanceAction, TokenTransfer} from "src/types/DataTypes.sol";
 import {IRebalanceRewardDistributor} from "./IRebalanceRewardDistributor.sol";
 
 interface ILeverageManager is IFeeManager {
@@ -66,14 +66,10 @@ interface ILeverageManager is IFeeManager {
     event StrategyCreated(IStrategy indexed strategy, IERC20 collateralAsset, IERC20 debtAsset, StrategyConfig config);
 
     /// @notice Event emitted when user deposits assets into strategy
-    event Deposit(
-        IStrategy indexed strategy, address indexed sender, uint256 equityInCollateralAsset, ActionData actionData
-    );
+    event Deposit(IStrategy indexed strategy, address indexed sender, ActionData actionData);
 
     /// @notice Event emitted when user withdraws assets from strategy
-    event Withdraw(
-        IStrategy indexed strategy, address indexed sender, uint256 equityInCollateralAsset, ActionData actionData
-    );
+    event Withdraw(IStrategy indexed strategy, address indexed sender, ActionData actionData);
 
     /// @notice Returns factory for creating new strategy tokens
     /// @return factory Factory for creating new strategy tokens
@@ -155,7 +151,7 @@ interface ILeverageManager is IFeeManager {
     function previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
         external
         view
-        returns (ActionData memory previewData);
+        returns (PreviewActionData memory previewData);
 
     /// @notice Previews withdraw function call and returns all required data
     /// @param strategy Strategy to preview withdraw for
@@ -170,7 +166,7 @@ interface ILeverageManager is IFeeManager {
     function previewWithdraw(IStrategy strategy, uint256 equityInCollateralAsset)
         external
         view
-        returns (ActionData memory previewData);
+        returns (PreviewActionData memory previewData);
 
     /// @notice Deposits equity into a strategy and mints shares to the sender
     /// @param strategy The strategy to deposit into

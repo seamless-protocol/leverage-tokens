@@ -26,6 +26,7 @@ import {
     ActionData,
     ActionType,
     ExternalAction,
+    PreviewActionData,
     RebalanceAction,
     StrategyState,
     TokenTransfer
@@ -165,18 +166,39 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     function previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
         public
         view
-        returns (ActionData memory previewData)
+        returns (PreviewActionData memory previewData)
     {
-        return _previewAction(strategy, equityInCollateralAsset, ExternalAction.Deposit);
+        PreviewActionData memory data = _previewAction(strategy, equityInCollateralAsset, ExternalAction.Deposit);
+
+        // For deposits, the collateral amount returned by the preview is the total collateral required to execute the
+        // deposit, so we add the treasury fee to it, since the collateral computed above is wrt the equity amount with
+        // the treasury fee subtracted.
+        return PreviewActionData({
+            collateral: data.collateral + data.treasuryFeeInCollateralAsset,
+            debt: data.debt,
+            shares: data.shares,
+            strategyFeeInCollateralAsset: data.strategyFeeInCollateralAsset,
+            treasuryFeeInCollateralAsset: data.treasuryFeeInCollateralAsset
+        });
     }
 
     /// @inheritdoc ILeverageManager
     function previewWithdraw(IStrategy strategy, uint256 equityInCollateralAsset)
         public
         view
-        returns (ActionData memory previewData)
+        returns (PreviewActionData memory previewData)
     {
-        return _previewAction(strategy, equityInCollateralAsset, ExternalAction.Withdraw);
+        PreviewActionData memory data = _previewAction(strategy, equityInCollateralAsset, ExternalAction.Withdraw);
+
+        // For withdrawals, the collateral amount returned is the collateral transferred to the sender, so we subtract the
+        // treasury fee, since the collateral computed above is wrt the equity amount without the treasury fee subtracted
+        return PreviewActionData({
+            collateral: data.collateral - data.treasuryFeeInCollateralAsset,
+            debt: data.debt,
+            shares: data.shares,
+            strategyFeeInCollateralAsset: data.strategyFeeInCollateralAsset,
+            treasuryFeeInCollateralAsset: data.treasuryFeeInCollateralAsset
+        });
     }
 
     /// @inheritdoc ILeverageManager
@@ -184,7 +206,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         external
         returns (ActionData memory actionData)
     {
-        ActionData memory previewData = previewDeposit(strategy, equityInCollateralAsset);
+        PreviewActionData memory previewData = previewDeposit(strategy, equityInCollateralAsset);
 
         if (previewData.shares < minShares) {
             revert SlippageTooHigh(previewData.shares, minShares);
@@ -212,8 +234,16 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         strategy.mint(msg.sender, previewData.shares);
 
         // Emit event and explicit return statement
-        emit Deposit(strategy, msg.sender, equityInCollateralAsset, previewData);
-        return previewData;
+        ActionData memory depositData = ActionData({
+            equityInCollateralAsset: equityInCollateralAsset,
+            collateral: previewData.collateral,
+            debt: previewData.debt,
+            shares: previewData.shares,
+            strategyFeeInCollateralAsset: previewData.strategyFeeInCollateralAsset,
+            treasuryFeeInCollateralAsset: previewData.treasuryFeeInCollateralAsset
+        });
+        emit Deposit(strategy, msg.sender, depositData);
+        return depositData;
     }
 
     /// @inheritdoc ILeverageManager
@@ -221,7 +251,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         external
         returns (ActionData memory actionData)
     {
-        ActionData memory previewData = previewWithdraw(strategy, equityInCollateralAsset);
+        PreviewActionData memory previewData = previewWithdraw(strategy, equityInCollateralAsset);
 
         if (previewData.shares > maxShares) {
             revert SlippageTooHigh(previewData.shares, maxShares);
@@ -249,8 +279,16 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         }
 
         // Emit event and explicit return statement
-        emit Withdraw(strategy, msg.sender, equityInCollateralAsset, previewData);
-        return previewData;
+        ActionData memory withdrawData = ActionData({
+            equityInCollateralAsset: equityInCollateralAsset,
+            collateral: previewData.collateral,
+            debt: previewData.debt,
+            shares: previewData.shares,
+            strategyFeeInCollateralAsset: previewData.strategyFeeInCollateralAsset,
+            treasuryFeeInCollateralAsset: previewData.treasuryFeeInCollateralAsset
+        });
+        emit Withdraw(strategy, msg.sender, withdrawData);
+        return withdrawData;
     }
 
     /// @inheritdoc ILeverageManager
@@ -428,7 +466,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     function _previewAction(IStrategy strategy, uint256 equityInCollateralAsset, ExternalAction action)
         internal
         view
-        returns (ActionData memory data)
+        returns (PreviewActionData memory data)
     {
         (
             uint256 equityForStrategyInCollateralAsset,
@@ -442,15 +480,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         (uint256 collateralForStrategy, uint256 debtForStrategy) =
             _computeCollateralAndDebtForStrategyAction(strategy, equityForStrategyInCollateralAsset, action);
 
-        // For deposits, the collateral amount returned by the preview is the total collateral required to execute the
-        // deposit, so we add the treasury fee to it, since the collateral computed above is wrt the equity amount with
-        // the treasury fee subtracted.
-        // For withdrawals, the collateral amount returned is the collateral transferred to the sender, so we subtract the
-        // treasury fee, since the collateral computed above is wrt the equity amount without the treasury fee subtracted
-        data.collateral = action == ExternalAction.Deposit
-            ? collateralForStrategy + treasuryFeeInCollateralAsset
-            : collateralForStrategy - treasuryFeeInCollateralAsset;
-
+        data.collateral = collateralForStrategy;
         data.debt = debtForStrategy;
         data.strategyFeeInCollateralAsset = strategyFeeInCollateralAsset;
         data.treasuryFeeInCollateralAsset = treasuryFeeInCollateralAsset;
