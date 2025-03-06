@@ -454,46 +454,72 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         view
         returns (PreviewActionData memory data)
     {
+        (uint256 strategyFeeInCollateralAsset, uint256 treasuryFeeInCollateralAsset) =
+            _computeFees(strategy, equityInCollateralAsset, action);
+
+        // For the collateral and debt required by the position held by the strategy, we need to use the equity amount
+        // without the strategy fee applied because the strategy fee is used to increase share value among existing
+        // strategy shares. So, the strategy fee is applied on the shares received / burned
+        //
+        // For deposits we need to subtract the treasury fee from the equity amount used for the calculation of the
+        // collateral and debt because the treasury fee should not be supplied to the position held by the strategy,
+        // it should be simply transferred to the treasury.
+        //
+        // For withdrawals, the treasury fee should be included in the calculation of the collateral and debt because
+        // it comes from the collateral removed from the position held by the strategy.
+        uint256 equityForStrategyInCollateralAsset = action == ExternalAction.Deposit
+            ? equityInCollateralAsset - treasuryFeeInCollateralAsset
+            : equityInCollateralAsset;
+        (uint256 collateralForStrategy, uint256 debtForStrategy) =
+            _computeCollateralAndDebtForStrategyAction(strategy, equityForStrategyInCollateralAsset, action);
+
+        // For deposits, the collateral amount returned by the preview is the total collateral required to execute the
+        // deposit, so we add the treasury fee to it, since the collateral computed above is wrt the equity amount with
+        // the treasury fee subtracted.
+        // For withdrawals, the collateral amount returned is the collateral transferred to the sender, so we subtract the
+        // treasury fee, since the collateral computed above is wrt the equity amount without the treasury fee subtracted
+        data.collateral = action == ExternalAction.Deposit
+            ? collateralForStrategy + treasuryFeeInCollateralAsset
+            : collateralForStrategy - treasuryFeeInCollateralAsset;
+        data.debt = debtForStrategy;
+        data.treasuryFeeInCollateralAsset = treasuryFeeInCollateralAsset;
+
+        // For deposits, less shares are minted. For withdrawals, more shares are burned.
+        uint256 equityForSharesAfterFeesInCollateralAsset = action == ExternalAction.Deposit
+            ? equityForStrategyInCollateralAsset - strategyFeeInCollateralAsset
+            : equityForStrategyInCollateralAsset + strategyFeeInCollateralAsset;
+        data.sharesAfterFee = _convertToShares(strategy, equityForSharesAfterFeesInCollateralAsset);
+        data.sharesFee = action == ExternalAction.Deposit
+            ? _convertToShares(strategy, equityInCollateralAsset) - data.sharesAfterFee
+            : data.sharesAfterFee - _convertToShares(strategy, equityInCollateralAsset);
+
+        return data;
+    }
+
+    function _computeCollateralAndDebtForStrategyAction(
+        IStrategy strategy,
+        uint256 equityInCollateralAsset,
+        ExternalAction action
+    ) internal view returns (uint256 collateral, uint256 debt) {
         ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
-
-        (uint256 equityAfterFeesInCollateralAsset, uint256 equityAfterTreasuryFeeInCollateralAsset, uint256 treasuryFee)
-        = _computeFees(strategy, equityInCollateralAsset, action);
-        data.treasuryFeeInCollateralAsset = treasuryFee;
-
-        uint256 sharesBeforeStrategyFee = _convertToShares(strategy, equityAfterTreasuryFeeInCollateralAsset);
-        data.sharesAfterFee = _convertToShares(strategy, equityAfterFeesInCollateralAsset);
-        data.sharesFee = sharesBeforeStrategyFee - data.sharesAfterFee;
-
         uint256 totalDebt = lendingAdapter.getDebt();
         uint256 totalShares = strategy.totalSupply();
+
         Math.Rounding collateralRounding = action == ExternalAction.Deposit ? Math.Rounding.Ceil : Math.Rounding.Floor;
         Math.Rounding debtRounding = action == ExternalAction.Deposit ? Math.Rounding.Floor : Math.Rounding.Ceil;
+
+        uint256 shares = _convertToShares(strategy, equityInCollateralAsset);
 
         // If action is deposit there might be some dust in collateral but debt can be 0. In that case we should follow target ratio
         bool shouldFollowTargetRatio = totalShares == 0 || (action == ExternalAction.Deposit && totalDebt == 0);
         if (shouldFollowTargetRatio) {
             uint256 targetRatio = getStrategyTargetCollateralRatio(strategy);
-            data.collateral = Math.mulDiv(
-                equityAfterTreasuryFeeInCollateralAsset, targetRatio, targetRatio - BASE_RATIO, collateralRounding
-            );
-            data.debt =
-                lendingAdapter.convertCollateralToDebtAsset(data.collateral - equityAfterTreasuryFeeInCollateralAsset);
+            collateral = Math.mulDiv(equityInCollateralAsset, targetRatio, targetRatio - BASE_RATIO, collateralRounding);
+            debt = lendingAdapter.convertCollateralToDebtAsset(collateral - equityInCollateralAsset);
         } else {
-            data.collateral =
-                Math.mulDiv(lendingAdapter.getCollateral(), sharesBeforeStrategyFee, totalShares, collateralRounding);
-            data.debt = Math.mulDiv(totalDebt, sharesBeforeStrategyFee, totalShares, debtRounding);
+            collateral = Math.mulDiv(lendingAdapter.getCollateral(), shares, totalShares, collateralRounding);
+            debt = Math.mulDiv(totalDebt, shares, totalShares, debtRounding);
         }
-
-        // For deposits, the collateral amount returned is the total collateral required to execute the deposit, so we
-        // add the treasury fee to it, since the collateral computed above is wrt the equity amount after all fees have
-        // been applied.
-        // For withdrawals, the collateral amount returned is the collateral sent to the sender, so we don't need to do
-        // anything there, since the collateral computed above is wrt the equity amount after all fees have been applied.
-        if (action == ExternalAction.Deposit) {
-            data.collateral += data.treasuryFeeInCollateralAsset;
-        }
-
-        return data;
     }
 
     /// @notice Function that checks if specific element has already been processed in the slice up to the given index

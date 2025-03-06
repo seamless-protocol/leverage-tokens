@@ -95,28 +95,23 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
     /// @param strategy Strategy to compute fees for
     /// @param amount Amount to compute fees for
     /// @param action Action to compute fees for, Deposit or Withdraw
-    /// @return amountAfterFees Amount after fees are applied (treasury and strategy)
-    /// @return amountAfterTreasuryFee Amount after only the treasury fee is applied
+    /// @return strategyFee Strategy fee amount
     /// @return treasuryFee Treasury fee amount
     /// @dev Fees are always rounded up.
-    ///      If action is deposit, strategy fee is subtracted from amount, if action is withdraw, strategy fee is added to amount.
-    ///      Treasury fee is always subtracted from amount.
+    /// @dev If the sum of the strategy fee and the treasury fee is greater than the amount,
+    ///      the strategy fee is set to the delta of the amount and the treasury fee.
     function _computeFees(IStrategy strategy, uint256 amount, ExternalAction action)
         internal
         view
-        returns (uint256, uint256, uint256)
+        returns (uint256, uint256)
     {
         uint256 treasuryFee = Math.mulDiv(amount, getTreasuryActionFee(action), MAX_FEE, Math.Rounding.Ceil);
         uint256 strategyFee = Math.mulDiv(amount, getStrategyActionFee(strategy, action), MAX_FEE, Math.Rounding.Ceil);
 
-        uint256 amountAfterTreasuryFee = amount - treasuryFee;
-        uint256 amountAfterFees;
-        if (action == ExternalAction.Deposit) {
-            amountAfterFees = amountAfterTreasuryFee > strategyFee ? amountAfterTreasuryFee - strategyFee : 0;
-        } else {
-            amountAfterFees = amountAfterTreasuryFee + strategyFee;
+        if (strategyFee > amount - treasuryFee) {
+            strategyFee = amount - treasuryFee;
         }
 
-        return (amountAfterFees, amountAfterTreasuryFee, treasuryFee);
+        return (strategyFee, treasuryFee);
     }
 }
