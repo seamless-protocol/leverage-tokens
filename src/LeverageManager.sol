@@ -457,6 +457,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         (
             uint256 equityForStrategyInCollateralAsset,
             uint256 equityForSharesAfterFeesInCollateralAsset,
+            uint256 strategyFeeInCollateralAsset,
             uint256 treasuryFeeInCollateralAsset
         ) = _computeEquityFees(strategy, equityInCollateralAsset, action);
 
@@ -466,6 +467,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             _computeCollateralAndDebtForStrategyAction(strategy, equityForStrategyInCollateralAsset, action);
 
         data.debt = debtForStrategy;
+        data.strategyFeeInCollateralAsset = strategyFeeInCollateralAsset;
         data.treasuryFeeInCollateralAsset = treasuryFeeInCollateralAsset;
 
         // For deposits, the collateral amount returned by the preview is the total collateral required to execute the
@@ -475,10 +477,8 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         // treasury fee, since the collateral computed above is wrt the equity amount without the treasury fee subtracted
         if (action == ExternalAction.Deposit) {
             data.collateral = collateralForStrategy + treasuryFeeInCollateralAsset;
-            data.strategyFeeInCollateralAsset = equityInCollateralAsset - equityForSharesAfterFeesInCollateralAsset;
         } else {
             data.collateral = collateralForStrategy - treasuryFeeInCollateralAsset;
-            data.strategyFeeInCollateralAsset = equityForSharesAfterFeesInCollateralAsset - equityInCollateralAsset;
         }
 
         return data;

@@ -97,6 +97,7 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
     /// @param action Action to compute fees for, Deposit or Withdraw
     /// @return equityForStrategyAfterFees Equity to add / remove from the strategy
     /// @return equityForSharesAfterFees Equity to mint / burn shares from the strategy
+    /// @return strategyFeeInCollateralAsset Amount of collateral that will be charged for the action to the strategy
     /// @return treasuryFee Treasury fee amount
     /// @dev Fees are always rounded up.
     /// @dev If the sum of the strategy fee and the treasury fee is greater than the amount,
@@ -104,7 +105,7 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
     function _computeEquityFees(IStrategy strategy, uint256 equityAmount, ExternalAction action)
         internal
         view
-        returns (uint256, uint256, uint256)
+        returns (uint256, uint256, uint256, uint256)
     {
         uint256 treasuryFee = Math.mulDiv(equityAmount, getTreasuryActionFee(action), MAX_FEE, Math.Rounding.Ceil);
         uint256 strategyFee =
@@ -136,6 +137,6 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
             ? equityForStrategyAfterFees - strategyFee
             : equityForStrategyAfterFees + strategyFee;
 
-        return (equityForStrategyAfterFees, equityForSharesAfterFees, treasuryFee);
+        return (equityForStrategyAfterFees, equityForSharesAfterFees, strategyFee, treasuryFee);
     }
 }
