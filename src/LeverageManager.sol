@@ -213,8 +213,9 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         );
 
         // Charge treasury fee
-        if (depositData.treasuryFeeInCollateralAsset > 0) {
-            SafeERC20.safeTransfer(collateralAsset, getTreasury(), depositData.treasuryFeeInCollateralAsset);
+        address treasury = getTreasury();
+        if (treasury != address(0)) {
+            SafeERC20.safeTransfer(collateralAsset, treasury, depositData.treasuryFeeInCollateralAsset);
         }
 
         // Borrow and send debt assets to caller
@@ -257,8 +258,9 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         SafeERC20.safeTransfer(collateralAsset, msg.sender, withdrawData.collateral);
 
         // Charge treasury fee
-        if (withdrawData.treasuryFeeInCollateralAsset > 0) {
-            SafeERC20.safeTransfer(collateralAsset, getTreasury(), withdrawData.treasuryFeeInCollateralAsset);
+        address treasury = getTreasury();
+        if (treasury != address(0)) {
+            SafeERC20.safeTransfer(collateralAsset, treasury, withdrawData.treasuryFeeInCollateralAsset);
         }
 
         // Emit event and explicit return statement
