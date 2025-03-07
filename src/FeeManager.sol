@@ -93,12 +93,12 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
 
     /// @notice Computes equity fees based on action
     /// @param strategy Strategy to compute fees for
-    /// @param equityAmount Amount of equity to compute fees for
+    /// @param equityAmount Amount of equity to compute fees for, denominated in collateral asset
     /// @param action Action to compute fees for, Deposit or Withdraw
-    /// @return equityForStrategyAfterFees Equity to add / remove from the strategy
-    /// @return equityForSharesAfterFees Equity to mint / burn shares from the strategy
-    /// @return strategyFee Strategy fee amount
-    /// @return treasuryFee Treasury fee amount
+    /// @return equityForStrategyAfterFees Equity to add / remove from the strategy, denominated in collateral asset
+    /// @return equityForSharesAfterFees Equity to mint / burn shares from the strategy, denominated in collateral asset
+    /// @return strategyFee Strategy fee amount, denominated in collateral asset
+    /// @return treasuryFee Treasury fee amount, denominated in collateral asset
     /// @dev Fees are always rounded up.
     /// @dev If the sum of the strategy fee and the treasury fee is greater than the amount,
     ///      the strategy fee is set to the delta of the amount and the treasury fee.
