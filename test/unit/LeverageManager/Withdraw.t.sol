@@ -6,7 +6,7 @@ import {console} from "forge-std/console.sol";
 
 // Internal imports
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {ExternalAction} from "src/types/DataTypes.sol";
+import {ActionData, ExternalAction, PreviewActionData} from "src/types/DataTypes.sol";
 import {PreviewActionTest} from "./PreviewAction.t.sol";
 
 contract WithdrawTest is PreviewActionTest {
@@ -61,7 +61,7 @@ contract WithdrawTest is PreviewActionTest {
         vm.assume(equityToWithdrawInCollateralAsset > 0);
 
         // Preview the withdrawal
-        (,, uint256 expectedShares,) = leverageManager.previewWithdraw(strategy, equityToWithdrawInCollateralAsset);
+        uint256 expectedShares = leverageManager.previewWithdraw(strategy, equityToWithdrawInCollateralAsset).shares;
 
         vm.expectRevert(
             abi.encodeWithSelector(ILeverageManager.SlippageTooHigh.selector, expectedShares, expectedShares - 1)
@@ -100,51 +100,44 @@ contract WithdrawTest is PreviewActionTest {
 
     function _testWithdraw(uint256 equityToWithdrawInCollateralAsset, uint256 maxShares) internal {
         // First preview the withdrawal
-        (
-            uint256 expectedCollateralToRemove,
-            uint256 expectedDebtToRepay,
-            uint256 expectedSharesAfterFee,
-            uint256 expectedSharesFee
-        ) = leverageManager.previewWithdraw(strategy, equityToWithdrawInCollateralAsset);
+        PreviewActionData memory previewData =
+            leverageManager.previewWithdraw(strategy, equityToWithdrawInCollateralAsset);
 
         uint256 shareTotalSupplyBefore = strategy.totalSupply();
 
-        vm.assume(expectedSharesAfterFee <= shareTotalSupplyBefore);
+        vm.assume(previewData.shares <= shareTotalSupplyBefore);
 
         // This needs to be done this way because initial mock state mints total supply to address(1)
         // In order to keep the same total supply we need to burn and mint the same amount of shares
         vm.startPrank(address(leverageManager));
-        strategy.burn(address(1), expectedSharesAfterFee);
-        strategy.mint(address(this), expectedSharesAfterFee);
+        strategy.burn(address(1), previewData.shares);
+        strategy.mint(address(this), previewData.shares);
         vm.stopPrank();
 
         // Mint debt tokens to sender and approve leverage manager
-        debtToken.mint(address(this), expectedDebtToRepay);
-        debtToken.approve(address(leverageManager), expectedDebtToRepay);
+        debtToken.mint(address(this), previewData.debt);
+        debtToken.approve(address(leverageManager), previewData.debt);
 
         uint256 collateralBalanceBefore = collateralToken.balanceOf(address(this));
         uint256 debtBalanceBefore = debtToken.balanceOf(address(this));
 
         // Execute withdrawal
-        (
-            uint256 actualCollateralToRemove,
-            uint256 actualDebtToRepay,
-            uint256 actualSharesAfterFee,
-            uint256 actualSharesFee
-        ) = leverageManager.withdraw(strategy, equityToWithdrawInCollateralAsset, maxShares);
+        ActionData memory withdrawData =
+            leverageManager.withdraw(strategy, equityToWithdrawInCollateralAsset, maxShares);
 
         // Verify return values match preview
-        assertEq(actualCollateralToRemove, expectedCollateralToRemove);
-        assertEq(actualDebtToRepay, expectedDebtToRepay);
-        assertEq(actualSharesAfterFee, expectedSharesAfterFee);
-        assertEq(actualSharesFee, expectedSharesFee);
+        assertEq(withdrawData.collateral, previewData.collateral);
+        assertEq(withdrawData.debt, previewData.debt);
+        assertEq(withdrawData.shares, previewData.shares);
+        assertEq(withdrawData.strategyFeeInCollateralAsset, previewData.strategyFeeInCollateralAsset);
+        assertEq(withdrawData.treasuryFeeInCollateralAsset, previewData.treasuryFeeInCollateralAsset);
 
         // Verify token transfers
-        assertEq(collateralToken.balanceOf(address(this)) - collateralBalanceBefore, actualCollateralToRemove);
-        assertEq(debtBalanceBefore - debtToken.balanceOf(address(this)), actualDebtToRepay);
+        assertEq(collateralToken.balanceOf(address(this)) - collateralBalanceBefore, withdrawData.collateral);
+        assertEq(debtBalanceBefore - debtToken.balanceOf(address(this)), withdrawData.debt);
 
         // Validate strategy total supply and balance
-        assertEq(strategy.totalSupply(), shareTotalSupplyBefore - actualSharesAfterFee);
+        assertEq(strategy.totalSupply(), shareTotalSupplyBefore - withdrawData.shares);
         assertEq(strategy.balanceOf(address(this)), 0);
     }
 }

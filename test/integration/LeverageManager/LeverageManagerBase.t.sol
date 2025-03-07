@@ -42,7 +42,7 @@ contract LeverageManagerBase is IntegrationTestBase {
         deal(address(WETH), caller, collateralToAdd);
         vm.startPrank(caller);
         WETH.approve(address(leverageManager), collateralToAdd);
-        (,, uint256 shares,) = leverageManager.deposit(strategy, equityInCollateralAsset, 0);
+        uint256 shares = leverageManager.deposit(strategy, equityInCollateralAsset, 0).shares;
         vm.stopPrank();
 
         return shares;
@@ -55,7 +55,7 @@ contract LeverageManagerBase is IntegrationTestBase {
         deal(address(USDC), caller, debtToRepay);
         vm.startPrank(caller);
         USDC.approve(address(leverageManager), debtToRepay);
-        (,, uint256 shares,) = leverageManager.withdraw(strategy, equityInCollateralAsset, type(uint256).max);
+        uint256 shares = leverageManager.withdraw(strategy, equityInCollateralAsset, type(uint256).max).shares;
         vm.stopPrank();
 
         return shares;

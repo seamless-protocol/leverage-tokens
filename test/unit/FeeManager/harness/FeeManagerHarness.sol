@@ -15,12 +15,4 @@ contract FeeManagerHarness is FeeManager {
             slot := $.slot
         }
     }
-
-    function exposed_computeFeeAdjustedShares(IStrategy strategy, uint256 amount, ExternalAction action)
-        external
-        view
-        returns (uint256 amountAfterFee, uint256 feeAmount)
-    {
-        return _computeFeeAdjustedShares(strategy, amount, action);
-    }
 }

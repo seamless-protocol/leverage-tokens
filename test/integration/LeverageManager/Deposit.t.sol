@@ -71,7 +71,7 @@ contract LeverageManagerDepositTest is LeverageManagerBase {
         assertLe(stateBefore.collateralRatio, 4 * BASE_RATIO);
 
         // Deposit based on what preview function says
-        (uint256 collateral,,,) = leverageManager.previewDeposit(strategy, equityInCollateralAsset);
+        uint256 collateral = leverageManager.previewDeposit(strategy, equityInCollateralAsset).collateral;
         uint256 shares = _deposit(user, equityInCollateralAsset, collateral);
 
         // Validate that user never gets more equity than they deposited
@@ -93,7 +93,7 @@ contract LeverageManagerDepositTest is LeverageManagerBase {
 
         stateBefore = _getStrategyState();
 
-        (collateral,,,) = leverageManager.previewDeposit(strategy, equityInCollateralAsset);
+        collateral = leverageManager.previewDeposit(strategy, equityInCollateralAsset).collateral;
         shares = _deposit(user, equityInCollateralAsset, collateral);
 
         // Validate that user never gets more equity than they deposited
