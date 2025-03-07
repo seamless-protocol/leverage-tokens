@@ -6,7 +6,7 @@ import {console} from "forge-std/console.sol";
 
 // Internal imports
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {ActionData, ExternalAction, PreviewActionData} from "src/types/DataTypes.sol";
+import {ActionData, ExternalAction} from "src/types/DataTypes.sol";
 import {PreviewActionTest} from "./PreviewAction.t.sol";
 
 contract WithdrawTest is PreviewActionTest {
@@ -100,8 +100,7 @@ contract WithdrawTest is PreviewActionTest {
 
     function _testWithdraw(uint256 equityToWithdrawInCollateralAsset, uint256 maxShares) internal {
         // First preview the withdrawal
-        PreviewActionData memory previewData =
-            leverageManager.previewWithdraw(strategy, equityToWithdrawInCollateralAsset);
+        ActionData memory previewData = leverageManager.previewWithdraw(strategy, equityToWithdrawInCollateralAsset);
 
         uint256 shareTotalSupplyBefore = strategy.totalSupply();
 

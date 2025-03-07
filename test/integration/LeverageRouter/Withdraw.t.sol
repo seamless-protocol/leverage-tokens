@@ -6,7 +6,7 @@ import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.so
 
 // Internal imports
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
-import {PreviewActionData} from "src/types/DataTypes.sol";
+import {ActionData} from "src/types/DataTypes.sol";
 import {LeverageRouterBase} from "./LeverageRouterBase.t.sol";
 import {SwapPathLib} from "test/utils/SwapPathLib.sol";
 
@@ -488,7 +488,7 @@ contract LeverageRouterWithdrawTest is LeverageRouterBase {
         uint256 debtBeforeWithdraw = morphoLendingAdapter.getDebt();
         uint256 userBalanceOfCollateralAssetBeforeWithdraw = WETH.balanceOf(user);
 
-        PreviewActionData memory previewData = leverageManager.previewWithdraw(strategy, equityInCollateralAsset);
+        ActionData memory previewData = leverageManager.previewWithdraw(strategy, equityInCollateralAsset);
 
         vm.startPrank(user);
         strategy.approve(address(leverageRouter), previewData.shares);

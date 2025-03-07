@@ -9,7 +9,7 @@ import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 import {ExternalAction} from "src/types/DataTypes.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {ActionData, CollateralRatios, PreviewActionData, StrategyState} from "src/types/DataTypes.sol";
+import {ActionData, CollateralRatios, StrategyState} from "src/types/DataTypes.sol";
 import {PreviewActionTest} from "../LeverageManager/PreviewAction.t.sol";
 
 contract DepositTest is PreviewActionTest {
@@ -59,7 +59,7 @@ contract DepositTest is PreviewActionTest {
         );
 
         uint256 equityToAddInCollateralAsset = 0;
-        PreviewActionData memory previewData = leverageManager.previewDeposit(strategy, equityToAddInCollateralAsset);
+        ActionData memory previewData = leverageManager.previewDeposit(strategy, equityToAddInCollateralAsset);
 
         assertEq(previewData.collateral, 0);
         assertEq(previewData.debt, 0);
@@ -138,7 +138,7 @@ contract DepositTest is PreviewActionTest {
         );
 
         uint256 equityToAddInCollateralAsset = 10 ether;
-        PreviewActionData memory previewData = leverageManager.previewDeposit(strategy, equityToAddInCollateralAsset);
+        ActionData memory previewData = leverageManager.previewDeposit(strategy, equityToAddInCollateralAsset);
 
         deal(address(collateralToken), address(this), previewData.collateral);
         collateralToken.approve(address(leverageManager), previewData.collateral);
@@ -162,7 +162,7 @@ contract DepositTest is PreviewActionTest {
             beforeSharesTotalSupply != 0, "Shares total supply must be non-zero to use _testDeposit helper function"
         );
 
-        PreviewActionData memory previewData = leverageManager.previewDeposit(strategy, equityToAddInCollateralAsset);
+        ActionData memory previewData = leverageManager.previewDeposit(strategy, equityToAddInCollateralAsset);
 
         deal(address(collateralToken), address(this), previewData.collateral);
         collateralToken.approve(address(leverageManager), previewData.collateral);

@@ -11,7 +11,7 @@ import {IStrategy} from "./IStrategy.sol";
 import {CollateralRatios} from "src/types/DataTypes.sol";
 import {IBeaconProxyFactory} from "./IBeaconProxyFactory.sol";
 import {ILendingAdapter} from "./ILendingAdapter.sol";
-import {ActionData, PreviewActionData, RebalanceAction, TokenTransfer} from "src/types/DataTypes.sol";
+import {ActionData, RebalanceAction, TokenTransfer} from "src/types/DataTypes.sol";
 import {IRebalanceRewardDistributor} from "./IRebalanceRewardDistributor.sol";
 
 interface ILeverageManager is IFeeManager {
@@ -144,6 +144,7 @@ interface ILeverageManager is IFeeManager {
     ///         - collateralToAdd Amount of collateral that sender needs to approve the LeverageManager to spend.
     ///           This includes the treasury fee
     ///         - debtToBorrow Amount of debt that will be borrowed and sent to sender
+    ///         - equityInCollateralAsset Amount of equity that will be deposited before fees
     ///         - shares Amount of shares that will be minted to the sender
     ///         - strategyFeeInCollateralAsset Amount of collateral asset that will be charged for the deposit to the strategy
     ///         - treasuryFeeInCollateralAsset Amount of collateral asset that will be charged for the deposit to the treasury
@@ -151,7 +152,7 @@ interface ILeverageManager is IFeeManager {
     function previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
         external
         view
-        returns (PreviewActionData memory previewData);
+        returns (ActionData memory previewData);
 
     /// @notice Previews withdraw function call and returns all required data
     /// @param strategy Strategy to preview withdraw for
@@ -159,6 +160,7 @@ interface ILeverageManager is IFeeManager {
     /// @return previewData Preview data for withdraw
     ///         - collateralToRemove Amount of collateral that will be removed from the strategy and sent to the sender
     ///         - debtToRepay Amount of debt that will be taken from sender and repaid to the strategy
+    ///         - equityInCollateralAsset Amount of equity that will be withdrawn before fees
     ///         - shares Amount of shares that will be burned from sender
     ///         - strategyFeeInCollateralAsset Amount of collateral asset that will be charged for the withdraw to the strategy
     ///         - treasuryFeeInCollateralAsset Amount of collateral asset that will be charged for the withdraw to the treasury
@@ -166,7 +168,7 @@ interface ILeverageManager is IFeeManager {
     function previewWithdraw(IStrategy strategy, uint256 equityInCollateralAsset)
         external
         view
-        returns (PreviewActionData memory previewData);
+        returns (ActionData memory previewData);
 
     /// @notice Deposits equity into a strategy and mints shares to the sender
     /// @param strategy The strategy to deposit into
@@ -175,6 +177,7 @@ interface ILeverageManager is IFeeManager {
     /// @return actionData Data about the deposit
     ///         - collateral Amount of collateral that was added
     ///         - debt Amount of debt that was added
+    ///         - equityInCollateralAsset Amount of equity that was deposited before fees
     ///         - shares Amount of shares minted to the sender
     ///         - strategyFeeInCollateralAsset Amount of collateral that was charged for the deposit to the strategy
     ///         - treasuryFeeInCollateralAsset Amount of collateral that was charged for the deposit to the treasury
@@ -189,6 +192,7 @@ interface ILeverageManager is IFeeManager {
     /// @return actionData Data about the withdraw
     ///         - collateral Amount of collateral that was removed from strategy and sent to sender
     ///         - debt Amount of debt that was repaid to strategy, taken from sender
+    ///         - equityInCollateralAsset Amount of equity that was withdrawn before fees
     ///         - shares Amount of the sender's shares that were burned for the withdrawal
     ///         - strategyFeeInCollateralAsset Amount of collateral that was charged for the withdraw to the strategy
     ///         - treasuryFeeInCollateralAsset Amount of collateral that was charged for the withdraw to the treasury

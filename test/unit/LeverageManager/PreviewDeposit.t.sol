@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-import {ExternalAction, PreviewActionData} from "src/types/DataTypes.sol";
+import {ActionData, ExternalAction} from "src/types/DataTypes.sol";
 import {PreviewActionTest} from "./PreviewAction.t.sol";
 
 contract PreviewDepositTest is PreviewActionTest {
@@ -21,11 +21,10 @@ contract PreviewDepositTest is PreviewActionTest {
             })
         );
 
-        PreviewActionData memory expectedPreviewData =
+        ActionData memory expectedPreviewData =
             leverageManager.exposed_previewAction(strategy, equityToAddInCollateralAsset, ExternalAction.Deposit);
 
-        PreviewActionData memory actualPreviewData =
-            leverageManager.previewDeposit(strategy, equityToAddInCollateralAsset);
+        ActionData memory actualPreviewData = leverageManager.previewDeposit(strategy, equityToAddInCollateralAsset);
 
         assertEq(actualPreviewData.collateral, expectedPreviewData.collateral, "Collateral to add mismatch");
         assertEq(actualPreviewData.debt, expectedPreviewData.debt, "Debt to borrow mismatch");

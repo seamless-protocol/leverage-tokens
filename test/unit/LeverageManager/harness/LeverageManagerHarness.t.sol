@@ -6,9 +6,9 @@ import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {FeeManagerHarness} from "test/unit/FeeManager/harness/FeeManagerHarness.sol";
 import {LeverageManager} from "src/LeverageManager.sol";
 import {
+    ActionData,
     ActionType,
     ExternalAction,
-    PreviewActionData,
     RebalanceAction,
     TokenTransfer,
     StrategyState
@@ -79,7 +79,7 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
     function exposed_previewAction(IStrategy strategy, uint256 equityInCollateralAsset, ExternalAction action)
         external
         view
-        returns (PreviewActionData memory)
+        returns (ActionData memory)
     {
         return _previewAction(strategy, equityInCollateralAsset, action);
     }

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-import {ExternalAction, PreviewActionData} from "src/types/DataTypes.sol";
+import {ActionData, ExternalAction} from "src/types/DataTypes.sol";
 import {PreviewActionTest} from "./PreviewAction.t.sol";
 
 contract PreviewWithdrawTest is PreviewActionTest {
@@ -23,10 +23,10 @@ contract PreviewWithdrawTest is PreviewActionTest {
             })
         );
 
-        PreviewActionData memory expectedPreviewData =
+        ActionData memory expectedPreviewData =
             leverageManager.exposed_previewAction(strategy, equityToWithdrawInCollateralAsset, ExternalAction.Withdraw);
 
-        PreviewActionData memory actualPreviewData =
+        ActionData memory actualPreviewData =
             leverageManager.previewWithdraw(strategy, equityToWithdrawInCollateralAsset);
 
         assertEq(actualPreviewData.collateral, expectedPreviewData.collateral, "Collateral to remove mismatch");

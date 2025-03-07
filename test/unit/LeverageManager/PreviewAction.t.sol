@@ -9,7 +9,7 @@ import {ExternalAction} from "src/types/DataTypes.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IRebalanceRewardDistributor} from "src/interfaces/IRebalanceRewardDistributor.sol";
 import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
-import {PreviewActionData, StrategyState} from "src/types/DataTypes.sol";
+import {ActionData, StrategyState} from "src/types/DataTypes.sol";
 import {LeverageManagerBaseTest} from "../LeverageManager/LeverageManagerBase.t.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 
@@ -46,8 +46,7 @@ contract PreviewActionTest is LeverageManagerBaseTest {
         _prepareLeverageManagerStateForAction(beforeState);
 
         uint256 equity = 10 ether;
-        PreviewActionData memory previewData =
-            leverageManager.exposed_previewAction(strategy, equity, ExternalAction.Deposit);
+        ActionData memory previewData = leverageManager.exposed_previewAction(strategy, equity, ExternalAction.Deposit);
 
         assertEq(previewData.collateral, 20 ether - 1);
         assertEq(previewData.debt, 20 ether - 1);
@@ -71,7 +70,7 @@ contract PreviewActionTest is LeverageManagerBaseTest {
         _prepareLeverageManagerStateForAction(beforeState);
 
         uint256 equityToAdd = 10 ether;
-        PreviewActionData memory previewData =
+        ActionData memory previewData =
             leverageManager.exposed_previewAction(strategy, equityToAdd, ExternalAction.Deposit);
 
         assertEq(previewData.collateral, 20 ether - 1);
@@ -89,8 +88,7 @@ contract PreviewActionTest is LeverageManagerBaseTest {
 
     function test_previewAction_ZeroEquity() public view {
         uint256 equity = 0;
-        PreviewActionData memory previewData =
-            leverageManager.exposed_previewAction(strategy, equity, ExternalAction.Deposit);
+        ActionData memory previewData = leverageManager.exposed_previewAction(strategy, equity, ExternalAction.Deposit);
 
         assertEq(previewData.collateral, 0);
         assertEq(previewData.debt, 0);
@@ -115,8 +113,7 @@ contract PreviewActionTest is LeverageManagerBaseTest {
 
         uint256 equity = 1 ether;
 
-        PreviewActionData memory previewData =
-            leverageManager.exposed_previewAction(strategy, equity, ExternalAction.Deposit);
+        ActionData memory previewData = leverageManager.exposed_previewAction(strategy, equity, ExternalAction.Deposit);
 
         // Follows 2x target ratio
         assertEq(previewData.collateral, 2 ether);
@@ -173,8 +170,7 @@ contract PreviewActionTest is LeverageManagerBaseTest {
         // Get state prior to action
         StrategyState memory prevState = leverageManager.exposed_getStrategyState(strategy);
 
-        PreviewActionData memory previewData =
-            leverageManager.exposed_previewAction(strategy, equityInCollateralAsset, action);
+        ActionData memory previewData = leverageManager.exposed_previewAction(strategy, equityInCollateralAsset, action);
 
         // Calculate state after action
         (, uint256 newDebt, uint256 newCollateralRatio) = _getNewStrategyState(

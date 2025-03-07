@@ -12,7 +12,7 @@ import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
-import {ActionData, PreviewActionData, StrategyState} from "src/types/DataTypes.sol";
+import {ActionData, StrategyState} from "src/types/DataTypes.sol";
 
 contract MockLeverageManager is Test {
     uint256 public BASE_RATIO = 1e8;
@@ -153,13 +153,14 @@ contract MockLeverageManager is Test {
     function previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
         external
         view
-        returns (PreviewActionData memory)
+        returns (ActionData memory)
     {
         bytes32 mockPreviewDepositDataKey = keccak256(abi.encode(strategy, equityInCollateralAsset));
 
-        return PreviewActionData({
+        return ActionData({
             collateral: mockPreviewDepositData[mockPreviewDepositDataKey].collateralToAdd,
             debt: mockPreviewDepositData[mockPreviewDepositDataKey].debtToBorrow,
+            equityInCollateralAsset: equityInCollateralAsset,
             shares: mockPreviewDepositData[mockPreviewDepositDataKey].shares,
             strategyFeeInCollateralAsset: mockPreviewDepositData[mockPreviewDepositDataKey].sharesFee,
             treasuryFeeInCollateralAsset: 0
@@ -169,12 +170,13 @@ contract MockLeverageManager is Test {
     function previewWithdraw(IStrategy strategy, uint256 equityInCollateralAsset)
         external
         view
-        returns (PreviewActionData memory)
+        returns (ActionData memory)
     {
         bytes32 mockPreviewWithdrawDataKey = keccak256(abi.encode(strategy, equityInCollateralAsset));
-        return PreviewActionData({
+        return ActionData({
             collateral: mockPreviewWithdrawData[mockPreviewWithdrawDataKey].collateralToRemove,
             debt: mockPreviewWithdrawData[mockPreviewWithdrawDataKey].debtToRepay,
+            equityInCollateralAsset: equityInCollateralAsset,
             shares: mockPreviewWithdrawData[mockPreviewWithdrawDataKey].shares,
             strategyFeeInCollateralAsset: mockPreviewWithdrawData[mockPreviewWithdrawDataKey].sharesFee,
             treasuryFeeInCollateralAsset: 0

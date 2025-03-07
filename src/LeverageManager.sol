@@ -26,7 +26,6 @@ import {
     ActionData,
     ActionType,
     ExternalAction,
-    PreviewActionData,
     RebalanceAction,
     StrategyState,
     TokenTransfer
@@ -166,39 +165,31 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     function previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
         public
         view
-        returns (PreviewActionData memory previewData)
+        returns (ActionData memory previewData)
     {
-        PreviewActionData memory data = _previewAction(strategy, equityInCollateralAsset, ExternalAction.Deposit);
+        ActionData memory data = _previewAction(strategy, equityInCollateralAsset, ExternalAction.Deposit);
 
         // For deposits, the collateral amount returned by the preview is the total collateral required to execute the
         // deposit, so we add the treasury fee to it, since the collateral computed above is wrt the equity amount with
         // the treasury fee subtracted.
-        return PreviewActionData({
-            collateral: data.collateral + data.treasuryFeeInCollateralAsset,
-            debt: data.debt,
-            shares: data.shares,
-            strategyFeeInCollateralAsset: data.strategyFeeInCollateralAsset,
-            treasuryFeeInCollateralAsset: data.treasuryFeeInCollateralAsset
-        });
+        data.collateral += data.treasuryFeeInCollateralAsset;
+
+        return data;
     }
 
     /// @inheritdoc ILeverageManager
     function previewWithdraw(IStrategy strategy, uint256 equityInCollateralAsset)
         public
         view
-        returns (PreviewActionData memory previewData)
+        returns (ActionData memory previewData)
     {
-        PreviewActionData memory data = _previewAction(strategy, equityInCollateralAsset, ExternalAction.Withdraw);
+        ActionData memory data = _previewAction(strategy, equityInCollateralAsset, ExternalAction.Withdraw);
 
         // For withdrawals, the collateral amount returned is the collateral transferred to the sender, so we subtract the
         // treasury fee, since the collateral computed above is wrt the equity amount without the treasury fee subtracted
-        return PreviewActionData({
-            collateral: data.collateral - data.treasuryFeeInCollateralAsset,
-            debt: data.debt,
-            shares: data.shares,
-            strategyFeeInCollateralAsset: data.strategyFeeInCollateralAsset,
-            treasuryFeeInCollateralAsset: data.treasuryFeeInCollateralAsset
-        });
+        data.collateral -= data.treasuryFeeInCollateralAsset;
+
+        return data;
     }
 
     /// @inheritdoc ILeverageManager
@@ -206,42 +197,34 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         external
         returns (ActionData memory actionData)
     {
-        PreviewActionData memory previewData = previewDeposit(strategy, equityInCollateralAsset);
+        ActionData memory depositData = previewDeposit(strategy, equityInCollateralAsset);
 
-        if (previewData.shares < minShares) {
-            revert SlippageTooHigh(previewData.shares, minShares);
+        if (depositData.shares < minShares) {
+            revert SlippageTooHigh(depositData.shares, minShares);
         }
 
         // Take collateral asset from sender
         IERC20 collateralAsset = getStrategyCollateralAsset(strategy);
-        SafeERC20.safeTransferFrom(collateralAsset, msg.sender, address(this), previewData.collateral);
+        SafeERC20.safeTransferFrom(collateralAsset, msg.sender, address(this), depositData.collateral);
 
         // Add collateral to strategy
         _executeLendingAdapterAction(
-            strategy, ActionType.AddCollateral, previewData.collateral - previewData.treasuryFeeInCollateralAsset
+            strategy, ActionType.AddCollateral, depositData.collateral - depositData.treasuryFeeInCollateralAsset
         );
 
         // Charge treasury fee
-        if (previewData.treasuryFeeInCollateralAsset > 0) {
-            SafeERC20.safeTransfer(collateralAsset, getTreasury(), previewData.treasuryFeeInCollateralAsset);
+        if (depositData.treasuryFeeInCollateralAsset > 0) {
+            SafeERC20.safeTransfer(collateralAsset, getTreasury(), depositData.treasuryFeeInCollateralAsset);
         }
 
         // Borrow and send debt assets to caller
-        _executeLendingAdapterAction(strategy, ActionType.Borrow, previewData.debt);
-        SafeERC20.safeTransfer(getStrategyDebtAsset(strategy), msg.sender, previewData.debt);
+        _executeLendingAdapterAction(strategy, ActionType.Borrow, depositData.debt);
+        SafeERC20.safeTransfer(getStrategyDebtAsset(strategy), msg.sender, depositData.debt);
 
         // Mint shares to user
-        strategy.mint(msg.sender, previewData.shares);
+        strategy.mint(msg.sender, depositData.shares);
 
         // Emit event and explicit return statement
-        ActionData memory depositData = ActionData({
-            equityInCollateralAsset: equityInCollateralAsset,
-            collateral: previewData.collateral,
-            debt: previewData.debt,
-            shares: previewData.shares,
-            strategyFeeInCollateralAsset: previewData.strategyFeeInCollateralAsset,
-            treasuryFeeInCollateralAsset: previewData.treasuryFeeInCollateralAsset
-        });
         emit Deposit(strategy, msg.sender, depositData);
         return depositData;
     }
@@ -251,42 +234,34 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         external
         returns (ActionData memory actionData)
     {
-        PreviewActionData memory previewData = previewWithdraw(strategy, equityInCollateralAsset);
+        ActionData memory withdrawData = previewWithdraw(strategy, equityInCollateralAsset);
 
-        if (previewData.shares > maxShares) {
-            revert SlippageTooHigh(previewData.shares, maxShares);
+        if (withdrawData.shares > maxShares) {
+            revert SlippageTooHigh(withdrawData.shares, maxShares);
         }
 
         // Burn shares from user and total supply
-        strategy.burn(msg.sender, previewData.shares);
+        strategy.burn(msg.sender, withdrawData.shares);
 
         // Take assets from sender and repay the debt
-        SafeERC20.safeTransferFrom(getStrategyDebtAsset(strategy), msg.sender, address(this), previewData.debt);
-        _executeLendingAdapterAction(strategy, ActionType.Repay, previewData.debt);
+        SafeERC20.safeTransferFrom(getStrategyDebtAsset(strategy), msg.sender, address(this), withdrawData.debt);
+        _executeLendingAdapterAction(strategy, ActionType.Repay, withdrawData.debt);
 
         // Withdraw collateral from lending pool
         _executeLendingAdapterAction(
-            strategy, ActionType.RemoveCollateral, previewData.collateral + previewData.treasuryFeeInCollateralAsset
+            strategy, ActionType.RemoveCollateral, withdrawData.collateral + withdrawData.treasuryFeeInCollateralAsset
         );
 
         // Send collateral assets to sender
         IERC20 collateralAsset = getStrategyCollateralAsset(strategy);
-        SafeERC20.safeTransfer(collateralAsset, msg.sender, previewData.collateral);
+        SafeERC20.safeTransfer(collateralAsset, msg.sender, withdrawData.collateral);
 
         // Charge treasury fee
-        if (previewData.treasuryFeeInCollateralAsset > 0) {
-            SafeERC20.safeTransfer(collateralAsset, getTreasury(), previewData.treasuryFeeInCollateralAsset);
+        if (withdrawData.treasuryFeeInCollateralAsset > 0) {
+            SafeERC20.safeTransfer(collateralAsset, getTreasury(), withdrawData.treasuryFeeInCollateralAsset);
         }
 
         // Emit event and explicit return statement
-        ActionData memory withdrawData = ActionData({
-            equityInCollateralAsset: equityInCollateralAsset,
-            collateral: previewData.collateral,
-            debt: previewData.debt,
-            shares: previewData.shares,
-            strategyFeeInCollateralAsset: previewData.strategyFeeInCollateralAsset,
-            treasuryFeeInCollateralAsset: previewData.treasuryFeeInCollateralAsset
-        });
         emit Withdraw(strategy, msg.sender, withdrawData);
         return withdrawData;
     }
@@ -466,7 +441,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     function _previewAction(IStrategy strategy, uint256 equityInCollateralAsset, ExternalAction action)
         internal
         view
-        returns (PreviewActionData memory data)
+        returns (ActionData memory data)
     {
         (
             uint256 equityForStrategyAfterFeesInCollateralAsset,
@@ -482,6 +457,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
         data.collateral = collateralForStrategy;
         data.debt = debtForStrategy;
+        data.equityInCollateralAsset = equityInCollateralAsset;
         data.strategyFeeInCollateralAsset = strategyFeeInCollateralAsset;
         data.treasuryFeeInCollateralAsset = treasuryFeeInCollateralAsset;
 

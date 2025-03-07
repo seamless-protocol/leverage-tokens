@@ -9,7 +9,7 @@ import {IOracle} from "@morpho-blue/interfaces/IOracle.sol";
 // Internal imports
 import {ExternalAction} from "src/types/DataTypes.sol";
 import {LeverageManagerBase} from "./LeverageManagerBase.t.sol";
-import {PreviewActionData, StrategyState} from "src/types/DataTypes.sol";
+import {ActionData, StrategyState} from "src/types/DataTypes.sol";
 
 contract LeverageManagerWithdrawTest is LeverageManagerBase {
     /// @dev In this block price on oracle 3392.292471591441746049801068
@@ -21,7 +21,7 @@ contract LeverageManagerWithdrawTest is LeverageManagerBase {
         StrategyState memory stateBefore = _getStrategyState();
 
         uint256 equityToWithdraw = 5 ether;
-        PreviewActionData memory previewData = leverageManager.previewWithdraw(strategy, equityToWithdraw);
+        ActionData memory previewData = leverageManager.previewWithdraw(strategy, equityToWithdraw);
         _withdraw(user, equityToWithdraw, previewData.debt);
 
         StrategyState memory stateAfter = _getStrategyState();
@@ -39,7 +39,7 @@ contract LeverageManagerWithdrawTest is LeverageManagerBase {
         uint256 collateralToAdd = 2 * equityInCollateralAsset;
         _deposit(user, equityInCollateralAsset, collateralToAdd);
 
-        PreviewActionData memory previewData = leverageManager.previewWithdraw(strategy, 0);
+        ActionData memory previewData = leverageManager.previewWithdraw(strategy, 0);
         _withdraw(user, 0, previewData.debt);
 
         assertEq(previewData.collateral, 0);
@@ -82,7 +82,7 @@ contract LeverageManagerWithdrawTest is LeverageManagerBase {
         StrategyState memory stateBefore = _getStrategyState();
 
         uint256 equityToWithdraw = 5 ether;
-        PreviewActionData memory previewData = leverageManager.previewWithdraw(strategy, equityToWithdraw);
+        ActionData memory previewData = leverageManager.previewWithdraw(strategy, equityToWithdraw);
         _withdraw(user, equityToWithdraw, previewData.debt);
 
         StrategyState memory stateAfter = _getStrategyState();
@@ -111,7 +111,7 @@ contract LeverageManagerWithdrawTest is LeverageManagerBase {
         StrategyState memory stateBefore = _getStrategyState();
 
         uint256 equityToWithdraw = 5 ether;
-        PreviewActionData memory previewData = leverageManager.previewWithdraw(strategy, equityToWithdraw);
+        ActionData memory previewData = leverageManager.previewWithdraw(strategy, equityToWithdraw);
         _withdraw(user, equityToWithdraw, previewData.debt);
 
         StrategyState memory stateAfter = _getStrategyState();
@@ -131,8 +131,7 @@ contract LeverageManagerWithdrawTest is LeverageManagerBase {
 
         // Withdraw everything
         uint256 sharesValueAfterDeposit = _convertToAssets(sharesAfterDeposit);
-        PreviewActionData memory previewDataAfterDeposit =
-            leverageManager.previewWithdraw(strategy, sharesValueAfterDeposit);
+        ActionData memory previewDataAfterDeposit = leverageManager.previewWithdraw(strategy, sharesValueAfterDeposit);
         _withdraw(user, sharesValueAfterDeposit, previewDataAfterDeposit.debt);
 
         // Deposit again to create the same scenario
@@ -140,12 +139,12 @@ contract LeverageManagerWithdrawTest is LeverageManagerBase {
 
         // Withdraw half of it
         uint256 equityToWithdraw = equityInCollateralAsset / 2;
-        PreviewActionData memory previewDataFirstTime = leverageManager.previewWithdraw(strategy, equityToWithdraw);
+        ActionData memory previewDataFirstTime = leverageManager.previewWithdraw(strategy, equityToWithdraw);
         _withdraw(user, equityToWithdraw, previewDataFirstTime.debt);
 
         // Withdraw the rest
         equityToWithdraw = _convertToAssets(strategy.balanceOf(user));
-        PreviewActionData memory previewDataSecondTime = leverageManager.previewWithdraw(strategy, equityToWithdraw);
+        ActionData memory previewDataSecondTime = leverageManager.previewWithdraw(strategy, equityToWithdraw);
         _withdraw(user, equityToWithdraw, previewDataSecondTime.debt);
 
         // Validate that in both cases we get the same amount of collateral and debt
@@ -168,7 +167,7 @@ contract LeverageManagerWithdrawTest is LeverageManagerBase {
 
         // Withdraw 50% of equity
         uint256 equityToWithdraw = equityInCollateralAssetAfterDeposit / 2;
-        PreviewActionData memory previewData = leverageManager.previewWithdraw(strategy, equityToWithdraw);
+        ActionData memory previewData = leverageManager.previewWithdraw(strategy, equityToWithdraw);
         _withdraw(user, equityToWithdraw, previewData.debt);
 
         // Lower or equal because or rounding, theoretically perfect would be 4.5 ether
