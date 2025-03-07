@@ -22,14 +22,14 @@ struct ActionData {
     uint256 collateral;
     /// @dev Amount of debt borrowed or repaid
     uint256 debt;
-    /// @dev Amount of equity added or withdrawn before fees
-    uint256 equityInCollateralAsset;
+    /// @dev Amount of equity added or withdrawn before fees, denominated in collateral asset
+    uint256 equity;
     /// @dev Amount of shares minted or burned to user
     uint256 shares;
-    /// @dev Amount of collateral charged for the action to the strategy
-    uint256 strategyFeeInCollateralAsset;
-    /// @dev Amount of collateral charged for the action to the treasury
-    uint256 treasuryFeeInCollateralAsset;
+    /// @dev Fee charged for the action to the strategy, denominated in collateral asset
+    uint256 strategyFee;
+    /// @dev Fee charged for the action to the treasury, denominated in collateral asset
+    uint256 treasuryFee;
 }
 
 /// @dev Struct that contains all data related to collateral ratios for a strategy

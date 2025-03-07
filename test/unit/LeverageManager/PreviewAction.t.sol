@@ -51,16 +51,16 @@ contract PreviewActionTest is LeverageManagerBaseTest {
         assertEq(previewData.collateral, 20 ether - 1);
         assertEq(previewData.debt, 20 ether - 1);
         assertEq(previewData.shares, 19 ether - 1); // 5% fee
-        assertEq(previewData.strategyFeeInCollateralAsset, 0.5 ether); // 5% fee on equity in collateral asset
-        assertEq(previewData.treasuryFeeInCollateralAsset, 0 ether);
+        assertEq(previewData.strategyFee, 0.5 ether); // 5% fee on equity in collateral asset
+        assertEq(previewData.treasuryFee, 0 ether);
 
         previewData = leverageManager.exposed_previewAction(strategy, equity, ExternalAction.Withdraw);
 
         assertEq(previewData.collateral, 20 ether - 1);
         assertEq(previewData.debt, 20 ether - 1);
         assertEq(previewData.shares, 21 ether - 1); // 5% fee
-        assertEq(previewData.strategyFeeInCollateralAsset, 0.5 ether); // 5% fee on equity in collateral asset
-        assertEq(previewData.treasuryFeeInCollateralAsset, 0 ether);
+        assertEq(previewData.strategyFee, 0.5 ether); // 5% fee on equity in collateral asset
+        assertEq(previewData.treasuryFee, 0 ether);
     }
 
     function test_previewAction_WithoutFee() public {
@@ -76,14 +76,14 @@ contract PreviewActionTest is LeverageManagerBaseTest {
         assertEq(previewData.collateral, 20 ether - 1);
         assertEq(previewData.debt, 10 ether - 1);
         assertEq(previewData.shares, 20 ether - 1);
-        assertEq(previewData.strategyFeeInCollateralAsset, 0);
+        assertEq(previewData.strategyFee, 0);
 
         previewData = leverageManager.exposed_previewAction(strategy, equityToAdd, ExternalAction.Withdraw);
 
         assertEq(previewData.collateral, 20 ether - 1);
         assertEq(previewData.debt, 10 ether); // Rounded up
         assertEq(previewData.shares, 20 ether - 1);
-        assertEq(previewData.strategyFeeInCollateralAsset, 0);
+        assertEq(previewData.strategyFee, 0);
     }
 
     function test_previewAction_ZeroEquity() public view {
@@ -93,14 +93,14 @@ contract PreviewActionTest is LeverageManagerBaseTest {
         assertEq(previewData.collateral, 0);
         assertEq(previewData.debt, 0);
         assertEq(previewData.shares, 0);
-        assertEq(previewData.strategyFeeInCollateralAsset, 0);
+        assertEq(previewData.strategyFee, 0);
 
         previewData = leverageManager.exposed_previewAction(strategy, equity, ExternalAction.Withdraw);
 
         assertEq(previewData.collateral, 0);
         assertEq(previewData.debt, 0);
         assertEq(previewData.shares, 0);
-        assertEq(previewData.strategyFeeInCollateralAsset, 0);
+        assertEq(previewData.strategyFee, 0);
     }
 
     function testFuzz_previewAction_ZeroSharesTotalSupply(uint128 initialCollateral, uint128 initialDebt) public {
@@ -121,14 +121,14 @@ contract PreviewActionTest is LeverageManagerBaseTest {
 
         uint256 expectedShares = leverageManager.exposed_convertToShares(strategy, equity);
         assertEq(previewData.shares, expectedShares);
-        assertEq(previewData.strategyFeeInCollateralAsset, 0);
+        assertEq(previewData.strategyFee, 0);
 
         previewData = leverageManager.exposed_previewAction(strategy, equity, ExternalAction.Withdraw);
 
         assertEq(previewData.collateral, 2 ether);
         assertEq(previewData.debt, 1 ether);
         assertEq(previewData.shares, expectedShares);
-        assertEq(previewData.strategyFeeInCollateralAsset, 0);
+        assertEq(previewData.strategyFee, 0);
     }
 
     function testFuzz_previewAction(
@@ -193,8 +193,8 @@ contract PreviewActionTest is LeverageManagerBaseTest {
             assertEq(previewData.shares, shares);
             assertEq(previewData.collateral, collateralForStrategy);
             assertEq(previewData.debt, debtForStrategy);
-            assertEq(previewData.strategyFeeInCollateralAsset, strategyFee);
-            assertEq(previewData.treasuryFeeInCollateralAsset, treasuryFee);
+            assertEq(previewData.strategyFee, strategyFee);
+            assertEq(previewData.treasuryFee, treasuryFee);
         }
 
         // If full withdraw is done then the collateral ratio should be max

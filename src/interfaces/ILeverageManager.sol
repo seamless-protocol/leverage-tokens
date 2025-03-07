@@ -146,8 +146,8 @@ interface ILeverageManager is IFeeManager {
     ///         - debtToBorrow Amount of debt that will be borrowed and sent to sender
     ///         - equityInCollateralAsset Amount of equity that will be deposited before fees
     ///         - shares Amount of shares that will be minted to the sender
-    ///         - strategyFeeInCollateralAsset Amount of collateral asset that will be charged for the deposit to the strategy
-    ///         - treasuryFeeInCollateralAsset Amount of collateral asset that will be charged for the deposit to the treasury
+    ///         - strategyFee Amount of collateral asset that will be charged for the deposit to the strategy
+    ///         - treasuryFee Amount of collateral asset that will be charged for the deposit to the treasury
     /// @dev Sender should approve leverage manager to spend collateralToAdd amount of collateral asset
     function previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
         external
@@ -162,8 +162,8 @@ interface ILeverageManager is IFeeManager {
     ///         - debtToRepay Amount of debt that will be taken from sender and repaid to the strategy
     ///         - equityInCollateralAsset Amount of equity that will be withdrawn before fees
     ///         - shares Amount of shares that will be burned from sender
-    ///         - strategyFeeInCollateralAsset Amount of collateral asset that will be charged for the withdraw to the strategy
-    ///         - treasuryFeeInCollateralAsset Amount of collateral asset that will be charged for the withdraw to the treasury
+    ///         - strategyFee Amount of collateral asset that will be charged for the withdraw to the strategy
+    ///         - treasuryFee Amount of collateral asset that will be charged for the withdraw to the treasury
     /// @dev Sender should approve leverage manager to spend debtToRepay amount of debt asset
     function previewWithdraw(IStrategy strategy, uint256 equityInCollateralAsset)
         external
@@ -179,8 +179,8 @@ interface ILeverageManager is IFeeManager {
     ///         - debt Amount of debt that was added
     ///         - equityInCollateralAsset Amount of equity that was deposited before fees
     ///         - shares Amount of shares minted to the sender
-    ///         - strategyFeeInCollateralAsset Amount of collateral that was charged for the deposit to the strategy
-    ///         - treasuryFeeInCollateralAsset Amount of collateral that was charged for the deposit to the treasury
+    ///         - strategyFee Amount of collateral that was charged for the deposit to the strategy
+    ///         - treasuryFee Amount of collateral that was charged for the deposit to the treasury
     function deposit(IStrategy strategy, uint256 equityInCollateralAsset, uint256 minShares)
         external
         returns (ActionData memory actionData);
@@ -194,8 +194,8 @@ interface ILeverageManager is IFeeManager {
     ///         - debt Amount of debt that was repaid to strategy, taken from sender
     ///         - equityInCollateralAsset Amount of equity that was withdrawn before fees
     ///         - shares Amount of the sender's shares that were burned for the withdrawal
-    ///         - strategyFeeInCollateralAsset Amount of collateral that was charged for the withdraw to the strategy
-    ///         - treasuryFeeInCollateralAsset Amount of collateral that was charged for the withdraw to the treasury
+    ///         - strategyFee Amount of collateral that was charged for the withdraw to the strategy
+    ///         - treasuryFee Amount of collateral that was charged for the withdraw to the treasury
     function withdraw(IStrategy strategy, uint256 equityInCollateralAsset, uint256 maxShares)
         external
         returns (ActionData memory actionData);

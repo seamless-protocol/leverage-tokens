@@ -112,8 +112,8 @@ contract DepositTest is PreviewActionTest {
         assertEq(depositData.collateral, expectedCollateralToAdd);
         assertEq(depositData.debt, expectedDebtToBorrow);
         assertEq(depositData.shares, expectedShares);
-        assertEq(depositData.strategyFeeInCollateralAsset, 0);
-        assertEq(depositData.treasuryFeeInCollateralAsset, 0);
+        assertEq(depositData.strategyFee, 0);
+        assertEq(depositData.treasuryFee, 0);
 
         StrategyState memory afterState = leverageManager.exposed_getStrategyState(strategy);
         assertEq(afterState.collateralInDebtAsset, expectedCollateralToAdd + beforeState.collateral);
@@ -168,12 +168,12 @@ contract DepositTest is PreviewActionTest {
         collateralToken.approve(address(leverageManager), previewData.collateral);
 
         ActionData memory expectedDepositData = ActionData({
-            equityInCollateralAsset: equityToAddInCollateralAsset,
+            equity: equityToAddInCollateralAsset,
             collateral: previewData.collateral,
             debt: previewData.debt,
             shares: previewData.shares,
-            strategyFeeInCollateralAsset: previewData.strategyFeeInCollateralAsset,
-            treasuryFeeInCollateralAsset: previewData.treasuryFeeInCollateralAsset
+            strategyFee: previewData.strategyFee,
+            treasuryFee: previewData.treasuryFee
         });
 
         vm.expectEmit(true, true, true, true);
@@ -185,16 +185,8 @@ contract DepositTest is PreviewActionTest {
         assertEq(
             strategy.balanceOf(address(this)), actualDepositData.shares, "Shares received mismatch with returned data"
         );
-        assertEq(
-            actualDepositData.strategyFeeInCollateralAsset,
-            expectedDepositData.strategyFeeInCollateralAsset,
-            "Strategy fee mismatch"
-        );
-        assertEq(
-            actualDepositData.treasuryFeeInCollateralAsset,
-            expectedDepositData.treasuryFeeInCollateralAsset,
-            "Treasury fee mismatch"
-        );
+        assertEq(actualDepositData.strategyFee, expectedDepositData.strategyFee, "Strategy fee mismatch");
+        assertEq(actualDepositData.treasuryFee, expectedDepositData.treasuryFee, "Treasury fee mismatch");
 
         StrategyState memory afterState = leverageManager.exposed_getStrategyState(strategy);
         assertEq(

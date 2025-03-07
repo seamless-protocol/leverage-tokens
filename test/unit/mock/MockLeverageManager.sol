@@ -160,10 +160,10 @@ contract MockLeverageManager is Test {
         return ActionData({
             collateral: mockPreviewDepositData[mockPreviewDepositDataKey].collateralToAdd,
             debt: mockPreviewDepositData[mockPreviewDepositDataKey].debtToBorrow,
-            equityInCollateralAsset: equityInCollateralAsset,
+            equity: equityInCollateralAsset,
             shares: mockPreviewDepositData[mockPreviewDepositDataKey].shares,
-            strategyFeeInCollateralAsset: mockPreviewDepositData[mockPreviewDepositDataKey].sharesFee,
-            treasuryFeeInCollateralAsset: 0
+            strategyFee: mockPreviewDepositData[mockPreviewDepositDataKey].sharesFee,
+            treasuryFee: 0
         });
     }
 
@@ -176,10 +176,10 @@ contract MockLeverageManager is Test {
         return ActionData({
             collateral: mockPreviewWithdrawData[mockPreviewWithdrawDataKey].collateralToRemove,
             debt: mockPreviewWithdrawData[mockPreviewWithdrawDataKey].debtToRepay,
-            equityInCollateralAsset: equityInCollateralAsset,
+            equity: equityInCollateralAsset,
             shares: mockPreviewWithdrawData[mockPreviewWithdrawDataKey].shares,
-            strategyFeeInCollateralAsset: mockPreviewWithdrawData[mockPreviewWithdrawDataKey].sharesFee,
-            treasuryFeeInCollateralAsset: 0
+            strategyFee: mockPreviewWithdrawData[mockPreviewWithdrawDataKey].sharesFee,
+            treasuryFee: 0
         });
     }
 
@@ -212,12 +212,12 @@ contract MockLeverageManager is Test {
                 // Set the mock deposit data to executed and return the shares minted
                 mockDepositData[mockDepositDataKey][i].isExecuted = true;
                 return ActionData({
-                    equityInCollateralAsset: equityInCollateralAsset,
+                    equity: equityInCollateralAsset,
                     collateral: _mockDepositData.collateral,
                     debt: _mockDepositData.debt,
                     shares: _mockDepositData.shares,
-                    strategyFeeInCollateralAsset: 0,
-                    treasuryFeeInCollateralAsset: 0
+                    strategyFee: 0,
+                    treasuryFee: 0
                 });
             }
         }
@@ -253,12 +253,12 @@ contract MockLeverageManager is Test {
                 // Set the mock withdraw data to executed
                 mockWithdrawData[mockWithdrawDataKey][i].isExecuted = true;
                 return ActionData({
-                    equityInCollateralAsset: equityInCollateralAsset,
+                    equity: equityInCollateralAsset,
                     collateral: _mockWithdrawData.collateral,
                     debt: _mockWithdrawData.debt,
                     shares: _mockWithdrawData.shares,
-                    strategyFeeInCollateralAsset: 0,
-                    treasuryFeeInCollateralAsset: 0
+                    strategyFee: 0,
+                    treasuryFee: 0
                 });
             }
         }

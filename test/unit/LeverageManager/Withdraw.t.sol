@@ -128,8 +128,8 @@ contract WithdrawTest is PreviewActionTest {
         assertEq(withdrawData.collateral, previewData.collateral);
         assertEq(withdrawData.debt, previewData.debt);
         assertEq(withdrawData.shares, previewData.shares);
-        assertEq(withdrawData.strategyFeeInCollateralAsset, previewData.strategyFeeInCollateralAsset);
-        assertEq(withdrawData.treasuryFeeInCollateralAsset, previewData.treasuryFeeInCollateralAsset);
+        assertEq(withdrawData.strategyFee, previewData.strategyFee);
+        assertEq(withdrawData.treasuryFee, previewData.treasuryFee);
 
         // Verify token transfers
         assertEq(collateralToken.balanceOf(address(this)) - collateralBalanceBefore, withdrawData.collateral);

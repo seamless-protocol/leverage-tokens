@@ -172,7 +172,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         // For deposits, the collateral amount returned by the preview is the total collateral required to execute the
         // deposit, so we add the treasury fee to it, since the collateral computed above is wrt the equity amount with
         // the treasury fee subtracted.
-        data.collateral += data.treasuryFeeInCollateralAsset;
+        data.collateral += data.treasuryFee;
 
         return data;
     }
@@ -187,7 +187,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
         // For withdrawals, the collateral amount returned is the collateral transferred to the sender, so we subtract the
         // treasury fee, since the collateral computed above is wrt the equity amount without the treasury fee subtracted
-        data.collateral -= data.treasuryFeeInCollateralAsset;
+        data.collateral -= data.treasuryFee;
 
         return data;
     }
@@ -209,13 +209,13 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
         // Add collateral to strategy
         _executeLendingAdapterAction(
-            strategy, ActionType.AddCollateral, depositData.collateral - depositData.treasuryFeeInCollateralAsset
+            strategy, ActionType.AddCollateral, depositData.collateral - depositData.treasuryFee
         );
 
         // Charge treasury fee
         address treasury = getTreasury();
         if (treasury != address(0)) {
-            SafeERC20.safeTransfer(collateralAsset, treasury, depositData.treasuryFeeInCollateralAsset);
+            SafeERC20.safeTransfer(collateralAsset, treasury, depositData.treasuryFee);
         }
 
         // Borrow and send debt assets to caller
@@ -249,9 +249,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         _executeLendingAdapterAction(strategy, ActionType.Repay, withdrawData.debt);
 
         // Withdraw collateral from lending pool
-        _executeLendingAdapterAction(
-            strategy, ActionType.RemoveCollateral, withdrawData.collateral + withdrawData.treasuryFeeInCollateralAsset
-        );
+        _executeLendingAdapterAction(strategy, ActionType.RemoveCollateral, withdrawData.collateral);
 
         // Send collateral assets to sender
         IERC20 collateralAsset = getStrategyCollateralAsset(strategy);
@@ -260,7 +258,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         // Charge treasury fee
         address treasury = getTreasury();
         if (treasury != address(0)) {
-            SafeERC20.safeTransfer(collateralAsset, treasury, withdrawData.treasuryFeeInCollateralAsset);
+            SafeERC20.safeTransfer(collateralAsset, treasury, withdrawData.treasuryFee);
         }
 
         // Emit event and explicit return statement
@@ -448,8 +446,8 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         (
             uint256 equityForStrategyAfterFeesInCollateralAsset,
             uint256 equityForSharesAfterFeesInCollateralAsset,
-            uint256 strategyFeeInCollateralAsset,
-            uint256 treasuryFeeInCollateralAsset
+            uint256 strategyFee,
+            uint256 treasuryFee
         ) = _computeEquityFees(strategy, equityInCollateralAsset, action);
 
         data.shares = _convertToShares(strategy, equityForSharesAfterFeesInCollateralAsset);
@@ -459,9 +457,9 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
         data.collateral = collateralForStrategy;
         data.debt = debtForStrategy;
-        data.equityInCollateralAsset = equityInCollateralAsset;
-        data.strategyFeeInCollateralAsset = strategyFeeInCollateralAsset;
-        data.treasuryFeeInCollateralAsset = treasuryFeeInCollateralAsset;
+        data.equity = equityInCollateralAsset;
+        data.strategyFee = strategyFee;
+        data.treasuryFee = treasuryFee;
 
         return data;
     }

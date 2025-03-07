@@ -29,15 +29,7 @@ contract PreviewDepositTest is PreviewActionTest {
         assertEq(actualPreviewData.collateral, expectedPreviewData.collateral, "Collateral to add mismatch");
         assertEq(actualPreviewData.debt, expectedPreviewData.debt, "Debt to borrow mismatch");
         assertEq(actualPreviewData.shares, expectedPreviewData.shares, "Shares after fee mismatch");
-        assertEq(
-            actualPreviewData.strategyFeeInCollateralAsset,
-            expectedPreviewData.strategyFeeInCollateralAsset,
-            "Shares fee mismatch"
-        );
-        assertEq(
-            actualPreviewData.treasuryFeeInCollateralAsset,
-            expectedPreviewData.treasuryFeeInCollateralAsset,
-            "Treasury fee mismatch"
-        );
+        assertEq(actualPreviewData.strategyFee, expectedPreviewData.strategyFee, "Shares fee mismatch");
+        assertEq(actualPreviewData.treasuryFee, expectedPreviewData.treasuryFee, "Treasury fee mismatch");
     }
 }
