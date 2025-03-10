@@ -26,6 +26,19 @@ contract DepositTest is PreviewActionTest {
         _testDeposit(equityToAddInCollateralAsset, 0);
     }
 
+    function test_deposit_WithFees() public {
+        _setStrategyActionFee(strategy, ExternalAction.Deposit, 0.05e4); // 5% fee
+        _setTreasuryActionFee(ExternalAction.Deposit, 0.1e4); // 10% fee
+
+        MockLeverageManagerStateForAction memory beforeState =
+            MockLeverageManagerStateForAction({collateral: 200 ether, debt: 50 ether, sharesTotalSupply: 100 ether});
+
+        _prepareLeverageManagerStateForAction(beforeState);
+
+        uint256 equityToAddInCollateralAsset = 10 ether;
+        _testDeposit(equityToAddInCollateralAsset, 0);
+    }
+
     function testFuzz_deposit_SharesTotalSupplyGreaterThanZero(
         uint128 initialCollateral,
         uint128 initialDebtInCollateralAsset,
@@ -192,7 +205,8 @@ contract DepositTest is PreviewActionTest {
         assertEq(
             afterState.collateralInDebtAsset,
             beforeState.collateralInDebtAsset
-                + lendingAdapter.convertCollateralToDebtAsset(expectedDepositData.collateral),
+                + lendingAdapter.convertCollateralToDebtAsset(expectedDepositData.collateral)
+                - expectedDepositData.treasuryFee,
             "Collateral in strategy after deposit mismatch"
         );
         assertEq(actualDepositData.collateral, expectedDepositData.collateral, "Collateral added mismatch");
