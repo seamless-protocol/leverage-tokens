@@ -96,7 +96,7 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
     /// @param equity Amount of equity to compute fees for, denominated in collateral asset
     /// @param action Action to compute fees for, Deposit or Withdraw
     /// @return equityForStrategyAfterFees Equity to add / remove from the strategy, denominated in collateral asset
-    /// @return equityForSharesAfterFees Equity to mint / burn shares from the strategy, denominated in collateral asset
+    /// @return equityForSharesAfterFees Equity to mint / burn shares for from the strategy, denominated in collateral asset
     /// @return strategyFee Strategy fee amount, denominated in collateral asset
     /// @return treasuryFee Treasury fee amount, denominated in collateral asset
     /// @dev Fees are always rounded up.
