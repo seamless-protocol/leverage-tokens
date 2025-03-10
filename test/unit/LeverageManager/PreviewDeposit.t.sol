@@ -9,9 +9,13 @@ contract PreviewDepositTest is PreviewActionTest {
         uint128 initialCollateral,
         uint128 initialDebtInCollateralAsset,
         uint128 sharesTotalSupply,
-        uint128 equityToAddInCollateralAsset
+        uint128 equityToAddInCollateralAsset,
+        uint16 treasuryFee
     ) public {
         initialDebtInCollateralAsset = uint128(bound(initialDebtInCollateralAsset, 0, initialCollateral));
+
+        treasuryFee = uint16(bound(treasuryFee, 0, 1e4));
+        _setTreasuryActionFee(ExternalAction.Deposit, treasuryFee);
 
         _prepareLeverageManagerStateForAction(
             MockLeverageManagerStateForAction({
@@ -21,15 +25,20 @@ contract PreviewDepositTest is PreviewActionTest {
             })
         );
 
-        ActionData memory expectedPreviewData =
+        ActionData memory previewActionData =
             leverageManager.exposed_previewAction(strategy, equityToAddInCollateralAsset, ExternalAction.Deposit);
 
         ActionData memory actualPreviewData = leverageManager.previewDeposit(strategy, equityToAddInCollateralAsset);
 
-        assertEq(actualPreviewData.collateral, expectedPreviewData.collateral, "Collateral to add mismatch");
-        assertEq(actualPreviewData.debt, expectedPreviewData.debt, "Debt to borrow mismatch");
-        assertEq(actualPreviewData.shares, expectedPreviewData.shares, "Shares after fee mismatch");
-        assertEq(actualPreviewData.strategyFee, expectedPreviewData.strategyFee, "Shares fee mismatch");
-        assertEq(actualPreviewData.treasuryFee, expectedPreviewData.treasuryFee, "Treasury fee mismatch");
+        assertEq(
+            actualPreviewData.collateral,
+            previewActionData.collateral + previewActionData.treasuryFee,
+            "Collateral to add mismatch"
+        );
+        assertEq(actualPreviewData.debt, previewActionData.debt, "Debt to borrow mismatch");
+        assertEq(actualPreviewData.shares, previewActionData.shares, "Shares after fee mismatch");
+        assertEq(actualPreviewData.strategyFee, previewActionData.strategyFee, "Shares fee mismatch");
+        assertEq(actualPreviewData.treasuryFee, previewActionData.treasuryFee, "Treasury fee mismatch");
+        assertEq(actualPreviewData.equity, previewActionData.equity, "Equity mismatch");
     }
 }

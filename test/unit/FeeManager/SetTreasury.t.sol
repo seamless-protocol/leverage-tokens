@@ -16,17 +16,15 @@ contract SetTreasuryTest is FeeManagerBaseTest {
 
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_setTreasury(address treasury) public {
-        vm.startPrank(feeManagerRole);
-
         vm.expectEmit(true, true, true, true);
         emit IFeeManager.TreasurySet(treasury);
 
-        feeManager.setTreasury(treasury);
+        _setTreasury(feeManagerRole, treasury);
         assertEq(feeManager.getTreasury(), treasury);
     }
 
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_setTreasury_CallerIsNotFeeManagerRole(address caller, address treasury) public {
+    function testFuzz_setTreasury_RevertIf_CallerIsNotFeeManagerRole(address caller, address treasury) public {
         vm.assume(caller != feeManagerRole);
 
         vm.expectRevert(
@@ -34,8 +32,6 @@ contract SetTreasuryTest is FeeManagerBaseTest {
                 IAccessControl.AccessControlUnauthorizedAccount.selector, caller, feeManager.FEE_MANAGER_ROLE()
             )
         );
-
-        vm.prank(caller);
-        feeManager.setTreasury(treasury);
+        _setTreasury(caller, treasury);
     }
 }

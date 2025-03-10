@@ -84,19 +84,11 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
         return _previewAction(strategy, equityInCollateralAsset, action);
     }
 
-    function exposed_computeEquityFees(IStrategy strategy, uint256 equityAmount, ExternalAction action)
-        external
-        view
-        returns (uint256, uint256, uint256, uint256)
-    {
-        return _computeEquityFees(strategy, equityAmount, action);
-    }
-
-    function exposed_computeCollateralAndDebtForStrategyAction(
+    function exposed_computeCollateralAndDebtForAction(
         IStrategy strategy,
         uint256 equityInCollateralAsset,
         ExternalAction action
     ) external view returns (uint256 collateral, uint256 debt) {
-        return _computeCollateralAndDebtForStrategyAction(strategy, equityInCollateralAsset, action);
+        return _computeCollateralAndDebtForAction(strategy, equityInCollateralAsset, action);
     }
 }

@@ -10,8 +10,9 @@ import {ActionData, ExternalAction} from "src/types/DataTypes.sol";
 import {PreviewActionTest} from "./PreviewAction.t.sol";
 
 contract WithdrawTest is PreviewActionTest {
-    function test_withdraw_WithFee() public {
+    function test_withdraw_WithFees() public {
         _setStrategyActionFee(strategy, ExternalAction.Withdraw, 0.05e4); // 5% fee
+        _setTreasuryActionFee(ExternalAction.Withdraw, 0.05e4); // 5% fee
 
         // 1:2 exchange rate
         lendingAdapter.mockConvertCollateralToDebtAssetExchangeRate(2e8);
@@ -25,7 +26,7 @@ contract WithdrawTest is PreviewActionTest {
         _testWithdraw(equityToWithdraw, type(uint256).max);
     }
 
-    function test_withdraw_WithoutFee() public {
+    function test_withdraw_WithoutFees() public {
         MockLeverageManagerStateForAction memory beforeState =
             MockLeverageManagerStateForAction({collateral: 200 ether, debt: 100 ether, sharesTotalSupply: 100 ether});
 
@@ -33,6 +34,20 @@ contract WithdrawTest is PreviewActionTest {
 
         uint256 equityToWithdraw = 10 ether;
         _testWithdraw(equityToWithdraw, type(uint256).max);
+    }
+
+    function test_withdraw_TreasuryNotSet() public {
+        _setTreasury(feeManagerRole, address(0));
+
+        MockLeverageManagerStateForAction memory beforeState =
+            MockLeverageManagerStateForAction({collateral: 200 ether, debt: 100 ether, sharesTotalSupply: 100 ether});
+
+        _prepareLeverageManagerStateForAction(beforeState);
+
+        uint256 equityToWithdraw = 10 ether;
+        _testWithdraw(equityToWithdraw, type(uint256).max);
+
+        assertEq(collateralToken.balanceOf(address(treasury)), 0);
     }
 
     function test_withdraw_ZeroEquity() public {
@@ -49,13 +64,16 @@ contract WithdrawTest is PreviewActionTest {
         uint128 initialDebtInCollateralAsset,
         uint128 sharesTotalSupply,
         uint128 equityToWithdrawInCollateralAsset,
-        uint16 fee
+        uint16 strategyFee,
+        uint16 treasuryFee
     ) public {
-        fee = uint16(bound(fee, 0, 1e4));
+        strategyFee = uint16(bound(strategyFee, 0, 1e4));
+        treasuryFee = uint16(bound(treasuryFee, 0, 1e4));
         initialDebtInCollateralAsset = uint128(bound(initialDebtInCollateralAsset, 0, initialCollateral));
         sharesTotalSupply = uint128(bound(sharesTotalSupply, 1, type(uint128).max));
 
-        _setStrategyActionFee(strategy, ExternalAction.Withdraw, fee);
+        _setStrategyActionFee(strategy, ExternalAction.Withdraw, strategyFee);
+        _setTreasuryActionFee(ExternalAction.Withdraw, treasuryFee);
 
         vm.assume(initialCollateral > initialDebtInCollateralAsset);
         vm.assume(equityToWithdrawInCollateralAsset > 0);
@@ -74,10 +92,13 @@ contract WithdrawTest is PreviewActionTest {
         uint128 initialDebtInCollateralAsset,
         uint128 sharesTotalSupply,
         uint128 equityToWithdrawInCollateralAsset,
-        uint16 fee
+        uint16 strategyFee,
+        uint16 treasuryFee
     ) public {
-        fee = uint16(bound(fee, 0, 1e4));
-        _setStrategyActionFee(strategy, ExternalAction.Withdraw, fee);
+        strategyFee = uint16(bound(strategyFee, 0, 1e4));
+        treasuryFee = uint16(bound(treasuryFee, 0, 1e4));
+        _setStrategyActionFee(strategy, ExternalAction.Withdraw, strategyFee);
+        _setTreasuryActionFee(ExternalAction.Withdraw, treasuryFee);
 
         // Bound debt to be lower than collateral asset and share total supply to be greater than 0 otherwise withdraw can not work
         initialDebtInCollateralAsset = uint128(bound(initialDebtInCollateralAsset, 0, initialCollateral));
@@ -138,5 +159,11 @@ contract WithdrawTest is PreviewActionTest {
         // Validate strategy total supply and balance
         assertEq(strategy.totalSupply(), shareTotalSupplyBefore - withdrawData.shares);
         assertEq(strategy.balanceOf(address(this)), 0);
+
+        // Verify that if any collateral is returned, the amount of shares burned must be non-zero
+        if (withdrawData.collateral > 0) {
+            assertGt(withdrawData.shares, 0);
+            assertLt(strategy.totalSupply(), shareTotalSupplyBefore);
+        }
     }
 }

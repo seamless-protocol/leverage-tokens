@@ -186,8 +186,18 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         ActionData memory data = _previewAction(strategy, equityInCollateralAsset, ExternalAction.Withdraw);
 
         // For withdrawals, the collateral amount returned is the collateral transferred to the sender, so we subtract the
-        // treasury fee, since the collateral computed above is wrt the equity amount without the treasury fee subtracted
-        data.collateral -= data.treasuryFee;
+        // treasury fee, since the collateral computed by `previewAction` is wrt the equity amount without the treasury fee
+        // subtracted.
+        // Note: It is possible for collateral to be < treasuryFee because of rounding down for both the share calculation and
+        //       the resulting collateral calculated using those shares in `previewAction`, while the treasury fee is calculated
+        //       based on the equity amount rounded up. In this case, we set the collateral to 0 and the treasury fee to the
+        //       computed collateral amount.
+        if (data.collateral > data.treasuryFee) {
+            data.collateral -= data.treasuryFee;
+        } else {
+            data.treasuryFee = data.collateral;
+            data.collateral = 0;
+        }
 
         return data;
     }
@@ -249,7 +259,9 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         _executeLendingAdapterAction(strategy, ActionType.Repay, withdrawData.debt);
 
         // Withdraw collateral from lending pool
-        _executeLendingAdapterAction(strategy, ActionType.RemoveCollateral, withdrawData.collateral);
+        _executeLendingAdapterAction(
+            strategy, ActionType.RemoveCollateral, withdrawData.collateral + withdrawData.treasuryFee
+        );
 
         // Send collateral assets to sender
         IERC20 collateralAsset = getStrategyCollateralAsset(strategy);
@@ -449,7 +461,15 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         data.shares = _convertToShares(strategy, equityForSharesAfterFees);
 
         (uint256 collateralForStrategy, uint256 debtForStrategy) =
-            _computeCollateralAndDebtForStrategyAction(strategy, equityForStrategyAfterFees, action);
+            _computeCollateralAndDebtForAction(strategy, equityForStrategyAfterFees, action);
+
+        // The collateral returned by `_computeCollateralAndDebtForAction` can be zero if the amount of equity cannot
+        // be exchanged for at least 1 strategy share due to rounding down in the exchange rate calculation.
+        // The treasury fee returned by `_computeEquityFees` is wrt the equity amount, not the share amount, thus it's possible
+        // for it to be non-zero even if the collateral amount is zero. In this case, the treasury fee should be set to 0
+        if (data.collateral == 0) {
+            data.treasuryFee = 0;
+        }
 
         data.collateral = collateralForStrategy;
         data.debt = debtForStrategy;
@@ -460,7 +480,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         return data;
     }
 
-    function _computeCollateralAndDebtForStrategyAction(
+    function _computeCollateralAndDebtForAction(
         IStrategy strategy,
         uint256 equityInCollateralAsset,
         ExternalAction action

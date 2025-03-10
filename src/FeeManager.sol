@@ -93,7 +93,7 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
 
     /// @notice Computes equity fees based on action
     /// @param strategy Strategy to compute fees for
-    /// @param equityAmount Amount of equity to compute fees for, denominated in collateral asset
+    /// @param equity Amount of equity to compute fees for, denominated in collateral asset
     /// @param action Action to compute fees for, Deposit or Withdraw
     /// @return equityForStrategyAfterFees Equity to add / remove from the strategy, denominated in collateral asset
     /// @return equityForSharesAfterFees Equity to mint / burn shares from the strategy, denominated in collateral asset
@@ -102,19 +102,21 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
     /// @dev Fees are always rounded up.
     /// @dev If the sum of the strategy fee and the treasury fee is greater than the amount,
     ///      the strategy fee is set to the delta of the amount and the treasury fee.
-    function _computeEquityFees(IStrategy strategy, uint256 equityAmount, ExternalAction action)
+    function _computeEquityFees(IStrategy strategy, uint256 equity, ExternalAction action)
         internal
         view
         returns (uint256, uint256, uint256, uint256)
     {
-        uint256 treasuryFee = Math.mulDiv(equityAmount, getTreasuryActionFee(action), MAX_FEE, Math.Rounding.Ceil);
-        uint256 strategyFee =
-            Math.mulDiv(equityAmount, getStrategyActionFee(strategy, action), MAX_FEE, Math.Rounding.Ceil);
+        // A treasury fee is only applied if the treasury is set
+        uint256 treasuryFee = _getFeeManagerStorage().treasury != address(0)
+            ? Math.mulDiv(equity, getTreasuryActionFee(action), MAX_FEE, Math.Rounding.Ceil)
+            : 0;
+        uint256 strategyFee = Math.mulDiv(equity, getStrategyActionFee(strategy, action), MAX_FEE, Math.Rounding.Ceil);
 
         // If the sum of the strategy fee and the treasury fee is greater than the equity amount,
         // the strategy fee is set to the delta of the equity amount and the treasury fee.
-        if (strategyFee > equityAmount - treasuryFee) {
-            strategyFee = equityAmount - treasuryFee;
+        if (strategyFee + treasuryFee > equity) {
+            strategyFee = equity - treasuryFee;
         }
 
         // For the collateral and debt required by the position held by the strategy for the action, we need to use
@@ -128,8 +130,7 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
         //
         // For withdrawals, the treasury fee should be included in the calculation of the collateral and debt because
         // it comes from the collateral removed from the position held by the strategy.
-        uint256 equityForStrategyAfterFees =
-            action == ExternalAction.Deposit ? equityAmount - treasuryFee : equityAmount;
+        uint256 equityForStrategyAfterFees = action == ExternalAction.Deposit ? equity - treasuryFee : equity;
 
         // To increase share value for existing users, less shares are minted on deposits and more shares are burned on
         // withdrawals.
