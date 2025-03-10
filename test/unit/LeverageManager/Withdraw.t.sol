@@ -168,5 +168,8 @@ contract WithdrawTest is PreviewActionTest {
             assertGt(withdrawData.shares, 0);
             assertLt(strategy.totalSupply(), shareTotalSupplyBefore);
         }
+
+        // Fees should be less than or equal to the equity to withdraw
+        assertLe(withdrawData.strategyFee + withdrawData.treasuryFee, equityToWithdrawInCollateralAsset);
     }
 }

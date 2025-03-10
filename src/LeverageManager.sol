@@ -191,7 +191,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         // Note: It is possible for collateral to be < treasuryFee because of rounding down for both the share calculation and
         //       the resulting collateral calculated using those shares in `previewAction`, while the treasury fee is calculated
         //       based on the initial equity amount rounded up. In this case, we set the collateral to 0 and the treasury fee to
-        //       the computed collateral amount.
+        //       the computed collateral amount
         if (data.collateral > data.treasuryFee) {
             data.collateral -= data.treasuryFee;
         } else {

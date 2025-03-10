@@ -222,6 +222,8 @@ contract DepositTest is PreviewActionTest {
 
         assertEq(collateralToken.balanceOf(treasury), expectedDepositData.treasuryFee, "Treasury fee not received");
 
+        assertLe(expectedDepositData.strategyFee + expectedDepositData.treasuryFee, equityToAddInCollateralAsset);
+
         if (beforeState.collateralRatio == type(uint256).max) {
             assertLe(afterState.collateralRatio, beforeState.collateralRatio);
         } else {
