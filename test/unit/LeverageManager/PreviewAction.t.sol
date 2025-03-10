@@ -63,6 +63,37 @@ contract PreviewActionTest is LeverageManagerBaseTest {
         assertEq(previewData.treasuryFee, 0 ether);
     }
 
+    function test_previewAction_WithFee_ZeroSharesForEquity() public {
+        _setStrategyActionFee(strategy, ExternalAction.Deposit, 0.05e4); // 5% fee
+        _setStrategyActionFee(strategy, ExternalAction.Withdraw, 0.05e4); // 5% fee
+
+        // 1:2 exchange rate
+        lendingAdapter.mockConvertCollateralToDebtAssetExchangeRate(2e8);
+
+        MockLeverageManagerStateForAction memory beforeState =
+            MockLeverageManagerStateForAction({collateral: 100 ether, debt: 100 ether, sharesTotalSupply: 10 ether});
+
+        _prepareLeverageManagerStateForAction(beforeState);
+
+        // 0 shares can be minted / burned for 1 wei of equity
+        uint256 equity = 1;
+        ActionData memory previewData = leverageManager.exposed_previewAction(strategy, equity, ExternalAction.Deposit);
+
+        assertEq(previewData.collateral, 0);
+        assertEq(previewData.debt, 0);
+        assertEq(previewData.shares, 0);
+        assertEq(previewData.strategyFee, 1);
+        assertEq(previewData.treasuryFee, 0);
+
+        previewData = leverageManager.exposed_previewAction(strategy, equity, ExternalAction.Withdraw);
+
+        assertEq(previewData.collateral, 0);
+        assertEq(previewData.debt, 0);
+        assertEq(previewData.shares, 0);
+        assertEq(previewData.strategyFee, 1);
+        assertEq(previewData.treasuryFee, 0);
+    }
+
     function test_previewAction_WithoutFee() public {
         MockLeverageManagerStateForAction memory beforeState =
             MockLeverageManagerStateForAction({collateral: 100 ether, debt: 50 ether, sharesTotalSupply: 100 ether});
