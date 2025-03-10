@@ -8,8 +8,6 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ActionData, ExternalAction} from "src/types/DataTypes.sol";
 import {PreviewActionTest} from "./PreviewAction.t.sol";
 
-import {console2} from "forge-std/console2.sol";
-
 contract PreviewWithdrawTest is PreviewActionTest {
     function testFuzz_previewWithdraw_MatchesPreviewAction(
         uint128 initialCollateral,
@@ -77,13 +75,14 @@ contract PreviewWithdrawTest is PreviewActionTest {
             })
         );
 
-        uint256 shares = leverageManager.exposed_convertToShares(strategy, equityToPreview);
-        assertEq(shares, 1338908411);
+        uint256 expectedSharesBeforeFees = leverageManager.exposed_convertToShares(strategy, equityToPreview);
+        assertEq(expectedSharesBeforeFees, 1338908411);
 
-        uint256 collateralToRemove = initialCollateral * shares / sharesTotalSupply;
+        uint256 collateralToRemove = initialCollateral * expectedSharesBeforeFees / sharesTotalSupply;
         assertEq(collateralToRemove, 2);
 
         // The treasury fee is rounded up, so it's possible for it to be greater than the calculated collateral to be removed
+        // which is calculated by rounding down
         uint256 expectedTreasuryFeeBeforeAdjustment = Math.mulDiv(equityToPreview, treasuryFee, 1e4, Math.Rounding.Ceil);
         assertEq(expectedTreasuryFeeBeforeAdjustment, 3);
 
