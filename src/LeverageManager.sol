@@ -165,7 +165,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     function previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
         public
         view
-        returns (ActionData memory previewData)
+        returns (ActionData memory)
     {
         ActionData memory data = _previewAction(strategy, equityInCollateralAsset, ExternalAction.Deposit);
 
@@ -181,7 +181,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     function previewWithdraw(IStrategy strategy, uint256 equityInCollateralAsset)
         public
         view
-        returns (ActionData memory previewData)
+        returns (ActionData memory)
     {
         ActionData memory data = _previewAction(strategy, equityInCollateralAsset, ExternalAction.Withdraw);
 
@@ -192,12 +192,8 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         //       the resulting collateral calculated using those shares in `previewAction`, while the treasury fee is calculated
         //       based on the initial equity amount rounded up. In this case, we set the collateral to 0 and the treasury fee to
         //       the computed collateral amount
-        if (data.collateral > data.treasuryFee) {
-            data.collateral -= data.treasuryFee;
-        } else {
-            data.treasuryFee = data.collateral;
-            data.collateral = 0;
-        }
+        data.treasuryFee = Math.min(data.collateral, data.treasuryFee);
+        data.collateral = data.collateral > data.treasuryFee ? data.collateral - data.treasuryFee : 0;
 
         return data;
     }

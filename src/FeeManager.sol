@@ -115,9 +115,7 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
 
         // If the sum of the strategy fee and the treasury fee is greater than the equity amount,
         // the strategy fee is set to the delta of the equity amount and the treasury fee.
-        if (strategyFee + treasuryFee > equity) {
-            strategyFee = equity - treasuryFee;
-        }
+        strategyFee = Math.min(strategyFee, equity - treasuryFee);
 
         // For the collateral and debt required by the position held by the strategy for the action, we need to use
         // the equity amount without the strategy fee applied because the strategy fee is used to increase share value
