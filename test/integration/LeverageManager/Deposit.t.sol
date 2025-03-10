@@ -47,8 +47,11 @@ contract LeverageManagerDepositTest is LeverageManagerBase {
         uint256 collateralToAdd = 2 * equityInCollateralAsset;
         _deposit(user, equityInCollateralAsset, collateralToAdd);
 
-        // 10% fee
-        assertEq(strategy.balanceOf(user), 8 ether); // 20% due to 10% going to treasury and 10% going to strategy
+        // 8 ether because 10% of equity is for treasury fee and 10% is for strategy
+        assertEq(strategy.balanceOf(user), 8 ether);
+        // 9 ether is added to the strategy because 10% of equity was for the treasury fee. Some slight deviation
+        // from 9 ether is expected due to interest accrual in morpho and rounding errors
+        assertEq(morphoLendingAdapter.getEquityInCollateralAsset(), 8999999999800422784);
         assertEq(strategy.balanceOf(user), strategy.totalSupply());
 
         assertEq(WETH.balanceOf(treasury), 1 ether); // Treasury receives 10% of the equity in collateral asset

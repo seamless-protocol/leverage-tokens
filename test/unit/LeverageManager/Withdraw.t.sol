@@ -160,6 +160,9 @@ contract WithdrawTest is PreviewActionTest {
         assertEq(strategy.totalSupply(), shareTotalSupplyBefore - withdrawData.shares);
         assertEq(strategy.balanceOf(address(this)), 0);
 
+        // Verify that the treasury received the fee
+        assertEq(collateralToken.balanceOf(treasury), withdrawData.treasuryFee);
+
         // Verify that if any collateral is returned, the amount of shares burned must be non-zero
         if (withdrawData.collateral > 0) {
             assertGt(withdrawData.shares, 0);

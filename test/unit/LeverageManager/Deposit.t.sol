@@ -220,6 +220,8 @@ contract DepositTest is PreviewActionTest {
         assertEq(actualDepositData.debt, expectedDepositData.debt, "Debt borrowed mismatch");
         assertEq(debtToken.balanceOf(address(this)), expectedDepositData.debt, "Debt tokens received mismatch");
 
+        assertEq(collateralToken.balanceOf(treasury), expectedDepositData.treasuryFee, "Treasury fee not received");
+
         if (beforeState.collateralRatio == type(uint256).max) {
             assertLe(afterState.collateralRatio, beforeState.collateralRatio);
         } else {
