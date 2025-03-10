@@ -141,8 +141,8 @@ interface ILeverageManager is IFeeManager {
     /// @param strategy Strategy to preview deposit for
     /// @param equityInCollateralAsset Equity to deposit denominated in collateral asset
     /// @return previewData Preview data for deposit
-    ///         - collateralToAdd Amount of collateral that sender needs to approve the LeverageManager to spend.
-    ///           This includes the treasury fee
+    ///         - collateralToAdd Amount of collateral that sender needs to approve the LeverageManager to spend,
+    ///           this includes any fees
     ///         - debtToBorrow Amount of debt that will be borrowed and sent to sender
     ///         - equityInCollateralAsset Amount of equity that will be deposited before fees
     ///         - shares Amount of shares that will be minted to the sender
@@ -175,7 +175,7 @@ interface ILeverageManager is IFeeManager {
     /// @param equityInCollateralAsset The amount of equity to deposit denominated in the collateral asset of the strategy
     /// @param minShares The minimum amount of shares to mint
     /// @return actionData Data about the deposit
-    ///         - collateral Amount of collateral that was added, including treasury fee
+    ///         - collateral Amount of collateral that was added, including any fees
     ///         - debt Amount of debt that was added
     ///         - equityInCollateralAsset Amount of equity that was deposited before fees
     ///         - shares Amount of shares minted to the sender
