@@ -95,7 +95,7 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
     /// @param strategy Strategy to compute fees for
     /// @param equity Amount of equity to compute fees for, denominated in collateral asset
     /// @param action Action to compute fees for, Deposit or Withdraw
-    /// @return equityForStrategy Equity to add / remove from the strategy after fees, denominated in collateral asset
+    /// @return equityToCover Equity to add / remove from the strategy after fees, denominated in collateral asset
     /// @return equityForShares Equity to mint / burn shares for from the strategy after fees, denominated in collateral asset
     /// @return strategyFee Strategy fee amount, denominated in collateral asset
     /// @return treasuryFee Treasury fee amount, denominated in collateral asset
@@ -128,14 +128,13 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
         //
         // For withdrawals, the treasury fee should be included in the calculation of the collateral and debt because
         // it comes from the collateral removed from the position held by the strategy.
-        uint256 equityForStrategyAfterFees = action == ExternalAction.Deposit ? equity - treasuryFee : equity;
+        uint256 equityToCover = action == ExternalAction.Deposit ? equity - treasuryFee : equity;
 
         // To increase share value for existing users, less shares are minted on deposits and more shares are burned on
         // withdrawals.
-        uint256 equityForSharesAfterFees = action == ExternalAction.Deposit
-            ? equityForStrategyAfterFees - strategyFee
-            : equityForStrategyAfterFees + strategyFee;
+        uint256 equityForShares =
+            action == ExternalAction.Deposit ? equityToCover - strategyFee : equityToCover + strategyFee;
 
-        return (equityForStrategyAfterFees, equityForSharesAfterFees, strategyFee, treasuryFee);
+        return (equityToCover, equityForShares, strategyFee, treasuryFee);
     }
 }
