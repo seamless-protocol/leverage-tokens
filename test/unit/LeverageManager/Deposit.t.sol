@@ -129,24 +129,6 @@ contract DepositTest is PreviewActionTest {
         );
     }
 
-    function test_deposit_TreasuryNotSet() public {
-        _setTreasury(feeManagerRole, address(0));
-        _setTreasuryActionFee(ExternalAction.Deposit, 0.05e4); // 5% fee
-
-        // collateral:debt is 2:1
-        lendingAdapter.mockConvertCollateralToDebtAssetExchangeRate(0.5e8);
-
-        MockLeverageManagerStateForAction memory beforeState =
-            MockLeverageManagerStateForAction({collateral: 200 ether, debt: 50 ether, sharesTotalSupply: 100 ether});
-
-        _prepareLeverageManagerStateForAction(beforeState);
-
-        uint256 equityToAddInCollateralAsset = 10 ether;
-        _testDeposit(equityToAddInCollateralAsset, 0);
-
-        assertEq(collateralToken.balanceOf(address(treasury)), 0);
-    }
-
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_deposit_RevertIf_SlippageIsTooHigh(uint128 sharesSlippage) public {
         vm.assume(sharesSlippage > 0);

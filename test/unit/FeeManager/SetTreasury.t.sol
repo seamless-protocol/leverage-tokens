@@ -7,13 +7,10 @@ import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol"
 // Internal imports
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
+import {ExternalAction} from "src/types/DataTypes.sol";
 import {FeeManagerBaseTest} from "test/unit/FeeManager/FeeManagerBase.t.sol";
 
 contract SetTreasuryTest is FeeManagerBaseTest {
-    function setUp() public override {
-        super.setUp();
-    }
-
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_setTreasury(address treasury) public {
         vm.expectEmit(true, true, true, true);
@@ -33,5 +30,15 @@ contract SetTreasuryTest is FeeManagerBaseTest {
             )
         );
         _setTreasury(caller, treasury);
+    }
+
+    function test_setTreasury_ZeroAddressResetsTreasuryFees() public {
+        _setTreasury(feeManagerRole, makeAddr("treasury"));
+        _setTreasuryActionFee(feeManagerRole, ExternalAction.Deposit, 100);
+        _setTreasuryActionFee(feeManagerRole, ExternalAction.Withdraw, 100);
+
+        _setTreasury(feeManagerRole, address(0));
+        assertEq(feeManager.getTreasuryActionFee(ExternalAction.Deposit), 0);
+        assertEq(feeManager.getTreasuryActionFee(ExternalAction.Withdraw), 0);
     }
 }

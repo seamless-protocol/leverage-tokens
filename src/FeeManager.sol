@@ -77,17 +77,31 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
 
     /// @inheritdoc IFeeManager
     function setTreasury(address treasury) external onlyRole(FEE_MANAGER_ROLE) {
-        _getFeeManagerStorage().treasury = treasury;
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+        $.treasury = treasury;
+
+        // If the treasury is reset, the treasury fees should be reset as well
+        if (treasury == address(0)) {
+            $.treasuryActionFee[ExternalAction.Deposit] = 0;
+            $.treasuryActionFee[ExternalAction.Withdraw] = 0;
+        }
+
         emit TreasurySet(treasury);
     }
 
     /// @inheritdoc IFeeManager
     function setTreasuryActionFee(ExternalAction action, uint256 fee) external onlyRole(FEE_MANAGER_ROLE) {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+
         if (fee > MAX_FEE) {
             revert FeeTooHigh(fee, MAX_FEE);
         }
 
-        _getFeeManagerStorage().treasuryActionFee[action] = fee;
+        if ($.treasury == address(0)) {
+            revert TreasuryNotSet();
+        }
+
+        $.treasuryActionFee[action] = fee;
         emit TreasuryActionFeeSet(action, fee);
     }
 
@@ -108,9 +122,7 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
         returns (uint256, uint256, uint256, uint256)
     {
         // A treasury fee is only applied if the treasury is set
-        uint256 treasuryFee = _getFeeManagerStorage().treasury != address(0)
-            ? Math.mulDiv(equity, getTreasuryActionFee(action), MAX_FEE, Math.Rounding.Ceil)
-            : 0;
+        uint256 treasuryFee = Math.mulDiv(equity, getTreasuryActionFee(action), MAX_FEE, Math.Rounding.Ceil);
         uint256 strategyFee = Math.mulDiv(equity, getStrategyActionFee(strategy, action), MAX_FEE, Math.Rounding.Ceil);
 
         // If the sum of the strategy fee and the treasury fee is greater than the equity amount,
