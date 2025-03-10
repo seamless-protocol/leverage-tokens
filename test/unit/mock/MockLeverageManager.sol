@@ -60,14 +60,16 @@ contract MockLeverageManager is Test {
         uint256 collateralToAdd;
         uint256 debtToBorrow;
         uint256 shares;
-        uint256 sharesFee;
+        uint256 strategyFee;
+        uint256 treasuryFee;
     }
 
     struct MockPreviewWithdrawData {
         uint256 collateralToRemove;
         uint256 debtToRepay;
         uint256 shares;
-        uint256 sharesFee;
+        uint256 strategyFee;
+        uint256 treasuryFee;
     }
 
     mapping(IStrategy => StrategyData) public strategies;
@@ -162,8 +164,8 @@ contract MockLeverageManager is Test {
             debt: mockPreviewDepositData[mockPreviewDepositDataKey].debtToBorrow,
             equity: equityInCollateralAsset,
             shares: mockPreviewDepositData[mockPreviewDepositDataKey].shares,
-            strategyFee: mockPreviewDepositData[mockPreviewDepositDataKey].sharesFee,
-            treasuryFee: 0
+            strategyFee: mockPreviewDepositData[mockPreviewDepositDataKey].strategyFee,
+            treasuryFee: mockPreviewDepositData[mockPreviewDepositDataKey].treasuryFee
         });
     }
 
@@ -178,8 +180,8 @@ contract MockLeverageManager is Test {
             debt: mockPreviewWithdrawData[mockPreviewWithdrawDataKey].debtToRepay,
             equity: equityInCollateralAsset,
             shares: mockPreviewWithdrawData[mockPreviewWithdrawDataKey].shares,
-            strategyFee: mockPreviewWithdrawData[mockPreviewWithdrawDataKey].sharesFee,
-            treasuryFee: 0
+            strategyFee: mockPreviewWithdrawData[mockPreviewWithdrawDataKey].strategyFee,
+            treasuryFee: mockPreviewWithdrawData[mockPreviewWithdrawDataKey].treasuryFee
         });
     }
 

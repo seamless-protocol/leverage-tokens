@@ -157,6 +157,7 @@ contract LeverageManagerWithdrawTest is LeverageManagerBase {
     }
 
     function testFork_withdraw_withFee() public {
+        leverageManager.setTreasuryActionFee(ExternalAction.Withdraw, 10_00); // 10%
         leverageManager.setStrategyActionFee(strategy, ExternalAction.Withdraw, 10_00); // 10%
 
         uint256 equityInCollateralAsset = 10 ether;
@@ -172,6 +173,9 @@ contract LeverageManagerWithdrawTest is LeverageManagerBase {
 
         // Lower or equal because or rounding, theoretically perfect would be 4.5 ether
         assertEq(strategy.balanceOf(user), 4.5 ether + 1); // +1 because of rounding, equityToWithdraw is rounded down so shares to burn will also be a bit lower
+
+        assertEq(WETH.balanceOf(user), previewData.collateral); // User receives the collateral asset
+        assertEq(WETH.balanceOf(treasury), previewData.treasuryFee); // Treasury receives the fee
 
         assertEq(WETH.balanceOf(user), previewData.collateral);
     }

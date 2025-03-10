@@ -38,17 +38,21 @@ contract LeverageManagerDepositTest is LeverageManagerBase {
         assertGe(equityInCollateralAsset, equityAfterDeposit);
     }
 
-    function testFork_deposit_WithFee() public {
+    function testFork_deposit_WithFees() public {
         uint256 fee = 10_00; // 10%
         leverageManager.setStrategyActionFee(strategy, ExternalAction.Deposit, fee);
+        leverageManager.setTreasuryActionFee(ExternalAction.Deposit, fee);
 
         uint256 equityInCollateralAsset = 10 ether;
         uint256 collateralToAdd = 2 * equityInCollateralAsset;
         _deposit(user, equityInCollateralAsset, collateralToAdd);
 
         // 10% fee
-        assertEq(strategy.balanceOf(user), 9 ether);
+        assertEq(strategy.balanceOf(user), 8 ether); // 20% due to 10% going to treasury and 10% going to strategy
         assertEq(strategy.balanceOf(user), strategy.totalSupply());
+
+        assertEq(WETH.balanceOf(treasury), 1 ether); // Treasury receives 10% of the equity in collateral asset
+        assertEq(WETH.balanceOf(user), 1 ether); // User receives 10% of the equity in collateral asset
     }
 
     function testFork_deposit_PriceChangedBetweenDeposits_CollateralRatioDoesNotChange() public {
