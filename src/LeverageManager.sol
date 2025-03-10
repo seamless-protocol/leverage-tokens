@@ -454,23 +454,25 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         (uint256 equityToCover, uint256 equityForShares, uint256 strategyFee, uint256 treasuryFee) =
             _computeEquityFees(strategy, equityInCollateralAsset, action);
 
+        uint256 shares = _convertToShares(strategy, equityForShares);
+
         (uint256 collateralForStrategy, uint256 debtForStrategy) =
             _computeCollateralAndDebtForAction(strategy, equityToCover, action);
-
-        data.shares = _convertToShares(strategy, equityForShares);
 
         // The collateral returned by `_computeCollateralAndDebtForAction` can be zero if the amount of equity for the strategy
         // cannot be exchanged for at least 1 strategy share due to rounding down in the exchange rate calculation.
         // The treasury fee returned by `_computeEquityFees` is wrt the equity amount, not the share amount, thus it's possible
         // for it to be non-zero even if the collateral amount is zero. In this case, the treasury fee should be set to 0
-        data.treasuryFee = collateralForStrategy == 0 ? 0 : treasuryFee;
+        treasuryFee = collateralForStrategy == 0 ? 0 : treasuryFee;
 
-        data.collateral = collateralForStrategy;
-        data.debt = debtForStrategy;
-        data.equity = equityInCollateralAsset;
-        data.strategyFee = strategyFee;
-
-        return data;
+        return ActionData({
+            collateral: collateralForStrategy,
+            debt: debtForStrategy,
+            equity: equityInCollateralAsset,
+            shares: shares,
+            strategyFee: strategyFee,
+            treasuryFee: treasuryFee
+        });
     }
 
     function _computeCollateralAndDebtForAction(
