@@ -175,7 +175,7 @@ interface ILeverageManager is IFeeManager {
     /// @param equityInCollateralAsset The amount of equity to deposit denominated in the collateral asset of the strategy
     /// @param minShares The minimum amount of shares to mint
     /// @return actionData Data about the deposit
-    ///         - collateral Amount of collateral that was added
+    ///         - collateral Amount of collateral that was added, including treasury fee
     ///         - debt Amount of debt that was added
     ///         - equityInCollateralAsset Amount of equity that was deposited before fees
     ///         - shares Amount of shares minted to the sender

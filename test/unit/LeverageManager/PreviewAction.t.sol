@@ -77,6 +77,7 @@ contract PreviewActionTest is LeverageManagerBaseTest {
         assertEq(previewData.debt, 10 ether - 1);
         assertEq(previewData.shares, 20 ether - 1);
         assertEq(previewData.strategyFee, 0);
+        assertEq(previewData.treasuryFee, 0);
 
         previewData = leverageManager.exposed_previewAction(strategy, equityToAdd, ExternalAction.Withdraw);
 
@@ -84,6 +85,7 @@ contract PreviewActionTest is LeverageManagerBaseTest {
         assertEq(previewData.debt, 10 ether); // Rounded up
         assertEq(previewData.shares, 20 ether - 1);
         assertEq(previewData.strategyFee, 0);
+        assertEq(previewData.treasuryFee, 0);
     }
 
     function test_previewAction_ZeroEquity() public view {
@@ -94,13 +96,14 @@ contract PreviewActionTest is LeverageManagerBaseTest {
         assertEq(previewData.debt, 0);
         assertEq(previewData.shares, 0);
         assertEq(previewData.strategyFee, 0);
-
+        assertEq(previewData.treasuryFee, 0);
         previewData = leverageManager.exposed_previewAction(strategy, equity, ExternalAction.Withdraw);
 
         assertEq(previewData.collateral, 0);
         assertEq(previewData.debt, 0);
         assertEq(previewData.shares, 0);
         assertEq(previewData.strategyFee, 0);
+        assertEq(previewData.treasuryFee, 0);
     }
 
     function testFuzz_previewAction_ZeroSharesTotalSupply(uint128 initialCollateral, uint128 initialDebt) public {
@@ -122,13 +125,14 @@ contract PreviewActionTest is LeverageManagerBaseTest {
         uint256 expectedShares = leverageManager.exposed_convertToShares(strategy, equity);
         assertEq(previewData.shares, expectedShares);
         assertEq(previewData.strategyFee, 0);
-
+        assertEq(previewData.treasuryFee, 0);
         previewData = leverageManager.exposed_previewAction(strategy, equity, ExternalAction.Withdraw);
 
         assertEq(previewData.collateral, 2 ether);
         assertEq(previewData.debt, 1 ether);
         assertEq(previewData.shares, expectedShares);
         assertEq(previewData.strategyFee, 0);
+        assertEq(previewData.treasuryFee, 0);
     }
 
     function testFuzz_previewAction(

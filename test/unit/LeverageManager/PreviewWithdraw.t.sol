@@ -23,10 +23,8 @@ contract PreviewWithdrawTest is PreviewActionTest {
         treasuryFee = uint16(bound(treasuryFee, 0, 1e4));
         _setTreasuryActionFee(ExternalAction.Withdraw, treasuryFee);
 
-        uint256 maxWithdrawableEquity =
-            Math.mulDiv(initialCollateral - initialDebtInCollateralAsset, 1e4 - treasuryFee, 1e4);
-
-        equityToWithdrawInCollateralAsset = uint128(bound(equityToWithdrawInCollateralAsset, 0, maxWithdrawableEquity));
+        equityToWithdrawInCollateralAsset =
+            uint128(bound(equityToWithdrawInCollateralAsset, 0, initialCollateral - initialDebtInCollateralAsset));
 
         _prepareLeverageManagerStateForAction(
             MockLeverageManagerStateForAction({
