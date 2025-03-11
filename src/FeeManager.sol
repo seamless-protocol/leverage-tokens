@@ -149,4 +149,14 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
 
         return (equityToCover, equityForShares, strategyFee, treasuryFee);
     }
+
+    /// @notice Charges a treasury fee if the treasury is set
+    /// @param collateralAsset Collateral asset to charge the fee from
+    /// @param amount Amount of fee to charge
+    function _chargeTreasuryFee(IERC20 collateralAsset, uint256 amount) internal {
+        address treasury = getTreasury();
+        if (treasury != address(0)) {
+            SafeERC20.safeTransfer(collateralAsset, treasury, amount);
+        }
+    }
 }

@@ -219,10 +219,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         );
 
         // Charge treasury fee
-        address treasury = getTreasury();
-        if (treasury != address(0)) {
-            SafeERC20.safeTransfer(collateralAsset, treasury, depositData.treasuryFee);
-        }
+        _chargeTreasuryFee(collateralAsset, depositData.treasuryFee);
 
         // Borrow and send debt assets to caller
         _executeLendingAdapterAction(strategy, ActionType.Borrow, depositData.debt);
@@ -264,10 +261,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         SafeERC20.safeTransfer(collateralAsset, msg.sender, withdrawData.collateral);
 
         // Charge treasury fee
-        address treasury = getTreasury();
-        if (treasury != address(0)) {
-            SafeERC20.safeTransfer(collateralAsset, treasury, withdrawData.treasuryFee);
-        }
+        _chargeTreasuryFee(collateralAsset, withdrawData.treasuryFee);
 
         // Emit event and explicit return statement
         emit Withdraw(strategy, msg.sender, withdrawData);
@@ -475,6 +469,12 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         });
     }
 
+    /// @notice Function that computes collateral and debt required by the position held by a strategy for a given action and an amount of equity to add / remove
+    /// @param strategy Strategy to compute collateral and debt for
+    /// @param equityInCollateralAsset Equity amount in collateral asset
+    /// @param action Action to compute collateral and debt for
+    /// @return collateral Collateral to add / remove from the strategy
+    /// @return debt Debt to borrow / repay to the strategy
     function _computeCollateralAndDebtForAction(
         IStrategy strategy,
         uint256 equityInCollateralAsset,

@@ -95,6 +95,7 @@ contract IntegrationTestBase is Test {
     function testFork_setUp() public view virtual {
         assertEq(address(morphoLendingAdapter.leverageManager()), address(leverageManager));
         assertEq(address(morphoLendingAdapter.morpho()), address(MORPHO));
+        assertEq(leverageManager.getTreasury(), treasury);
         assertEq(address(morphoLendingAdapter.getCollateralAsset()), address(WETH));
         assertEq(address(morphoLendingAdapter.getDebtAsset()), address(USDC));
 
