@@ -24,6 +24,8 @@ import {MockLendingAdapter} from "test/unit/mock/MockLendingAdapter.sol";
 import {MockERC20} from "test/unit/mock/MockERC20.sol";
 
 contract InvariantTestBase is Test {
+    uint256 public BASE_RATIO;
+
     address public defaultAdmin = makeAddr("defaultAdmin");
     address public manager = makeAddr("manager");
     address public feeManagerRole = makeAddr("feeManagerRole");
@@ -47,6 +49,8 @@ contract InvariantTestBase is Test {
         leverageManager.grantRole(leverageManager.FEE_MANAGER_ROLE(), feeManagerRole);
         vm.stopPrank();
 
+        BASE_RATIO = leverageManager.BASE_RATIO();
+
         _initLeverageManagerHandler(leverageManager);
     }
 
@@ -69,15 +73,24 @@ contract InvariantTestBase is Test {
     }
 
     function _initLeverageManagerHandler(LeverageManagerHarness _leverageManager) internal {
-        IStrategy[] memory strategies = new IStrategy[](1);
+        IStrategy[] memory strategies = new IStrategy[](2);
         strategies[0] = _initStrategy(
-            1.5e8,
-            3e8,
-            2e8,
+            3 * BASE_RATIO / 2, // 1.5x
+            3 * BASE_RATIO, // 3x
+            2 * BASE_RATIO, // 2x
             IRebalanceRewardDistributor(address(0)),
             IRebalanceWhitelist(address(0)),
             "Strategy A",
             "STRAT-A"
+        );
+        strategies[1] = _initStrategy(
+            2 * BASE_RATIO - 1, // 2x - 1
+            2 * BASE_RATIO + 1, // 2x + 1
+            2 * BASE_RATIO, // 2x
+            IRebalanceRewardDistributor(address(0)),
+            IRebalanceWhitelist(address(0)),
+            "Strategy B",
+            "STRAT-B"
         );
 
         address[] memory actors = _createActors(10);

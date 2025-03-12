@@ -71,19 +71,59 @@ contract LeverageManagerHandler is Test {
     }
 
     function deposit(uint256 seed) public useStrategy useActor countCall("deposit") {
-        uint256 equity = _boundEquityForDeposit(currentStrategy, seed);
+        uint256 equityForDeposit = _boundEquityForDeposit(currentStrategy, seed);
 
         StrategyState memory stateBefore = leverageManager.exposed_getStrategyState(currentStrategy);
+        uint256 strategyTotalSupplyBefore = currentStrategy.totalSupply();
         uint256 allowedCollateralRatioSlippage = _getAllowedCollateralRatioSlippage(stateBefore.debt);
 
         IERC20 collateralAsset = leverageManager.getStrategyCollateralAsset(currentStrategy);
         deal(address(collateralAsset), currentActor, type(uint256).max);
         collateralAsset.approve(address(leverageManager), type(uint256).max);
-        leverageManager.deposit(currentStrategy, equity, 0);
+        leverageManager.deposit(currentStrategy, equityForDeposit, 0);
 
         StrategyState memory stateAfter = leverageManager.exposed_getStrategyState(currentStrategy);
 
-        if (stateBefore.collateralRatio != type(uint256).max) {
+        assertGe(
+            stateAfter.equity,
+            stateBefore.equity,
+            "Invariant Violated: Equity after deposit must be greater than or equal to the equity before deposit."
+        );
+
+        // Empty strategy case
+        if (
+            stateBefore.collateralInDebtAsset == 0 && stateBefore.debt == 0 && strategyTotalSupplyBefore == 0
+                && equityForDeposit != 0
+        ) {
+            assertEq(
+                stateBefore.collateralRatio,
+                type(uint256).max,
+                "Invariant Violated: Collateral ratio before deposit must be type(uint256).max if the strategy has zero collateral and debt."
+            );
+            assertEq(
+                stateAfter.collateralRatio,
+                leverageManager.getStrategyTargetCollateralRatio(currentStrategy),
+                "Invariant Violated: Collateral ratio after deposit must be equal to the target collateral ratio if the strategy was initially empty (no collateral, debt, or shares)."
+            );
+        }
+        // Non-empty strategy with 0 debt
+        else if (stateBefore.collateralInDebtAsset != 0 && stateBefore.debt == 0) {
+            assertEq(
+                stateBefore.collateralRatio,
+                type(uint256).max,
+                "Invariant Violated: Collateral ratio before deposit must be type(uint256).max if the strategy has non-zero collateral and zero debt."
+            );
+            assertGe(
+                stateAfter.collateralRatio,
+                leverageManager.getStrategyTargetCollateralRatio(currentStrategy),
+                "Invariant Violated: Collateral ratio after deposit must be greater than or equal to the target collateral ratio if the initial collateral ratio was type(uint256).max."
+            );
+            assertLt(
+                stateAfter.collateralRatio,
+                type(uint256).max,
+                "Invariant Violated: Collateral ratio after deposit should be less than type(uint256).max if the initial collateral ratio was type(uint256).max."
+            );
+        } else {
             assertGe(
                 stateAfter.collateralRatio,
                 stateBefore.collateralRatio,
@@ -94,17 +134,6 @@ contract LeverageManagerHandler is Test {
                 stateBefore.collateralRatio,
                 allowedCollateralRatioSlippage,
                 "Invariant Violated: Collateral ratio after deposit must be within the allowed collateral ratio slippage."
-            );
-        } else if (equity > 0) {
-            assertGe(
-                stateAfter.collateralRatio,
-                leverageManager.getStrategyTargetCollateralRatio(currentStrategy),
-                "Invariant Violated: Collateral ratio after deposit must be greater than or equal to the target collateral ratio if the initial collateral ratio was type(uint256).max."
-            );
-            assertLt(
-                stateAfter.collateralRatio,
-                type(uint256).max,
-                "Invariant Violated: Collateral ratio after deposit should be less than type(uint256).max if the initial collateral ratio was type(uint256).max."
             );
         }
     }
