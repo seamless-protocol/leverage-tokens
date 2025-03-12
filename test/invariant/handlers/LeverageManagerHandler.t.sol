@@ -75,7 +75,8 @@ contract LeverageManagerHandler is Test {
 
         StrategyState memory stateBefore = leverageManager.exposed_getStrategyState(currentStrategy);
         uint256 strategyTotalSupplyBefore = currentStrategy.totalSupply();
-        uint256 allowedCollateralRatioSlippage = _getAllowedCollateralRatioSlippage(stateBefore.debt);
+        bool wasEmptyStrategy =
+            stateBefore.collateralInDebtAsset == 0 && stateBefore.debt == 0 && strategyTotalSupplyBefore == 0;
 
         IERC20 collateralAsset = leverageManager.getStrategyCollateralAsset(currentStrategy);
         deal(address(collateralAsset), currentActor, type(uint256).max);
@@ -90,20 +91,30 @@ contract LeverageManagerHandler is Test {
             "Invariant Violated: Equity after deposit must be greater than or equal to the equity before deposit."
         );
 
-        // Empty strategy case
-        if (
-            stateBefore.collateralInDebtAsset == 0 && stateBefore.debt == 0 && strategyTotalSupplyBefore == 0
-                && equityForDeposit != 0
-        ) {
+        if (wasEmptyStrategy && equityForDeposit != 0) {
             assertEq(
                 stateBefore.collateralRatio,
                 type(uint256).max,
                 "Invariant Violated: Collateral ratio before deposit must be type(uint256).max if the strategy has zero collateral and debt."
             );
-            assertEq(
+
+            // For an empty strategy, the debt amount is calculated as the difference between:
+            // 1. The required collateral (determined using target ratio and the amount of equity to deposit)
+            // 2. The equity being deposited
+            // Thus, the precision of the resulting collateral ratio is higher as the amount of equity increases, and
+            // lower as the amount of equity decreases.
+            // For example:
+            //     collateral and debt are 1:1
+            //     targetCollateralRatio = 5e8
+            //     equityForDeposit = 583
+            //     collateralRequiredForDeposit = 583 * 5e8 / (5e8 - 1e8) = 728.75 (729 rounded up)
+            //     debtRequiredForDeposit = 729 - 583 = 146
+            //     collateralRatioAfterDeposit = 729 / 146 = 4.9931506849 (not the target 5e8)
+            assertApproxEqRel(
                 stateAfter.collateralRatio,
                 leverageManager.getStrategyTargetCollateralRatio(currentStrategy),
-                "Invariant Violated: Collateral ratio after deposit must be equal to the target collateral ratio if the strategy was initially empty (no collateral, debt, or shares)."
+                _getAllowedCollateralRatioSlippage(equityForDeposit),
+                "Invariant Violated: Collateral ratio after deposit must be equal to the target collateral ratio, within the allowed collateral ratio slippage, if the strategy was initially empty (no collateral, debt, or shares)."
             );
         }
         // Non-empty strategy with 0 debt
@@ -118,11 +129,14 @@ contract LeverageManagerHandler is Test {
                 leverageManager.getStrategyTargetCollateralRatio(currentStrategy),
                 "Invariant Violated: Collateral ratio after deposit must be greater than or equal to the target collateral ratio if the initial collateral ratio was type(uint256).max."
             );
-            assertLt(
-                stateAfter.collateralRatio,
-                type(uint256).max,
-                "Invariant Violated: Collateral ratio after deposit should be less than type(uint256).max if the initial collateral ratio was type(uint256).max."
-            );
+
+            if (stateAfter.debt > 0) {
+                assertLt(
+                    stateAfter.collateralRatio,
+                    type(uint256).max,
+                    "Invariant Violated: Collateral ratio after deposit should be less than type(uint256).max if the initial collateral ratio was type(uint256).max and debt was borrowed for the deposit."
+                );
+            }
         } else {
             assertGe(
                 stateAfter.collateralRatio,
@@ -132,8 +146,8 @@ contract LeverageManagerHandler is Test {
             assertApproxEqRel(
                 stateAfter.collateralRatio,
                 stateBefore.collateralRatio,
-                allowedCollateralRatioSlippage,
-                "Invariant Violated: Collateral ratio after deposit must be within the allowed collateral ratio slippage."
+                _getAllowedCollateralRatioSlippage(stateBefore.debt),
+                "Invariant Violated: Collateral ratio after deposit must be equal to the initial collateral ratio, within the allowed collateral ratio slippage."
             );
         }
     }

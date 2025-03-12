@@ -84,9 +84,9 @@ contract InvariantTestBase is Test {
             "STRAT-A"
         );
         strategies[1] = _initStrategy(
-            2 * BASE_RATIO - 1, // 2x - 1
-            2 * BASE_RATIO + 1, // 2x + 1
-            2 * BASE_RATIO, // 2x
+            5 * BASE_RATIO - 1, // 5x - 1
+            5 * BASE_RATIO + 1, // 5x + 1
+            5 * BASE_RATIO, // 5x
             IRebalanceRewardDistributor(address(0)),
             IRebalanceWhitelist(address(0)),
             "Strategy B",
