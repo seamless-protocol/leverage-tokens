@@ -6,12 +6,13 @@ import {console} from "forge-std/console.sol";
 
 // Internal imports
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {ExternalAction} from "src/types/DataTypes.sol";
+import {ActionData, ExternalAction} from "src/types/DataTypes.sol";
 import {PreviewActionTest} from "./PreviewAction.t.sol";
 
 contract WithdrawTest is PreviewActionTest {
-    function test_withdraw_WithFee() public {
+    function test_withdraw_WithFees() public {
         _setStrategyActionFee(strategy, ExternalAction.Withdraw, 0.05e4); // 5% fee
+        _setTreasuryActionFee(ExternalAction.Withdraw, 0.05e4); // 5% fee
 
         // 1:2 exchange rate
         lendingAdapter.mockConvertCollateralToDebtAssetExchangeRate(2e8);
@@ -25,7 +26,7 @@ contract WithdrawTest is PreviewActionTest {
         _testWithdraw(equityToWithdraw, type(uint256).max);
     }
 
-    function test_withdraw_WithoutFee() public {
+    function test_withdraw_WithoutFees() public {
         MockLeverageManagerStateForAction memory beforeState =
             MockLeverageManagerStateForAction({collateral: 200 ether, debt: 100 ether, sharesTotalSupply: 100 ether});
 
@@ -33,6 +34,20 @@ contract WithdrawTest is PreviewActionTest {
 
         uint256 equityToWithdraw = 10 ether;
         _testWithdraw(equityToWithdraw, type(uint256).max);
+    }
+
+    function test_withdraw_TreasuryNotSet() public {
+        _setTreasury(feeManagerRole, address(0));
+
+        MockLeverageManagerStateForAction memory beforeState =
+            MockLeverageManagerStateForAction({collateral: 200 ether, debt: 100 ether, sharesTotalSupply: 100 ether});
+
+        _prepareLeverageManagerStateForAction(beforeState);
+
+        uint256 equityToWithdraw = 10 ether;
+        _testWithdraw(equityToWithdraw, type(uint256).max);
+
+        assertEq(collateralToken.balanceOf(address(treasury)), 0);
     }
 
     function test_withdraw_ZeroEquity() public {
@@ -49,19 +64,22 @@ contract WithdrawTest is PreviewActionTest {
         uint128 initialDebtInCollateralAsset,
         uint128 sharesTotalSupply,
         uint128 equityToWithdrawInCollateralAsset,
-        uint16 fee
+        uint16 strategyFee,
+        uint16 treasuryFee
     ) public {
-        fee = uint16(bound(fee, 0, 1e4));
+        strategyFee = uint16(bound(strategyFee, 0, 1e4));
+        treasuryFee = uint16(bound(treasuryFee, 0, 1e4));
         initialDebtInCollateralAsset = uint128(bound(initialDebtInCollateralAsset, 0, initialCollateral));
         sharesTotalSupply = uint128(bound(sharesTotalSupply, 1, type(uint128).max));
 
-        _setStrategyActionFee(strategy, ExternalAction.Withdraw, fee);
+        _setStrategyActionFee(strategy, ExternalAction.Withdraw, strategyFee);
+        _setTreasuryActionFee(ExternalAction.Withdraw, treasuryFee);
 
         vm.assume(initialCollateral > initialDebtInCollateralAsset);
         vm.assume(equityToWithdrawInCollateralAsset > 0);
 
         // Preview the withdrawal
-        (,, uint256 expectedShares,) = leverageManager.previewWithdraw(strategy, equityToWithdrawInCollateralAsset);
+        uint256 expectedShares = leverageManager.previewWithdraw(strategy, equityToWithdrawInCollateralAsset).shares;
 
         vm.expectRevert(
             abi.encodeWithSelector(ILeverageManager.SlippageTooHigh.selector, expectedShares, expectedShares - 1)
@@ -74,10 +92,13 @@ contract WithdrawTest is PreviewActionTest {
         uint128 initialDebtInCollateralAsset,
         uint128 sharesTotalSupply,
         uint128 equityToWithdrawInCollateralAsset,
-        uint16 fee
+        uint16 strategyFee,
+        uint16 treasuryFee
     ) public {
-        fee = uint16(bound(fee, 0, 1e4));
-        _setStrategyActionFee(strategy, ExternalAction.Withdraw, fee);
+        strategyFee = uint16(bound(strategyFee, 0, 1e4));
+        treasuryFee = uint16(bound(treasuryFee, 0, 1e4));
+        _setStrategyActionFee(strategy, ExternalAction.Withdraw, strategyFee);
+        _setTreasuryActionFee(ExternalAction.Withdraw, treasuryFee);
 
         // Bound debt to be lower than collateral asset and share total supply to be greater than 0 otherwise withdraw can not work
         initialDebtInCollateralAsset = uint128(bound(initialDebtInCollateralAsset, 0, initialCollateral));
@@ -100,51 +121,55 @@ contract WithdrawTest is PreviewActionTest {
 
     function _testWithdraw(uint256 equityToWithdrawInCollateralAsset, uint256 maxShares) internal {
         // First preview the withdrawal
-        (
-            uint256 expectedCollateralToRemove,
-            uint256 expectedDebtToRepay,
-            uint256 expectedSharesAfterFee,
-            uint256 expectedSharesFee
-        ) = leverageManager.previewWithdraw(strategy, equityToWithdrawInCollateralAsset);
+        ActionData memory previewData = leverageManager.previewWithdraw(strategy, equityToWithdrawInCollateralAsset);
 
         uint256 shareTotalSupplyBefore = strategy.totalSupply();
 
-        vm.assume(expectedSharesAfterFee <= shareTotalSupplyBefore);
+        vm.assume(previewData.shares <= shareTotalSupplyBefore);
 
         // This needs to be done this way because initial mock state mints total supply to address(1)
         // In order to keep the same total supply we need to burn and mint the same amount of shares
         vm.startPrank(address(leverageManager));
-        strategy.burn(address(1), expectedSharesAfterFee);
-        strategy.mint(address(this), expectedSharesAfterFee);
+        strategy.burn(address(1), previewData.shares);
+        strategy.mint(address(this), previewData.shares);
         vm.stopPrank();
 
         // Mint debt tokens to sender and approve leverage manager
-        debtToken.mint(address(this), expectedDebtToRepay);
-        debtToken.approve(address(leverageManager), expectedDebtToRepay);
+        debtToken.mint(address(this), previewData.debt);
+        debtToken.approve(address(leverageManager), previewData.debt);
 
         uint256 collateralBalanceBefore = collateralToken.balanceOf(address(this));
         uint256 debtBalanceBefore = debtToken.balanceOf(address(this));
 
         // Execute withdrawal
-        (
-            uint256 actualCollateralToRemove,
-            uint256 actualDebtToRepay,
-            uint256 actualSharesAfterFee,
-            uint256 actualSharesFee
-        ) = leverageManager.withdraw(strategy, equityToWithdrawInCollateralAsset, maxShares);
+        ActionData memory withdrawData =
+            leverageManager.withdraw(strategy, equityToWithdrawInCollateralAsset, maxShares);
 
         // Verify return values match preview
-        assertEq(actualCollateralToRemove, expectedCollateralToRemove);
-        assertEq(actualDebtToRepay, expectedDebtToRepay);
-        assertEq(actualSharesAfterFee, expectedSharesAfterFee);
-        assertEq(actualSharesFee, expectedSharesFee);
+        assertEq(withdrawData.collateral, previewData.collateral);
+        assertEq(withdrawData.debt, previewData.debt);
+        assertEq(withdrawData.shares, previewData.shares);
+        assertEq(withdrawData.strategyFee, previewData.strategyFee);
+        assertEq(withdrawData.treasuryFee, previewData.treasuryFee);
 
         // Verify token transfers
-        assertEq(collateralToken.balanceOf(address(this)) - collateralBalanceBefore, actualCollateralToRemove);
-        assertEq(debtBalanceBefore - debtToken.balanceOf(address(this)), actualDebtToRepay);
+        assertEq(collateralToken.balanceOf(address(this)) - collateralBalanceBefore, withdrawData.collateral);
+        assertEq(debtBalanceBefore - debtToken.balanceOf(address(this)), withdrawData.debt);
 
         // Validate strategy total supply and balance
-        assertEq(strategy.totalSupply(), shareTotalSupplyBefore - actualSharesAfterFee);
+        assertEq(strategy.totalSupply(), shareTotalSupplyBefore - withdrawData.shares);
         assertEq(strategy.balanceOf(address(this)), 0);
+
+        // Verify that the treasury received the fee
+        assertEq(collateralToken.balanceOf(treasury), withdrawData.treasuryFee);
+
+        // Verify that if any collateral is returned, the amount of shares burned must be non-zero
+        if (withdrawData.collateral > 0) {
+            assertGt(withdrawData.shares, 0);
+            assertLt(strategy.totalSupply(), shareTotalSupplyBefore);
+        }
+
+        // Fees should be less than or equal to the equity to withdraw
+        assertLe(withdrawData.strategyFee + withdrawData.treasuryFee, equityToWithdrawInCollateralAsset);
     }
 }

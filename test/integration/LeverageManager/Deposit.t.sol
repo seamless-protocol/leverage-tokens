@@ -38,17 +38,24 @@ contract LeverageManagerDepositTest is LeverageManagerBase {
         assertGe(equityInCollateralAsset, equityAfterDeposit);
     }
 
-    function testFork_deposit_WithFee() public {
+    function testFork_deposit_WithFees() public {
         uint256 fee = 10_00; // 10%
         leverageManager.setStrategyActionFee(strategy, ExternalAction.Deposit, fee);
+        leverageManager.setTreasuryActionFee(ExternalAction.Deposit, fee);
 
         uint256 equityInCollateralAsset = 10 ether;
         uint256 collateralToAdd = 2 * equityInCollateralAsset;
         _deposit(user, equityInCollateralAsset, collateralToAdd);
 
-        // 10% fee
-        assertEq(strategy.balanceOf(user), 9 ether);
+        // 8 ether because 10% of equity is for treasury fee and 10% is for strategy
+        assertEq(strategy.balanceOf(user), 8 ether);
+        // 9 ether is added to the strategy because 10% of equity was for the treasury fee. Some slight deviation
+        // from 9 ether is expected due to interest accrual in morpho and rounding errors
+        assertEq(morphoLendingAdapter.getEquityInCollateralAsset(), 8999999999800422784);
         assertEq(strategy.balanceOf(user), strategy.totalSupply());
+
+        assertEq(WETH.balanceOf(treasury), 1 ether); // Treasury receives 10% of the equity in collateral asset
+        assertEq(WETH.balanceOf(user), 1 ether); // User receives 10% of the equity in collateral asset
     }
 
     function testFork_deposit_PriceChangedBetweenDeposits_CollateralRatioDoesNotChange() public {
@@ -71,7 +78,7 @@ contract LeverageManagerDepositTest is LeverageManagerBase {
         assertLe(stateBefore.collateralRatio, 4 * BASE_RATIO);
 
         // Deposit based on what preview function says
-        (uint256 collateral,,,) = leverageManager.previewDeposit(strategy, equityInCollateralAsset);
+        uint256 collateral = leverageManager.previewDeposit(strategy, equityInCollateralAsset).collateral;
         uint256 shares = _deposit(user, equityInCollateralAsset, collateral);
 
         // Validate that user never gets more equity than they deposited
@@ -93,7 +100,7 @@ contract LeverageManagerDepositTest is LeverageManagerBase {
 
         stateBefore = _getStrategyState();
 
-        (collateral,,,) = leverageManager.previewDeposit(strategy, equityInCollateralAsset);
+        collateral = leverageManager.previewDeposit(strategy, equityInCollateralAsset).collateral;
         shares = _deposit(user, equityInCollateralAsset, collateral);
 
         // Validate that user never gets more equity than they deposited

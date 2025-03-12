@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-import {ExternalAction} from "src/types/DataTypes.sol";
+// Dependency imports
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+
+// Internal imports
+import {ActionData, ExternalAction} from "src/types/DataTypes.sol";
 import {PreviewActionTest} from "./PreviewAction.t.sol";
 
 contract PreviewWithdrawTest is PreviewActionTest {
@@ -9,9 +13,14 @@ contract PreviewWithdrawTest is PreviewActionTest {
         uint128 initialCollateral,
         uint128 initialDebtInCollateralAsset,
         uint128 sharesTotalSupply,
-        uint128 equityToWithdrawInCollateralAsset
+        uint128 equityToWithdrawInCollateralAsset,
+        uint16 treasuryFee
     ) public {
         initialDebtInCollateralAsset = uint128(bound(initialDebtInCollateralAsset, 0, initialCollateral));
+
+        treasuryFee = uint16(bound(treasuryFee, 0, 1e4));
+        _setTreasuryActionFee(ExternalAction.Withdraw, treasuryFee);
+
         equityToWithdrawInCollateralAsset =
             uint128(bound(equityToWithdrawInCollateralAsset, 0, initialCollateral - initialDebtInCollateralAsset));
 
@@ -23,23 +32,65 @@ contract PreviewWithdrawTest is PreviewActionTest {
             })
         );
 
-        (
-            uint256 expectedCollateralToRemove,
-            uint256 expectedDebtToRepay,
-            uint256 expectedSharesAfterFee,
-            uint256 expectedSharesFee
-        ) = leverageManager.exposed_previewAction(strategy, equityToWithdrawInCollateralAsset, ExternalAction.Withdraw);
+        ActionData memory previewActionData =
+            leverageManager.exposed_previewAction(strategy, equityToWithdrawInCollateralAsset, ExternalAction.Withdraw);
 
-        (
-            uint256 actualCollateralToRemove,
-            uint256 actualDebtToRepay,
-            uint256 actualSharesAfterFee,
-            uint256 actualSharesFee
-        ) = leverageManager.previewWithdraw(strategy, equityToWithdrawInCollateralAsset);
+        ActionData memory actualPreviewData =
+            leverageManager.previewWithdraw(strategy, equityToWithdrawInCollateralAsset);
 
-        assertEq(actualCollateralToRemove, expectedCollateralToRemove, "Collateral to remove mismatch");
-        assertEq(actualDebtToRepay, expectedDebtToRepay, "Debt to repay mismatch");
-        assertEq(actualSharesAfterFee, expectedSharesAfterFee, "Shares after fee mismatch");
-        assertEq(actualSharesFee, expectedSharesFee, "Shares fee mismatch");
+        assertEq(
+            actualPreviewData.collateral,
+            previewActionData.collateral > previewActionData.treasuryFee
+                ? previewActionData.collateral - previewActionData.treasuryFee
+                : 0,
+            "Collateral to remove mismatch"
+        );
+        assertEq(actualPreviewData.debt, previewActionData.debt, "Debt to repay mismatch");
+        assertEq(actualPreviewData.shares, previewActionData.shares, "Shares after fee mismatch");
+        assertEq(actualPreviewData.strategyFee, previewActionData.strategyFee, "Shares fee mismatch");
+        assertEq(
+            actualPreviewData.treasuryFee,
+            previewActionData.collateral <= previewActionData.treasuryFee
+                ? previewActionData.collateral
+                : previewActionData.treasuryFee,
+            "Treasury fee mismatch"
+        );
+        assertEq(actualPreviewData.equity, previewActionData.equity, "Equity mismatch");
+    }
+
+    function test_previewWithdraw_CollateralLessThanTreasuryFee() public {
+        uint256 equityToPreview = 3;
+
+        uint256 treasuryFee = 0.8e4; // 80%
+        _setTreasuryActionFee(ExternalAction.Withdraw, treasuryFee);
+
+        uint256 initialCollateral = 330944644884850719377224828425;
+        uint256 initialDebt = 135;
+        uint256 sharesTotalSupply = 147701522956517018969156799895542881615;
+        _prepareLeverageManagerStateForAction(
+            MockLeverageManagerStateForAction({
+                collateral: initialCollateral,
+                debt: initialDebt,
+                sharesTotalSupply: sharesTotalSupply
+            })
+        );
+
+        uint256 expectedSharesBeforeFees = leverageManager.exposed_convertToShares(strategy, equityToPreview);
+        assertEq(expectedSharesBeforeFees, 1338908411);
+
+        uint256 collateralToRemove = initialCollateral * expectedSharesBeforeFees / sharesTotalSupply;
+        assertEq(collateralToRemove, 2);
+
+        // The treasury fee is rounded up, so it's possible for it to be greater than the calculated collateral to be removed
+        // which is calculated by rounding down
+        uint256 expectedTreasuryFeeBeforeAdjustment = Math.mulDiv(equityToPreview, treasuryFee, 1e4, Math.Rounding.Ceil);
+        assertEq(expectedTreasuryFeeBeforeAdjustment, 3);
+
+        ActionData memory previewData = leverageManager.previewWithdraw(strategy, equityToPreview);
+
+        // The treasury fee is capped to the collateral amount if it is larger than the collateral to be removed from
+        // the strategy
+        assertEq(previewData.collateral, 0);
+        assertEq(previewData.treasuryFee, collateralToRemove);
     }
 }

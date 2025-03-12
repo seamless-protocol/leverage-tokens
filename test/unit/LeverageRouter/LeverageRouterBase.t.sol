@@ -107,7 +107,8 @@ contract LeverageRouterBaseTest is Test {
                 collateralToAdd: requiredCollateral,
                 debtToBorrow: requiredDebt,
                 shares: shares,
-                sharesFee: 0
+                strategyFee: 0,
+                treasuryFee: 0
             })
         );
 
@@ -143,7 +144,8 @@ contract LeverageRouterBaseTest is Test {
                 collateralToRemove: requiredCollateral,
                 debtToRepay: requiredDebt,
                 shares: shares,
-                sharesFee: 0
+                strategyFee: 0,
+                treasuryFee: 0
             })
         );
 

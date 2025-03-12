@@ -17,6 +17,21 @@ enum ActionType {
     Repay
 }
 
+struct ActionData {
+    /// @dev Amount of collateral added or withdrawn
+    uint256 collateral;
+    /// @dev Amount of debt borrowed or repaid
+    uint256 debt;
+    /// @dev Amount of equity added or withdrawn before fees, denominated in collateral asset
+    uint256 equity;
+    /// @dev Amount of shares minted or burned to user
+    uint256 shares;
+    /// @dev Fee charged for the action to the strategy, denominated in collateral asset
+    uint256 strategyFee;
+    /// @dev Fee charged for the action to the treasury, denominated in collateral asset
+    uint256 treasuryFee;
+}
+
 /// @dev Struct that contains all data related to collateral ratios for a strategy
 struct CollateralRatios {
     /// @dev Minimum collateral ratio allowed for strategy before a rebalance can occur. 8 decimals of precision

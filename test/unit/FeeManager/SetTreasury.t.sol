@@ -7,26 +7,21 @@ import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol"
 // Internal imports
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
+import {ExternalAction} from "src/types/DataTypes.sol";
 import {FeeManagerBaseTest} from "test/unit/FeeManager/FeeManagerBase.t.sol";
 
 contract SetTreasuryTest is FeeManagerBaseTest {
-    function setUp() public override {
-        super.setUp();
-    }
-
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_setTreasury(address treasury) public {
-        vm.startPrank(feeManagerRole);
-
         vm.expectEmit(true, true, true, true);
         emit IFeeManager.TreasurySet(treasury);
 
-        feeManager.setTreasury(treasury);
+        _setTreasury(feeManagerRole, treasury);
         assertEq(feeManager.getTreasury(), treasury);
     }
 
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_setTreasury_CallerIsNotFeeManagerRole(address caller, address treasury) public {
+    function testFuzz_setTreasury_RevertIf_CallerIsNotFeeManagerRole(address caller, address treasury) public {
         vm.assume(caller != feeManagerRole);
 
         vm.expectRevert(
@@ -34,8 +29,16 @@ contract SetTreasuryTest is FeeManagerBaseTest {
                 IAccessControl.AccessControlUnauthorizedAccount.selector, caller, feeManager.FEE_MANAGER_ROLE()
             )
         );
+        _setTreasury(caller, treasury);
+    }
 
-        vm.prank(caller);
-        feeManager.setTreasury(treasury);
+    function test_setTreasury_ZeroAddressResetsTreasuryFees() public {
+        _setTreasury(feeManagerRole, makeAddr("treasury"));
+        _setTreasuryActionFee(feeManagerRole, ExternalAction.Deposit, 100);
+        _setTreasuryActionFee(feeManagerRole, ExternalAction.Withdraw, 100);
+
+        _setTreasury(feeManagerRole, address(0));
+        assertEq(feeManager.getTreasuryActionFee(ExternalAction.Deposit), 0);
+        assertEq(feeManager.getTreasuryActionFee(ExternalAction.Withdraw), 0);
     }
 }

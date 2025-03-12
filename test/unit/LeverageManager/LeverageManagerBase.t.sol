@@ -27,6 +27,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     IStrategy public strategy;
     address public defaultAdmin = makeAddr("defaultAdmin");
     address public manager = makeAddr("manager");
+    address public treasury = makeAddr("treasury");
 
     MockERC20 public collateralToken = new MockERC20();
     MockERC20 public debtToken = new MockERC20();
@@ -53,6 +54,8 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         leverageManager.grantRole(leverageManager.FEE_MANAGER_ROLE(), feeManagerRole);
         feeManager = FeeManagerHarness(address(leverageManager));
         vm.stopPrank();
+
+        _setTreasury(feeManagerRole, treasury);
     }
 
     function test_setUp() public view virtual override {
@@ -148,6 +151,11 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     function _setStrategyActionFee(IStrategy _strategy, ExternalAction action, uint256 fee) internal {
         vm.prank(feeManagerRole);
         leverageManager.setStrategyActionFee(_strategy, action, fee);
+    }
+
+    function _setTreasuryActionFee(ExternalAction action, uint256 fee) internal {
+        vm.prank(feeManagerRole);
+        leverageManager.setTreasuryActionFee(action, fee);
     }
 
     function _mockStrategyDebt(uint256 debt) internal {

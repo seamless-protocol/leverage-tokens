@@ -8,10 +8,11 @@ import {Test} from "forge-std/Test.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
+
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
-import {StrategyState} from "src/types/DataTypes.sol";
+import {ActionData, StrategyState} from "src/types/DataTypes.sol";
 
 contract MockLeverageManager is Test {
     uint256 public BASE_RATIO = 1e8;
@@ -59,14 +60,16 @@ contract MockLeverageManager is Test {
         uint256 collateralToAdd;
         uint256 debtToBorrow;
         uint256 shares;
-        uint256 sharesFee;
+        uint256 strategyFee;
+        uint256 treasuryFee;
     }
 
     struct MockPreviewWithdrawData {
         uint256 collateralToRemove;
         uint256 debtToRepay;
         uint256 shares;
-        uint256 sharesFee;
+        uint256 strategyFee;
+        uint256 treasuryFee;
     }
 
     mapping(IStrategy => StrategyData) public strategies;
@@ -152,34 +155,39 @@ contract MockLeverageManager is Test {
     function previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
         external
         view
-        returns (uint256, uint256, uint256, uint256)
+        returns (ActionData memory)
     {
         bytes32 mockPreviewDepositDataKey = keccak256(abi.encode(strategy, equityInCollateralAsset));
-        return (
-            mockPreviewDepositData[mockPreviewDepositDataKey].collateralToAdd,
-            mockPreviewDepositData[mockPreviewDepositDataKey].debtToBorrow,
-            mockPreviewDepositData[mockPreviewDepositDataKey].shares,
-            mockPreviewDepositData[mockPreviewDepositDataKey].sharesFee
-        );
+
+        return ActionData({
+            collateral: mockPreviewDepositData[mockPreviewDepositDataKey].collateralToAdd,
+            debt: mockPreviewDepositData[mockPreviewDepositDataKey].debtToBorrow,
+            equity: equityInCollateralAsset,
+            shares: mockPreviewDepositData[mockPreviewDepositDataKey].shares,
+            strategyFee: mockPreviewDepositData[mockPreviewDepositDataKey].strategyFee,
+            treasuryFee: mockPreviewDepositData[mockPreviewDepositDataKey].treasuryFee
+        });
     }
 
     function previewWithdraw(IStrategy strategy, uint256 equityInCollateralAsset)
         external
         view
-        returns (uint256, uint256, uint256, uint256)
+        returns (ActionData memory)
     {
         bytes32 mockPreviewWithdrawDataKey = keccak256(abi.encode(strategy, equityInCollateralAsset));
-        return (
-            mockPreviewWithdrawData[mockPreviewWithdrawDataKey].collateralToRemove,
-            mockPreviewWithdrawData[mockPreviewWithdrawDataKey].debtToRepay,
-            mockPreviewWithdrawData[mockPreviewWithdrawDataKey].shares,
-            mockPreviewWithdrawData[mockPreviewWithdrawDataKey].sharesFee
-        );
+        return ActionData({
+            collateral: mockPreviewWithdrawData[mockPreviewWithdrawDataKey].collateralToRemove,
+            debt: mockPreviewWithdrawData[mockPreviewWithdrawDataKey].debtToRepay,
+            equity: equityInCollateralAsset,
+            shares: mockPreviewWithdrawData[mockPreviewWithdrawDataKey].shares,
+            strategyFee: mockPreviewWithdrawData[mockPreviewWithdrawDataKey].strategyFee,
+            treasuryFee: mockPreviewWithdrawData[mockPreviewWithdrawDataKey].treasuryFee
+        });
     }
 
     function deposit(IStrategy strategy, uint256 equityInCollateralAsset, uint256 minShares)
         external
-        returns (uint256, uint256, uint256, uint256)
+        returns (ActionData memory)
     {
         StrategyData storage strategyData = strategies[strategy];
 
@@ -205,7 +213,14 @@ contract MockLeverageManager is Test {
 
                 // Set the mock deposit data to executed and return the shares minted
                 mockDepositData[mockDepositDataKey][i].isExecuted = true;
-                return (_mockDepositData.collateral, _mockDepositData.debt, _mockDepositData.shares, 0);
+                return ActionData({
+                    equity: equityInCollateralAsset,
+                    collateral: _mockDepositData.collateral,
+                    debt: _mockDepositData.debt,
+                    shares: _mockDepositData.shares,
+                    strategyFee: 0,
+                    treasuryFee: 0
+                });
             }
         }
 
@@ -215,7 +230,7 @@ contract MockLeverageManager is Test {
 
     function withdraw(IStrategy strategy, uint256 equityInCollateralAsset, uint256 maxShares)
         external
-        returns (uint256, uint256, uint256, uint256)
+        returns (ActionData memory)
     {
         StrategyData storage strategyData = strategies[strategy];
 
@@ -239,7 +254,14 @@ contract MockLeverageManager is Test {
 
                 // Set the mock withdraw data to executed
                 mockWithdrawData[mockWithdrawDataKey][i].isExecuted = true;
-                return (_mockWithdrawData.collateral, _mockWithdrawData.debt, _mockWithdrawData.shares, 0);
+                return ActionData({
+                    equity: equityInCollateralAsset,
+                    collateral: _mockWithdrawData.collateral,
+                    debt: _mockWithdrawData.debt,
+                    shares: _mockWithdrawData.shares,
+                    strategyFee: 0,
+                    treasuryFee: 0
+                });
             }
         }
 

@@ -32,6 +32,7 @@ contract IntegrationTestBase is Test {
 
     uint256 public BASE_RATIO;
     address public user = makeAddr("user");
+    address public treasury = makeAddr("treasury");
     IStrategy public strategy;
 
     BeaconProxyFactory public morphoLendingAdapterFactory;
@@ -81,7 +82,10 @@ contract IntegrationTestBase is Test {
             "ltETH/USDC-2x"
         );
 
+        leverageManager.setTreasury(treasury);
+
         vm.label(address(user), "user");
+        vm.label(address(treasury), "treasury");
         vm.label(address(strategy), "strategy");
         vm.label(address(morphoLendingAdapter), "morphoLendingAdapter");
         vm.label(address(MORPHO), "MORPHO");
@@ -91,6 +95,7 @@ contract IntegrationTestBase is Test {
     function testFork_setUp() public view virtual {
         assertEq(address(morphoLendingAdapter.leverageManager()), address(leverageManager));
         assertEq(address(morphoLendingAdapter.morpho()), address(MORPHO));
+        assertEq(leverageManager.getTreasury(), treasury);
         assertEq(address(morphoLendingAdapter.getCollateralAsset()), address(WETH));
         assertEq(address(morphoLendingAdapter.getDebtAsset()), address(USDC));
 
