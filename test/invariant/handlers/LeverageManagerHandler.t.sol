@@ -13,6 +13,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 // Internal imports
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {ActionData, StrategyState} from "src/types/DataTypes.sol";
+import {MockLendingAdapter} from "test/unit/mock/MockLendingAdapter.sol";
 import {LeverageManagerHarness} from "test/unit/LeverageManager/harness/LeverageManagerHarness.t.sol";
 
 contract LeverageManagerHandler is Test {
@@ -66,6 +67,7 @@ contract LeverageManagerHandler is Test {
         console2.log("CALL SUMMARY");
         console2.log("----------------------------------------------------------------------------");
         console2.log("deposit:", calls["deposit"]);
+        console2.log("repayDebt:", calls["repayDebt"]);
         console2.log("----------------------------------------------------------------------------");
         console2.log("Total: ", totalCalls);
     }
@@ -148,6 +150,34 @@ contract LeverageManagerHandler is Test {
                 stateBefore.collateralRatio,
                 _getAllowedCollateralRatioSlippage(stateBefore.debt),
                 "Invariant Violated: Collateral ratio after deposit must be equal to the initial collateral ratio, within the allowed collateral ratio slippage."
+            );
+        }
+    }
+
+    function repayDebt(uint256 seed) public useStrategy countCall("repayDebt") {
+        MockLendingAdapter lendingAdapter =
+            MockLendingAdapter(address(leverageManager.getStrategyLendingAdapter(currentStrategy)));
+        uint256 debt = lendingAdapter.getDebt();
+        IERC20 debtAsset = lendingAdapter.debtAsset();
+
+        StrategyState memory stateBefore = leverageManager.exposed_getStrategyState(currentStrategy);
+
+        uint256 debtToRemove = bound(seed, 0, debt);
+        deal(address(debtAsset), address(this), debtToRemove);
+        debtAsset.approve(address(lendingAdapter), debtToRemove);
+        lendingAdapter.repay(debtToRemove);
+
+        if (debtToRemove > 0) {
+            StrategyState memory stateAfter = leverageManager.exposed_getStrategyState(currentStrategy);
+            assertLt(
+                stateAfter.debt,
+                stateBefore.debt,
+                "Invariant Violated: Debt after repaying debt must be less than the debt before repaying debt."
+            );
+            assertGe(
+                stateAfter.collateralRatio,
+                stateBefore.collateralRatio,
+                "Invariant Violated: Collateral ratio after repaying debt must be greater than or equal to the collateral ratio before repaying debt."
             );
         }
     }
