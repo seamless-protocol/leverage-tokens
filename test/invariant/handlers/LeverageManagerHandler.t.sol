@@ -1,0 +1,195 @@
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.26;
+
+// Forge imports
+import {Test} from "forge-std/Test.sol";
+import {console2} from "forge-std/console2.sol";
+
+// Dependency imports
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+// Internal imports
+import {IStrategy} from "src/interfaces/IStrategy.sol";
+import {ActionData, StrategyState} from "src/types/DataTypes.sol";
+import {LeverageManagerHarness} from "test/unit/LeverageManager/harness/LeverageManagerHarness.t.sol";
+
+contract LeverageManagerHandler is Test {
+    uint256 public constant BASE_RATIO = 1e8;
+
+    LeverageManagerHarness public leverageManager;
+    IStrategy[] public strategies;
+    address[] public actors;
+
+    address public currentActor;
+    IStrategy public currentStrategy;
+
+    uint256 public totalCalls;
+    mapping(string => uint256) public calls;
+
+    modifier countCall(string memory key_) {
+        totalCalls++;
+        calls[key_]++;
+        _;
+    }
+
+    modifier useActor() {
+        currentActor = pickActor();
+        vm.startPrank(currentActor);
+        _;
+        vm.stopPrank();
+    }
+
+    modifier useStrategy() {
+        currentStrategy = pickStrategy();
+        _;
+    }
+
+    constructor(LeverageManagerHarness _leverageManager, IStrategy[] memory _strategies, address[] memory _actors) {
+        leverageManager = _leverageManager;
+        strategies = _strategies;
+        actors = _actors;
+
+        vm.label(address(leverageManager), "leverageManager");
+
+        for (uint256 i = 0; i < strategies.length; i++) {
+            vm.label(
+                address(strategies[i]),
+                string.concat("strategy-", Strings.toHexString(uint256(uint160(address(strategies[i]))), 20))
+            );
+        }
+    }
+
+    /// @dev This function is used to print the call summary to the console, useful for debugging
+    function callSummary() public view virtual {
+        console2.log("CALL SUMMARY");
+        console2.log("----------------------------------------------------------------------------");
+        console2.log("deposit:", calls["deposit"]);
+        console2.log("----------------------------------------------------------------------------");
+        console2.log("Total: ", totalCalls);
+    }
+
+    function deposit(uint256 seed) public useStrategy useActor countCall("deposit") {
+        uint256 equity = _boundEquityForDeposit(currentStrategy, seed);
+
+        StrategyState memory stateBefore = leverageManager.exposed_getStrategyState(currentStrategy);
+        uint256 allowedCollateralRatioSlippage = _getAllowedCollateralRatioSlippage(stateBefore.debt);
+
+        IERC20 collateralAsset = leverageManager.getStrategyCollateralAsset(currentStrategy);
+        deal(address(collateralAsset), currentActor, type(uint256).max);
+        collateralAsset.approve(address(leverageManager), type(uint256).max);
+        leverageManager.deposit(currentStrategy, equity, 0);
+
+        StrategyState memory stateAfter = leverageManager.exposed_getStrategyState(currentStrategy);
+
+        if (stateBefore.collateralRatio != type(uint256).max) {
+            assertGe(
+                stateAfter.collateralRatio,
+                stateBefore.collateralRatio,
+                "Invariant Violated: Collateral ratio after deposit must be greater than or equal to the initial collateral ratio."
+            );
+            assertApproxEqRel(
+                stateAfter.collateralRatio,
+                stateBefore.collateralRatio,
+                allowedCollateralRatioSlippage,
+                "Invariant Violated: Collateral ratio after deposit must be within the allowed collateral ratio slippage."
+            );
+        } else if (equity > 0) {
+            assertGe(
+                stateAfter.collateralRatio,
+                leverageManager.getStrategyTargetCollateralRatio(currentStrategy),
+                "Invariant Violated: Collateral ratio after deposit must be greater than or equal to the target collateral ratio if the initial collateral ratio was type(uint256).max."
+            );
+            assertLt(
+                stateAfter.collateralRatio,
+                type(uint256).max,
+                "Invariant Violated: Collateral ratio after deposit should be less than type(uint256).max if the initial collateral ratio was type(uint256).max."
+            );
+        }
+    }
+
+    function pickActor() public returns (address) {
+        return actors[bound(vm.randomUint(), 0, actors.length - 1)];
+    }
+
+    function pickStrategy() public returns (IStrategy) {
+        return strategies[bound(vm.randomUint(), 0, strategies.length - 1)];
+    }
+
+    /// @dev Bounds the amount of equity to deposit based on the maximum collateral that can be added to a strategy due
+    ///      to overflow limits
+    function _boundEquityForDeposit(IStrategy strategy, uint256 seed) internal view returns (uint256) {
+        StrategyState memory stateBefore = leverageManager.exposed_getStrategyState(strategy);
+
+        // The maximum amount of collateral that can be added to a strategy using Morpho is type(uint128).max
+        uint256 maxCollateralAmount = type(uint128).max
+            - leverageManager.getStrategyLendingAdapter(strategy).convertDebtToCollateralAsset(
+                stateBefore.collateralInDebtAsset
+            );
+        // Bound the amount of equity to deposit based on the maximum collateral that can be added
+        bool shouldFollowTargetRatio = strategy.totalSupply() == 0 || stateBefore.debt == 0;
+        uint256 collateralRatioForDeposit = shouldFollowTargetRatio
+            ? leverageManager.getStrategyTargetCollateralRatio(strategy)
+            : stateBefore.collateralRatio;
+        uint256 maxEquity = Math.mulDiv(
+            maxCollateralAmount, collateralRatioForDeposit - BASE_RATIO, collateralRatioForDeposit, Math.Rounding.Floor
+        );
+
+        // Divide max equity by a random number between 2 and 100000 to split deposits up more among calls
+        uint256 equityDivisor = bound(seed, 2, 100000);
+        return bound(seed, 0, maxEquity / equityDivisor);
+    }
+
+    /// @dev The allowed slippage in collateral ratio of the strategy after a deposit should scale with the size of the
+    /// initial debt in the strategy, as smaller strategies may incur a higher collateral ratio delta after the
+    /// deposit due to rounding.
+    ///
+    /// For example, if the initial collateral is 3 and the initial debt is 1 (with collateral and debt normalized) then the
+    /// collateral ratio is 300000000, with 2 shares total supply. If a deposit of 1 equity is made, then the required collateral
+    /// is 2 and the required debt is 0, so the resulting collateral is 5 and the debt is 1:
+    ///
+    ///    sharesMinted = convertToShares(1) = equityToAdd * (existingSharesTotalSupply + offset) / (existingEquity + offset) = 1 * 3 / 3 = 1
+    ///    collateralToAdd = existingCollateral * sharesMinted / sharesTotalSupply = 3 * 1 / 2 = 2 (1.5 rounded up)
+    ///    debtToBorrow = existingDebt * sharesMinted / sharesTotalSupply = 1 * 1 / 2 = 0 (0.5 rounded down)
+    ///
+    /// The resulting collateral ratio is 500000000, which is a ~+66.67% change from the initial collateral ratio.
+    ///
+    /// As the intial debt scales up in size, the allowed slippage should scale down as more precision can be achieved
+    /// for the collateral ratio:
+    ///    initialDebt < 100: 1e18 (100% slippage)
+    ///    initialDebt < 1000: 0.1e18 (10% slippage)
+    ///    initialDebt < 10000: 0.01e18 (1% slippage)
+    ///    initialDebt < 100000: 0.001e18 (0.1% slippage)
+    ///    initialDebt < 1000000: 0.0001e18 (0.01% slippage)
+    ///    initialDebt < 10000000: 0.00001e18 (0.001% slippage)
+    ///    initialDebt < 100000000: 0.000001e18 (0.0001% slippage)
+    ///    initialDebt < 1000000000: 0.0000001e18 (0.00001% slippage)
+    ///    initialDebt >= 1000000000: 0.00000001e18 (0.000001% slippage)
+    ///
+    /// Note: We can at minimum support up to 0.00000001e18 (0.000001% slippage) due to the base collateral ratio
+    ///       being 1e8
+    function _getAllowedCollateralRatioSlippage(uint256 initialDebt)
+        internal
+        pure
+        returns (uint256 allowedSlippagePercentage)
+    {
+        if (initialDebt == 0) {
+            return 1e18;
+        }
+
+        uint256 i = Math.log10(initialDebt);
+
+        // This is the minimum slippage that we can support due to the precision of the collateral ratio being
+        // 1e8 (1e18 / 1e8 = 1e10 = 0.00000001e18)
+        if (i > 8) return 0.00000001e18;
+
+        // If i <= 1, that means initialDebt < 100, thus slippage = 1e18
+        // Otherwise slippage = 1e18 / (10^(i - 1))
+        return (i <= 1) ? 1e18 : (1e18 / (10 ** (i - 1)));
+    }
+
+    function _randomAddress() internal returns (address payable) {
+        return payable(vm.randomAddress());
+    }
+}
