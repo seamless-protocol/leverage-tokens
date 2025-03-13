@@ -57,7 +57,7 @@ contract InvariantTestBase is Test {
         targetSelector(FuzzSelector({addr: address(leverageManagerHandler), selectors: _fuzzedSelectors()}));
     }
 
-    function invariant_callSummary() public view {
+    function invariant_run() public view {
         leverageManagerHandler.callSummary();
     }
 

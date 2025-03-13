@@ -65,7 +65,7 @@ contract LeverageManagerHandler is Test {
         }
     }
 
-    /// @dev This function is used to print the call summary to the console, useful for debugging
+    /// @dev This function is used to print the call summary to the console, useful for debugging runs on failure
     function callSummary() public view virtual {
         console2.log("CALL SUMMARY");
         console2.log("----------------------------------------------------------------------------");
