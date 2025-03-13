@@ -166,6 +166,7 @@ contract LeverageManagerHandler is Test {
         }
     }
 
+    /// @dev Simulates someone adding collateral to the position held by the strategy directly, not through the LeverageManager.
     function addCollateral(uint256 seed) public useStrategy countCall("addCollateral") {
         MockLendingAdapter lendingAdapter =
             MockLendingAdapter(address(leverageManager.getStrategyLendingAdapter(currentStrategy)));
@@ -195,6 +196,7 @@ contract LeverageManagerHandler is Test {
         }
     }
 
+    /// @dev Simulates someone repaying debt from the position held by the strategy directly, not through the LeverageManager.
     function repayDebt(uint256 seed) public useStrategy countCall("repayDebt") {
         MockLendingAdapter lendingAdapter =
             MockLendingAdapter(address(leverageManager.getStrategyLendingAdapter(currentStrategy)));
@@ -231,8 +233,8 @@ contract LeverageManagerHandler is Test {
         return strategies[bound(vm.randomUint(), 0, strategies.length - 1)];
     }
 
-    /// @dev Bounds the amount of equity to deposit based on the maximum collateral that can be added to a strategy due
-    ///      to overflow limits
+    /// @dev Bounds the amount of equity to deposit based on the maximum collateral and debt that can be added to a strategy
+    ///      due to overflow limits
     function _boundEquityForDeposit(IStrategy strategy, uint256 seed) internal view returns (uint256) {
         StrategyState memory stateBefore = leverageManager.exposed_getStrategyState(strategy);
 
