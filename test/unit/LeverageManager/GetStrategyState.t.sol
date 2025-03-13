@@ -16,7 +16,7 @@ contract GetStrategyStateTest is LeverageManagerBaseTest {
         _mockStrategyCollateralInDebtAsset(200 ether);
         _mockStrategyDebt(100 ether);
 
-        StrategyState memory state = leverageManager.exposed_getStrategyState(strategy);
+        StrategyState memory state = leverageManager.getStrategyState(strategy);
         assertEq(state.collateralInDebtAsset, 200 ether);
         assertEq(state.debt, 100 ether);
         assertEq(state.collateralRatio, 2 * _BASE_RATIO());
@@ -26,7 +26,7 @@ contract GetStrategyStateTest is LeverageManagerBaseTest {
         _mockStrategyCollateralInDebtAsset(200 ether);
         _mockStrategyDebt(0);
 
-        StrategyState memory state = leverageManager.exposed_getStrategyState(strategy);
+        StrategyState memory state = leverageManager.getStrategyState(strategy);
         assertEq(state.collateralInDebtAsset, 200 ether);
         assertEq(state.debt, 0);
         assertEq(state.collateralRatio, type(uint256).max);

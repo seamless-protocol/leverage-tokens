@@ -66,7 +66,7 @@ contract LeverageManagerDepositTest is LeverageManagerBase {
         vm.mockCall(address(oracle), abi.encodeWithSelector(IOracle.price.selector), abi.encode(newPrice));
 
         // Since price of ETH doubled current collateral ratio should be 4x and not 2x
-        StrategyState memory stateBefore = _getStrategyState();
+        StrategyState memory stateBefore = getStrategyState();
         assertGe(stateBefore.collateralRatio, 4 * BASE_RATIO - 1);
         assertLe(stateBefore.collateralRatio, 4 * BASE_RATIO);
 
@@ -83,7 +83,7 @@ contract LeverageManagerDepositTest is LeverageManagerBase {
 
         // Validate that collateral ratio did not change which means that new deposit follows current collateral ratio and not target
         // It is important that there can be rounding error but it should bring collateral ratio up not down
-        StrategyState memory stateAfter = _getStrategyState();
+        StrategyState memory stateAfter = getStrategyState();
         assertGe(stateAfter.collateralRatio, stateBefore.collateralRatio);
         assertLe(stateAfter.collateralRatio, stateBefore.collateralRatio + 1);
 
@@ -91,7 +91,7 @@ contract LeverageManagerDepositTest is LeverageManagerBase {
         newPrice /= 3;
         vm.mockCall(address(oracle), abi.encodeWithSelector(IOracle.price.selector), abi.encode(newPrice));
 
-        stateBefore = _getStrategyState();
+        stateBefore = getStrategyState();
 
         (collateral,,,) = leverageManager.previewDeposit(strategy, equityInCollateralAsset);
         shares = _deposit(user, equityInCollateralAsset, collateral);
@@ -101,7 +101,7 @@ contract LeverageManagerDepositTest is LeverageManagerBase {
         assertGe(equityInCollateralAsset, equityAfterDeposit);
 
         // Validate that collateral ratio did not change which means that new deposit follows current collateral ratio and not target
-        stateAfter = _getStrategyState();
+        stateAfter = getStrategyState();
         assertEq(stateAfter.collateralRatio, stateBefore.collateralRatio);
     }
 }

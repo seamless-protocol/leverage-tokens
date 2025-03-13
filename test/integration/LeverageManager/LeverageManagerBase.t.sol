@@ -61,7 +61,7 @@ contract LeverageManagerBase is IntegrationTestBase {
         return shares;
     }
 
-    function _getStrategyState() internal view returns (StrategyState memory) {
-        return LeverageManagerHarness(address(leverageManager)).exposed_getStrategyState(strategy);
+    function getStrategyState() internal view returns (StrategyState memory) {
+        return LeverageManagerHarness(address(leverageManager)).getStrategyState(strategy);
     }
 }

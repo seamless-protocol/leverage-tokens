@@ -173,7 +173,7 @@ contract PreviewActionTest is LeverageManagerBaseTest {
         }
 
         // Get state prior to action
-        StrategyState memory prevState = leverageManager.exposed_getStrategyState(strategy);
+        StrategyState memory prevState = leverageManager.getStrategyState(strategy);
 
         (uint256 collateral, uint256 debt, uint256 shares, uint256 sharesFee) =
             leverageManager.exposed_previewAction(strategy, equityInCollateralAsset, action);

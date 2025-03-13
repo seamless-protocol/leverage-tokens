@@ -89,7 +89,7 @@ contract RebalanceTest is LeverageManagerBase {
         // Price of ETH after this change should be 4070.750000000000000000000000
         _moveEthPrice(20_00);
 
-        StrategyState memory stateBefore = _getStrategyState(ethLong2x);
+        StrategyState memory stateBefore = getStrategyState(ethLong2x);
         assertGe(stateBefore.collateralRatio, 24 * BASE_RATIO / 10 - 1);
         assertLe(stateBefore.collateralRatio, 24 * BASE_RATIO / 10);
 
@@ -105,7 +105,7 @@ contract RebalanceTest is LeverageManagerBase {
         _rebalance(ethLong2x, 1e18, 0, 4100 * 1e6, 0);
 
         // Validate that ratio is better (leans towards 2x)
-        StrategyState memory stateAfter = _getStrategyState(ethLong2x);
+        StrategyState memory stateAfter = getStrategyState(ethLong2x);
         assertLe(stateAfter.collateralRatio, stateBefore.collateralRatio);
         assertGe(stateAfter.collateralRatio, 2 * BASE_RATIO);
 
@@ -130,7 +130,7 @@ contract RebalanceTest is LeverageManagerBase {
         // Price of ETH after this change should be 2728.194981060953630732673600
         _moveEthPrice(-20_00);
 
-        StrategyState memory stateBefore = _getStrategyState(ethLong2x);
+        StrategyState memory stateBefore = getStrategyState(ethLong2x);
         assertGe(stateBefore.collateralRatio, 16 * BASE_RATIO / 10 - 1);
         assertLe(stateBefore.collateralRatio, 16 * BASE_RATIO / 10);
 
@@ -141,7 +141,7 @@ contract RebalanceTest is LeverageManagerBase {
         _rebalance(ethLong2x, 0, 1e18, 0, 2800 * 1e6);
 
         // Validate that ratio is better (leans towards 2x)
-        StrategyState memory stateAfter = _getStrategyState(ethLong2x);
+        StrategyState memory stateAfter = getStrategyState(ethLong2x);
         assertGe(stateAfter.collateralRatio, stateBefore.collateralRatio);
         assertLe(stateAfter.collateralRatio, 2 * BASE_RATIO);
 
@@ -203,10 +203,10 @@ contract RebalanceTest is LeverageManagerBase {
         _giftUSDCToETHShortStrategy();
 
         // Double check that both strategies are over-collateralized
-        StrategyState memory ethLongStateBefore = _getStrategyState(ethLong2x);
+        StrategyState memory ethLongStateBefore = getStrategyState(ethLong2x);
         assertGe(ethLongStateBefore.collateralRatio, 2 * BASE_RATIO);
 
-        StrategyState memory ethShortStateBefore = _getStrategyState(ethShort2x);
+        StrategyState memory ethShortStateBefore = getStrategyState(ethShort2x);
         assertGe(ethShortStateBefore.collateralRatio, 15 * BASE_RATIO / 10);
 
         // Prepare rebalance parameters
@@ -240,11 +240,11 @@ contract RebalanceTest is LeverageManagerBase {
         assertEq(USDC.balanceOf(rebalancer), 500 * 1e6);
 
         // Check that strategies are in better state
-        StrategyState memory ethLongStateAfter = _getStrategyState(ethLong2x);
+        StrategyState memory ethLongStateAfter = getStrategyState(ethLong2x);
         assertGe(ethLongStateAfter.collateralRatio, 2 * BASE_RATIO);
         assertLe(ethLongStateAfter.collateralRatio, ethLongStateBefore.collateralRatio);
 
-        StrategyState memory ethShortStateAfter = _getStrategyState(ethShort2x);
+        StrategyState memory ethShortStateAfter = getStrategyState(ethShort2x);
         assertGe(ethShortStateAfter.collateralRatio, 15 * BASE_RATIO / 10);
         assertLe(ethShortStateAfter.collateralRatio, ethShortStateBefore.collateralRatio);
     }
@@ -404,7 +404,7 @@ contract RebalanceTest is LeverageManagerBase {
         return shares;
     }
 
-    function _getStrategyState(IStrategy strategy) internal view returns (StrategyState memory) {
-        return LeverageManagerHarness(address(leverageManager)).exposed_getStrategyState(strategy);
+    function getStrategyState(IStrategy strategy) internal view returns (StrategyState memory) {
+        return LeverageManagerHarness(address(leverageManager)).getStrategyState(strategy);
     }
 }
