@@ -23,7 +23,7 @@ import {LeverageManagerHarness} from "test/unit/LeverageManager/harness/Leverage
 import {MockLendingAdapter} from "test/unit/mock/MockLendingAdapter.sol";
 import {MockERC20} from "test/unit/mock/MockERC20.sol";
 
-contract InvariantTestBase is Test {
+abstract contract InvariantTestBase is Test {
     uint256 public BASE_RATIO;
 
     address public defaultAdmin = makeAddr("defaultAdmin");
@@ -55,10 +55,6 @@ contract InvariantTestBase is Test {
 
         targetContract(address(leverageManagerHandler));
         targetSelector(FuzzSelector({addr: address(leverageManagerHandler), selectors: _fuzzedSelectors()}));
-    }
-
-    function invariant_run() public view {
-        leverageManagerHandler.callSummary();
     }
 
     function _createActors(uint256 numActors) internal returns (address[] memory) {
@@ -129,5 +125,53 @@ contract InvariantTestBase is Test {
         });
 
         return leverageManager.createNewStrategy(config, name, symbol);
+    }
+
+    /// @dev The allowed slippage in collateral ratio of the strategy after a deposit should scale with the size of the
+    /// initial debt in the strategy, as smaller strategies may incur a higher collateral ratio delta after the
+    /// deposit due to rounding.
+    ///
+    /// For example, if the initial collateral is 3 and the initial debt is 1 (with collateral and debt normalized) then the
+    /// collateral ratio is 300000000, with 2 shares total supply. If a deposit of 1 equity is made, then the required collateral
+    /// is 2 and the required debt is 0, so the resulting collateral is 5 and the debt is 1:
+    ///
+    ///    sharesMinted = convertToShares(1) = equityToAdd * (existingSharesTotalSupply + offset) / (existingEquity + offset) = 1 * 3 / 3 = 1
+    ///    collateralToAdd = existingCollateral * sharesMinted / sharesTotalSupply = 3 * 1 / 2 = 2 (1.5 rounded up)
+    ///    debtToBorrow = existingDebt * sharesMinted / sharesTotalSupply = 1 * 1 / 2 = 0 (0.5 rounded down)
+    ///
+    /// The resulting collateral ratio is 500000000, which is a ~+66.67% change from the initial collateral ratio.
+    ///
+    /// As the intial debt scales up in size, the allowed slippage should scale down as more precision can be achieved
+    /// for the collateral ratio:
+    ///    initialDebt < 100: 1e18 (100% slippage)
+    ///    initialDebt < 1000: 0.1e18 (10% slippage)
+    ///    initialDebt < 10000: 0.01e18 (1% slippage)
+    ///    initialDebt < 100000: 0.001e18 (0.1% slippage)
+    ///    initialDebt < 1000000: 0.0001e18 (0.01% slippage)
+    ///    initialDebt < 10000000: 0.00001e18 (0.001% slippage)
+    ///    initialDebt < 100000000: 0.000001e18 (0.0001% slippage)
+    ///    initialDebt < 1000000000: 0.0000001e18 (0.00001% slippage)
+    ///    initialDebt >= 1000000000: 0.00000001e18 (0.000001% slippage)
+    ///
+    /// Note: We can at minimum support up to 0.00000001e18 (0.000001% slippage) due to the base collateral ratio
+    ///       being 1e8
+    function _getAllowedCollateralRatioSlippage(uint256 initialDebt)
+        internal
+        pure
+        returns (uint256 allowedSlippagePercentage)
+    {
+        if (initialDebt == 0) {
+            return 1e18;
+        }
+
+        uint256 i = Math.log10(initialDebt);
+
+        // This is the minimum slippage that we can support due to the precision of the collateral ratio being
+        // 1e8 (1e18 / 1e8 = 1e10 = 0.00000001e18)
+        if (i > 8) return 0.00000001e18;
+
+        // If i <= 1, that means initialDebt < 100, thus slippage = 1e18
+        // Otherwise slippage = 1e18 / (10^(i - 1))
+        return (i <= 1) ? 1e18 : (1e18 / (10 ** (i - 1)));
     }
 }
