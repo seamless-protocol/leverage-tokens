@@ -52,6 +52,9 @@ contract InvariantTestBase is Test {
         BASE_RATIO = leverageManager.BASE_RATIO();
 
         _initLeverageManagerHandler(leverageManager);
+
+        targetContract(address(leverageManagerHandler));
+        targetSelector(FuzzSelector({addr: address(leverageManagerHandler), selectors: _fuzzedSelectors()}));
     }
 
     function invariant_callSummary() public view {
@@ -98,9 +101,6 @@ contract InvariantTestBase is Test {
         address[] memory actors = _createActors(10);
 
         leverageManagerHandler = new LeverageManagerHandler(_leverageManager, strategies, actors);
-
-        targetContract(address(leverageManagerHandler));
-        targetSelector(FuzzSelector({addr: address(leverageManagerHandler), selectors: _fuzzedSelectors()}));
 
         vm.label(address(leverageManagerHandler), "leverageManagerHandler");
     }
