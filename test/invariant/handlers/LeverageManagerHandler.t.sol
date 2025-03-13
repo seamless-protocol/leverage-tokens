@@ -137,8 +137,8 @@ contract LeverageManagerHandler is Test {
         StrategyState memory stateBefore,
         uint256 collateralAdded
     ) internal view {
+        StrategyState memory stateAfter = leverageManager.exposed_getStrategyState(strategy);
         if (collateralAdded > 0) {
-            StrategyState memory stateAfter = leverageManager.exposed_getStrategyState(strategy);
             assertGt(
                 stateAfter.collateralInDebtAsset,
                 stateBefore.collateralInDebtAsset,
@@ -148,6 +148,12 @@ contract LeverageManagerHandler is Test {
                 stateAfter.collateralInDebtAsset,
                 stateBefore.collateralInDebtAsset,
                 "Invariant Violated: Collateral in debt asset after adding collateral must be greater than or equal to the collateral in debt asset before adding collateral."
+            );
+        } else {
+            assertEq(
+                stateAfter.collateralInDebtAsset,
+                stateBefore.collateralInDebtAsset,
+                "Invariant Violated: Collateral in debt asset after adding collateral must be equal to the collateral in debt asset before adding collateral if no collateral was added."
             );
         }
     }
@@ -236,17 +242,25 @@ contract LeverageManagerHandler is Test {
         internal
         view
     {
+        StrategyState memory stateAfter = leverageManager.exposed_getStrategyState(strategy);
         if (debtRemoved > 0) {
-            StrategyState memory stateAfter = leverageManager.exposed_getStrategyState(strategy);
             assertLt(
                 stateAfter.debt,
                 stateBefore.debt,
                 "Invariant Violated: Debt after repaying debt must be less than the debt before repaying debt."
             );
+
+            // Due to rounding error depending on the amounts of collateral and debt, it's possible that the ratios are equal after repaying debt.
             assertGe(
                 stateAfter.collateralRatio,
                 stateBefore.collateralRatio,
                 "Invariant Violated: Collateral ratio after repaying debt must be greater than or equal to the collateral ratio before repaying debt."
+            );
+        } else {
+            assertEq(
+                stateAfter.collateralRatio,
+                stateBefore.collateralRatio,
+                "Invariant Violated: Collateral ratio after repaying debt must be equal to the collateral ratio before repaying debt if no debt was removed."
             );
         }
     }
