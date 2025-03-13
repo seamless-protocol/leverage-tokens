@@ -11,6 +11,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
+import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {ActionData, StrategyState} from "src/types/DataTypes.sol";
 import {MockLendingAdapter} from "test/unit/mock/MockLendingAdapter.sol";
@@ -160,13 +161,7 @@ contract LeverageManagerHandler is Test {
         StrategyState memory stateAfter = leverageManager.exposed_getStrategyState(strategy);
 
         // Empty strategy
-        if (stateBefore.collateralInDebtAsset == 0 && stateBefore.debt == 0 && strategyTotalSupplyBefore == 0) {
-            assertEq(
-                stateBefore.collateralRatio,
-                type(uint256).max,
-                "Invariant Violated: Collateral ratio before deposit must be type(uint256).max in an empty strategy."
-            );
-
+        if (strategyTotalSupplyBefore == 0 && stateBefore.collateralInDebtAsset == 0 && stateBefore.debt == 0) {
             if (equityDeposited != 0) {
                 // For an empty strategy, the debt amount is calculated as the difference between:
                 // 1. The required collateral (determined using target ratio and the amount of equity to deposit)
@@ -194,29 +189,34 @@ contract LeverageManagerHandler is Test {
                 );
             }
         }
-        // Strategy with 0 shares but non-zero collateral and debt
-        else if (strategyTotalSupplyBefore == 0 && stateBefore.debt != 0 && stateBefore.collateralInDebtAsset != 0) {
+        // Strategy with 0 shares but collateral > 0 and debt > 0
+        else if (strategyTotalSupplyBefore == 0 && stateBefore.collateralInDebtAsset != 0 && stateBefore.debt != 0) {
             // It's possible that the strategy has no shares but has non-zero collateral and debt due to actors adding
-            // collateral to the underlying position held by the strategy (directly, not through LeverageManager.deposit) before any shares are minted.
-            // There can be debt because minShares is set to 0 in this function, so a depositor can add collateral and debt without receiving any shares.
+            // collateral to the underlying position held by the strategy (directly, not through LeverageManager.deposit)
+            // before any shares are minted.
+            // There can be debt because minShares is set to 0 in `LeverageManagerHandler.deposit`, so a depositor can add
+            // collateral and debt without receiving any shares.
             assertLe(
                 stateAfter.collateralRatio,
                 stateBefore.collateralRatio,
                 "Invariant Violated: Collateral ratio after deposit must be less than or equal to the initial collateral ratio if the strategy has no shares but has non-zero collateral and debt."
             );
         }
-        // Strategy with 0 debt but non-zero collateral
+        // Strategy with 0 debt and non-zero collateral
         else if (stateBefore.collateralInDebtAsset != 0 && stateBefore.debt == 0) {
-            assertEq(
-                stateBefore.collateralRatio,
-                type(uint256).max,
-                "Invariant Violated: Collateral ratio before deposit must be type(uint256).max if the strategy has non-zero collateral and zero debt."
-            );
-            assertGe(
-                stateAfter.collateralRatio,
-                leverageManager.getStrategyTargetCollateralRatio(currentStrategy),
-                "Invariant Violated: Collateral ratio after deposit must be greater than or equal to the target collateral ratio if the strategy initially had non-zero collateral and zero debt."
-            );
+            uint256 collateralAddedInDebtAsset = stateAfter.collateralInDebtAsset - stateBefore.collateralInDebtAsset;
+            uint256 debtAddedInDebtAsset = stateAfter.debt - stateBefore.debt;
+
+            if (debtAddedInDebtAsset != 0) {
+                uint256 depositCollateralRatio = collateralAddedInDebtAsset * BASE_RATIO / debtAddedInDebtAsset;
+
+                assertApproxEqRel(
+                    depositCollateralRatio,
+                    leverageManager.getStrategyTargetCollateralRatio(currentStrategy),
+                    _getAllowedCollateralRatioSlippage(equityDeposited),
+                    "Invariant Violated: Collateral ratio for a deposit into a strategy with non-zero collateral and zero debt must be equal to the target collateral ratio, within the allowed collateral ratio slippage."
+                );
+            }
         } else {
             assertGe(
                 stateAfter.collateralRatio,
