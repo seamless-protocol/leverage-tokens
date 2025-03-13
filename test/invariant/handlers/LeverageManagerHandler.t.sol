@@ -67,6 +67,7 @@ contract LeverageManagerHandler is Test {
         console2.log("CALL SUMMARY");
         console2.log("----------------------------------------------------------------------------");
         console2.log("deposit:", calls["deposit"]);
+        console2.log("addCollateral:", calls["addCollateral"]);
         console2.log("repayDebt:", calls["repayDebt"]);
         console2.log("----------------------------------------------------------------------------");
         console2.log("Total: ", totalCalls);
@@ -119,7 +120,7 @@ contract LeverageManagerHandler is Test {
                 "Invariant Violated: Collateral ratio after deposit must be equal to the target collateral ratio, within the allowed collateral ratio slippage, if the strategy was initially empty (no collateral, debt, or shares)."
             );
         }
-        // Non-empty strategy with 0 debt
+        // Strategy with 0 debt but non-zero collateral
         else if (stateBefore.collateralInDebtAsset != 0 && stateBefore.debt == 0) {
             assertEq(
                 stateBefore.collateralRatio,
@@ -139,6 +140,17 @@ contract LeverageManagerHandler is Test {
                     "Invariant Violated: Collateral ratio after deposit should be less than type(uint256).max if the initial collateral ratio was type(uint256).max and debt was borrowed for the deposit."
                 );
             }
+        }
+        // Strategy with 0 shares but non-zero collateral and debt
+        else if (strategyTotalSupplyBefore == 0 && stateBefore.debt != 0 && stateBefore.collateralInDebtAsset != 0) {
+            // It's possible that the strategy has no shares but has non-zero collateral and debt due to actors adding
+            // collateral to the underlying position held by the strategy (not through LeverageManager.deposit, directly) before any shares are minted.
+            // There can be debt because minShares is set to 0 in this function, so a depositor can add collateral and debt without receiving any shares.
+            assertLe(
+                stateAfter.collateralRatio,
+                stateBefore.collateralRatio,
+                "Invariant Violated: Collateral ratio after deposit must be less than or equal to the initial collateral ratio if the strategy has no shares but has non-zero collateral and debt."
+            );
         } else {
             assertGe(
                 stateAfter.collateralRatio,
@@ -150,6 +162,35 @@ contract LeverageManagerHandler is Test {
                 stateBefore.collateralRatio,
                 _getAllowedCollateralRatioSlippage(stateBefore.debt),
                 "Invariant Violated: Collateral ratio after deposit must be equal to the initial collateral ratio, within the allowed collateral ratio slippage."
+            );
+        }
+    }
+
+    function addCollateral(uint256 seed) public useStrategy countCall("addCollateral") {
+        MockLendingAdapter lendingAdapter =
+            MockLendingAdapter(address(leverageManager.getStrategyLendingAdapter(currentStrategy)));
+        uint256 collateral = lendingAdapter.getCollateral();
+        IERC20 collateralAsset = lendingAdapter.collateralAsset();
+
+        StrategyState memory stateBefore = leverageManager.exposed_getStrategyState(currentStrategy);
+
+        uint256 collateralToAdd = bound(seed, 0, type(uint128).max - collateral);
+        deal(address(collateralAsset), address(this), collateralToAdd);
+        collateralAsset.approve(address(lendingAdapter), collateralToAdd);
+        lendingAdapter.addCollateral(collateralToAdd);
+
+        StrategyState memory stateAfter = leverageManager.exposed_getStrategyState(currentStrategy);
+
+        if (collateralToAdd > 0) {
+            assertGt(
+                stateAfter.collateralInDebtAsset,
+                stateBefore.collateralInDebtAsset,
+                "Invariant Violated: Collateral after adding collateral must be greater than the collateral before adding collateral."
+            );
+            assertGe(
+                stateAfter.collateralInDebtAsset,
+                stateBefore.collateralInDebtAsset,
+                "Invariant Violated: Collateral in debt asset after adding collateral must be greater than or equal to the collateral in debt asset before adding collateral."
             );
         }
     }

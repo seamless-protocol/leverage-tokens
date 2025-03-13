@@ -67,9 +67,10 @@ contract InvariantTestBase is Test {
     }
 
     function _fuzzedSelectors() internal pure returns (bytes4[] memory) {
-        bytes4[] memory selectors = new bytes4[](2);
+        bytes4[] memory selectors = new bytes4[](3);
         selectors[0] = LeverageManagerHandler.deposit.selector;
-        selectors[1] = LeverageManagerHandler.repayDebt.selector;
+        selectors[1] = LeverageManagerHandler.addCollateral.selector;
+        selectors[2] = LeverageManagerHandler.repayDebt.selector;
         return selectors;
     }
 
