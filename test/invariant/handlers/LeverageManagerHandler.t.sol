@@ -23,7 +23,8 @@ contract LeverageManagerHandler is Test {
         Initial,
         Deposit,
         AddCollateral,
-        RepayDebt
+        RepayDebt,
+        Withdraw
     }
 
     struct AddCollateralActionData {
@@ -32,10 +33,16 @@ contract LeverageManagerHandler is Test {
 
     struct DepositActionData {
         uint256 equityInCollateralAsset;
+        ActionData preview;
     }
 
     struct RepayDebtActionData {
         uint256 debt;
+    }
+
+    struct WithdrawActionData {
+        uint256 equityInCollateralAsset;
+        ActionData preview;
     }
 
     struct StrategyStateData {
@@ -44,6 +51,7 @@ contract LeverageManagerHandler is Test {
         uint256 collateral;
         uint256 collateralInDebtAsset;
         uint256 debt;
+        uint256 equityInDebtAsset;
         uint256 collateralRatio;
         uint256 totalSupply;
         bytes actionData;
@@ -112,10 +120,12 @@ contract LeverageManagerHandler is Test {
     function deposit(uint256 seed) public useStrategy useActor countCall("deposit") {
         uint256 equityForDeposit = _boundEquityForDeposit(currentStrategy, seed);
 
+        ActionData memory preview = leverageManager.previewDeposit(currentStrategy, equityForDeposit);
+
         _saveStrategyState(
             currentStrategy,
             ActionType.Deposit,
-            abi.encode(DepositActionData({equityInCollateralAsset: equityForDeposit}))
+            abi.encode(DepositActionData({equityInCollateralAsset: equityForDeposit, preview: preview}))
         );
 
         IERC20 collateralAsset = leverageManager.getStrategyCollateralAsset(currentStrategy);
@@ -158,6 +168,32 @@ contract LeverageManagerHandler is Test {
         lendingAdapter.repay(debtToRemove);
     }
 
+    function withdraw(uint256 seed) public useStrategy useActor countCall("withdraw") {
+        uint256 equityForWithdraw = _boundEquityForWithdraw(currentStrategy, currentActor, seed);
+
+        ActionData memory preview = leverageManager.previewWithdraw(currentStrategy, equityForWithdraw);
+
+        _saveStrategyState(
+            currentStrategy,
+            ActionType.Withdraw,
+            abi.encode(WithdrawActionData({equityInCollateralAsset: equityForWithdraw, preview: preview}))
+        );
+
+        IERC20 debtAsset = leverageManager.getStrategyDebtAsset(currentStrategy);
+        deal(address(debtAsset), currentActor, type(uint256).max);
+        debtAsset.approve(address(leverageManager), type(uint256).max);
+        leverageManager.withdraw(currentStrategy, equityForWithdraw, currentStrategy.balanceOf(currentActor));
+    }
+
+    function convertToAssets(IStrategy strategy, uint256 shares) public view returns (uint256) {
+        return Math.mulDiv(
+            shares,
+            leverageManager.getStrategyLendingAdapter(strategy).getEquityInCollateralAsset() + 1,
+            strategy.totalSupply() + 1,
+            Math.Rounding.Floor
+        );
+    }
+
     function getStrategyStateBefore() public view returns (StrategyStateData memory) {
         return strategyStateBefore;
     }
@@ -194,6 +230,15 @@ contract LeverageManagerHandler is Test {
         return bound(seed, 0, maxEquity / equityDivisor);
     }
 
+    function _boundEquityForWithdraw(IStrategy strategy, address actor, uint256 seed) internal view returns (uint256) {
+        uint256 shares = strategy.balanceOf(actor);
+        uint256 maxEquity = convertToAssets(strategy, shares);
+
+        // Divide max equity by a random number between 1 and 10 to split withdrawals up more among calls
+        uint256 equityDivisor = bound(seed, 1, 10);
+        return bound(seed, 0, maxEquity / equityDivisor);
+    }
+
     function _saveStrategyState(IStrategy strategy, ActionType actionType, bytes memory actionData) internal {
         ILendingAdapter lendingAdapter = leverageManager.getStrategyLendingAdapter(strategy);
 
@@ -209,6 +254,7 @@ contract LeverageManagerHandler is Test {
             collateral: collateral,
             collateralInDebtAsset: collateralInDebtAsset,
             debt: debt,
+            equityInDebtAsset: lendingAdapter.getEquityInDebtAsset(),
             collateralRatio: collateralRatio,
             totalSupply: totalSupply,
             actionData: actionData

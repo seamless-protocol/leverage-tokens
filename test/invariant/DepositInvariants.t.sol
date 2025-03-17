@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 // Internal imports
+import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {StrategyState} from "src/types/DataTypes.sol";
 import {LeverageManagerHandler} from "test/invariant/handlers/LeverageManagerHandler.t.sol";
@@ -16,8 +17,40 @@ contract DepositInvariants is InvariantTestBase {
 
         LeverageManagerHandler.DepositActionData memory depositData =
             abi.decode(stateBefore.actionData, (LeverageManagerHandler.DepositActionData));
+        ILendingAdapter lendingAdapter = leverageManager.getStrategyLendingAdapter(stateBefore.strategy);
         StrategyState memory stateAfter = leverageManager.exposed_getStrategyState(stateBefore.strategy);
 
+        _assertPreviewInvariants(lendingAdapter, stateBefore, depositData);
+        _assertCollateralRatioInvariants(depositData, stateBefore, stateAfter);
+    }
+
+    function _assertPreviewInvariants(
+        ILendingAdapter lendingAdapter,
+        LeverageManagerHandler.StrategyStateData memory stateBefore,
+        LeverageManagerHandler.DepositActionData memory depositData
+    ) internal view {
+        assertEq(
+            lendingAdapter.getCollateral() - stateBefore.collateral,
+            depositData.preview.collateral,
+            "Invariant Violated: Change in collateral from deposit must match the deposit preview."
+        );
+        assertEq(
+            lendingAdapter.getDebt() - stateBefore.debt,
+            depositData.preview.debt,
+            "Invariant Violated: Change in debt from deposit must match the deposit preview."
+        );
+        assertEq(
+            stateBefore.strategy.totalSupply() - stateBefore.totalSupply,
+            depositData.preview.shares,
+            "Invariant Violated: Change in shares from deposit must match the deposit preview."
+        );
+    }
+
+    function _assertCollateralRatioInvariants(
+        LeverageManagerHandler.DepositActionData memory depositData,
+        LeverageManagerHandler.StrategyStateData memory stateBefore,
+        StrategyState memory stateAfter
+    ) internal view {
         // Empty strategy
         if (stateBefore.totalSupply == 0 && stateBefore.collateralInDebtAsset == 0 && stateBefore.debt == 0) {
             if (depositData.equityInCollateralAsset != 0) {
