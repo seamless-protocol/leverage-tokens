@@ -44,17 +44,25 @@ contract BeaconUpgradeToTest is Test {
 
         vm.prank(upgrader);
         beacon.upgradeTo(address(newImplementation));
+        NewStrategy newProxy = NewStrategy(
+            factory.createProxy(
+                abi.encodeWithSelector(Strategy.initialize.selector, address(this), "Test name 2", "Test symbol 2"),
+                bytes32("1")
+            )
+        );
 
-        // Existing proxy deployed from the factory should now point to the new implementation but still have the same storage
+        // Existing proxy deployed from the factory should now point to the new implementation but still have the
+        // same storage
         assertEq(NewStrategy(address(strategyToken)).testFunction(), true);
         assertEq(strategyToken.balanceOf(user), 100);
+        assertEq(strategyToken.name(), "Test name");
+        assertEq(strategyToken.symbol(), "Test symbol");
 
         // New proxies should use the new implementation
-        address newProxy = factory.createProxy(
-            abi.encodeWithSelector(Strategy.initialize.selector, address(this), "Test name", "Test symbol"),
-            bytes32("1")
-        );
-        assertEq(NewStrategy(newProxy).testFunction(), true);
+        assertEq(newProxy.testFunction(), true);
+        assertEq(newProxy.balanceOf(user), 0);
+        assertEq(newProxy.name(), "Test name 2");
+        assertEq(newProxy.symbol(), "Test symbol 2");
     }
 
     /// forge-config: default.fuzz.runs = 1
