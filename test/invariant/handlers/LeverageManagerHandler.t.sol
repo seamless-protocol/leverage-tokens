@@ -211,7 +211,6 @@ contract LeverageManagerHandler is Test {
     function _boundEquityForDeposit(IStrategy strategy, uint256 seed) internal view returns (uint256) {
         StrategyState memory stateBefore = leverageManager.exposed_getStrategyState(strategy);
 
-        // The maximum amount of collateral that can be added to a strategy using Morpho is type(uint128).max
         uint256 maxCollateralAmount = type(uint128).max
             - leverageManager.getStrategyLendingAdapter(strategy).convertDebtToCollateralAsset(
                 stateBefore.collateralInDebtAsset
