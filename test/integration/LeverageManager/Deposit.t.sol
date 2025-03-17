@@ -40,7 +40,7 @@ contract LeverageManagerDepositTest is LeverageManagerBase {
 
     function testFork_deposit_WithFees() public {
         uint256 fee = 10_00; // 10%
-        leverageManager.setStrategyActionFee(strategy, ExternalAction.Deposit, fee);
+        leverageManager.setStrategyActionFee(ExternalAction.Deposit, fee);
         leverageManager.setTreasuryActionFee(ExternalAction.Deposit, fee);
 
         uint256 equityInCollateralAsset = 10 ether;
@@ -59,7 +59,7 @@ contract LeverageManagerDepositTest is LeverageManagerBase {
     }
 
     function testFork_deposit_PriceChangedBetweenDeposits_CollateralRatioDoesNotChange() public {
-        leverageManager.setStrategyActionFee(strategy, ExternalAction.Deposit, 1); // 0.01%
+        leverageManager.setStrategyActionFee(ExternalAction.Deposit, 1); // 0.01%
 
         // Deposit again like in previous test
         uint256 equityInCollateralAsset = 10 ether;

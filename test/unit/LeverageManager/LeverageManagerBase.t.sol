@@ -148,9 +148,9 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         );
     }
 
-    function _setStrategyActionFee(IStrategy _strategy, ExternalAction action, uint256 fee) internal {
+    function _setStrategyActionFee(ExternalAction action, uint256 fee) internal {
         vm.prank(feeManagerRole);
-        leverageManager.setStrategyActionFee(_strategy, action, fee);
+        leverageManager.setStrategyActionFee(action, fee);
     }
 
     function _setTreasuryActionFee(ExternalAction action, uint256 fee) internal {

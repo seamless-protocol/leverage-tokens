@@ -35,9 +35,9 @@ contract FeeManagerBaseTest is Test {
         assertEq(feeManager.exposed_getFeeManagerStorageSlot(), expectedSlot);
     }
 
-    function _setStrategyActionFee(address caller, IStrategy strategy, ExternalAction action, uint256 fee) internal {
+    function _setStrategyActionFee(address caller, ExternalAction action, uint256 fee) internal {
         vm.prank(caller);
-        feeManager.setStrategyActionFee(strategy, action, fee);
+        feeManager.setStrategyActionFee(action, fee);
     }
 
     function _setTreasuryActionFee(address caller, ExternalAction action, uint256 fee) internal {

@@ -30,7 +30,7 @@ contract ComputeEquityFeesTest is FeeManagerBaseTest {
         _setFees(depositTreasuryFee, depositStrategyFee, withdrawTreasuryFee, withdrawStrategyFee);
 
         (uint256 equityForStrategyAfterFees, uint256 equityForSharesAfterFees, uint256 strategyFee, uint256 treasuryFee)
-        = feeManager.exposed_computeEquityFees(strategy, equity, action);
+        = feeManager.exposed_computeEquityFees(equity, action);
 
         uint256 expectedStrategyFee = Math.mulDiv(equity, depositStrategyFee, feeManager.MAX_FEE(), Math.Rounding.Ceil);
         uint256 expectedTreasuryFee = Math.mulDiv(equity, depositTreasuryFee, feeManager.MAX_FEE(), Math.Rounding.Ceil);
@@ -51,7 +51,7 @@ contract ComputeEquityFeesTest is FeeManagerBaseTest {
         _setFees(depositTreasuryFee, depositStrategyFee, withdrawTreasuryFee, withdrawStrategyFee);
 
         (uint256 equityForStrategyAfterFees, uint256 equityForSharesAfterFees, uint256 strategyFee, uint256 treasuryFee)
-        = feeManager.exposed_computeEquityFees(strategy, equity, action);
+        = feeManager.exposed_computeEquityFees(equity, action);
 
         uint256 expectedStrategyFee = Math.mulDiv(equity, withdrawStrategyFee, feeManager.MAX_FEE(), Math.Rounding.Ceil);
         uint256 expectedTreasuryFee = Math.mulDiv(equity, withdrawTreasuryFee, feeManager.MAX_FEE(), Math.Rounding.Ceil);
@@ -70,7 +70,7 @@ contract ComputeEquityFeesTest is FeeManagerBaseTest {
         _setFees(depositTreasuryFee, depositStrategyFee, 0, 0);
 
         (uint256 equityForStrategyAfterFees, uint256 equityForSharesAfterFees, uint256 strategyFee, uint256 treasuryFee)
-        = feeManager.exposed_computeEquityFees(strategy, equity, action);
+        = feeManager.exposed_computeEquityFees(equity, action);
 
         uint256 expectedTreasuryFee = Math.mulDiv(equity, depositTreasuryFee, feeManager.MAX_FEE(), Math.Rounding.Ceil);
         assertEq(treasuryFee, expectedTreasuryFee);
@@ -95,7 +95,7 @@ contract ComputeEquityFeesTest is FeeManagerBaseTest {
         _setTreasury(feeManagerRole, address(0));
 
         (uint256 equityForStrategyAfterFees,,, uint256 treasuryFee) =
-            feeManager.exposed_computeEquityFees(strategy, equity, action);
+            feeManager.exposed_computeEquityFees(equity, action);
         assertEq(equityForStrategyAfterFees, equity);
         assertEq(treasuryFee, 0);
     }
@@ -115,7 +115,7 @@ contract ComputeEquityFeesTest is FeeManagerBaseTest {
         _setFees(depositTreasuryFee, depositStrategyFee, withdrawTreasuryFee, withdrawStrategyFee);
 
         (uint256 equityForStrategyAfterFees, uint256 equityForSharesAfterFees, uint256 strategyFee, uint256 treasuryFee)
-        = feeManager.exposed_computeEquityFees(strategy, equity, action);
+        = feeManager.exposed_computeEquityFees(equity, action);
 
         uint256 expectedTreasuryFee = Math.mulDiv(
             equity,
@@ -159,8 +159,8 @@ contract ComputeEquityFeesTest is FeeManagerBaseTest {
         vm.startPrank(feeManagerRole);
         feeManager.setTreasuryActionFee(ExternalAction.Deposit, depositTreasuryFee);
         feeManager.setTreasuryActionFee(ExternalAction.Withdraw, withdrawTreasuryFee);
-        feeManager.setStrategyActionFee(strategy, ExternalAction.Deposit, depositStrategyFee);
-        feeManager.setStrategyActionFee(strategy, ExternalAction.Withdraw, withdrawStrategyFee);
+        feeManager.setStrategyActionFee(ExternalAction.Deposit, depositStrategyFee);
+        feeManager.setStrategyActionFee(ExternalAction.Withdraw, withdrawStrategyFee);
         vm.stopPrank();
     }
 }

@@ -158,7 +158,7 @@ contract LeverageManagerWithdrawTest is LeverageManagerBase {
 
     function testFork_withdraw_withFee() public {
         leverageManager.setTreasuryActionFee(ExternalAction.Withdraw, 10_00); // 10%
-        leverageManager.setStrategyActionFee(strategy, ExternalAction.Withdraw, 10_00); // 10%
+        leverageManager.setStrategyActionFee(ExternalAction.Withdraw, 10_00); // 10%
 
         uint256 equityInCollateralAsset = 10 ether;
         uint256 collateralToAdd = 2 * equityInCollateralAsset;

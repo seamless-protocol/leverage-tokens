@@ -446,7 +446,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         returns (ActionData memory data)
     {
         (uint256 equityToCover, uint256 equityForShares, uint256 strategyFee, uint256 treasuryFee) =
-            _computeEquityFees(strategy, equityInCollateralAsset, action);
+            _computeEquityFees(equityInCollateralAsset, action);
 
         uint256 shares = _convertToShares(strategy, equityForShares);
 

@@ -19,12 +19,12 @@ contract FeeManagerHarness is FeeManager {
         }
     }
 
-    function exposed_computeEquityFees(IStrategy strategy, uint256 equityAmount, ExternalAction action)
+    function exposed_computeEquityFees(uint256 equityAmount, ExternalAction action)
         external
         view
         returns (uint256, uint256, uint256, uint256)
     {
-        return _computeEquityFees(strategy, equityAmount, action);
+        return _computeEquityFees(equityAmount, action);
     }
 
     function exposed_chargeTreasuryFee(IERC20 collateralAsset, uint256 amount) external {
