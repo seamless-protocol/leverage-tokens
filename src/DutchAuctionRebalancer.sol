@@ -23,10 +23,10 @@ contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
     ILeverageManager public immutable leverageManager;
 
     ///@notice Duration for all auctions in seconds
-    uint256 public auctionDuration;
+    mapping(IStrategy strategy => uint256) public auctionDuration;
 
     ///@notice Initial price premium in basis points
-    uint256 public initialPricePremiumBps;
+    mapping(IStrategy strategy => uint256) public initialPricePremiumBps;
 
     ///@notice Mapping of strategy to auction
     mapping(IStrategy strategy => Auction) public auctions;
@@ -34,20 +34,8 @@ contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
     /// @notice Creates a new Dutch auction rebalancer
     /// @param owner_ Initial owner address
     /// @param leverageManager_ Address of leverage manager contract
-    /// @param auctionDuration_ Fixed duration for all auctions in seconds
-    /// @param initialPricePremiumBps_ Initial price premium in basis points
-    constructor(
-        address owner_,
-        ILeverageManager leverageManager_,
-        uint256 auctionDuration_,
-        uint256 initialPricePremiumBps_
-    ) Ownable(owner_) {
-        if (auctionDuration_ == 0) revert InvalidAuctionDuration();
-        if (initialPricePremiumBps_ > BPS_DENOMINATOR) revert InvalidPricePremium();
-
+    constructor(address owner_, ILeverageManager leverageManager_) Ownable(owner_) {
         leverageManager = leverageManager_;
-        auctionDuration = auctionDuration_;
-        initialPricePremiumBps = initialPricePremiumBps_;
     }
 
     /// @inheritdoc IDutchAuctionRebalancer
@@ -89,11 +77,28 @@ contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
     function getCurrentAuctionMultiplier(IStrategy strategy) public view returns (uint256) {
         Auction memory auction = auctions[strategy];
 
+        if (block.timestamp >= auction.endTimestamp) {
+            return 0;
+        }
+
         uint256 elapsedTime = block.timestamp - auction.startTimestamp;
         uint256 duration = auction.endTimestamp - auction.startTimestamp;
 
-        // Calculate current price using linear decay
-        return Math.mulDiv(auction.initialPriceMultiplier, duration - elapsedTime, duration);
+        // Calculate exponential decay: price = initialPrice * e^(-3t/T)
+        // Where t is elapsed time and T is total duration
+        // The -3 coefficient makes it decay faster at the start
+        // We use the approximation: e^x ≈ (1 + x/n)^n where n = 10
+
+        int256 x = -3 * int256(elapsedTime) * int256(BPS_DENOMINATOR) / int256(duration);
+        uint256 base = uint256(BPS_DENOMINATOR - uint256((-x / 10))); // (1 + x/10) in basis points
+        uint256 multiplier = auction.initialPriceMultiplier;
+
+        // Calculate (1 + x/10)^10 through iteration
+        for (uint256 i = 0; i < 10; i++) {
+            multiplier = Math.mulDiv(multiplier, base, BPS_DENOMINATOR);
+        }
+
+        return multiplier;
     }
 
     /// @inheritdoc IDutchAuctionRebalancer
@@ -109,17 +114,17 @@ contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
     }
 
     /// @inheritdoc IDutchAuctionRebalancer
-    function setAuctionDuration(uint256 newDuration) external onlyOwner {
+    function setAuctionDuration(IStrategy strategy, uint256 newDuration) external onlyOwner {
         if (newDuration == 0) revert InvalidAuctionDuration();
-        auctionDuration = newDuration;
-        emit AuctionDurationSet(newDuration);
+        auctionDuration[strategy] = newDuration;
+        emit AuctionDurationSet(strategy, newDuration);
     }
 
     /// @inheritdoc IDutchAuctionRebalancer
-    function setInitialPricePremium(uint256 newPremiumBps) external onlyOwner {
+    function setInitialPricePremium(IStrategy strategy, uint256 newPremiumBps) external onlyOwner {
         if (newPremiumBps > BPS_DENOMINATOR) revert InvalidPricePremium();
-        initialPricePremiumBps = newPremiumBps;
-        emit InitialPricePremiumSet(newPremiumBps);
+        initialPricePremiumBps[strategy] = newPremiumBps;
+        emit InitialPricePremiumSet(strategy, newPremiumBps);
     }
 
     /// @inheritdoc IDutchAuctionRebalancer
@@ -135,11 +140,11 @@ contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
 
         // Create new auction
         uint256 startTimestamp = block.timestamp;
-        uint256 endTimestamp = startTimestamp + auctionDuration;
+        uint256 endTimestamp = startTimestamp + auctionDuration[strategy];
 
         Auction memory auction = Auction({
             isOverCollateralized: isOverCollateralized,
-            initialPriceMultiplier: BPS_DENOMINATOR + initialPricePremiumBps,
+            initialPriceMultiplier: BPS_DENOMINATOR + initialPricePremiumBps[strategy],
             startTimestamp: startTimestamp,
             endTimestamp: endTimestamp
         });

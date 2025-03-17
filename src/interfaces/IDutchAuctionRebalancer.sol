@@ -43,22 +43,24 @@ interface IDutchAuctionRebalancer {
     event AuctionEnded(IStrategy indexed strategy);
 
     /// @notice Event emitted when auction duration is updated
-    event AuctionDurationSet(uint256 newDuration);
+    event AuctionDurationSet(IStrategy indexed strategy, uint256 newDuration);
 
     /// @notice Event emitted when initial price premium is updated
-    event InitialPricePremiumSet(uint256 newPremiumBps);
+    event InitialPricePremiumSet(IStrategy indexed strategy, uint256 newPremiumBps);
 
     /// @notice Returns leverage manager
     /// @return leverageManager Leverage manager
     function leverageManager() external view returns (ILeverageManager leverageManager);
 
     /// @notice Returns auction duration
+    /// @param strategy Strategy to get duration for
     /// @return auctionDuration Auction duration
-    function auctionDuration() external view returns (uint256 auctionDuration);
+    function auctionDuration(IStrategy strategy) external view returns (uint256 auctionDuration);
 
     /// @notice Returns initial price premium in basis points
+    /// @param strategy Strategy to get premium for
     /// @return premiumBps Initial price premium
-    function initialPricePremiumBps() external view returns (uint256 premiumBps);
+    function initialPricePremiumBps(IStrategy strategy) external view returns (uint256 premiumBps);
 
     /// @notice Returns strategy rebalance status
     /// @param strategy Strategy to check
@@ -99,10 +101,12 @@ interface IDutchAuctionRebalancer {
     function take(IStrategy strategy, uint256 amountOut) external;
 
     /// @notice Sets the auction duration
+    /// @param strategy Strategy to set duration for
     /// @param newDuration New duration in seconds
-    function setAuctionDuration(uint256 newDuration) external;
+    function setAuctionDuration(IStrategy strategy, uint256 newDuration) external;
 
     /// @notice Sets the initial price premium
+    /// @param strategy Strategy to set premium for
     /// @param newPremiumBps New premium in basis points
-    function setInitialPricePremium(uint256 newPremiumBps) external;
+    function setInitialPricePremium(IStrategy strategy, uint256 newPremiumBps) external;
 }
