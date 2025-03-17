@@ -36,7 +36,7 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
 
         address expectedStrategyAddress = strategyTokenFactory.computeProxyAddress(
             address(leverageManager),
-            abi.encodeWithSelector(Strategy.initialize.selector, address(leverageManager), name, symbol),
+            abi.encodeWithSelector(Strategy.initialize.selector, address(this), address(leverageManager), name, symbol),
             0
         );
 

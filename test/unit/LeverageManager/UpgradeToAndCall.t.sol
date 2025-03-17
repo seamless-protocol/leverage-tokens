@@ -3,21 +3,26 @@ pragma solidity ^0.8.26;
 
 // Dependency imports
 import {IERC1967} from "@openzeppelin/contracts/interfaces/IERC1967.sol";
+import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
 
 // Internal imports
 import {LeverageManager} from "src/LeverageManager.sol";
 import {LeverageManagerBaseTest} from "./LeverageManagerBase.t.sol";
 
 contract UpgradeToAndCallTest is LeverageManagerBaseTest {
-    function test_upgradeToAndCall() public {
-        address upgrader = makeAddr("upgrader");
+    address public upgrader = makeAddr("upgrader");
 
-        // Deploy new implementation
-        LeverageManager newImplementation = new LeverageManager();
+    function setUp() public override {
+        super.setUp();
 
         vm.startPrank(defaultAdmin);
         leverageManager.grantRole(leverageManager.UPGRADER_ROLE(), upgrader);
         vm.stopPrank();
+    }
+
+    function test_upgradeToAndCall() public {
+        // Deploy new implementation
+        LeverageManager newImplementation = new LeverageManager();
 
         // Expect the Upgraded event to be emitted
         vm.expectEmit(true, true, true, true);
@@ -25,6 +30,21 @@ contract UpgradeToAndCallTest is LeverageManagerBaseTest {
 
         // Upgrade
         vm.prank(upgrader);
+        leverageManager.upgradeToAndCall(address(newImplementation), "");
+    }
+
+    /// forge-config: default.fuzz.runs = 1
+    function testFuzz_upgradeToAndCall_RevertIf_NonUpgraderUpgrades(address nonUpgrader) public {
+        vm.assume(nonUpgrader != upgrader);
+
+        LeverageManager newImplementation = new LeverageManager();
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, nonUpgrader, leverageManager.UPGRADER_ROLE()
+            )
+        );
+        vm.prank(nonUpgrader);
         leverageManager.upgradeToAndCall(address(newImplementation), "");
     }
 }
