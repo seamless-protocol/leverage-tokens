@@ -56,7 +56,7 @@ jobs:
           exclude: "**/*.t.sol **/test/**"
 
       - name: Run Slither Static Analysis
-        uses: crytic/slither-action@v0.4.0
+        uses: crytic/slither-action@d86660fe7e45835a0ec7b7aeb768d271fb421ea0 # Using a commit that installs stable foundry instead of nightly https://github.com/crytic/slither-action/pull/93#issuecomment-2729322988
         id: slither
         with:
           fail-on: none
