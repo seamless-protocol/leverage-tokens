@@ -68,15 +68,6 @@ contract LeverageManagerHandler is Test {
 
     StrategyStateData public strategyStateBefore;
 
-    uint256 public totalCalls;
-    mapping(string => uint256) public calls;
-
-    modifier countCall(string memory key_) {
-        totalCalls++;
-        calls[key_]++;
-        _;
-    }
-
     modifier useActor() {
         currentActor = pickActor();
         vm.startPrank(currentActor);
@@ -106,18 +97,7 @@ contract LeverageManagerHandler is Test {
         }
     }
 
-    /// @dev This function is used to print the call summary to the console, useful for debugging runs on failure
-    function callSummary() public view virtual {
-        console2.log("CALL SUMMARY");
-        console2.log("----------------------------------------------------------------------------");
-        console2.log("deposit:", calls["deposit"]);
-        console2.log("addCollateral:", calls["addCollateral"]);
-        console2.log("repayDebt:", calls["repayDebt"]);
-        console2.log("----------------------------------------------------------------------------");
-        console2.log("Total: ", totalCalls);
-    }
-
-    function deposit(uint256 seed) public useStrategy useActor countCall("deposit") {
+    function deposit(uint256 seed) public useStrategy useActor {
         uint256 equityForDeposit = _boundEquityForDeposit(currentStrategy, seed);
 
         ActionData memory preview = leverageManager.previewDeposit(currentStrategy, equityForDeposit);
@@ -135,7 +115,7 @@ contract LeverageManagerHandler is Test {
     }
 
     /// @dev Simulates someone adding collateral to the position held by the strategy directly, not through the LeverageManager.
-    function addCollateral(uint256 seed) public useStrategy countCall("addCollateral") {
+    function addCollateral(uint256 seed) public useStrategy {
         MockLendingAdapter lendingAdapter =
             MockLendingAdapter(address(leverageManager.getStrategyLendingAdapter(currentStrategy)));
         uint256 collateral = lendingAdapter.getCollateral();
@@ -154,7 +134,7 @@ contract LeverageManagerHandler is Test {
     }
 
     /// @dev Simulates someone repaying debt from the position held by the strategy directly, not through the LeverageManager.
-    function repayDebt(uint256 seed) public useStrategy countCall("repayDebt") {
+    function repayDebt(uint256 seed) public useStrategy {
         MockLendingAdapter lendingAdapter =
             MockLendingAdapter(address(leverageManager.getStrategyLendingAdapter(currentStrategy)));
         uint256 debt = lendingAdapter.getDebt();
@@ -168,7 +148,7 @@ contract LeverageManagerHandler is Test {
         lendingAdapter.repay(debtToRemove);
     }
 
-    function withdraw(uint256 seed) public useStrategy useActor countCall("withdraw") {
+    function withdraw(uint256 seed) public useStrategy useActor {
         uint256 equityForWithdraw = _boundEquityForWithdraw(currentStrategy, currentActor, seed);
 
         ActionData memory preview = leverageManager.previewWithdraw(currentStrategy, equityForWithdraw);
