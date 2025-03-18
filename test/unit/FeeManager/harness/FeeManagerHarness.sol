@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
+// Dependency imports
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 // Internal imports
 import {ExternalAction} from "src/types/DataTypes.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
@@ -16,11 +19,15 @@ contract FeeManagerHarness is FeeManager {
         }
     }
 
-    function exposed_computeFeeAdjustedShares(IStrategy strategy, uint256 amount, ExternalAction action)
+    function exposed_computeEquityFees(IStrategy strategy, uint256 equityAmount, ExternalAction action)
         external
         view
-        returns (uint256 amountAfterFee, uint256 feeAmount)
+        returns (uint256, uint256, uint256, uint256)
     {
-        return _computeFeeAdjustedShares(strategy, amount, action);
+        return _computeEquityFees(strategy, equityAmount, action);
+    }
+
+    function exposed_chargeTreasuryFee(IERC20 collateralAsset, uint256 amount) external {
+        _chargeTreasuryFee(collateralAsset, amount);
     }
 }

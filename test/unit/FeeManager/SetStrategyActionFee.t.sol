@@ -12,10 +12,6 @@ import {FeeManagerBaseTest} from "test/unit/FeeManager/FeeManagerBase.t.sol";
 import {FeeManager} from "src/FeeManager.sol";
 
 contract SetStrategyActionFeeTest is FeeManagerBaseTest {
-    function setUp() public override {
-        super.setUp();
-    }
-
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_setStrategyActionFee(IStrategy strategy, uint256 actionNum, uint256 fee) public {
         ExternalAction action = ExternalAction(actionNum % 2);

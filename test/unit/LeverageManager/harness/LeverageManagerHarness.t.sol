@@ -5,7 +5,14 @@ import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {FeeManagerHarness} from "test/unit/FeeManager/harness/FeeManagerHarness.sol";
 import {LeverageManager} from "src/LeverageManager.sol";
-import {ActionType, ExternalAction, RebalanceAction, TokenTransfer, StrategyState} from "src/types/DataTypes.sol";
+import {
+    ActionData,
+    ActionType,
+    ExternalAction,
+    RebalanceAction,
+    TokenTransfer,
+    StrategyState
+} from "src/types/DataTypes.sol";
 
 /// @notice Wrapper contract that exposes all internal functions of LeverageManager
 contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
@@ -68,8 +75,16 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
     function exposed_previewAction(IStrategy strategy, uint256 equityInCollateralAsset, ExternalAction action)
         external
         view
-        returns (uint256, uint256, uint256, uint256)
+        returns (ActionData memory)
     {
         return _previewAction(strategy, equityInCollateralAsset, action);
+    }
+
+    function exposed_computeCollateralAndDebtForAction(
+        IStrategy strategy,
+        uint256 equityInCollateralAsset,
+        ExternalAction action
+    ) external view returns (uint256 collateral, uint256 debt) {
+        return _computeCollateralAndDebtForAction(strategy, equityInCollateralAsset, action);
     }
 }

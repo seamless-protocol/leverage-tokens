@@ -39,4 +39,14 @@ contract FeeManagerBaseTest is Test {
         vm.prank(caller);
         feeManager.setStrategyActionFee(strategy, action, fee);
     }
+
+    function _setTreasuryActionFee(address caller, ExternalAction action, uint256 fee) internal {
+        vm.prank(caller);
+        feeManager.setTreasuryActionFee(action, fee);
+    }
+
+    function _setTreasury(address caller, address treasury) internal {
+        vm.prank(caller);
+        feeManager.setTreasury(treasury);
+    }
 }

@@ -378,14 +378,14 @@ contract RebalanceTest is LeverageManagerBase {
     /// @dev Performs initial deposit into ETH long strategy, amount is not important but it is important to gain some collateral and debt
     function _depositEthLong2x() internal {
         uint256 equityToDeposit = 10 ether;
-        (uint256 collateralToAdd,,,) = leverageManager.previewDeposit(ethLong2x, equityToDeposit);
+        uint256 collateralToAdd = leverageManager.previewDeposit(ethLong2x, equityToDeposit).collateral;
         _deposit(ethLong2x, user, equityToDeposit, collateralToAdd);
     }
 
     /// @dev Performs initial deposit into ETH short strategy, amount is not important but it is important to gain some collateral and debt
     function _depositEthShort2x() internal {
         uint256 equityToDeposit = 30_000 * 1e6;
-        (uint256 collateralToAdd,,,) = leverageManager.previewDeposit(ethShort2x, equityToDeposit);
+        uint256 collateralToAdd = leverageManager.previewDeposit(ethShort2x, equityToDeposit).collateral;
         _deposit(ethShort2x, user, equityToDeposit, collateralToAdd);
     }
 
@@ -398,7 +398,7 @@ contract RebalanceTest is LeverageManagerBase {
 
         vm.startPrank(_caller);
         collateralAsset.approve(address(leverageManager), _collateralToAdd);
-        (,, uint256 shares,) = leverageManager.deposit(_strategy, _equityInCollateralAsset, 0);
+        uint256 shares = leverageManager.deposit(_strategy, _equityInCollateralAsset, 0).shares;
         vm.stopPrank();
 
         return shares;

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-import {ExternalAction} from "src/types/DataTypes.sol";
+import {ActionData, ExternalAction} from "src/types/DataTypes.sol";
 import {PreviewActionTest} from "./PreviewAction.t.sol";
 
 contract PreviewDepositTest is PreviewActionTest {
@@ -9,9 +9,13 @@ contract PreviewDepositTest is PreviewActionTest {
         uint128 initialCollateral,
         uint128 initialDebtInCollateralAsset,
         uint128 sharesTotalSupply,
-        uint128 equityToAddInCollateralAsset
+        uint128 equityToAddInCollateralAsset,
+        uint16 treasuryFee
     ) public {
         initialDebtInCollateralAsset = uint128(bound(initialDebtInCollateralAsset, 0, initialCollateral));
+
+        treasuryFee = uint16(bound(treasuryFee, 0, 1e4));
+        _setTreasuryActionFee(ExternalAction.Deposit, treasuryFee);
 
         _prepareLeverageManagerStateForAction(
             MockLeverageManagerStateForAction({
@@ -21,23 +25,20 @@ contract PreviewDepositTest is PreviewActionTest {
             })
         );
 
-        (
-            uint256 expectedCollateralToAdd,
-            uint256 expectedDebtToBorrow,
-            uint256 expectedSharesAfterFee,
-            uint256 expectedSharesFee
-        ) = leverageManager.exposed_previewAction(strategy, equityToAddInCollateralAsset, ExternalAction.Deposit);
+        ActionData memory previewActionData =
+            leverageManager.exposed_previewAction(strategy, equityToAddInCollateralAsset, ExternalAction.Deposit);
 
-        (
-            uint256 actualCollateralToAdd,
-            uint256 actualDebtToBorrow,
-            uint256 actualSharesAfterFee,
-            uint256 actualSharesFee
-        ) = leverageManager.previewDeposit(strategy, equityToAddInCollateralAsset);
+        ActionData memory actualPreviewData = leverageManager.previewDeposit(strategy, equityToAddInCollateralAsset);
 
-        assertEq(actualCollateralToAdd, expectedCollateralToAdd, "Collateral to add mismatch");
-        assertEq(actualDebtToBorrow, expectedDebtToBorrow, "Debt to borrow mismatch");
-        assertEq(actualSharesAfterFee, expectedSharesAfterFee, "Shares after fee mismatch");
-        assertEq(actualSharesFee, expectedSharesFee, "Shares fee mismatch");
+        assertEq(
+            actualPreviewData.collateral,
+            previewActionData.collateral + previewActionData.treasuryFee,
+            "Collateral to add mismatch"
+        );
+        assertEq(actualPreviewData.debt, previewActionData.debt, "Debt to borrow mismatch");
+        assertEq(actualPreviewData.shares, previewActionData.shares, "Shares after fee mismatch");
+        assertEq(actualPreviewData.strategyFee, previewActionData.strategyFee, "Shares fee mismatch");
+        assertEq(actualPreviewData.treasuryFee, previewActionData.treasuryFee, "Treasury fee mismatch");
+        assertEq(actualPreviewData.equity, previewActionData.equity, "Equity mismatch");
     }
 }
