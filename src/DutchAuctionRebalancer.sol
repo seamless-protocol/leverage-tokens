@@ -17,7 +17,7 @@ contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
     using SafeERC20 for IERC20;
 
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
-    uint256 public constant BPS_DENOMINATOR = 100_00;
+    uint256 public constant PRICE_MULTIPLIER_PRECISION = 1e18;
 
     ///@notice Leverage manager contract
     ILeverageManager public immutable leverageManager;
@@ -25,8 +25,11 @@ contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
     ///@notice Duration for all auctions in seconds
     mapping(IStrategy strategy => uint256) public auctionDuration;
 
-    ///@notice Initial price premium in basis points
-    mapping(IStrategy strategy => uint256) public initialPricePremiumBps;
+    ///@notice Initial price multiplier in basis points
+    mapping(IStrategy strategy => uint256) public initialPriceMultiplier;
+
+    ///@notice Minimum price multiplier in basis points
+    mapping(IStrategy strategy => uint256) public minPriceMultiplier;
 
     ///@notice Mapping of strategy to auction
     mapping(IStrategy strategy => Auction) public auctions;
@@ -77,28 +80,27 @@ contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
     function getCurrentAuctionMultiplier(IStrategy strategy) public view returns (uint256) {
         Auction memory auction = auctions[strategy];
 
-        if (block.timestamp >= auction.endTimestamp) {
-            return 0;
-        }
-
-        uint256 elapsedTime = block.timestamp - auction.startTimestamp;
+        uint256 elapsed = block.timestamp - auction.startTimestamp;
         uint256 duration = auction.endTimestamp - auction.startTimestamp;
 
-        // Calculate exponential decay: price = initialPrice * e^(-3t/T)
-        // Where t is elapsed time and T is total duration
-        // The -3 coefficient makes it decay faster at the start
-        // We use the approximation: e^x ≈ (1 + x/n)^n where n = 10
-
-        int256 x = -3 * int256(elapsedTime) * int256(BPS_DENOMINATOR) / int256(duration);
-        uint256 base = uint256(BPS_DENOMINATOR - uint256((-x / 10))); // (1 + x/10) in basis points
-        uint256 multiplier = auction.initialPriceMultiplier;
-
-        // Calculate (1 + x/10)^10 through iteration
-        for (uint256 i = 0; i < 10; i++) {
-            multiplier = Math.mulDiv(multiplier, base, BPS_DENOMINATOR);
+        // Early return for edge cases
+        if (elapsed > duration) {
+            return auction.minPriceMultiplier;
         }
 
-        return multiplier;
+        // Calculate progress as a fixed point number with 18 decimals
+        uint256 progress = Math.mulDiv(elapsed, PRICE_MULTIPLIER_PRECISION, duration);
+
+        // Exponential decay approximation using: e^(-3x) ≈ (1-x)^4
+        uint256 base = PRICE_MULTIPLIER_PRECISION - progress; // (1-x)
+        uint256 decayFactor = Math.mulDiv(base, base, PRICE_MULTIPLIER_PRECISION); // Square it: (1-x)^2
+        decayFactor = Math.mulDiv(decayFactor, decayFactor, PRICE_MULTIPLIER_PRECISION); // Square again: (1-x)^4
+
+        // Calculate final price: min + (initial - min) * decayFactor
+        uint256 range = auction.initialPriceMultiplier - auction.minPriceMultiplier;
+        uint256 premium = Math.mulDiv(range, decayFactor, PRICE_MULTIPLIER_PRECISION);
+
+        return auction.minPriceMultiplier + premium;
     }
 
     /// @inheritdoc IDutchAuctionRebalancer
@@ -110,7 +112,7 @@ contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
             ? lendingAdapter.convertDebtToCollateralAsset(amountOut)
             : lendingAdapter.convertCollateralToDebtAsset(amountOut);
 
-        return Math.mulDiv(baseAmountIn, getCurrentAuctionMultiplier(strategy), BPS_DENOMINATOR);
+        return Math.mulDiv(baseAmountIn, getCurrentAuctionMultiplier(strategy), PRICE_MULTIPLIER_PRECISION);
     }
 
     /// @inheritdoc IDutchAuctionRebalancer
@@ -121,13 +123,19 @@ contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
     }
 
     /// @inheritdoc IDutchAuctionRebalancer
-    function setInitialPricePremium(IStrategy strategy, uint256 newPremiumBps) external onlyOwner {
-        if (newPremiumBps > BPS_DENOMINATOR) revert InvalidPricePremium();
-        initialPricePremiumBps[strategy] = newPremiumBps;
-        emit InitialPricePremiumSet(strategy, newPremiumBps);
+    function setInitialPriceMultiplier(IStrategy strategy, uint256 newMultiplier) external onlyOwner {
+        initialPriceMultiplier[strategy] = newMultiplier;
+        emit InitialPriceMultiplierSet(strategy, newMultiplier);
     }
 
     /// @inheritdoc IDutchAuctionRebalancer
+    function setMinPriceMultiplier(IStrategy strategy, uint256 newMultiplier) external onlyOwner {
+        minPriceMultiplier[strategy] = newMultiplier;
+        emit MinPriceMultiplierSet(strategy, newMultiplier);
+    }
+
+    /// @notice Creates a new auction
+    /// @param strategy Strategy to create auction for
     function createAuction(IStrategy strategy) external {
         // End current on going auction
         endAuction(strategy);
@@ -144,7 +152,8 @@ contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
 
         Auction memory auction = Auction({
             isOverCollateralized: isOverCollateralized,
-            initialPriceMultiplier: BPS_DENOMINATOR + initialPricePremiumBps[strategy],
+            initialPriceMultiplier: initialPriceMultiplier[strategy],
+            minPriceMultiplier: minPriceMultiplier[strategy],
             startTimestamp: startTimestamp,
             endTimestamp: endTimestamp
         });
@@ -174,7 +183,7 @@ contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
         if (auctions[strategy].isOverCollateralized) {
             _executeRebalanceUp(strategy, amountIn, amountOut);
         } else {
-            _executeRebalanceDown(strategy, amountIn, amountOut);
+            _executeRebalanceDown(strategy, amountOut, amountIn);
         }
 
         emit Take(strategy, msg.sender, amountIn, amountOut);

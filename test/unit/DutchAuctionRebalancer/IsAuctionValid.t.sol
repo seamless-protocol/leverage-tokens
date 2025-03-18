@@ -79,7 +79,10 @@ contract IsAuctionValidTest is DutchAuctionRebalancerTest {
 
         // Bound duration to reasonable values
         duration = bound(duration, 1 hours, 7 days);
-        _setAuctionParameters(duration, DEFAULT_PREMIUM);
+
+        // Set duration
+        vm.prank(owner);
+        auctionRebalancer.setAuctionDuration(strategy, duration);
 
         _createAuction();
 

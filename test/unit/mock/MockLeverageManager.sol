@@ -3,7 +3,6 @@ pragma solidity ^0.8.26;
 
 // Forge imports
 import {Test} from "forge-std/Test.sol";
-
 // Dependency imports
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";

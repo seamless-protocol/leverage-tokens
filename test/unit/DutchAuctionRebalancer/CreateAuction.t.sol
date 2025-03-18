@@ -3,7 +3,6 @@ pragma solidity ^0.8.26;
 
 import {DutchAuctionRebalancerTest} from "./DutchAuctionRebalancer.t.sol";
 import {IDutchAuctionRebalancer} from "src/interfaces/IDutchAuctionRebalancer.sol";
-import {CollateralRatios, StrategyState} from "src/types/DataTypes.sol";
 
 contract CreateAuctionTest is DutchAuctionRebalancerTest {
     function test_createAuction_UnderCollateralized() public {
@@ -22,7 +21,8 @@ contract CreateAuctionTest is DutchAuctionRebalancerTest {
             strategy,
             IDutchAuctionRebalancer.Auction({
                 isOverCollateralized: false,
-                initialPriceMultiplier: auctionRebalancer.initialPricePremiumBps(strategy) + 1e4, // 100% + premium
+                initialPriceMultiplier: auctionRebalancer.initialPriceMultiplier(strategy),
+                minPriceMultiplier: auctionRebalancer.minPriceMultiplier(strategy),
                 startTimestamp: AUCTION_START_TIME,
                 endTimestamp: AUCTION_START_TIME + auctionRebalancer.auctionDuration(strategy)
             })
@@ -31,11 +31,17 @@ contract CreateAuctionTest is DutchAuctionRebalancerTest {
         auctionRebalancer.createAuction(strategy);
 
         // Verify auction details
-        (bool isOverCollateralized, uint256 initialPriceMultiplier, uint256 startTimestamp, uint256 endTimestamp) =
-            auctionRebalancer.auctions(strategy);
+        (
+            bool isOverCollateralized,
+            uint256 initialPriceMultiplier,
+            uint256 minPriceMultiplier,
+            uint256 startTimestamp,
+            uint256 endTimestamp
+        ) = auctionRebalancer.auctions(strategy);
 
         assertFalse(isOverCollateralized);
-        assertEq(initialPriceMultiplier, auctionRebalancer.initialPricePremiumBps(strategy) + 1e4);
+        assertEq(initialPriceMultiplier, auctionRebalancer.initialPriceMultiplier(strategy));
+        assertEq(minPriceMultiplier, auctionRebalancer.minPriceMultiplier(strategy));
         assertEq(startTimestamp, AUCTION_START_TIME);
         assertEq(endTimestamp, AUCTION_START_TIME + auctionRebalancer.auctionDuration(strategy));
     }
@@ -53,7 +59,8 @@ contract CreateAuctionTest is DutchAuctionRebalancerTest {
             strategy,
             IDutchAuctionRebalancer.Auction({
                 isOverCollateralized: true,
-                initialPriceMultiplier: auctionRebalancer.initialPricePremiumBps(strategy) + 1e4, // 100% + premium
+                initialPriceMultiplier: auctionRebalancer.initialPriceMultiplier(strategy),
+                minPriceMultiplier: auctionRebalancer.minPriceMultiplier(strategy),
                 startTimestamp: AUCTION_START_TIME,
                 endTimestamp: AUCTION_START_TIME + auctionRebalancer.auctionDuration(strategy)
             })
@@ -62,11 +69,17 @@ contract CreateAuctionTest is DutchAuctionRebalancerTest {
         auctionRebalancer.createAuction(strategy);
 
         // Verify auction details
-        (bool isOverCollateralized, uint256 initialPriceMultiplier, uint256 startTimestamp, uint256 endTimestamp) =
-            auctionRebalancer.auctions(strategy);
+        (
+            bool isOverCollateralized,
+            uint256 initialPriceMultiplier,
+            uint256 minPriceMultiplier,
+            uint256 startTimestamp,
+            uint256 endTimestamp
+        ) = auctionRebalancer.auctions(strategy);
 
         assertTrue(isOverCollateralized);
-        assertEq(initialPriceMultiplier, auctionRebalancer.initialPricePremiumBps(strategy) + 1e4);
+        assertEq(initialPriceMultiplier, auctionRebalancer.initialPriceMultiplier(strategy));
+        assertEq(minPriceMultiplier, auctionRebalancer.minPriceMultiplier(strategy));
         assertEq(startTimestamp, AUCTION_START_TIME);
         assertEq(endTimestamp, AUCTION_START_TIME + auctionRebalancer.auctionDuration(strategy));
     }

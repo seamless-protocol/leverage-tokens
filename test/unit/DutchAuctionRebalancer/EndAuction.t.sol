@@ -20,12 +20,18 @@ contract EndAuctionTest is DutchAuctionRebalancerTest {
         auctionRebalancer.endAuction(strategy);
 
         // Verify auction was deleted
-        (bool isOverCollateralized, uint256 initialPriceMultiplier, uint256 startTimestamp, uint256 endTimestamp) =
-            auctionRebalancer.auctions(strategy);
+        (
+            bool isOverCollateralized,
+            uint256 initialPriceMultiplier,
+            uint256 minPriceMultiplier,
+            uint256 startTimestamp,
+            uint256 endTimestamp
+        ) = auctionRebalancer.auctions(strategy);
 
         assertEq(startTimestamp, 0);
         assertEq(endTimestamp, 0);
         assertEq(initialPriceMultiplier, 0);
+        assertEq(minPriceMultiplier, 0);
         assertFalse(isOverCollateralized);
     }
 
@@ -43,12 +49,18 @@ contract EndAuctionTest is DutchAuctionRebalancerTest {
         auctionRebalancer.endAuction(strategy);
 
         // Verify auction was deleted
-        (bool isOverCollateralized, uint256 initialPriceMultiplier, uint256 startTimestamp, uint256 endTimestamp) =
-            auctionRebalancer.auctions(strategy);
+        (
+            bool isOverCollateralized,
+            uint256 initialPriceMultiplier,
+            uint256 minPriceMultiplier,
+            uint256 startTimestamp,
+            uint256 endTimestamp
+        ) = auctionRebalancer.auctions(strategy);
 
         assertEq(startTimestamp, 0);
         assertEq(endTimestamp, 0);
         assertEq(initialPriceMultiplier, 0);
+        assertEq(minPriceMultiplier, 0);
         assertFalse(isOverCollateralized);
     }
 
@@ -66,12 +78,18 @@ contract EndAuctionTest is DutchAuctionRebalancerTest {
         auctionRebalancer.endAuction(strategy);
 
         // Verify auction was deleted
-        (bool isOverCollateralized, uint256 initialPriceMultiplier, uint256 startTimestamp, uint256 endTimestamp) =
-            auctionRebalancer.auctions(strategy);
+        (
+            bool isOverCollateralized,
+            uint256 initialPriceMultiplier,
+            uint256 minPriceMultiplier,
+            uint256 startTimestamp,
+            uint256 endTimestamp
+        ) = auctionRebalancer.auctions(strategy);
 
         assertEq(startTimestamp, 0);
         assertEq(endTimestamp, 0);
         assertEq(initialPriceMultiplier, 0);
+        assertEq(minPriceMultiplier, 0);
         assertFalse(isOverCollateralized);
     }
 
@@ -101,12 +119,18 @@ contract EndAuctionTest is DutchAuctionRebalancerTest {
         auctionRebalancer.endAuction(strategy);
 
         // Verify auction was deleted
-        (bool isOverCollateralized, uint256 initialPriceMultiplier, uint256 startTimestamp, uint256 endTimestamp) =
-            auctionRebalancer.auctions(strategy);
+        (
+            bool isOverCollateralized,
+            uint256 initialPriceMultiplier,
+            uint256 minPriceMultiplier,
+            uint256 startTimestamp,
+            uint256 endTimestamp
+        ) = auctionRebalancer.auctions(strategy);
 
         assertEq(startTimestamp, 0);
         assertEq(endTimestamp, 0);
         assertEq(initialPriceMultiplier, 0);
+        assertEq(minPriceMultiplier, 0);
         assertFalse(isOverCollateralized);
     }
 }

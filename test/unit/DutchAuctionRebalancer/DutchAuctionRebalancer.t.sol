@@ -17,14 +17,15 @@ import {StrategyState, CollateralRatios, RebalanceAction, TokenTransfer} from "s
 
 contract DutchAuctionRebalancerTest is Test {
     // Common constants used across tests
-    uint256 public constant BPS_DENOMINATOR = 100_00;
+    uint256 public constant BPS_DENOMINATOR = 1e18;
     uint256 public constant BASE_RATIO = 1e8; // 1.0 with 8 decimals precision
     uint256 public constant MIN_RATIO = 1e8; // 1x
     uint256 public constant MAX_RATIO = 3e8; // 3x
     uint256 public constant TARGET_RATIO = 2e8; // 2x
     uint256 public constant AUCTION_START_TIME = 1000;
     uint256 public constant DEFAULT_DURATION = 1 days;
-    uint256 public constant DEFAULT_PREMIUM = 1000; // 10%
+    uint256 public constant DEFAULT_INITIAL_PRICE_MULTIPLIER = 1.1 * 1e18;
+    uint256 public constant DEFAULT_MIN_PRICE_MULTIPLIER = 0.1 * 1e18;
 
     MockERC20 public collateralToken;
     MockERC20 public debtToken;
@@ -65,7 +66,7 @@ contract DutchAuctionRebalancerTest is Test {
         _setStrategyCollateralRatios(MIN_RATIO, MAX_RATIO, TARGET_RATIO);
 
         // Set default auction parameters
-        _setAuctionParameters(DEFAULT_DURATION, DEFAULT_PREMIUM);
+        _setAuctionParameters(DEFAULT_INITIAL_PRICE_MULTIPLIER, DEFAULT_MIN_PRICE_MULTIPLIER);
     }
 
     function test_setUp() public {
@@ -73,10 +74,11 @@ contract DutchAuctionRebalancerTest is Test {
         assertEq(auctionRebalancer.owner(), owner);
     }
 
-    function _setAuctionParameters(uint256 duration, uint256 premiumBps) internal {
+    function _setAuctionParameters(uint256 initialPriceMultiplier, uint256 minPriceMultiplier) internal {
         vm.startPrank(owner);
-        auctionRebalancer.setAuctionDuration(strategy, duration);
-        auctionRebalancer.setInitialPricePremium(strategy, premiumBps);
+        auctionRebalancer.setAuctionDuration(strategy, DEFAULT_DURATION);
+        auctionRebalancer.setInitialPriceMultiplier(strategy, initialPriceMultiplier);
+        auctionRebalancer.setMinPriceMultiplier(strategy, minPriceMultiplier);
         vm.stopPrank();
     }
 

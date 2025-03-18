@@ -12,6 +12,8 @@ interface IDutchAuctionRebalancer {
         bool isOverCollateralized;
         /// @notice Initial price multiplier for the auction
         uint256 initialPriceMultiplier;
+        /// @notice Minimum price multiplier for the auction
+        uint256 minPriceMultiplier;
         /// @notice Timestamp when auction started
         uint256 startTimestamp;
         /// @notice Timestamp when auction ends/ended
@@ -30,9 +32,6 @@ interface IDutchAuctionRebalancer {
     /// @notice Error thrown when auction duration is zero
     error InvalidAuctionDuration();
 
-    /// @notice Error thrown when price premium is greater than BPS_DENOMINATOR
-    error InvalidPricePremium();
-
     /// @notice Event emitted when new auction is created
     event AuctionCreated(IStrategy indexed strategy, Auction auction);
 
@@ -45,8 +44,11 @@ interface IDutchAuctionRebalancer {
     /// @notice Event emitted when auction duration is updated
     event AuctionDurationSet(IStrategy indexed strategy, uint256 newDuration);
 
-    /// @notice Event emitted when initial price premium is updated
-    event InitialPricePremiumSet(IStrategy indexed strategy, uint256 newPremiumBps);
+    /// @notice Event emitted when initial price multiplier is updated
+    event InitialPriceMultiplierSet(IStrategy indexed strategy, uint256 newMultiplier);
+
+    /// @notice Event emitted when minimum price multiplier is updated
+    event MinPriceMultiplierSet(IStrategy indexed strategy, uint256 newMultiplier);
 
     /// @notice Returns leverage manager
     /// @return leverageManager Leverage manager
@@ -57,10 +59,15 @@ interface IDutchAuctionRebalancer {
     /// @return auctionDuration Auction duration
     function auctionDuration(IStrategy strategy) external view returns (uint256 auctionDuration);
 
-    /// @notice Returns initial price premium in basis points
-    /// @param strategy Strategy to get premium for
-    /// @return premiumBps Initial price premium
-    function initialPricePremiumBps(IStrategy strategy) external view returns (uint256 premiumBps);
+    /// @notice Returns initial price multiplier
+    /// @param strategy Strategy to get multiplier for
+    /// @return multiplier Initial price multiplier
+    function initialPriceMultiplier(IStrategy strategy) external view returns (uint256 multiplier);
+
+    /// @notice Returns minimum price multiplier
+    /// @param strategy Strategy to get multiplier for
+    /// @return multiplier Minimum price multiplier
+    function minPriceMultiplier(IStrategy strategy) external view returns (uint256 multiplier);
 
     /// @notice Returns strategy rebalance status
     /// @param strategy Strategy to check
@@ -105,8 +112,13 @@ interface IDutchAuctionRebalancer {
     /// @param newDuration New duration in seconds
     function setAuctionDuration(IStrategy strategy, uint256 newDuration) external;
 
-    /// @notice Sets the initial price premium
-    /// @param strategy Strategy to set premium for
-    /// @param newPremiumBps New premium in basis points
-    function setInitialPricePremium(IStrategy strategy, uint256 newPremiumBps) external;
+    /// @notice Sets the initial price multiplier
+    /// @param strategy Strategy to set multiplier for
+    /// @param newMultiplier New multiplier
+    function setInitialPriceMultiplier(IStrategy strategy, uint256 newMultiplier) external;
+
+    /// @notice Sets the minimum multiplier
+    /// @param strategy Strategy to set multiplier for
+    /// @param newMultiplier New multiplier
+    function setMinPriceMultiplier(IStrategy strategy, uint256 newMultiplier) external;
 }
