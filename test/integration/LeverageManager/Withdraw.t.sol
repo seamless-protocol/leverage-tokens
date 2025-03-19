@@ -165,7 +165,7 @@ contract LeverageManagerWithdrawTest is LeverageManagerBase {
     function testFork_withdraw_withFee() public {
         uint256 fee = 10_00; // 10%
         leverageManager.setTreasuryActionFee(ExternalAction.Withdraw, fee); // 10%
-        strategy = _createNewStrategy(0, fee);
+        strategy = _createNewStrategy(BASE_RATIO, 2 * BASE_RATIO, 3 * BASE_RATIO, fee, 0);
         morphoLendingAdapter = MorphoLendingAdapter(address(leverageManager.getStrategyLendingAdapter(strategy)));
 
         uint256 equityInCollateralAsset = 10 ether;

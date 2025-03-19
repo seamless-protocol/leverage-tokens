@@ -46,7 +46,7 @@ contract LeverageManagerDepositTest is LeverageManagerBase {
     function testFork_deposit_WithFees() public {
         uint256 fee = 10_00; // 10%
         leverageManager.setTreasuryActionFee(ExternalAction.Deposit, fee);
-        strategy = _createNewStrategy(fee, 0);
+        strategy = _createNewStrategy(BASE_RATIO, 2 * BASE_RATIO, 3 * BASE_RATIO, fee, 0);
         morphoLendingAdapter = MorphoLendingAdapter(address(leverageManager.getStrategyLendingAdapter(strategy)));
 
         uint256 equityInCollateralAsset = 10 ether;
@@ -65,7 +65,13 @@ contract LeverageManagerDepositTest is LeverageManagerBase {
     }
 
     function testFork_deposit_PriceChangedBetweenDeposits_CollateralRatioDoesNotChange() public {
-        strategy = _createNewStrategy(1, 0); // 0.01% strategy fee
+        strategy = _createNewStrategy(
+            BASE_RATIO,
+            2 * BASE_RATIO,
+            3 * BASE_RATIO,
+            1, // 0.01% strategy fee
+            0
+        );
         morphoLendingAdapter = MorphoLendingAdapter(address(leverageManager.getStrategyLendingAdapter(strategy)));
 
         // Deposit again like in previous test
