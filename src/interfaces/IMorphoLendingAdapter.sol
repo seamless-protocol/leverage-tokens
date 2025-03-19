@@ -9,6 +9,16 @@ import {ILendingAdapter} from "./ILendingAdapter.sol";
 import {ILeverageManager} from "./ILeverageManager.sol";
 
 interface IMorphoLendingAdapter is ILendingAdapter {
+    /// @notice The error emitted when the lending adapter is already initialized
+    error AlreadyInitialized();
+
+    /// @notice Emitted when the lending adapter is initialized
+    event Initialized(Id indexed morphoMarketId);
+
+    /// @notice Whether the lending adapter is initialized
+    /// @return initialized Whether the lending adapter is initialized
+    function initialized() external view returns (bool initialized);
+
     /// @notice The Seamless ilm-v2 LeverageManager contract
     /// @return leverageManager The Seamless ilm-v2 LeverageManager contract
     function leverageManager() external view returns (ILeverageManager leverageManager);
@@ -31,4 +41,8 @@ interface IMorphoLendingAdapter is ILendingAdapter {
     /// @notice The Morpho core protocol contract
     /// @return morpho The Morpho core protocol contract
     function morpho() external view returns (IMorpho morpho);
+
+    /// @notice Initialize the lending adapter
+    /// @param morphoMarketId_ The ID of the Morpho market that the lending adapter manages a position in
+    function initialize(Id morphoMarketId_) external;
 }

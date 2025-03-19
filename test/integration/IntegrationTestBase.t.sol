@@ -12,6 +12,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IMorpho, Id} from "@morpho-blue/interfaces/IMorpho.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
+import {IMorphoLendingAdapterFactory} from "src/interfaces/IMorphoLendingAdapterFactory.sol";
 import {IRebalanceRewardDistributor} from "src/interfaces/IRebalanceRewardDistributor.sol";
 import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
@@ -19,6 +20,7 @@ import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
 import {BeaconProxyFactory} from "src/BeaconProxyFactory.sol";
 import {LeverageManager} from "src/LeverageManager.sol";
+import {MorphoLendingAdapterFactory} from "src/adapters/MorphoLendingAdapterFactory.sol";
 import {Strategy} from "src/Strategy.sol";
 import {LeverageManagerHarness} from "test/unit/LeverageManager/harness/LeverageManagerHarness.t.sol";
 
@@ -35,7 +37,7 @@ contract IntegrationTestBase is Test {
     address public treasury = makeAddr("treasury");
     IStrategy public strategy;
 
-    BeaconProxyFactory public morphoLendingAdapterFactory;
+    IMorphoLendingAdapterFactory public morphoLendingAdapterFactory;
     ILeverageManager public leverageManager = ILeverageManager(makeAddr("leverageManager"));
     MorphoLendingAdapter public morphoLendingAdapter;
 
@@ -54,13 +56,10 @@ contract IntegrationTestBase is Test {
         MorphoLendingAdapter morphoLendingAdapterImplementation =
             new MorphoLendingAdapter(ILeverageManager(leverageManager), MORPHO);
 
-        morphoLendingAdapterFactory = new BeaconProxyFactory(address(morphoLendingAdapterImplementation), address(this));
+        morphoLendingAdapterFactory = new MorphoLendingAdapterFactory(morphoLendingAdapterImplementation);
 
-        morphoLendingAdapter = MorphoLendingAdapter(
-            morphoLendingAdapterFactory.createProxy(
-                abi.encodeWithSelector(MorphoLendingAdapter.initialize.selector, WETH_USDC_MARKET_ID), bytes32(0)
-            )
-        );
+        morphoLendingAdapter =
+            MorphoLendingAdapter(address(morphoLendingAdapterFactory.deployAdapter(WETH_USDC_MARKET_ID, bytes32(0))));
 
         BASE_RATIO = LeverageManager(address(leverageManager)).BASE_RATIO();
 
