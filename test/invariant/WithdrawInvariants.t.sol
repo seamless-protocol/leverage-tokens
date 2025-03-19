@@ -28,6 +28,7 @@ contract WithdrawInvariants is InvariantTestBase {
 
         _assertPreviewInvariants(stateBefore, withdrawData);
         _assertCollateralRatioInvariants(stateBefore, withdrawData, stateAfter);
+        _assertWithdrawBalances(stateBefore, withdrawData, stateAfter);
     }
 
     function _assertPreviewInvariants(
@@ -86,13 +87,50 @@ contract WithdrawInvariants is InvariantTestBase {
                 );
             }
         }
+    }
+
+    function _assertWithdrawBalances(
+        LeverageManagerHandler.StrategyStateData memory stateBefore,
+        LeverageManagerHandler.WithdrawActionData memory withdrawData,
+        StrategyState memory stateAfter
+    ) internal view {
+        ILendingAdapter lendingAdapter = leverageManager.getStrategyLendingAdapter(withdrawData.strategy);
+        uint256 totalSupplyAfter = withdrawData.strategy.totalSupply();
+        uint256 collateralAfter = lendingAdapter.getCollateral();
+
+        if (stateBefore.totalSupply != totalSupplyAfter) {
+            assertLt(
+                collateralAfter,
+                stateBefore.collateral,
+                "Invariant Violated: Collateral after withdraw should be less than the initial collateral if shares were burned."
+            );
+            if (stateBefore.debt != 0) {
+                assertLe(
+                    stateAfter.debt,
+                    stateBefore.debt,
+                    "Invariant Violated: Debt after withdraw should be less than or equal to the initial debt if shares were burned."
+                );
+            }
+        } else {
+            assertEq(
+                collateralAfter,
+                stateBefore.collateral,
+                "Invariant Violated: Collateral after withdraw should not change if shares were not burned."
+            );
+            assertEq(
+                stateAfter.debt,
+                stateBefore.debt,
+                "Invariant Violated: Debt after withdraw should not change if shares were not burned."
+            );
+        }
 
         if (stateBefore.totalSupply > 0 && totalSupplyAfter == 0) {
             assertEq(
-                stateAfter.collateralRatio,
-                type(uint256).max,
-                "Invariant Violated: Collateral ratio after withdrawing all shares should be max uint256."
+                stateAfter.collateralInDebtAsset,
+                0,
+                "Invariant Violated: Collateral in debt asset after a withdraw that burned all shares should be 0."
             );
+            assertEq(stateAfter.debt, 0, "Invariant Violated: Debt after burned all shares should be 0.");
         }
     }
 }
