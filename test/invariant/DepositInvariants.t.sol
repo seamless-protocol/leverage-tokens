@@ -68,11 +68,7 @@ contract DepositInvariants is InvariantTestBase {
         LeverageManagerHandler.StrategyStateData memory stateBefore,
         StrategyState memory stateAfter
     ) internal view {
-        ILendingAdapter lendingAdapter = leverageManager.getStrategyLendingAdapter(depositData.strategy);
-
-        uint256 equityInDebtAsset = lendingAdapter.convertCollateralToDebtAsset(depositData.equityInCollateralAsset);
-        uint256 collateralAddedInDebtAsset = stateAfter.collateralInDebtAsset - stateBefore.collateralInDebtAsset;
-        uint256 debtAddedInDebtAsset = stateAfter.debt - stateBefore.debt;
+        uint256 debtAdded = stateAfter.debt - stateBefore.debt;
 
         // Empty strategy deposit
         if (stateBefore.totalSupply == 0 && stateBefore.collateralInDebtAsset == 0 && stateBefore.debt == 0) {
@@ -92,7 +88,12 @@ contract DepositInvariants is InvariantTestBase {
                 assertApproxEqRel(
                     stateAfter.collateralRatio,
                     leverageManager.getStrategyTargetCollateralRatio(depositData.strategy),
-                    _getAllowedCollateralRatioSlippage(Math.min(depositData.equityInCollateralAsset, equityInDebtAsset)),
+                    // The allowed slippage is based on the equity being deposited, as the calculation of the collateral
+                    // and debt required for the this case uses equityInCollateralAsset, and the collateral ratio is calculated
+                    // using the equityInCollateralAsset converted to debt
+                    _getAllowedCollateralRatioSlippage(
+                        Math.min(depositData.equityInCollateralAsset, depositData.equityInDebtAsset)
+                    ),
                     "Invariant Violated: Collateral ratio after deposit must be equal to the target collateral ratio, within the allowed slippage, if the strategy was initially empty."
                 );
             } else {
@@ -109,15 +110,11 @@ contract DepositInvariants is InvariantTestBase {
         // There can also be debt because minShares is set to 0 in `LeverageManagerHandler.deposit`, so a depositor can add
         // collateral and debt without receiving any shares.
         else if (stateBefore.totalSupply == 0 && stateBefore.collateralInDebtAsset > 0 && stateBefore.debt > 0) {
-            if (debtAddedInDebtAsset != 0) {
-                uint256 depositCollateralRatio = collateralAddedInDebtAsset * BASE_RATIO / debtAddedInDebtAsset;
-                assertApproxEqRel(
-                    depositCollateralRatio,
-                    leverageManager.getStrategyTargetCollateralRatio(depositData.strategy),
-                    // The allowed slippage is based on the equity being deposited, as the calculation of the collateral
-                    // and debt required for the deposit uses the equity amount, and the collateral ratio is calculated
-                    // using the equity amount denominated in the debt asset.
-                    _getAllowedCollateralRatioSlippage(Math.min(depositData.equityInCollateralAsset, equityInDebtAsset)),
+            if (debtAdded != 0) {
+                _assertDepositCollateralRatioEqualsTarget(
+                    depositData,
+                    stateBefore,
+                    stateAfter,
                     "Invariant Violated: Collateral ratio for a deposit into a strategy with zero shares, non-zero collateral, and non-zero debt must be equal to the target collateral ratio, within the allowed slippage."
                 );
             } else {
@@ -128,15 +125,11 @@ contract DepositInvariants is InvariantTestBase {
                 );
             }
         } else if (stateBefore.debt == 0) {
-            if (debtAddedInDebtAsset != 0) {
-                uint256 depositCollateralRatio = collateralAddedInDebtAsset * BASE_RATIO / debtAddedInDebtAsset;
-                assertApproxEqRel(
-                    depositCollateralRatio,
-                    leverageManager.getStrategyTargetCollateralRatio(depositData.strategy),
-                    // The allowed slippage is based on the equity being deposited, as the calculation of the collateral
-                    // and debt required for the deposit uses the equity amount, and the collateral ratio is calculated
-                    // using the equity amount denominated in the debt asset.
-                    _getAllowedCollateralRatioSlippage(Math.min(depositData.equityInCollateralAsset, equityInDebtAsset)),
+            if (debtAdded != 0) {
+                _assertDepositCollateralRatioEqualsTarget(
+                    depositData,
+                    stateBefore,
+                    stateAfter,
                     "Invariant Violated: Collateral ratio for a deposit into a strategy with non-zero collateral and zero debt must be equal to the target collateral ratio, within the allowed slippage."
                 );
             } else {
@@ -158,9 +151,32 @@ contract DepositInvariants is InvariantTestBase {
                 assertGe(
                     stateAfter.collateralRatio,
                     stateBefore.collateralRatio,
-                    "Invariant Violated: Collateral ratio after deposit must be greater than or equal to the initial collateral ratio when collateral in debt asset was 0 (the initial collateral ratio was 0)."
+                    "Invariant Violated: Collateral ratio after deposit must be greater than or equal to the initial collateral ratio when collateral in debt asset was 0 (and thus the initial collateral ratio was 0)."
                 );
             }
         }
+    }
+
+    function _assertDepositCollateralRatioEqualsTarget(
+        LeverageManagerHandler.DepositActionData memory depositData,
+        LeverageManagerHandler.StrategyStateData memory stateBefore,
+        StrategyState memory stateAfter,
+        string memory errorMessage
+    ) internal view {
+        uint256 collateralAddedInDebtAsset = stateAfter.collateralInDebtAsset - stateBefore.collateralInDebtAsset;
+        uint256 debtAddedInDebtAsset = stateAfter.debt - stateBefore.debt;
+
+        uint256 depositCollateralRatio = collateralAddedInDebtAsset * BASE_RATIO / debtAddedInDebtAsset;
+        assertApproxEqRel(
+            depositCollateralRatio,
+            leverageManager.getStrategyTargetCollateralRatio(depositData.strategy),
+            // The allowed slippage is based on the equity being deposited, as the calculation of the collateral
+            // and debt required for this case uses equityInCollateralAsset, and the collateral ratio is calculated
+            // using the equityInCollateralAsset converted to debt
+            _getAllowedCollateralRatioSlippage(
+                Math.min(depositData.equityInCollateralAsset, depositData.equityInDebtAsset)
+            ),
+            errorMessage
+        );
     }
 }

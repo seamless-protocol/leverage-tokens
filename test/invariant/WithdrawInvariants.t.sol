@@ -75,7 +75,7 @@ contract WithdrawInvariants is InvariantTestBase {
                         stateAfter.collateralRatio,
                         stateBefore.collateralRatio,
                         _getAllowedCollateralRatioSlippage(Math.min(stateBefore.collateral, stateBefore.debt)),
-                        "Invariant Violated: Collateral ratio after withdraw must be equal to the initial collateral ratio, within the allowed collateral ratio slippage."
+                        "Invariant Violated: Collateral ratio after withdraw must be equal to the initial collateral ratio, within the allowed slippage."
                     );
                 }
             } else {

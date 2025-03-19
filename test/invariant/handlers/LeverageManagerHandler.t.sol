@@ -34,6 +34,7 @@ contract LeverageManagerHandler is Test {
     struct DepositActionData {
         IStrategy strategy;
         uint256 equityInCollateralAsset;
+        uint256 equityInDebtAsset;
         ActionData preview;
     }
 
@@ -103,6 +104,7 @@ contract LeverageManagerHandler is Test {
         uint256 equityForDeposit = _boundEquityForDeposit(currentStrategy, seed);
 
         ActionData memory preview = leverageManager.previewDeposit(currentStrategy, equityForDeposit);
+        ILendingAdapter lendingAdapter = leverageManager.getStrategyLendingAdapter(currentStrategy);
 
         _saveStrategyState(
             currentStrategy,
@@ -111,6 +113,7 @@ contract LeverageManagerHandler is Test {
                 DepositActionData({
                     strategy: currentStrategy,
                     equityInCollateralAsset: equityForDeposit,
+                    equityInDebtAsset: lendingAdapter.convertCollateralToDebtAsset(equityForDeposit),
                     preview: preview
                 })
             )
