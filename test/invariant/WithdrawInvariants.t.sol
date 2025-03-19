@@ -28,7 +28,7 @@ contract WithdrawInvariants is InvariantTestBase {
 
         _assertPreviewInvariants(stateBefore, withdrawData);
         _assertCollateralRatioInvariants(stateBefore, withdrawData, stateAfter);
-        _assertWithdrawBalances(stateBefore, withdrawData, stateAfter);
+        _assertWithdrawBalanceInvariants(stateBefore, withdrawData, stateAfter);
     }
 
     function _assertPreviewInvariants(
@@ -89,7 +89,7 @@ contract WithdrawInvariants is InvariantTestBase {
         }
     }
 
-    function _assertWithdrawBalances(
+    function _assertWithdrawBalanceInvariants(
         LeverageManagerHandler.StrategyStateData memory stateBefore,
         LeverageManagerHandler.WithdrawActionData memory withdrawData,
         StrategyState memory stateAfter

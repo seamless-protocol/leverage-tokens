@@ -25,6 +25,7 @@ contract DepositInvariants is InvariantTestBase {
         ILendingAdapter lendingAdapter = leverageManager.getStrategyLendingAdapter(depositData.strategy);
 
         _assertPreviewInvariants(stateBefore, depositData);
+        _assertBalanceInvariants(stateBefore, depositData);
 
         // Check if ILendingAdapter.convertCollateralToDebtAsset(strategy collateral) will overflow. If it does, we cannot
         // check collateral ratio invariants without running into overflows, since calculating collateral ratio requires
@@ -37,6 +38,35 @@ contract DepositInvariants is InvariantTestBase {
         ) {
             StrategyState memory stateAfter = leverageManager.exposed_getStrategyState(depositData.strategy);
             _assertCollateralRatioInvariants(depositData, stateBefore, stateAfter);
+        }
+    }
+
+    function _assertBalanceInvariants(
+        LeverageManagerHandler.StrategyStateData memory stateBefore,
+        LeverageManagerHandler.DepositActionData memory depositData
+    ) internal view {
+        ILendingAdapter lendingAdapter = leverageManager.getStrategyLendingAdapter(depositData.strategy);
+        uint256 totalSupplyAfter = depositData.strategy.totalSupply();
+        uint256 collateralAfter = lendingAdapter.getCollateral();
+        uint256 equityAfter = lendingAdapter.getEquityInCollateralAsset();
+
+        if (stateBefore.totalSupply != totalSupplyAfter) {
+            assertGt(
+                collateralAfter,
+                stateBefore.collateral,
+                "Invariant Violated: Collateral after deposit should be greater than the initial collateral if shares were minted."
+            );
+            assertGt(
+                equityAfter,
+                stateBefore.equityInCollateralAsset,
+                "Invariant Violated: Equity after deposit should be greater than the initial equity if shares were minted."
+            );
+        } else {
+            assertGe(
+                equityAfter,
+                stateBefore.equityInCollateralAsset,
+                "Invariant Violated: Equity after deposit should be greater than or equal to the initial equity if shares were not minted."
+            );
         }
     }
 
@@ -80,6 +110,8 @@ contract DepositInvariants is InvariantTestBase {
         StrategyState memory stateAfter
     ) internal view {
         if (stateBefore.totalSupply == 0 && stateBefore.collateralInDebtAsset == 0 && stateBefore.debt == 0) {
+            uint256 targetCollateralRatio = leverageManager.getStrategyTargetCollateralRatio(depositData.strategy);
+
             if (depositData.equityInCollateralAsset > 0 && stateAfter.debt > 0) {
                 // For an empty strategy, the debt amount is calculated as the difference between:
                 // 1. The required collateral (determined using target ratio and the amount of equity to deposit)
@@ -95,7 +127,7 @@ contract DepositInvariants is InvariantTestBase {
                 //     collateralRatioAfterDeposit = 729 / 146 = 4.9931506849 (not the target 5e8)
                 assertApproxEqRel(
                     stateAfter.collateralRatio,
-                    leverageManager.getStrategyTargetCollateralRatio(depositData.strategy),
+                    targetCollateralRatio,
                     // The allowed slippage is based on the equity being deposited, as the calculation of the collateral
                     // and debt required for the this case uses equityInCollateralAsset, and the collateral ratio is calculated
                     // using the equityInCollateralAsset converted to debt
@@ -105,10 +137,11 @@ contract DepositInvariants is InvariantTestBase {
                     "Invariant Violated: Collateral ratio after deposit must be equal to the target collateral ratio, within the allowed slippage, if the strategy was initially empty."
                 );
             } else {
+                uint256 expectedDebt = depositData.equityInCollateralAsset * targetCollateralRatio / BASE_RATIO;
                 assertEq(
-                    stateAfter.collateralRatio,
-                    type(uint256).max,
-                    "Invariant Violated: Collateral ratio after a deposit of equity into an empty strategy that results in no debt added must be type(uint256).max."
+                    stateAfter.debt,
+                    expectedDebt,
+                    "Invariant Violated: Debt after a deposit into an empty strategy that results in no debt added must be due to rounding error causing the debt to be less than 1."
                 );
             }
         }

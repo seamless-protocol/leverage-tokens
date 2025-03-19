@@ -54,6 +54,7 @@ contract LeverageManagerHandler is Test {
         uint256 collateral;
         uint256 collateralInDebtAsset;
         uint256 debt;
+        uint256 equityInCollateralAsset;
         uint256 equityInDebtAsset;
         uint256 collateralRatio;
         uint256 totalSupply;
@@ -254,6 +255,8 @@ contract LeverageManagerHandler is Test {
         uint256 collateralInDebtAsset = lendingAdapter.convertCollateralToDebtAsset(collateral);
         uint256 debt = lendingAdapter.getDebt();
         uint256 totalSupply = strategy.totalSupply();
+        uint256 equityInCollateralAsset = lendingAdapter.getEquityInCollateralAsset();
+        uint256 equityInDebtAsset = lendingAdapter.getEquityInDebtAsset();
 
         strategyStateBefore = StrategyStateData({
             strategy: strategy,
@@ -261,7 +264,8 @@ contract LeverageManagerHandler is Test {
             collateral: collateral,
             collateralInDebtAsset: collateralInDebtAsset,
             debt: debt,
-            equityInDebtAsset: lendingAdapter.getEquityInDebtAsset(),
+            equityInCollateralAsset: equityInCollateralAsset,
+            equityInDebtAsset: equityInDebtAsset,
             collateralRatio: collateralRatio,
             totalSupply: totalSupply,
             actionData: actionData
