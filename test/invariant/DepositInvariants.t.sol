@@ -68,9 +68,17 @@ contract DepositInvariants is InvariantTestBase {
         LeverageManagerHandler.StrategyStateData memory stateBefore,
         StrategyState memory stateAfter
     ) internal view {
-        uint256 debtAdded = stateAfter.debt - stateBefore.debt;
+        _assertEmptyStrategyDepositCollateralRatio(depositData, stateBefore, stateAfter);
+        _assertZeroSupplyNonZeroCollateralAndDebtDepositCollateralRatio(depositData, stateBefore, stateAfter);
+        _assertZeroDebtDepositCollateralRatio(depositData, stateBefore, stateAfter);
+        _assertNonEmptyStrategyDepositCollateralRatio(stateBefore, stateAfter);
+    }
 
-        // Empty strategy deposit
+    function _assertEmptyStrategyDepositCollateralRatio(
+        LeverageManagerHandler.DepositActionData memory depositData,
+        LeverageManagerHandler.StrategyStateData memory stateBefore,
+        StrategyState memory stateAfter
+    ) internal view {
         if (stateBefore.totalSupply == 0 && stateBefore.collateralInDebtAsset == 0 && stateBefore.debt == 0) {
             if (depositData.equityInCollateralAsset > 0 && stateAfter.debt > 0) {
                 // For an empty strategy, the debt amount is calculated as the difference between:
@@ -104,12 +112,15 @@ contract DepositInvariants is InvariantTestBase {
                 );
             }
         }
-        // It's possible that the strategy has 0 shares but has non-zero collateral due to actors adding
-        // collateral to the underlying position held by the strategy (directly, not through LeverageManager.deposit)
-        // before any shares are minted.
-        // There can also be debt because minShares is set to 0 in `LeverageManagerHandler.deposit`, so a depositor can add
-        // collateral and debt without receiving any shares.
-        else if (stateBefore.totalSupply == 0 && stateBefore.collateralInDebtAsset > 0 && stateBefore.debt > 0) {
+    }
+
+    function _assertZeroSupplyNonZeroCollateralAndDebtDepositCollateralRatio(
+        LeverageManagerHandler.DepositActionData memory depositData,
+        LeverageManagerHandler.StrategyStateData memory stateBefore,
+        StrategyState memory stateAfter
+    ) internal view {
+        uint256 debtAdded = stateAfter.debt - stateBefore.debt;
+        if (stateBefore.totalSupply == 0 && stateBefore.collateralInDebtAsset > 0 && stateBefore.debt > 0) {
             if (debtAdded != 0) {
                 _assertDepositCollateralRatioEqualsTarget(
                     depositData,
@@ -124,13 +135,22 @@ contract DepositInvariants is InvariantTestBase {
                     "Invariant Violated: Collateral ratio for a deposit into a strategy with zero shares, non-zero collateral, and non-zero debt must be greater than or equal to the initial collateral ratio if no debt was added."
                 );
             }
-        } else if (stateBefore.debt == 0) {
+        }
+    }
+
+    function _assertZeroDebtDepositCollateralRatio(
+        LeverageManagerHandler.DepositActionData memory depositData,
+        LeverageManagerHandler.StrategyStateData memory stateBefore,
+        StrategyState memory stateAfter
+    ) internal view {
+        if (stateBefore.debt == 0) {
+            uint256 debtAdded = stateAfter.debt - stateBefore.debt;
             if (debtAdded != 0) {
                 _assertDepositCollateralRatioEqualsTarget(
                     depositData,
                     stateBefore,
                     stateAfter,
-                    "Invariant Violated: Collateral ratio for a deposit into a strategy with non-zero collateral and zero debt must be equal to the target collateral ratio, within the allowed slippage."
+                    "Invariant Violated: Collateral ratio for a deposit into a strategy with zero debt must be equal to the target collateral ratio, within the allowed slippage."
                 );
             } else {
                 assertEq(
@@ -139,21 +159,30 @@ contract DepositInvariants is InvariantTestBase {
                     "Invariant Violated: Collateral ratio after a deposit with zero debt added must be type(uint256).max."
                 );
             }
+        }
+    }
+
+    function _assertNonEmptyStrategyDepositCollateralRatio(
+        LeverageManagerHandler.StrategyStateData memory stateBefore,
+        StrategyState memory stateAfter
+    ) internal pure {
+        if (stateBefore.totalSupply == 0 || stateBefore.debt == 0) {
+            return;
+        }
+
+        if (stateBefore.collateralInDebtAsset > 0) {
+            assertApproxEqRel(
+                stateAfter.collateralRatio,
+                stateBefore.collateralRatio,
+                _getAllowedCollateralRatioSlippage(Math.min(stateBefore.collateral, stateBefore.debt)),
+                "Invariant Violated: Collateral ratio after deposit must be equal to the initial collateral ratio, within the allowed collateral ratio slippage."
+            );
         } else {
-            if (stateBefore.collateralInDebtAsset > 0) {
-                assertApproxEqRel(
-                    stateAfter.collateralRatio,
-                    stateBefore.collateralRatio,
-                    _getAllowedCollateralRatioSlippage(Math.min(stateBefore.collateral, stateBefore.debt)),
-                    "Invariant Violated: Collateral ratio after deposit must be equal to the initial collateral ratio, within the allowed collateral ratio slippage."
-                );
-            } else {
-                assertGe(
-                    stateAfter.collateralRatio,
-                    stateBefore.collateralRatio,
-                    "Invariant Violated: Collateral ratio after deposit must be greater than or equal to the initial collateral ratio when collateral in debt asset was 0 (and thus the initial collateral ratio was 0)."
-                );
-            }
+            assertGe(
+                stateAfter.collateralRatio,
+                stateBefore.collateralRatio,
+                "Invariant Violated: Collateral ratio after deposit must be greater than or equal to the initial collateral ratio when collateral in debt asset was 0 (and thus the initial collateral ratio was 0)."
+            );
         }
     }
 
