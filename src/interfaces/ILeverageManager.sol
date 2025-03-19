@@ -30,6 +30,10 @@ interface ILeverageManager is IFeeManager {
         IRebalanceRewardDistributor rebalanceRewardDistributor;
         /// @dev Whitelist module for strategy, if not set rebalance is open for everybody
         IRebalanceWhitelist rebalanceWhitelist;
+        /// @dev Strategy fee for deposit action
+        uint256 strategyDepositFee;
+        /// @dev Strategy fee for withdraw action
+        uint256 strategyWithdrawFee;
     }
 
     /// @notice Error thrown when someone tries to create strategy with lending adapter that already exists

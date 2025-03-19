@@ -18,10 +18,6 @@ import {CollateralRatios} from "src/types/DataTypes.sol";
 import {Strategy} from "src/Strategy.sol";
 
 contract CreateNewStrategyTest is LeverageManagerBaseTest {
-    function setUp() public override {
-        super.setUp();
-    }
-
     function testFuzz_CreateNewStrategy(
         ILeverageManager.StrategyConfig memory config,
         address collateralAsset,
@@ -33,6 +29,8 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
         config.minCollateralRatio = bound(config.minCollateralRatio, _BASE_RATIO(), config.targetCollateralRatio - 1);
         config.maxCollateralRatio =
             bound(config.maxCollateralRatio, config.targetCollateralRatio + 1, type(uint256).max);
+        config.strategyDepositFee = bound(config.strategyDepositFee, 0, _MAX_FEE());
+        config.strategyWithdrawFee = bound(config.strategyWithdrawFee, 0, _MAX_FEE());
 
         address expectedStrategyAddress = strategyTokenFactory.computeProxyAddress(
             address(leverageManager),
@@ -84,6 +82,8 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
         config.minCollateralRatio = bound(config.minCollateralRatio, _BASE_RATIO(), config.targetCollateralRatio - 1);
         config.maxCollateralRatio =
             bound(config.maxCollateralRatio, config.targetCollateralRatio + 1, type(uint256).max);
+        config.strategyDepositFee = bound(config.strategyDepositFee, 0, _MAX_FEE());
+        config.strategyWithdrawFee = bound(config.strategyWithdrawFee, 0, _MAX_FEE());
 
         _createNewStrategy(manager, config, collateralAsset, debtAsset, name, symbol);
 

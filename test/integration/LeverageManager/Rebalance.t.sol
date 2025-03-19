@@ -59,7 +59,9 @@ contract RebalanceTest is LeverageManagerBase {
                 targetCollateralRatio: 2 * BASE_RATIO, // 2x
                 maxCollateralRatio: 22 * BASE_RATIO / 10, // 2.2x
                 rebalanceRewardDistributor: IRebalanceRewardDistributor(address(mockRebalanceRewardDistributor)),
-                rebalanceWhitelist: IRebalanceWhitelist(address(0))
+                rebalanceWhitelist: IRebalanceWhitelist(address(0)),
+                strategyDepositFee: 0,
+                strategyWithdrawFee: 0
             }),
             "Seamless ETH/USDC 2x leverage token",
             "ltETH/USDC-2x"
@@ -72,7 +74,9 @@ contract RebalanceTest is LeverageManagerBase {
                 targetCollateralRatio: 15 * BASE_RATIO / 10, // 1.5x
                 maxCollateralRatio: 2 * BASE_RATIO, // 2x
                 rebalanceRewardDistributor: IRebalanceRewardDistributor(address(mockRebalanceRewardDistributor)),
-                rebalanceWhitelist: IRebalanceWhitelist(address(0))
+                rebalanceWhitelist: IRebalanceWhitelist(address(0)),
+                strategyDepositFee: 0,
+                strategyWithdrawFee: 0
             }),
             "Seamless USDC/ETH 2x leverage token",
             "ltUSDC/ETH-2x"

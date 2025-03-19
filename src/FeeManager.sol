@@ -14,8 +14,9 @@ import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 
 contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
-    // Max fee that can be set, 100_00 is 100%
+    /// @inheritdoc IFeeManager
     uint256 public constant MAX_FEE = 100_00;
+
     bytes32 public constant FEE_MANAGER_ROLE = keccak256("FEE_MANAGER_ROLE");
 
     /// @dev Struct containing all state for the FeeManager contract
@@ -26,7 +27,7 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
         /// @dev Treasury fee for each action
         mapping(ExternalAction action => uint256) treasuryActionFee;
         /// @dev Strategy fee for each action
-        mapping(ExternalAction action => uint256) strategyActionFee;
+        mapping(IStrategy strategy => mapping(ExternalAction action => uint256)) strategyActionFee;
     }
 
     function _getFeeManagerStorage() internal pure returns (FeeManagerStorage storage $) {
@@ -47,8 +48,8 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
     function __FeeManager_init_unchained() internal onlyInitializing {}
 
     /// @inheritdoc IFeeManager
-    function getStrategyActionFee(ExternalAction action) public view returns (uint256 fee) {
-        return _getFeeManagerStorage().strategyActionFee[action];
+    function getStrategyActionFee(IStrategy strategy, ExternalAction action) public view returns (uint256 fee) {
+        return _getFeeManagerStorage().strategyActionFee[strategy][action];
     }
 
     /// @inheritdoc IFeeManager
@@ -60,19 +61,8 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
     function getTreasuryActionFee(ExternalAction action) public view returns (uint256 fee) {
         return _getFeeManagerStorage().treasuryActionFee[action];
     }
-
     /// @inheritdoc IFeeManager
-    function setStrategyActionFee(ExternalAction action, uint256 fee) external onlyRole(FEE_MANAGER_ROLE) {
-        // Check if fees are not higher than 100%
-        if (fee > MAX_FEE) {
-            revert FeeTooHigh(fee, MAX_FEE);
-        }
 
-        _getFeeManagerStorage().strategyActionFee[action] = fee;
-        emit StrategyActionFeeSet(action, fee);
-    }
-
-    /// @inheritdoc IFeeManager
     function setTreasury(address treasury) external onlyRole(FEE_MANAGER_ROLE) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
         $.treasury = treasury;
@@ -103,6 +93,7 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
     }
 
     /// @notice Computes equity fees based on action
+    /// @param strategy Strategy to compute fees for
     /// @param equity Amount of equity to compute fees for, denominated in collateral asset
     /// @param action Action to compute fees for, Deposit or Withdraw
     /// @return equityToCover Equity to add / remove from the strategy after fees, denominated in collateral asset
@@ -112,14 +103,14 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
     /// @dev Fees are always rounded up.
     /// @dev If the sum of the strategy fee and the treasury fee is greater than the amount,
     ///      the strategy fee is set to the delta of the amount and the treasury fee.
-    function _computeEquityFees(uint256 equity, ExternalAction action)
+    function _computeEquityFees(IStrategy strategy, uint256 equity, ExternalAction action)
         internal
         view
         returns (uint256, uint256, uint256, uint256)
     {
         // A treasury fee is only applied if the treasury is set
         uint256 treasuryFee = Math.mulDiv(equity, getTreasuryActionFee(action), MAX_FEE, Math.Rounding.Ceil);
-        uint256 strategyFee = Math.mulDiv(equity, getStrategyActionFee(action), MAX_FEE, Math.Rounding.Ceil);
+        uint256 strategyFee = Math.mulDiv(equity, getStrategyActionFee(strategy, action), MAX_FEE, Math.Rounding.Ceil);
 
         // If the sum of the strategy fee and the treasury fee is greater than the equity amount,
         // the strategy fee is set to the delta of the equity amount and the treasury fee.
@@ -154,5 +145,20 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
         if (treasury != address(0)) {
             SafeERC20.safeTransfer(collateralAsset, treasury, amount);
         }
+    }
+
+    /// @notice Sets strategy fee for specific action
+    /// @param strategy Strategy to set fee for
+    /// @param action Action to set fee for
+    /// @param fee Fee for action, 100_00 is 100%
+    /// @dev If caller tries to set fee above 100% it reverts with FeeTooHigh error
+    function _setStrategyActionFee(IStrategy strategy, ExternalAction action, uint256 fee) internal {
+        // Check if fees are not higher than 100%
+        if (fee > MAX_FEE) {
+            revert FeeTooHigh(fee, MAX_FEE);
+        }
+
+        _getFeeManagerStorage().strategyActionFee[strategy][action] = fee;
+        emit StrategyActionFeeSet(strategy, action, fee);
     }
 }

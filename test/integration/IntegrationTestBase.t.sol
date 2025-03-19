@@ -76,7 +76,9 @@ contract IntegrationTestBase is Test {
                 targetCollateralRatio: 2 * BASE_RATIO,
                 maxCollateralRatio: 3 * BASE_RATIO,
                 rebalanceRewardDistributor: IRebalanceRewardDistributor(address(0)),
-                rebalanceWhitelist: IRebalanceWhitelist(address(0))
+                rebalanceWhitelist: IRebalanceWhitelist(address(0)),
+                strategyDepositFee: 0,
+                strategyWithdrawFee: 0
             }),
             "Seamless ETH/USDC 2x leverage token",
             "ltETH/USDC-2x"
@@ -113,5 +115,29 @@ contract IntegrationTestBase is Test {
             strategy.totalSupply() + 1,
             Math.Rounding.Floor
         );
+    }
+
+    function _createNewStrategy(uint256 depositFee, uint256 withdrawFee) internal returns (IStrategy) {
+        ILendingAdapter lendingAdapter = ILendingAdapter(
+            morphoLendingAdapterFactory.createProxy(
+                abi.encodeWithSelector(MorphoLendingAdapter.initialize.selector, WETH_USDC_MARKET_ID),
+                keccak256(abi.encode(vm.randomUint()))
+            )
+        );
+        IStrategy _strategy = leverageManager.createNewStrategy(
+            ILeverageManager.StrategyConfig({
+                lendingAdapter: lendingAdapter,
+                minCollateralRatio: BASE_RATIO,
+                targetCollateralRatio: 2 * BASE_RATIO,
+                maxCollateralRatio: 3 * BASE_RATIO,
+                rebalanceRewardDistributor: IRebalanceRewardDistributor(address(0)),
+                rebalanceWhitelist: IRebalanceWhitelist(address(0)),
+                strategyDepositFee: depositFee,
+                strategyWithdrawFee: withdrawFee
+            }),
+            "Seamless ETH/USDC 2x leverage token",
+            "ltETH/USDC-2x"
+        );
+        return _strategy;
     }
 }

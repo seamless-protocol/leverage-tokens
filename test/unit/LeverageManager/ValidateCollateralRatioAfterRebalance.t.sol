@@ -23,7 +23,9 @@ contract ValidateCollateralRatioAfterRebalance is LeverageManagerBaseTest {
                 minCollateralRatio: _BASE_RATIO() + 1,
                 maxCollateralRatio: 2 * _BASE_RATIO() + 1,
                 rebalanceRewardDistributor: IRebalanceRewardDistributor(address(0)),
-                rebalanceWhitelist: IRebalanceWhitelist(address(0))
+                rebalanceWhitelist: IRebalanceWhitelist(address(0)),
+                strategyDepositFee: 0,
+                strategyWithdrawFee: 0
             }),
             "",
             ""

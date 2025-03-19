@@ -31,7 +31,9 @@ contract ValidateRebalanceEligibility is LeverageManagerBaseTest {
                 maxCollateralRatio: maxRatio,
                 targetCollateralRatio: targetRatio,
                 rebalanceRewardDistributor: IRebalanceRewardDistributor(address(0)),
-                rebalanceWhitelist: IRebalanceWhitelist(address(0))
+                rebalanceWhitelist: IRebalanceWhitelist(address(0)),
+                strategyDepositFee: 0,
+                strategyWithdrawFee: 0
             }),
             "Strategy",
             "STR"

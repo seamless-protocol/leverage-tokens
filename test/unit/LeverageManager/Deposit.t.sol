@@ -27,7 +27,7 @@ contract DepositTest is PreviewActionTest {
     }
 
     function test_deposit_WithFees() public {
-        _setStrategyActionFee(ExternalAction.Deposit, 0.05e4); // 5% fee
+        leverageManager.exposed_setStrategyActionFee(strategy, ExternalAction.Deposit, 0.05e4); // 5% fee
         _setTreasuryActionFee(ExternalAction.Deposit, 0.1e4); // 10% fee
 
         MockLeverageManagerStateForAction memory beforeState =

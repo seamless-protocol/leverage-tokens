@@ -24,7 +24,9 @@ contract PreviewActionTest is LeverageManagerBaseTest {
                 maxCollateralRatio: 3 * _BASE_RATIO(),
                 targetCollateralRatio: 2 * _BASE_RATIO(), // 2x leverage
                 rebalanceRewardDistributor: IRebalanceRewardDistributor(address(0)),
-                rebalanceWhitelist: IRebalanceWhitelist(address(0))
+                rebalanceWhitelist: IRebalanceWhitelist(address(0)),
+                strategyDepositFee: 0,
+                strategyWithdrawFee: 0
             }),
             address(collateralToken),
             address(debtToken),
@@ -34,8 +36,8 @@ contract PreviewActionTest is LeverageManagerBaseTest {
     }
 
     function test_previewAction_WithFee() public {
-        _setStrategyActionFee(ExternalAction.Deposit, 0.05e4); // 5% fee
-        _setStrategyActionFee(ExternalAction.Withdraw, 0.05e4); // 5% fee
+        leverageManager.exposed_setStrategyActionFee(strategy, ExternalAction.Deposit, 0.05e4); // 5% fee
+        leverageManager.exposed_setStrategyActionFee(strategy, ExternalAction.Withdraw, 0.05e4); // 5% fee
 
         // 1:2 exchange rate
         lendingAdapter.mockConvertCollateralToDebtAssetExchangeRate(2e8);
@@ -64,8 +66,8 @@ contract PreviewActionTest is LeverageManagerBaseTest {
     }
 
     function test_previewAction_WithFee_ZeroSharesForEquity() public {
-        _setStrategyActionFee(ExternalAction.Deposit, 0.05e4); // 5% fee
-        _setStrategyActionFee(ExternalAction.Withdraw, 0.05e4); // 5% fee
+        leverageManager.exposed_setStrategyActionFee(strategy, ExternalAction.Deposit, 0.05e4); // 5% fee
+        leverageManager.exposed_setStrategyActionFee(strategy, ExternalAction.Withdraw, 0.05e4); // 5% fee
 
         // 1:2 exchange rate
         lendingAdapter.mockConvertCollateralToDebtAssetExchangeRate(2e8);
@@ -176,7 +178,7 @@ contract PreviewActionTest is LeverageManagerBaseTest {
     ) public {
         ExternalAction action = ExternalAction(actionNum % 2);
         fee = uint16(bound(fee, 0, 1e4)); // 0% to 100% fee
-        _setStrategyActionFee(action, fee);
+        leverageManager.exposed_setStrategyActionFee(strategy, action, fee);
 
         initialDebtInCollateralAsset = uint128(bound(initialDebtInCollateralAsset, 0, initialCollateral));
 
@@ -218,7 +220,7 @@ contract PreviewActionTest is LeverageManagerBaseTest {
                 uint256 equityForSharesAfterFees,
                 uint256 strategyFee,
                 uint256 treasuryFee
-            ) = leverageManager.exposed_computeEquityFees(equityInCollateralAsset, action);
+            ) = leverageManager.exposed_computeEquityFees(strategy, equityInCollateralAsset, action);
 
             (uint256 collateralForStrategy, uint256 debtForStrategy) =
                 leverageManager.exposed_computeCollateralAndDebtForAction(strategy, equityForStrategyAfterFees, action);

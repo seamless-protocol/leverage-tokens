@@ -61,7 +61,9 @@ contract ValidateIsAllowedToRebalance is LeverageManagerBaseTest {
                 maxCollateralRatio: 3e8,
                 targetCollateralRatio: 2e8,
                 rebalanceRewardDistributor: IRebalanceRewardDistributor(address(0)),
-                rebalanceWhitelist: whitelist
+                rebalanceWhitelist: whitelist,
+                strategyDepositFee: 0,
+                strategyWithdrawFee: 0
             }),
             "",
             ""

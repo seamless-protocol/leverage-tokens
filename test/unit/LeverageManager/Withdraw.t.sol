@@ -11,7 +11,7 @@ import {PreviewActionTest} from "./PreviewAction.t.sol";
 
 contract WithdrawTest is PreviewActionTest {
     function test_withdraw_WithFees() public {
-        _setStrategyActionFee(ExternalAction.Withdraw, 0.05e4); // 5% fee
+        leverageManager.exposed_setStrategyActionFee(strategy, ExternalAction.Withdraw, 0.05e4); // 5% fee
         _setTreasuryActionFee(ExternalAction.Withdraw, 0.05e4); // 5% fee
 
         // 1:2 exchange rate
@@ -72,7 +72,7 @@ contract WithdrawTest is PreviewActionTest {
         initialDebtInCollateralAsset = uint128(bound(initialDebtInCollateralAsset, 0, initialCollateral));
         sharesTotalSupply = uint128(bound(sharesTotalSupply, 1, type(uint128).max));
 
-        _setStrategyActionFee(ExternalAction.Withdraw, strategyFee);
+        leverageManager.exposed_setStrategyActionFee(strategy, ExternalAction.Withdraw, strategyFee);
         _setTreasuryActionFee(ExternalAction.Withdraw, treasuryFee);
 
         vm.assume(initialCollateral > initialDebtInCollateralAsset);
@@ -97,7 +97,7 @@ contract WithdrawTest is PreviewActionTest {
     ) public {
         strategyFee = uint16(bound(strategyFee, 0, 1e4));
         treasuryFee = uint16(bound(treasuryFee, 0, 1e4));
-        _setStrategyActionFee(ExternalAction.Withdraw, strategyFee);
+        leverageManager.exposed_setStrategyActionFee(strategy, ExternalAction.Withdraw, strategyFee);
         _setTreasuryActionFee(ExternalAction.Withdraw, treasuryFee);
 
         // Bound debt to be lower than collateral asset and share total supply to be greater than 0 otherwise withdraw can not work

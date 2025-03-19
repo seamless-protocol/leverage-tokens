@@ -38,7 +38,9 @@ contract RebalanceTest is LeverageManagerBaseTest {
                 maxCollateralRatio: 25 * _BASE_RATIO() / 10, // 2.5x leverage
                 targetCollateralRatio: 2 * _BASE_RATIO(), // 2x leverage
                 rebalanceRewardDistributor: IRebalanceRewardDistributor(address(rewardDistributor)),
-                rebalanceWhitelist: IRebalanceWhitelist(address(0))
+                rebalanceWhitelist: IRebalanceWhitelist(address(0)),
+                strategyDepositFee: 0,
+                strategyWithdrawFee: 0
             }),
             address(WETH),
             address(USDC),
@@ -163,7 +165,9 @@ contract RebalanceTest is LeverageManagerBaseTest {
                 maxCollateralRatio: 16 * _BASE_RATIO() / 10, // 3.5x leverage
                 targetCollateralRatio: 15 * _BASE_RATIO() / 10, // 3x leverage which means 2x price exposure
                 rebalanceRewardDistributor: IRebalanceRewardDistributor(address(rewardDistributor)),
-                rebalanceWhitelist: IRebalanceWhitelist(address(0))
+                rebalanceWhitelist: IRebalanceWhitelist(address(0)),
+                strategyDepositFee: 0,
+                strategyWithdrawFee: 0
             }),
             "ETH Short 2x",
             "ETHS2x"

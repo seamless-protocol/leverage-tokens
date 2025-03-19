@@ -152,6 +152,9 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         _getLeverageManagerStorage().config[strategy] = strategyConfig;
         _getLeverageManagerStorage().isLendingAdapterUsed[address(strategyConfig.lendingAdapter)] = true;
 
+        _setStrategyActionFee(strategy, ExternalAction.Deposit, strategyConfig.strategyDepositFee);
+        _setStrategyActionFee(strategy, ExternalAction.Withdraw, strategyConfig.strategyWithdrawFee);
+
         emit StrategyCreated(
             strategy,
             strategyConfig.lendingAdapter.getCollateralAsset(),
@@ -446,7 +449,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         returns (ActionData memory data)
     {
         (uint256 equityToCover, uint256 equityForShares, uint256 strategyFee, uint256 treasuryFee) =
-            _computeEquityFees(equityInCollateralAsset, action);
+            _computeEquityFees(strategy, equityInCollateralAsset, action);
 
         uint256 shares = _convertToShares(strategy, equityForShares);
 
