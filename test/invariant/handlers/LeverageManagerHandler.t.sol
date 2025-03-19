@@ -3,7 +3,6 @@ pragma solidity ^0.8.26;
 
 // Forge imports
 import {Test} from "forge-std/Test.sol";
-import {console2} from "forge-std/console2.sol";
 
 // Dependency imports
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
@@ -24,7 +23,8 @@ contract LeverageManagerHandler is Test {
         Deposit,
         AddCollateral,
         RepayDebt,
-        Withdraw
+        Withdraw,
+        UpdateOraclePrice
     }
 
     struct AddCollateralActionData {
@@ -32,6 +32,7 @@ contract LeverageManagerHandler is Test {
     }
 
     struct DepositActionData {
+        IStrategy strategy;
         uint256 equityInCollateralAsset;
         ActionData preview;
     }
@@ -41,6 +42,7 @@ contract LeverageManagerHandler is Test {
     }
 
     struct WithdrawActionData {
+        IStrategy strategy;
         uint256 equityInCollateralAsset;
         ActionData preview;
     }
@@ -105,7 +107,13 @@ contract LeverageManagerHandler is Test {
         _saveStrategyState(
             currentStrategy,
             ActionType.Deposit,
-            abi.encode(DepositActionData({equityInCollateralAsset: equityForDeposit, preview: preview}))
+            abi.encode(
+                DepositActionData({
+                    strategy: currentStrategy,
+                    equityInCollateralAsset: equityForDeposit,
+                    preview: preview
+                })
+            )
         );
 
         IERC20 collateralAsset = leverageManager.getStrategyCollateralAsset(currentStrategy);
@@ -156,13 +164,30 @@ contract LeverageManagerHandler is Test {
         _saveStrategyState(
             currentStrategy,
             ActionType.Withdraw,
-            abi.encode(WithdrawActionData({equityInCollateralAsset: equityForWithdraw, preview: preview}))
+            abi.encode(
+                WithdrawActionData({
+                    strategy: currentStrategy,
+                    equityInCollateralAsset: equityForWithdraw,
+                    preview: preview
+                })
+            )
         );
 
         IERC20 debtAsset = leverageManager.getStrategyDebtAsset(currentStrategy);
         deal(address(debtAsset), currentActor, type(uint256).max);
         debtAsset.approve(address(leverageManager), type(uint256).max);
         leverageManager.withdraw(currentStrategy, equityForWithdraw, currentStrategy.balanceOf(currentActor));
+    }
+
+    /// @dev Simulates updates to the oracle used by the lending adapter of a strategy
+    function updateOraclePrice(uint256 seed) public useStrategy {
+        MockLendingAdapter lendingAdapter =
+            MockLendingAdapter(address(leverageManager.getStrategyLendingAdapter(currentStrategy)));
+
+        uint256 newExchangeRate = bound(seed, 0, type(uint256).max);
+        lendingAdapter.mockConvertCollateralToDebtAssetExchangeRate(newExchangeRate);
+
+        _saveStrategyState(currentStrategy, ActionType.UpdateOraclePrice, "");
     }
 
     function convertToAssets(IStrategy strategy, uint256 shares) public view returns (uint256) {
@@ -200,9 +225,9 @@ contract LeverageManagerHandler is Test {
         uint256 collateralRatioForDeposit = shouldFollowTargetRatio
             ? leverageManager.getStrategyTargetCollateralRatio(strategy)
             : stateBefore.collateralRatio;
-        uint256 maxEquity = Math.mulDiv(
-            maxCollateralAmount, collateralRatioForDeposit - BASE_RATIO, collateralRatioForDeposit, Math.Rounding.Floor
-        );
+
+        // Divide first to avoid overflow
+        uint256 maxEquity = (maxCollateralAmount / collateralRatioForDeposit) * (collateralRatioForDeposit - BASE_RATIO);
 
         // Divide max equity by a random number between 2 and 100000 to split deposits up more among calls
         uint256 equityDivisor = bound(seed, 2, 100000);

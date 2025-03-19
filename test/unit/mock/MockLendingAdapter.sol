@@ -37,15 +37,11 @@ contract MockLendingAdapter {
     }
 
     function convertCollateralToDebtAsset(uint256 amount) external view returns (uint256) {
-        return collateralToDebtAssetExchangeRate > 0
-            ? Math.mulDiv(amount, collateralToDebtAssetExchangeRate, BASE_EXCHANGE_RATE, Math.Rounding.Floor)
-            : amount;
+        return Math.mulDiv(amount, collateralToDebtAssetExchangeRate, BASE_EXCHANGE_RATE, Math.Rounding.Floor);
     }
 
     function convertDebtToCollateralAsset(uint256 amount) public view returns (uint256) {
-        return collateralToDebtAssetExchangeRate > 0
-            ? Math.mulDiv(amount, BASE_EXCHANGE_RATE, collateralToDebtAssetExchangeRate, Math.Rounding.Ceil)
-            : amount;
+        return Math.mulDiv(amount, BASE_EXCHANGE_RATE, collateralToDebtAssetExchangeRate, Math.Rounding.Ceil);
     }
 
     function getEquityInCollateralAsset() external view returns (uint256) {
@@ -81,6 +77,10 @@ contract MockLendingAdapter {
     }
 
     function borrow(uint256 amount) external {
+        if (getCollateralInDebtAsset() <= getDebt()) {
+            revert("Undercollateralized borrow");
+        }
+
         debt += amount;
         debtAsset.mint(msg.sender, amount);
     }

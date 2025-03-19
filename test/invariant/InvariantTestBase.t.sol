@@ -66,11 +66,12 @@ abstract contract InvariantTestBase is Test {
     }
 
     function _fuzzedSelectors() internal pure returns (bytes4[] memory) {
-        bytes4[] memory selectors = new bytes4[](4);
+        bytes4[] memory selectors = new bytes4[](5);
         selectors[0] = LeverageManagerHandler.deposit.selector;
         selectors[1] = LeverageManagerHandler.withdraw.selector;
         selectors[2] = LeverageManagerHandler.addCollateral.selector;
         selectors[3] = LeverageManagerHandler.repayDebt.selector;
+        selectors[4] = LeverageManagerHandler.updateOraclePrice.selector;
         return selectors;
     }
 
@@ -129,8 +130,9 @@ abstract contract InvariantTestBase is Test {
     }
 
     /// @dev The allowed slippage in collateral ratio of the strategy after a deposit should scale with the size of the
-    /// initial debt in the strategy, as smaller strategies may incur a higher collateral ratio delta after the
-    /// deposit due to rounding.
+    /// min(initial debt in the strategy, initial collateral in the strategy), or equity being added in cases where the
+    /// target ratio should be used, as smaller strategies may incur a higher collateral ratio delta after the deposit due to
+    /// rounding.
     ///
     /// For example, if the initial collateral is 3 and the initial debt is 1 (with collateral and debt normalized) then the
     /// collateral ratio is 300000000, with 2 shares total supply. If a deposit of 1 equity is made, then the required collateral
@@ -156,22 +158,22 @@ abstract contract InvariantTestBase is Test {
     ///
     /// Note: We can at minimum support up to 0.00000001e18 (0.000001% slippage) due to the base collateral ratio
     ///       being 1e8
-    function _getAllowedCollateralRatioSlippage(uint256 initialDebt)
+    function _getAllowedCollateralRatioSlippage(uint256 amount)
         internal
         pure
         returns (uint256 allowedSlippagePercentage)
     {
-        if (initialDebt == 0) {
+        if (amount == 0) {
             return 1e18;
         }
 
-        uint256 i = Math.log10(initialDebt);
+        uint256 i = Math.log10(amount);
 
         // This is the minimum slippage that we can support due to the precision of the collateral ratio being
         // 1e8 (1e18 / 1e8 = 1e10 = 0.00000001e18)
         if (i > 8) return 0.00000001e18;
 
-        // If i <= 1, that means initialDebt < 100, thus slippage = 1e18
+        // If i <= 1, that means amount < 100, thus slippage = 1e18
         // Otherwise slippage = 1e18 / (10^(i - 1))
         return (i <= 1) ? 1e18 : (1e18 / (10 ** (i - 1)));
     }

@@ -54,6 +54,11 @@ contract ExecuteActionTest is LeverageManagerBaseTest {
 
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_executeLendingAdapterAction_Repay(uint256 amount) public {
+        vm.assume(amount < type(uint256).max);
+        deal(address(collateralToken), address(this), amount + 1);
+        collateralToken.approve(address(lendingAdapter), amount);
+        lendingAdapter.addCollateral(amount);
+
         vm.prank(address(leverageManager));
         lendingAdapter.borrow(amount);
 
@@ -65,6 +70,11 @@ contract ExecuteActionTest is LeverageManagerBaseTest {
 
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_executeLendingAdapterAction_Borrow(uint256 amount) public {
+        vm.assume(amount < type(uint256).max);
+        deal(address(collateralToken), address(this), amount + 1);
+        collateralToken.approve(address(lendingAdapter), amount);
+        lendingAdapter.addCollateral(amount);
+
         leverageManager.exposed_executeLendingAdapterAction(strategy, ActionType.Borrow, amount);
 
         assertEq(debtToken.balanceOf(address(leverageManager)), amount);
