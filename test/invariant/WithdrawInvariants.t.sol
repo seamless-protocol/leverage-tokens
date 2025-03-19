@@ -58,9 +58,9 @@ contract WithdrawInvariants is InvariantTestBase {
         LeverageManagerHandler.WithdrawActionData memory withdrawData,
         StrategyState memory stateAfter
     ) internal view {
+        uint256 totalSupplyAfter = withdrawData.strategy.totalSupply();
         // If zero shares were burnt, or zero equity was passed to the withdraw function, strategy state should not change
-        if (stateBefore.totalSupply == withdrawData.strategy.totalSupply() || withdrawData.equityInCollateralAsset == 0)
-        {
+        if (stateBefore.totalSupply == totalSupplyAfter || withdrawData.equityInCollateralAsset == 0) {
             assertEq(
                 stateBefore.collateralRatio,
                 stateAfter.collateralRatio,
@@ -85,6 +85,14 @@ contract WithdrawInvariants is InvariantTestBase {
                     "Invariant Violated: Collateral ratio after withdrawing all debt should be max uint256."
                 );
             }
+        }
+
+        if (stateBefore.totalSupply > 0 && totalSupplyAfter == 0) {
+            assertEq(
+                stateAfter.collateralRatio,
+                type(uint256).max,
+                "Invariant Violated: Collateral ratio after withdrawing all shares should be max uint256."
+            );
         }
     }
 }
