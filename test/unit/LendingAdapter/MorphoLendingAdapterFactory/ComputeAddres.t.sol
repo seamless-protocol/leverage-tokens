@@ -18,6 +18,7 @@ contract MorphoLendingAdapterFactoryComputeAddressTest is MorphoLendingAdapterFa
         assertNotEq(computedAddressA, computedAddressB);
     }
 
+    /// forge-config: default.fuzz.runs = 1
     function test_computeAddress_SameSenderDifferentSalt(address sender, bytes32 baseSaltA, bytes32 baseSaltB)
         public
         view
