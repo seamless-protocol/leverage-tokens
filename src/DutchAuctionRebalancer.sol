@@ -123,7 +123,7 @@ contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
     /// @inheritdoc IDutchAuctionRebalancer
     function setInitialPriceMultiplier(IStrategy strategy, uint256 newMultiplier) external onlyOwner {
         if (newMultiplier < minPriceMultiplier[strategy]) {
-            revert MinPriceMultiplierHigherThanInitial();
+            revert MinPriceMultiplierTooHigh();
         }
 
         initialPriceMultiplier[strategy] = newMultiplier;
@@ -133,7 +133,7 @@ contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
     /// @inheritdoc IDutchAuctionRebalancer
     function setMinPriceMultiplier(IStrategy strategy, uint256 newMultiplier) external onlyOwner {
         if (newMultiplier > initialPriceMultiplier[strategy]) {
-            revert MinPriceMultiplierHigherThanInitial();
+            revert MinPriceMultiplierTooHigh();
         }
 
         minPriceMultiplier[strategy] = newMultiplier;

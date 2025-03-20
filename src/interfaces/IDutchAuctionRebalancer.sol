@@ -33,7 +33,7 @@ interface IDutchAuctionRebalancer {
     error InvalidAuctionDuration();
 
     /// @notice Error thrown when minimum price multiplier is higher than initial price multiplier
-    error MinPriceMultiplierHigherThanInitial();
+    error MinPriceMultiplierTooHigh();
 
     /// @notice Event emitted when new auction is created
     event AuctionCreated(IStrategy indexed strategy, Auction auction);
@@ -96,6 +96,7 @@ interface IDutchAuctionRebalancer {
     /// @param strategy Strategy to calculate for
     /// @param amountOut Amount of tokens to receive
     /// @return amountIn Amount of tokens to provide
+    /// @dev Once auction is finished, the amountIn will be calculated based the same as minimum price multiplier without reverting
     function getAmountIn(IStrategy strategy, uint256 amountOut) external view returns (uint256 amountIn);
 
     /// @notice Creates new auction for strategy that needs rebalancing
