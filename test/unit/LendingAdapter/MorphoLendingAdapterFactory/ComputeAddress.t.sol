@@ -2,11 +2,20 @@
 pragma solidity ^0.8.26;
 
 // Internal imports
+import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {IMorphoLendingAdapterFactory} from "src/interfaces/IMorphoLendingAdapterFactory.sol";
 import {MorphoLendingAdapterFactoryBase} from "./MorphoLendingAdapterFactoryBase.t.sol";
 
 contract MorphoLendingAdapterFactoryComputeAddressTest is MorphoLendingAdapterFactoryBase {
-    /// forge-config: default.fuzz.runs = 1
+    function testFuzz_computeAddress_MatchesDeployAddress(address sender, bytes32 baseSalt) public {
+        address computedAddress = factory.computeAddress(sender, baseSalt);
+
+        vm.prank(sender);
+        IMorphoLendingAdapter lendingAdapter = factory.deployAdapter(defaultMarketId, baseSalt);
+
+        assertEq(address(lendingAdapter), computedAddress);
+    }
+
     function test_computeAddress_SameSaltDifferentSender(address senderA, address senderB, bytes32 baseSalt)
         public
         view
@@ -18,7 +27,6 @@ contract MorphoLendingAdapterFactoryComputeAddressTest is MorphoLendingAdapterFa
         assertNotEq(computedAddressA, computedAddressB);
     }
 
-    /// forge-config: default.fuzz.runs = 1
     function test_computeAddress_SameSenderDifferentSalt(address sender, bytes32 baseSaltA, bytes32 baseSaltB)
         public
         view
