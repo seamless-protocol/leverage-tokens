@@ -20,7 +20,7 @@ import {BeaconProxyFactory} from "src/BeaconProxyFactory.sol";
 import {Strategy} from "src/Strategy.sol";
 import {MockERC20} from "test/unit/mock/MockERC20.sol";
 import {MockLendingAdapter} from "test/unit/mock/MockLendingAdapter.sol";
-import {ExternalAction} from "src/types/DataTypes.sol";
+import {ExternalAction, StrategyConfig} from "src/types/DataTypes.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 
 contract LeverageManagerBaseTest is FeeManagerBaseTest {
@@ -71,6 +71,10 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         return leverageManager.BASE_RATIO();
     }
 
+    function _MAX_FEE() internal view returns (uint256) {
+        return IFeeManager(address(leverageManager)).MAX_FEE();
+    }
+
     function _DECIMALS_OFFSET() internal view returns (uint256) {
         return leverageManager.DECIMALS_OFFSET();
     }
@@ -83,13 +87,15 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         strategy = IStrategy(
             _createNewStrategy(
                 manager,
-                ILeverageManager.StrategyConfig({
+                StrategyConfig({
                     lendingAdapter: ILendingAdapter(address(lendingAdapter)),
                     minCollateralRatio: _BASE_RATIO(),
                     maxCollateralRatio: _BASE_RATIO() + 2,
                     targetCollateralRatio: _BASE_RATIO() + 1,
                     rebalanceRewardDistributor: IRebalanceRewardDistributor(address(0)),
-                    rebalanceWhitelist: IRebalanceWhitelist(address(0))
+                    rebalanceWhitelist: IRebalanceWhitelist(address(0)),
+                    strategyDepositFee: 0,
+                    strategyWithdrawFee: 0
                 }),
                 address(0),
                 address(0),
@@ -101,7 +107,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
 
     function _createNewStrategy(
         address caller,
-        ILeverageManager.StrategyConfig memory config,
+        StrategyConfig memory config,
         address collateralAsset,
         address debtAsset,
         string memory name,
@@ -146,11 +152,6 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
             abi.encodeWithSelector(ILendingAdapter.getEquityInCollateralAsset.selector),
             abi.encode(equity)
         );
-    }
-
-    function _setStrategyActionFee(IStrategy _strategy, ExternalAction action, uint256 fee) internal {
-        vm.prank(feeManagerRole);
-        leverageManager.setStrategyActionFee(_strategy, action, fee);
     }
 
     function _setTreasuryActionFee(ExternalAction action, uint256 fee) internal {

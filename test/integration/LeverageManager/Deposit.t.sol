@@ -8,6 +8,11 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IOracle} from "@morpho-blue/interfaces/IOracle.sol";
 
 // Internal imports
+import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
+import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
+import {IRebalanceRewardDistributor} from "src/interfaces/IRebalanceRewardDistributor.sol";
+import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
+import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
 import {LeverageManagerBase} from "./LeverageManagerBase.t.sol";
 import {StrategyState, CollateralRatios, ExternalAction} from "src/types/DataTypes.sol";
 
@@ -40,8 +45,9 @@ contract LeverageManagerDepositTest is LeverageManagerBase {
 
     function testFork_deposit_WithFees() public {
         uint256 fee = 10_00; // 10%
-        leverageManager.setStrategyActionFee(strategy, ExternalAction.Deposit, fee);
         leverageManager.setTreasuryActionFee(ExternalAction.Deposit, fee);
+        strategy = _createNewStrategy(BASE_RATIO, 2 * BASE_RATIO, 3 * BASE_RATIO, fee, 0);
+        morphoLendingAdapter = MorphoLendingAdapter(address(leverageManager.getStrategyLendingAdapter(strategy)));
 
         uint256 equityInCollateralAsset = 10 ether;
         uint256 collateralToAdd = 2 * equityInCollateralAsset;
@@ -59,7 +65,14 @@ contract LeverageManagerDepositTest is LeverageManagerBase {
     }
 
     function testFork_deposit_PriceChangedBetweenDeposits_CollateralRatioDoesNotChange() public {
-        leverageManager.setStrategyActionFee(strategy, ExternalAction.Deposit, 1); // 0.01%
+        strategy = _createNewStrategy(
+            BASE_RATIO,
+            2 * BASE_RATIO,
+            3 * BASE_RATIO,
+            1, // 0.01% strategy fee
+            0
+        );
+        morphoLendingAdapter = MorphoLendingAdapter(address(leverageManager.getStrategyLendingAdapter(strategy)));
 
         // Deposit again like in previous test
         uint256 equityInCollateralAsset = 10 ether;

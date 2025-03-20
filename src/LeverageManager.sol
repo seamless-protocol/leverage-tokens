@@ -25,8 +25,10 @@ import {Strategy} from "src/Strategy.sol";
 import {
     ActionData,
     ActionType,
+    BaseStrategyConfig,
     ExternalAction,
     RebalanceAction,
+    StrategyConfig,
     StrategyState,
     TokenTransfer
 } from "src/types/DataTypes.sol";
@@ -47,8 +49,8 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     struct LeverageManagerStorage {
         /// @dev Factory for deploying new strategy tokens when creating new strategies
         IBeaconProxyFactory strategyTokenFactory;
-        /// @dev Strategy address => Config for strategy
-        mapping(IStrategy strategy => ILeverageManager.StrategyConfig) config;
+        /// @dev Strategy address => Base config for strategy
+        mapping(IStrategy strategy => BaseStrategyConfig) config;
         /// @dev Lending adapter address => Is lending adapter registered. Two strategies can't have same lending adapter
         mapping(address lendingAdapter => bool) isLendingAdapterUsed;
     }
@@ -101,7 +103,20 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
     /// @inheritdoc ILeverageManager
     function getStrategyConfig(IStrategy strategy) external view returns (StrategyConfig memory config) {
-        return _getLeverageManagerStorage().config[strategy];
+        BaseStrategyConfig memory baseConfig = _getLeverageManagerStorage().config[strategy];
+        uint256 strategyDepositFee = getStrategyActionFee(strategy, ExternalAction.Deposit);
+        uint256 strategyWithdrawFee = getStrategyActionFee(strategy, ExternalAction.Withdraw);
+
+        return StrategyConfig({
+            lendingAdapter: baseConfig.lendingAdapter,
+            minCollateralRatio: baseConfig.minCollateralRatio,
+            maxCollateralRatio: baseConfig.maxCollateralRatio,
+            targetCollateralRatio: baseConfig.targetCollateralRatio,
+            rebalanceRewardDistributor: baseConfig.rebalanceRewardDistributor,
+            rebalanceWhitelist: baseConfig.rebalanceWhitelist,
+            strategyDepositFee: strategyDepositFee,
+            strategyWithdrawFee: strategyWithdrawFee
+        });
     }
 
     /// @inheritdoc ILeverageManager
@@ -111,7 +126,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
     /// @inheritdoc ILeverageManager
     function getStrategyCollateralRatios(IStrategy strategy) public view returns (CollateralRatios memory ratios) {
-        StrategyConfig memory config = _getLeverageManagerStorage().config[strategy];
+        BaseStrategyConfig memory config = _getLeverageManagerStorage().config[strategy];
 
         return CollateralRatios({
             minCollateralRatio: config.minCollateralRatio,
@@ -168,8 +183,17 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             revert LendingAdapterAlreadyInUse(address(strategyConfig.lendingAdapter));
         }
 
-        _getLeverageManagerStorage().config[strategy] = strategyConfig;
+        _getLeverageManagerStorage().config[strategy] = BaseStrategyConfig({
+            lendingAdapter: strategyConfig.lendingAdapter,
+            minCollateralRatio: strategyConfig.minCollateralRatio,
+            maxCollateralRatio: strategyConfig.maxCollateralRatio,
+            targetCollateralRatio: strategyConfig.targetCollateralRatio,
+            rebalanceRewardDistributor: strategyConfig.rebalanceRewardDistributor,
+            rebalanceWhitelist: strategyConfig.rebalanceWhitelist
+        });
         _getLeverageManagerStorage().isLendingAdapterUsed[address(strategyConfig.lendingAdapter)] = true;
+        _setStrategyActionFee(strategy, ExternalAction.Deposit, strategyConfig.strategyDepositFee);
+        _setStrategyActionFee(strategy, ExternalAction.Withdraw, strategyConfig.strategyWithdrawFee);
 
         emit StrategyCreated(
             strategy,
