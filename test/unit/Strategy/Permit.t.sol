@@ -12,7 +12,9 @@ import {PermitLib} from "../../utils/PermitLib.sol";
 contract PermitTest is StrategyBaseTest {
     using PermitLib for PermitLib.Permit;
 
-    function testFuzz_permit(PermitLib.Permit memory permit, uint256 privateKey) public {
+    /// @dev Sanity test to ensure that token supports permit
+    function testFuzz_permit(PermitLib.Permit memory permit, uint256 privateKey, uint128 blockTimestamp) public {
+        vm.warp(blockTimestamp);
         privateKey = bound(privateKey, 1, type(uint32).max);
         permit.deadline = bound(permit.deadline, block.timestamp, type(uint256).max);
         permit.owner = vm.addr(privateKey);
