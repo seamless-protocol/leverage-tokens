@@ -9,7 +9,7 @@ import {IOracle} from "@morpho-blue/interfaces/IOracle.sol";
 // Internal imports
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageManagerHarness} from "test/unit/LeverageManager/harness/LeverageManagerHarness.t.sol";
-import {StrategyState, RebalanceAction, ActionType, TokenTransfer} from "src/types/DataTypes.sol";
+import {StrategyState, RebalanceAction, ActionType, StrategyConfig, TokenTransfer} from "src/types/DataTypes.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {IRebalanceRewardDistributor} from "src/interfaces/IRebalanceRewardDistributor.sol";
 import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
@@ -53,7 +53,7 @@ contract RebalanceTest is LeverageManagerBase {
         );
 
         ethLong2x = leverageManager.createNewStrategy(
-            ILeverageManager.StrategyConfig({
+            StrategyConfig({
                 lendingAdapter: ILendingAdapter(address(ethLong2xAdapter)),
                 minCollateralRatio: 18 * BASE_RATIO / 10, // 1.8x
                 targetCollateralRatio: 2 * BASE_RATIO, // 2x
@@ -68,7 +68,7 @@ contract RebalanceTest is LeverageManagerBase {
         );
 
         ethShort2x = leverageManager.createNewStrategy(
-            ILeverageManager.StrategyConfig({
+            StrategyConfig({
                 lendingAdapter: ILendingAdapter(address(ethShort2xAdapter)),
                 minCollateralRatio: 13 * BASE_RATIO / 10, // 1.3x
                 targetCollateralRatio: 15 * BASE_RATIO / 10, // 1.5x

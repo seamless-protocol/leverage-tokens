@@ -28,6 +28,7 @@ import {
     BaseStrategyConfig,
     ExternalAction,
     RebalanceAction,
+    StrategyConfig,
     StrategyState,
     TokenTransfer
 } from "src/types/DataTypes.sol";

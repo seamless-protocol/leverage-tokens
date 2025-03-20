@@ -11,31 +11,10 @@ import {IStrategy} from "./IStrategy.sol";
 import {CollateralRatios} from "src/types/DataTypes.sol";
 import {IBeaconProxyFactory} from "./IBeaconProxyFactory.sol";
 import {ILendingAdapter} from "./ILendingAdapter.sol";
-import {ActionData, RebalanceAction, TokenTransfer} from "src/types/DataTypes.sol";
+import {ActionData, RebalanceAction, StrategyConfig, TokenTransfer} from "src/types/DataTypes.sol";
 import {IRebalanceRewardDistributor} from "./IRebalanceRewardDistributor.sol";
 
 interface ILeverageManager is IFeeManager {
-    /// @dev Struct that contains entire strategy config
-    struct StrategyConfig {
-        /// @dev Lending adapter for strategy
-        ILendingAdapter lendingAdapter;
-        /// @dev Minimum collateral ratio allowed for strategy before a rebalance can occur. 8 decimals of precision
-        ///      Collateral ratio is calculated as collateral value / debt value
-        uint256 minCollateralRatio;
-        /// @dev Maximum collateral ratio allowed for strategy before a rebalance can occur. 8 decimals of precision
-        uint256 maxCollateralRatio;
-        /// @dev Target collateral ratio of the strategy on 8 decimals
-        uint256 targetCollateralRatio;
-        /// @dev Rebalance reward distributor module for strategy
-        IRebalanceRewardDistributor rebalanceRewardDistributor;
-        /// @dev Whitelist module for strategy, if not set rebalance is open for everybody
-        IRebalanceWhitelist rebalanceWhitelist;
-        /// @dev Strategy fee for deposit action
-        uint256 strategyDepositFee;
-        /// @dev Strategy fee for withdraw action
-        uint256 strategyWithdrawFee;
-    }
-
     /// @notice Error thrown when someone tries to create strategy with lending adapter that already exists
     error LendingAdapterAlreadyInUse(address adapter);
 

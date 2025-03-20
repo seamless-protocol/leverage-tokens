@@ -35,6 +35,23 @@ struct ActionData {
     uint256 treasuryFee;
 }
 
+/// @dev Struct that contains base strategy config stored in LeverageManager
+struct BaseStrategyConfig {
+    /// @dev Lending adapter for strategy
+    ILendingAdapter lendingAdapter;
+    /// @dev Minimum collateral ratio allowed for strategy before a rebalance can occur. 8 decimals of precision
+    ///      Collateral ratio is calculated as collateral value / debt value
+    uint256 minCollateralRatio;
+    /// @dev Maximum collateral ratio allowed for strategy before a rebalance can occur. 8 decimals of precision
+    uint256 maxCollateralRatio;
+    /// @dev Target collateral ratio of the strategy on 8 decimals
+    uint256 targetCollateralRatio;
+    /// @dev Rebalance reward distributor module for strategy
+    IRebalanceRewardDistributor rebalanceRewardDistributor;
+    /// @dev Whitelist module for strategy, if not set rebalance is open for everybody
+    IRebalanceWhitelist rebalanceWhitelist;
+}
+
 /// @dev Struct that contains all data related to collateral ratios for a strategy
 struct CollateralRatios {
     /// @dev Minimum collateral ratio allowed for strategy before a rebalance can occur. 8 decimals of precision
@@ -56,8 +73,8 @@ struct RebalanceAction {
     uint256 amount;
 }
 
-/// @dev Struct that contains base strategy config stored in LeverageManager
-struct BaseStrategyConfig {
+/// @dev Struct that contains entire strategy config
+struct StrategyConfig {
     /// @dev Lending adapter for strategy
     ILendingAdapter lendingAdapter;
     /// @dev Minimum collateral ratio allowed for strategy before a rebalance can occur. 8 decimals of precision
@@ -71,6 +88,10 @@ struct BaseStrategyConfig {
     IRebalanceRewardDistributor rebalanceRewardDistributor;
     /// @dev Whitelist module for strategy, if not set rebalance is open for everybody
     IRebalanceWhitelist rebalanceWhitelist;
+    /// @dev Strategy fee for deposit action
+    uint256 strategyDepositFee;
+    /// @dev Strategy fee for withdraw action
+    uint256 strategyWithdrawFee;
 }
 
 /// @dev Struct that contains all data describing the state of a strategy

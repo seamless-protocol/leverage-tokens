@@ -9,6 +9,7 @@ import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
 import {IRebalanceRewardDistributor} from "src/interfaces/IRebalanceRewardDistributor.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
+import {StrategyConfig} from "src/types/DataTypes.sol";
 import {LeverageManagerBaseTest} from "./LeverageManagerBase.t.sol";
 
 contract ValidateIsAllowedToRebalance is LeverageManagerBaseTest {
@@ -55,7 +56,7 @@ contract ValidateIsAllowedToRebalance is LeverageManagerBaseTest {
     function _setRebalanceWhitelist(IRebalanceWhitelist whitelist) internal {
         vm.startPrank(manager);
         strategy = leverageManager.createNewStrategy(
-            ILeverageManager.StrategyConfig({
+            StrategyConfig({
                 lendingAdapter: ILendingAdapter(address(lendingAdapter)),
                 minCollateralRatio: 1e8,
                 maxCollateralRatio: 3e8,
