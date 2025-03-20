@@ -15,14 +15,13 @@ contract PermitTest is StrategyBaseTest {
     /// @dev Sanity test to ensure that token supports permit
     function testFuzz_permit(PermitLib.Permit memory permit, uint256 privateKey, uint128 blockTimestamp) public {
         vm.warp(blockTimestamp);
+
         privateKey = bound(privateKey, 1, type(uint32).max);
-        permit.deadline = bound(permit.deadline, block.timestamp, type(uint256).max);
         permit.owner = vm.addr(privateKey);
-
-        uint256 nonceBefore = strategyToken.nonces(permit.owner);
+        vm.assume(permit.owner != address(0));
 
         permit.deadline = bound(permit.deadline, block.timestamp, type(uint256).max);
-        permit.nonce = 0;
+        permit.nonce = strategyToken.nonces(permit.owner);
 
         PermitLib.Signature memory sig;
         bytes32 digest = PermitLib.getPermitTypedDataHash(permit, address(strategyToken));
@@ -30,7 +29,7 @@ contract PermitTest is StrategyBaseTest {
 
         strategyToken.permit(permit.owner, permit.spender, permit.value, permit.deadline, sig.v, sig.r, sig.s);
 
-        assertEq(strategyToken.nonces(permit.owner), nonceBefore + 1);
+        assertEq(strategyToken.nonces(permit.owner), permit.nonce + 1);
         assertEq(strategyToken.allowance(permit.owner, permit.spender), permit.value);
     }
 }
