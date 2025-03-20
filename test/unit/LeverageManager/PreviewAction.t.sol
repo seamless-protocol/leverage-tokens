@@ -7,8 +7,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 // Internal imports
 import {ExternalAction} from "src/types/DataTypes.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
-import {IRebalanceRewardDistributor} from "src/interfaces/IRebalanceRewardDistributor.sol";
-import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
+import {IRebalanceModule} from "src/interfaces/IRebalanceModule.sol";
 import {ActionData, StrategyState} from "src/types/DataTypes.sol";
 import {LeverageManagerBaseTest} from "../LeverageManager/LeverageManagerBase.t.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
@@ -20,11 +19,8 @@ contract PreviewActionTest is LeverageManagerBaseTest {
             manager,
             ILeverageManager.StrategyConfig({
                 lendingAdapter: ILendingAdapter(address(lendingAdapter)),
-                minCollateralRatio: _BASE_RATIO() + 1,
-                maxCollateralRatio: 3 * _BASE_RATIO(),
                 targetCollateralRatio: 2 * _BASE_RATIO(), // 2x leverage
-                rebalanceRewardDistributor: IRebalanceRewardDistributor(address(0)),
-                rebalanceWhitelist: IRebalanceWhitelist(address(0))
+                rebalanceAdapter: IRebalanceModule(address(0))
             }),
             address(collateralToken),
             address(debtToken),

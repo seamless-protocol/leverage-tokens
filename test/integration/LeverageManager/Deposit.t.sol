@@ -9,7 +9,7 @@ import {IOracle} from "@morpho-blue/interfaces/IOracle.sol";
 
 // Internal imports
 import {LeverageManagerBase} from "./LeverageManagerBase.t.sol";
-import {StrategyState, CollateralRatios, ExternalAction} from "src/types/DataTypes.sol";
+import {StrategyState, ExternalAction} from "src/types/DataTypes.sol";
 
 contract LeverageManagerDepositTest is LeverageManagerBase {
     /// @dev In this block price on oracle 3392.292471591441746049801068

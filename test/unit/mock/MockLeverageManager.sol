@@ -11,7 +11,7 @@ import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
-import {StrategyState, ActionData, CollateralRatios, RebalanceAction, TokenTransfer} from "src/types/DataTypes.sol";
+import {StrategyState, ActionData, RebalanceAction, TokenTransfer} from "src/types/DataTypes.sol";
 
 contract MockLeverageManager is Test {
     uint256 public BASE_RATIO = 1e8;
@@ -83,8 +83,6 @@ contract MockLeverageManager is Test {
 
     mapping(bytes32 => MockPreviewWithdrawData) public mockPreviewWithdrawData;
 
-    mapping(IStrategy => CollateralRatios) public strategyCollateralRatios;
-
     function getStrategyCollateralAsset(IStrategy strategy) external view returns (IERC20) {
         return strategies[strategy].collateralAsset;
     }
@@ -103,14 +101,6 @@ contract MockLeverageManager is Test {
 
     function getStrategyDebtAsset(IStrategy strategy) external view returns (IERC20) {
         return strategies[strategy].debtAsset;
-    }
-
-    function getStrategyCollateralRatios(IStrategy strategy) external view returns (CollateralRatios memory) {
-        return strategyCollateralRatios[strategy];
-    }
-
-    function setStrategyCollateralRatios(IStrategy strategy, CollateralRatios memory ratios) external {
-        strategyCollateralRatios[strategy] = ratios;
     }
 
     function setStrategyData(IStrategy strategy, StrategyData memory _strategyData) external {
@@ -279,7 +269,7 @@ contract MockLeverageManager is Test {
     }
 
     function rebalance(
-        RebalanceAction[] calldata actions,
+        RebalanceAction[] calldata,
         TokenTransfer[] calldata tokensIn,
         TokenTransfer[] calldata tokensOut
     ) external {

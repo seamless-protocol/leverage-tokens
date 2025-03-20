@@ -14,7 +14,6 @@ import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageManagerBaseTest} from "./LeverageManagerBase.t.sol";
-import {CollateralRatios} from "src/types/DataTypes.sol";
 import {Strategy} from "src/Strategy.sol";
 
 contract CreateNewStrategyTest is LeverageManagerBaseTest {
@@ -29,11 +28,6 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
         string memory name,
         string memory symbol
     ) public {
-        config.targetCollateralRatio = bound(config.minCollateralRatio, _BASE_RATIO() + 1, type(uint256).max - 1);
-        config.minCollateralRatio = bound(config.minCollateralRatio, _BASE_RATIO(), config.targetCollateralRatio - 1);
-        config.maxCollateralRatio =
-            bound(config.maxCollateralRatio, config.targetCollateralRatio + 1, type(uint256).max);
-
         address expectedStrategyAddress = strategyTokenFactory.computeProxyAddress(
             address(leverageManager),
             abi.encodeWithSelector(Strategy.initialize.selector, address(leverageManager), name, symbol),
@@ -55,22 +49,13 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
         // Check if the strategy core is set correctly
         ILeverageManager.StrategyConfig memory configAfter = leverageManager.getStrategyConfig(strategy);
         assertEq(address(configAfter.lendingAdapter), address(config.lendingAdapter));
-
-        CollateralRatios memory ratios = leverageManager.getStrategyCollateralRatios(strategy);
-        assertEq(ratios.minCollateralRatio, config.minCollateralRatio);
-        assertEq(ratios.maxCollateralRatio, config.maxCollateralRatio);
-        assertEq(ratios.targetCollateralRatio, config.targetCollateralRatio);
+        assertEq(address(configAfter.rebalanceAdapter), address(config.rebalanceAdapter));
 
         assertEq(address(leverageManager.getStrategyCollateralAsset(strategy)), collateralAsset);
         assertEq(address(leverageManager.getStrategyDebtAsset(strategy)), debtAsset);
 
         assertEq(leverageManager.getIsLendingAdapterUsed(address(config.lendingAdapter)), true);
         assertEq(leverageManager.getStrategyTargetCollateralRatio(strategy), config.targetCollateralRatio);
-        assertEq(
-            address(leverageManager.getStrategyRebalanceRewardDistributor(strategy)),
-            address(config.rebalanceRewardDistributor)
-        );
-        assertEq(address(leverageManager.getStrategyRebalanceWhitelist(strategy)), address(config.rebalanceWhitelist));
     }
 
     function test_CreateNewStrategy_RevertIf_LendingAdapterAlreadyInUse(
@@ -80,11 +65,6 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
         string memory name,
         string memory symbol
     ) public {
-        config.targetCollateralRatio = bound(config.minCollateralRatio, _BASE_RATIO() + 1, type(uint256).max - 1);
-        config.minCollateralRatio = bound(config.minCollateralRatio, _BASE_RATIO(), config.targetCollateralRatio - 1);
-        config.maxCollateralRatio =
-            bound(config.maxCollateralRatio, config.targetCollateralRatio + 1, type(uint256).max);
-
         _createNewStrategy(manager, config, collateralAsset, debtAsset, name, symbol);
 
         vm.expectRevert(

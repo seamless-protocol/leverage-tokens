@@ -1,0 +1,43 @@
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.26;
+
+// Internal imports
+import {IStrategy} from "src/interfaces/IStrategy.sol";
+import {IRebalanceModule} from "src/interfaces/IRebalanceModule.sol";
+
+/// @title ISeamlessRebalanceModule
+/// @notice Interface for the SeamlessRebalanceModule contract
+interface ISeamlessRebalanceModule is IRebalanceModule {
+    /// @notice Error thrown when collateral ratios are already set
+    error CollateralRatiosAlreadySet();
+
+    /// @notice Error thrown when min collateral ratio is too high
+    error MinCollateralRatioTooHigh();
+
+    /// @notice Event emitted when collateral ratios are set
+    event StrategyCollateralRatiosSet(
+        IStrategy indexed strategy, uint256 minCollateralRatio, uint256 maxCollateralRatio
+    );
+
+    /// @notice Returns the Dutch auction module address
+    /// @return dutchAuctionModule Dutch auction module address
+    function getDutchAuctionModule() external view returns (address dutchAuctionModule);
+
+    /// @notice Returns the minimum collateral ratio for a strategy
+    /// @param strategy Strategy to get the minimum collateral ratio for
+    /// @return minCollateralRatio Minimum collateral ratio for the strategy
+    function getStrategyMinCollateralRatio(IStrategy strategy) external view returns (uint256 minCollateralRatio);
+
+    /// @notice Returns the maximum collateral ratio for a strategy
+    /// @param strategy Strategy to get the maximum collateral ratio for
+    /// @return maxCollateralRatio Maximum collateral ratio for the strategy
+    function getStrategyMaxCollateralRatio(IStrategy strategy) external view returns (uint256 maxCollateralRatio);
+
+    /// @notice Sets the minimum and maximum collateral ratios for a strategy
+    /// @param strategy Strategy to set the collateral ratios for
+    /// @param minCollateralRatio Minimum collateral ratio for the strategy
+    /// @param maxCollateralRatio Maximum collateral ratio for the strategy
+    /// @dev Revert if collateral ratios are already set
+    function setStrategyCollateralRatios(IStrategy strategy, uint256 minCollateralRatio, uint256 maxCollateralRatio)
+        external;
+}
