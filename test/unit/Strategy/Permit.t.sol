@@ -1,11 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-// Dependency imports
-import {IERC5267} from "@openzeppelin/contracts/interfaces/IERC5267.sol";
-
 // Internal imports
-import {Strategy} from "src/Strategy.sol";
 import {StrategyBaseTest} from "./StrategyBase.t.sol";
 import {PermitLib} from "../../utils/PermitLib.sol";
 
