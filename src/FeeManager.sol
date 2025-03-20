@@ -61,8 +61,8 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
     function getTreasuryActionFee(ExternalAction action) public view returns (uint256 fee) {
         return _getFeeManagerStorage().treasuryActionFee[action];
     }
-    /// @inheritdoc IFeeManager
 
+    /// @inheritdoc IFeeManager
     function setTreasury(address treasury) external onlyRole(FEE_MANAGER_ROLE) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
         $.treasury = treasury;
