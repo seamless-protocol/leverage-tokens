@@ -11,7 +11,7 @@ import {IStrategy} from "./IStrategy.sol";
 import {CollateralRatios} from "src/types/DataTypes.sol";
 import {IBeaconProxyFactory} from "./IBeaconProxyFactory.sol";
 import {ILendingAdapter} from "./ILendingAdapter.sol";
-import {ActionData, RebalanceAction, StrategyConfig, TokenTransfer} from "src/types/DataTypes.sol";
+import {ActionData, StrategyState, RebalanceAction, TokenTransfer, StrategyConfig} from "src/types/DataTypes.sol";
 import {IRebalanceRewardDistributor} from "./IRebalanceRewardDistributor.sol";
 
 interface ILeverageManager is IFeeManager {
@@ -105,6 +105,11 @@ interface ILeverageManager is IFeeManager {
     /// @param strategy Address of the strategy to get config for
     /// @return config Strategy configuration
     function getStrategyConfig(IStrategy strategy) external view returns (StrategyConfig memory config);
+
+    /// @notice Returns all data required to describe current strategy state - collateral, debt, equity and collateral ratio
+    /// @param strategy Strategy to query state for
+    /// @return state Strategy state
+    function getStrategyState(IStrategy strategy) external view returns (StrategyState memory state);
 
     /// @notice Sets factory for creating new strategy tokens
     /// @param factory Factory to set

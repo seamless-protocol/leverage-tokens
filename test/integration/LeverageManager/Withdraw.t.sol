@@ -24,13 +24,13 @@ contract LeverageManagerWithdrawTest is LeverageManagerBase {
         uint256 collateralToAdd = 2 * equityInCollateralAsset;
         _deposit(user, equityInCollateralAsset, collateralToAdd);
 
-        StrategyState memory stateBefore = _getStrategyState();
+        StrategyState memory stateBefore = getStrategyState();
 
         uint256 equityToWithdraw = 5 ether;
         ActionData memory previewData = leverageManager.previewWithdraw(strategy, equityToWithdraw);
         _withdraw(user, equityToWithdraw, previewData.debt);
 
-        StrategyState memory stateAfter = _getStrategyState();
+        StrategyState memory stateAfter = getStrategyState();
 
         // Ensure that collateral ratio is the same. Allow for 1 wei mistake but it must be in favour of strategy
         assertGe(stateAfter.collateralRatio, stateBefore.collateralRatio);
@@ -85,13 +85,13 @@ contract LeverageManagerWithdrawTest is LeverageManagerBase {
         uint256 collateralToAdd = 2 * equityInCollateralAsset;
         _deposit(user, equityInCollateralAsset, collateralToAdd);
 
-        StrategyState memory stateBefore = _getStrategyState();
+        StrategyState memory stateBefore = getStrategyState();
 
         uint256 equityToWithdraw = 5 ether;
         ActionData memory previewData = leverageManager.previewWithdraw(strategy, equityToWithdraw);
         _withdraw(user, equityToWithdraw, previewData.debt);
 
-        StrategyState memory stateAfter = _getStrategyState();
+        StrategyState memory stateAfter = getStrategyState();
         uint256 equityInCollateralAssetAfter = morphoLendingAdapter.getEquityInCollateralAsset();
 
         // Ensure that collateral ratio is the same. Allow for 1 wei mistake but it must be in favour of strategy
@@ -114,13 +114,13 @@ contract LeverageManagerWithdrawTest is LeverageManagerBase {
         (,, address oracle,,) = morphoLendingAdapter.marketParams();
         vm.mockCall(address(oracle), abi.encodeWithSelector(IOracle.price.selector), abi.encode(4000e24));
 
-        StrategyState memory stateBefore = _getStrategyState();
+        StrategyState memory stateBefore = getStrategyState();
 
         uint256 equityToWithdraw = 5 ether;
         ActionData memory previewData = leverageManager.previewWithdraw(strategy, equityToWithdraw);
         _withdraw(user, equityToWithdraw, previewData.debt);
 
-        StrategyState memory stateAfter = _getStrategyState();
+        StrategyState memory stateAfter = getStrategyState();
 
         // Ensure that collateral ratio is the same. Allow for 1 wei mistake but it must be in favour of strategy
         assertGe(stateAfter.collateralRatio, stateBefore.collateralRatio);

@@ -141,6 +141,25 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
+    function getStrategyState(IStrategy strategy) public view returns (StrategyState memory state) {
+        ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
+
+        uint256 collateral = lendingAdapter.getCollateralInDebtAsset();
+        uint256 debt = lendingAdapter.getDebt();
+        uint256 equity = lendingAdapter.getEquityInDebtAsset();
+
+        uint256 collateralRatio =
+            debt > 0 ? Math.mulDiv(collateral, BASE_RATIO, debt, Math.Rounding.Floor) : type(uint256).max;
+
+        return StrategyState({
+            collateralInDebtAsset: collateral,
+            debt: debt,
+            equity: equity,
+            collateralRatio: collateralRatio
+        });
+    }
+
+    /// @inheritdoc ILeverageManager
     function setStrategyTokenFactory(address factory) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _getLeverageManagerStorage().strategyTokenFactory = IBeaconProxyFactory(factory);
         emit StrategyTokenFactorySet(factory);
@@ -307,7 +326,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
             // Check if the strategy is eligible for rebalance if it has not been checked yet in a previous iteration of the loop
             if (!_isElementInSlice(actions, strategy, i)) {
-                StrategyState memory state = _getStrategyState(strategy);
+                StrategyState memory state = getStrategyState(strategy);
                 strategiesStateBefore[i] = state;
 
                 _validateIsAuthorizedToRebalance(strategy);
@@ -359,7 +378,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     ///      This percentage is considered as reward for rebalancer.
     function _validateStrategyStateAfterRebalance(IStrategy strategy, StrategyState memory stateBefore) internal view {
         // Fetch state after rebalance
-        StrategyState memory stateAfter = _getStrategyState(strategy);
+        StrategyState memory stateAfter = getStrategyState(strategy);
 
         // Validate equity change
         _validateEquityChange(strategy, stateBefore, stateAfter);
@@ -432,27 +451,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             lendingAdapter.getEquityInCollateralAsset() + 1,
             Math.Rounding.Floor
         );
-    }
-
-    /// @notice Returns all data required to describe current strategy state - collateral, debt, equity and collateral ratio
-    /// @param strategy Strategy to query state for
-    /// @return state Strategy state
-    function _getStrategyState(IStrategy strategy) internal view returns (StrategyState memory) {
-        ILendingAdapter lendingAdapter = getStrategyLendingAdapter(strategy);
-
-        uint256 collateral = lendingAdapter.getCollateralInDebtAsset();
-        uint256 debt = lendingAdapter.getDebt();
-        uint256 equity = lendingAdapter.getEquityInDebtAsset();
-
-        uint256 collateralRatio =
-            debt > 0 ? Math.mulDiv(collateral, BASE_RATIO, debt, Math.Rounding.Floor) : type(uint256).max;
-
-        return StrategyState({
-            collateralInDebtAsset: collateral,
-            debt: debt,
-            equity: equity,
-            collateralRatio: collateralRatio
-        });
     }
 
     /// @notice Previews parameters related to a deposit action

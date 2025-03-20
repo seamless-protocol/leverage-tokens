@@ -52,10 +52,6 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
         _validateEquityChange(strategy, stateBefore, stateAfter);
     }
 
-    function exposed_getStrategyState(IStrategy strategy) external view returns (StrategyState memory strategyState) {
-        return _getStrategyState(strategy);
-    }
-
     function exposed_isElementInSlice(RebalanceAction[] calldata actions, IStrategy strategy, uint256 untilIndex)
         external
         pure
