@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-import {DutchAuctionRebalancerTest} from "./DutchAuctionRebalancer.t.sol";
+import {DutchAuctionRebalancerBaseTest} from "./DutchAuctionRebalancerBase.t.sol";
 import {IDutchAuctionRebalancer} from "src/interfaces/IDutchAuctionRebalancer.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract SetAuctionDurationTest is DutchAuctionRebalancerTest {
+contract SetAuctionDurationTest is DutchAuctionRebalancerBaseTest {
     function test_setAuctionDuration() public {
         uint256 newDuration = 1 hours;
 

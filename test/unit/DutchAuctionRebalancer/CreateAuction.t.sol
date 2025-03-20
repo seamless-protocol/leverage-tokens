@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-import {DutchAuctionRebalancerTest} from "./DutchAuctionRebalancer.t.sol";
+import {DutchAuctionRebalancerBaseTest} from "./DutchAuctionRebalancerBase.t.sol";
 import {IDutchAuctionRebalancer} from "src/interfaces/IDutchAuctionRebalancer.sol";
 
-contract CreateAuctionTest is DutchAuctionRebalancerTest {
+contract CreateAuctionTest is DutchAuctionRebalancerBaseTest {
     function test_createAuction_UnderCollateralized() public {
         // Set higher min ratio for this test
         _setStrategyCollateralRatios(1.5e8, MAX_RATIO, TARGET_RATIO);

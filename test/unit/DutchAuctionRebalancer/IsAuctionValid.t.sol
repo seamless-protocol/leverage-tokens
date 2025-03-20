@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-import {DutchAuctionRebalancerTest} from "./DutchAuctionRebalancer.t.sol";
+import {DutchAuctionRebalancerBaseTest} from "./DutchAuctionRebalancerBase.t.sol";
 import {IDutchAuctionRebalancer} from "src/interfaces/IDutchAuctionRebalancer.sol";
 import {CollateralRatios, StrategyState} from "src/types/DataTypes.sol";
 
-contract IsAuctionValidTest is DutchAuctionRebalancerTest {
+contract IsAuctionValidTest is DutchAuctionRebalancerBaseTest {
     function test_isAuctionValid_ReturnsFalse_WhenStrategyNotEligible() public {
         // First set ratio to be over-collateralized (eligible for rebalance)
         _setStrategyCollateralRatio(3.1e8);

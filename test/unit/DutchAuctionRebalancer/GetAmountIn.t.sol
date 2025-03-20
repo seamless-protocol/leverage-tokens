@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-import {DutchAuctionRebalancerTest} from "./DutchAuctionRebalancer.t.sol";
+import {DutchAuctionRebalancerBaseTest} from "./DutchAuctionRebalancerBase.t.sol";
 import {IDutchAuctionRebalancer} from "src/interfaces/IDutchAuctionRebalancer.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-contract GetAmountInTest is DutchAuctionRebalancerTest {
+contract GetAmountInTest is DutchAuctionRebalancerBaseTest {
     function test_getAmountIn_NoAuction() public {
         assertEq(auctionRebalancer.getAmountIn(strategy, 1000), 0);
     }

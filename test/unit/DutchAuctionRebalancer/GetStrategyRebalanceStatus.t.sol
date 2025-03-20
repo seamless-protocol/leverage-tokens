@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-import {DutchAuctionRebalancerTest} from "./DutchAuctionRebalancer.t.sol";
+import {DutchAuctionRebalancerBaseTest} from "./DutchAuctionRebalancerBase.t.sol";
 import {IDutchAuctionRebalancer} from "src/interfaces/IDutchAuctionRebalancer.sol";
 import {CollateralRatios, StrategyState} from "src/types/DataTypes.sol";
 
-contract GetStrategyRebalanceStatusTest is DutchAuctionRebalancerTest {
+contract GetStrategyRebalanceStatusTest is DutchAuctionRebalancerBaseTest {
     function test_getStrategyRebalanceStatus_NotEligible_WithinBounds() public {
         // Set current ratio to be within bounds (e.g., 1.5x)
         _setStrategyCollateralRatio(1.5e8);

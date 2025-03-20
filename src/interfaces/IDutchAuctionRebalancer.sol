@@ -96,7 +96,7 @@ interface IDutchAuctionRebalancer {
     /// @param strategy Strategy to calculate for
     /// @param amountOut Amount of tokens to receive
     /// @return amountIn Amount of tokens to provide
-    /// @dev Once auction is finished, the amountIn will be calculated based the same as minimum price multiplier without reverting
+    /// @dev If there is no valid auction in the current block, this function will still return a value based on the most recent auction
     function getAmountIn(IStrategy strategy, uint256 amountOut) external view returns (uint256 amountIn);
 
     /// @notice Creates new auction for strategy that needs rebalancing

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-import {DutchAuctionRebalancerTest} from "./DutchAuctionRebalancer.t.sol";
+import {DutchAuctionRebalancerBaseTest} from "./DutchAuctionRebalancerBase.t.sol";
 
-contract ExecuteRebalanceUpTest is DutchAuctionRebalancerTest {
+contract ExecuteRebalanceUpTest is DutchAuctionRebalancerBaseTest {
     function testFuzz_executeRebalanceUp(uint256 collateral, uint256 debt) public {
         // Fund the caller with required collateral and approve
         deal(address(collateralToken), address(this), collateral);

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-import {DutchAuctionRebalancerTest} from "./DutchAuctionRebalancer.t.sol";
+import {DutchAuctionRebalancerBaseTest} from "./DutchAuctionRebalancerBase.t.sol";
 import {IDutchAuctionRebalancer} from "src/interfaces/IDutchAuctionRebalancer.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract SetInitialPricePremiumTest is DutchAuctionRebalancerTest {
+contract SetInitialPricePremiumTest is DutchAuctionRebalancerBaseTest {
     function test_setInitialPriceMultiplier() public {
         uint256 newMultiplier = 1.1 * 1e18; // 110%
 

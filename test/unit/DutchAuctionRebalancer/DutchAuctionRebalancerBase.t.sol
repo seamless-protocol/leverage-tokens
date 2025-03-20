@@ -15,7 +15,7 @@ import {MockLendingAdapter} from "../mock/MockLendingAdapter.sol";
 import {MockLeverageManager} from "../mock/MockLeverageManager.sol";
 import {StrategyState, CollateralRatios, RebalanceAction, TokenTransfer} from "src/types/DataTypes.sol";
 
-contract DutchAuctionRebalancerTest is Test {
+contract DutchAuctionRebalancerBaseTest is Test {
     // Common constants used across tests
     uint256 public constant BPS_DENOMINATOR = 1e18;
     uint256 public constant BASE_RATIO = 1e8; // 1.0 with 8 decimals precision
