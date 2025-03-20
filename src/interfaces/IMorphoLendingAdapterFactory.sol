@@ -20,6 +20,9 @@ interface IMorphoLendingAdapterFactory {
     /// @dev The `baseSalt` is the user-provided salt, not the final salt after hashing with the deployer's address.
     function computeAddress(address sender, bytes32 baseSalt) external view returns (address);
 
+    /// @notice Returns the address of the MorphoLendingAdapter logic contract used to deploy minimal proxies.
+    function lendingAdapterLogic() external view returns (IMorphoLendingAdapter);
+
     /// @notice Deploys a new MorphoLendingAdapter contract with the specified configuration.
     /// @param morphoMarketId The Morpho market ID
     /// @param baseSalt Used to compute the resulting address of the MorphoLendingAdapter.

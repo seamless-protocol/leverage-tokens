@@ -13,7 +13,7 @@ import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
 contract MorphoLendingAdapterFactory is IMorphoLendingAdapterFactory {
     using Clones for address;
 
-    /// @notice Address of the MorphoLendingAdapter logic contract used to deploy new MorphoLendingAdapter minimal proxies.
+    /// @inheritdoc IMorphoLendingAdapterFactory
     IMorphoLendingAdapter public immutable lendingAdapterLogic;
 
     /// @param _lendingAdapterLogic Logic contract for deploying new MorphoLendingAdapters.
