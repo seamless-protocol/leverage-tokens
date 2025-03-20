@@ -4,6 +4,7 @@ pragma solidity ^0.8.26;
 // Dependency imports
 import {Id, MarketParams} from "@morpho-blue/interfaces/IMorpho.sol";
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import {Errors} from "@openzeppelin/contracts/utils/Errors.sol";
 
 // Internal imports
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
@@ -12,14 +13,16 @@ import {MorphoLendingAdapterFactoryBase} from "./MorphoLendingAdapterFactoryBase
 import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
 
 contract MorphoLendingAdapterFactoryDeployAdapterTest is MorphoLendingAdapterFactoryBase {
-    function test_deployAdapter() public {
-        address expectedAddress = factory.computeAddress(address(this), bytes32(0));
+    function testFuzz_deployAdapter(address sender, bytes32 baseSaltA, bytes32 baseSaltB) public {
+        vm.assume(baseSaltA != baseSaltB);
+        address expectedAddress = factory.computeAddress(sender, baseSaltA);
 
         vm.expectEmit(true, true, true, true);
         emit IMorphoLendingAdapterFactory.MorphoLendingAdapterDeployed(IMorphoLendingAdapter(expectedAddress));
         vm.expectEmit(true, true, true, true);
         emit Initializable.Initialized(1);
-        IMorphoLendingAdapter lendingAdapterA = factory.deployAdapter(defaultMarketId, bytes32(0));
+        vm.prank(sender);
+        IMorphoLendingAdapter lendingAdapterA = factory.deployAdapter(defaultMarketId, baseSaltA);
 
         assertEq(address(lendingAdapterA), expectedAddress);
         assertEq(abi.encode(lendingAdapterA.morphoMarketId()), abi.encode(defaultMarketId));
@@ -39,13 +42,19 @@ contract MorphoLendingAdapterFactoryDeployAdapterTest is MorphoLendingAdapterFac
         });
         morpho.mockSetMarketParams(_marketId, _marketParams);
 
-        expectedAddress = factory.computeAddress(address(this), bytes32(uint256(1)));
+        // Cannot deploy another adapter with the same base salt
+        vm.expectRevert(abi.encodeWithSelector(Errors.FailedDeployment.selector));
+        vm.prank(sender);
+        factory.deployAdapter(_marketId, baseSaltA);
+
+        expectedAddress = factory.computeAddress(sender, baseSaltB);
 
         vm.expectEmit(true, true, true, true);
         emit IMorphoLendingAdapterFactory.MorphoLendingAdapterDeployed(IMorphoLendingAdapter(expectedAddress));
         vm.expectEmit(true, true, true, true);
         emit Initializable.Initialized(1);
-        IMorphoLendingAdapter lendingAdapterB = factory.deployAdapter(_marketId, bytes32(uint256(1)));
+        vm.prank(sender);
+        IMorphoLendingAdapter lendingAdapterB = factory.deployAdapter(_marketId, baseSaltB);
 
         assertEq(address(lendingAdapterB), expectedAddress);
         assertEq(abi.encode(lendingAdapterB.morphoMarketId()), abi.encode(_marketId));
