@@ -61,6 +61,11 @@ contract DepositInvariants is InvariantTestBase {
             );
         } else {
             assertGe(
+                collateralAfter,
+                stateBefore.collateral,
+                "Invariant Violated: Collateral after deposit should be greater than or equal to the initial collateral if shares were not minted."
+            );
+            assertGe(
                 equityAfter,
                 stateBefore.equityInCollateralAsset,
                 "Invariant Violated: Equity after deposit should be greater than or equal to the initial equity if shares were not minted."
