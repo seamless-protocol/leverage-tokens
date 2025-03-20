@@ -40,6 +40,7 @@ contract SetMinPriceMultiplierTest is DutchAuctionRebalancerTest {
         uint256 minMultiplier
     ) public {
         vm.assume(minMultiplier > initialPriceMultiplier);
+        vm.assume(initialPriceMultiplier >= DEFAULT_MIN_PRICE_MULTIPLIER);
 
         vm.startPrank(owner);
         auctionRebalancer.setInitialPriceMultiplier(strategy, initialPriceMultiplier);
