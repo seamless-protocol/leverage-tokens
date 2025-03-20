@@ -159,8 +159,8 @@ contract ComputeEquityFeesTest is FeeManagerBaseTest {
         vm.startPrank(feeManagerRole);
         feeManager.setTreasuryActionFee(ExternalAction.Deposit, depositTreasuryFee);
         feeManager.setTreasuryActionFee(ExternalAction.Withdraw, withdrawTreasuryFee);
-        feeManager.setStrategyActionFee(strategy, ExternalAction.Deposit, depositStrategyFee);
-        feeManager.setStrategyActionFee(strategy, ExternalAction.Withdraw, withdrawStrategyFee);
+        feeManager.exposed_setStrategyActionFee(strategy, ExternalAction.Deposit, depositStrategyFee);
+        feeManager.exposed_setStrategyActionFee(strategy, ExternalAction.Withdraw, withdrawStrategyFee);
         vm.stopPrank();
     }
 }

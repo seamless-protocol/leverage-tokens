@@ -16,7 +16,7 @@ import {MockLendingAdapter} from "test/unit/mock/MockLendingAdapter.sol";
 import {MockRebalanceRewardDistributor} from "test/unit/mock/MockRebalanceRewardDistributor.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {RebalanceAction, ActionType, TokenTransfer, StrategyState} from "src/types/DataTypes.sol";
+import {RebalanceAction, ActionType, TokenTransfer, StrategyConfig, StrategyState} from "src/types/DataTypes.sol";
 
 contract RebalanceTest is LeverageManagerBaseTest {
     ERC20Mock public WETH = new ERC20Mock();
@@ -32,13 +32,15 @@ contract RebalanceTest is LeverageManagerBaseTest {
 
         _createNewStrategy(
             manager,
-            ILeverageManager.StrategyConfig({
+            StrategyConfig({
                 lendingAdapter: ILendingAdapter(address(adapter)),
                 minCollateralRatio: 15 * _BASE_RATIO() / 10, // 1.5x leverage
                 maxCollateralRatio: 25 * _BASE_RATIO() / 10, // 2.5x leverage
                 targetCollateralRatio: 2 * _BASE_RATIO(), // 2x leverage
                 rebalanceRewardDistributor: IRebalanceRewardDistributor(address(rewardDistributor)),
-                rebalanceWhitelist: IRebalanceWhitelist(address(0))
+                rebalanceWhitelist: IRebalanceWhitelist(address(0)),
+                strategyDepositFee: 0,
+                strategyWithdrawFee: 0
             }),
             address(WETH),
             address(USDC),
@@ -157,13 +159,15 @@ contract RebalanceTest is LeverageManagerBaseTest {
 
         vm.startPrank(manager);
         IStrategy ethShort = leverageManager.createNewStrategy(
-            ILeverageManager.StrategyConfig({
+            StrategyConfig({
                 lendingAdapter: ILendingAdapter(address(ethShortAdapter)),
                 minCollateralRatio: 14 * _BASE_RATIO() / 10, // 2.5x leverage
                 maxCollateralRatio: 16 * _BASE_RATIO() / 10, // 3.5x leverage
                 targetCollateralRatio: 15 * _BASE_RATIO() / 10, // 3x leverage which means 2x price exposure
                 rebalanceRewardDistributor: IRebalanceRewardDistributor(address(rewardDistributor)),
-                rebalanceWhitelist: IRebalanceWhitelist(address(0))
+                rebalanceWhitelist: IRebalanceWhitelist(address(0)),
+                strategyDepositFee: 0,
+                strategyWithdrawFee: 0
             }),
             "ETH Short 2x",
             "ETHS2x"
