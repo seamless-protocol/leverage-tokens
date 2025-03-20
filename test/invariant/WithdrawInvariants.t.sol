@@ -9,11 +9,9 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
-import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {StrategyState} from "src/types/DataTypes.sol";
 import {LeverageManagerHandler} from "test/invariant/handlers/LeverageManagerHandler.t.sol";
 import {InvariantTestBase} from "test/invariant/InvariantTestBase.t.sol";
-import {MockLendingAdapter} from "test/unit/mock/MockLendingAdapter.sol";
 
 contract WithdrawInvariants is InvariantTestBase {
     function invariant_withdraw() public view {
@@ -60,7 +58,8 @@ contract WithdrawInvariants is InvariantTestBase {
         StrategyState memory stateAfter
     ) internal view {
         uint256 totalSupplyAfter = withdrawData.strategy.totalSupply();
-        // If zero shares were burnt, or zero equity was passed to the withdraw function, strategy state should not change
+
+        // If zero shares were burned, or zero equity was passed to the withdraw function, strategy collateral ratio should not change
         if (stateBefore.totalSupply == totalSupplyAfter || withdrawData.equityInCollateralAsset == 0) {
             assertEq(
                 stateBefore.collateralRatio,
@@ -97,31 +96,62 @@ contract WithdrawInvariants is InvariantTestBase {
         ILendingAdapter lendingAdapter = leverageManager.getStrategyLendingAdapter(withdrawData.strategy);
         uint256 totalSupplyAfter = withdrawData.strategy.totalSupply();
         uint256 collateralAfter = lendingAdapter.getCollateral();
+        uint256 equityInCollateralAssetAfter = lendingAdapter.getEquityInCollateralAsset();
+        bool equityIncreased = equityInCollateralAssetAfter > stateBefore.equityInCollateralAsset;
+        bool equityUnchanged = equityInCollateralAssetAfter == stateBefore.equityInCollateralAsset;
 
-        if (stateBefore.totalSupply != totalSupplyAfter) {
+        // It's possible for equity to increase due to rounding up of the required amount of debt to repay if the
+        // amount of equity passed to the withdraw function is too low.
+        if (equityIncreased) {
             assertLt(
-                collateralAfter,
-                stateBefore.collateral,
-                "Invariant Violated: Collateral after withdraw should be less than the initial collateral if shares were burned."
+                stateAfter.debt,
+                stateBefore.debt,
+                "Invariant Violated: Debt after withdraw should be less than the initial debt if equity increased."
             );
-            if (stateBefore.debt != 0) {
-                assertLe(
-                    stateAfter.debt,
-                    stateBefore.debt,
-                    "Invariant Violated: Debt after withdraw should be less than or equal to the initial debt if shares were burned."
+
+            if (stateBefore.totalSupply == totalSupplyAfter) {
+                assertEq(
+                    stateBefore.collateral,
+                    collateralAfter,
+                    "Invariant Violated: Collateral after withdraw should not change if equity increased and shares were not burned."
+                );
+            } else {
+                assertLt(
+                    collateralAfter,
+                    stateBefore.collateral,
+                    "Invariant Violated: Collateral after withdraw should be less than the initial collateral if equity increased and shares were burned."
                 );
             }
-        } else {
+        } else if (equityUnchanged) {
             assertEq(
                 collateralAfter,
                 stateBefore.collateral,
-                "Invariant Violated: Collateral after withdraw should not change if shares were not burned."
+                "Invariant Violated: Collateral after withdraw should be equal to the initial collateral if equity did not change."
             );
             assertEq(
                 stateAfter.debt,
                 stateBefore.debt,
-                "Invariant Violated: Debt after withdraw should not change if shares were not burned."
+                "Invariant Violated: Debt after withdraw should be equal to the initial debt if equity did not change."
             );
+        } else {
+            assertLt(
+                collateralAfter,
+                stateBefore.collateral,
+                "Invariant Violated: Collateral after withdraw should be less than the initial collateral if equity decreased."
+            );
+            if (stateBefore.debt > 0) {
+                assertLt(
+                    stateAfter.debt,
+                    stateBefore.debt,
+                    "Invariant Violated: Debt after withdraw should be less than the initial debt if equity decreased."
+                );
+            } else {
+                assertEq(
+                    stateAfter.debt,
+                    0,
+                    "Invariant Violated: Debt after withdraw should be 0 if equity decreased and debt was initially 0."
+                );
+            }
         }
 
         if (stateBefore.totalSupply > 0 && totalSupplyAfter == 0) {
@@ -130,7 +160,9 @@ contract WithdrawInvariants is InvariantTestBase {
                 0,
                 "Invariant Violated: Collateral in debt asset after a withdraw that burned all shares should be 0."
             );
-            assertEq(stateAfter.debt, 0, "Invariant Violated: Debt after burned all shares should be 0.");
+            assertEq(
+                stateAfter.debt, 0, "Invariant Violated: Debt after a withdraw that burned all shares should be 0."
+            );
         }
     }
 }

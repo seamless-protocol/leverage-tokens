@@ -6,8 +6,6 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
-import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {StrategyState} from "src/types/DataTypes.sol";
 import {LeverageManagerHandler} from "test/invariant/handlers/LeverageManagerHandler.t.sol";
 import {InvariantTestBase} from "test/invariant/InvariantTestBase.t.sol";
@@ -50,7 +48,7 @@ contract DepositInvariants is InvariantTestBase {
         uint256 collateralAfter = lendingAdapter.getCollateral();
         uint256 equityAfter = lendingAdapter.getEquityInCollateralAsset();
 
-        if (stateBefore.totalSupply != totalSupplyAfter) {
+        if (totalSupplyAfter > stateBefore.totalSupply) {
             assertGt(
                 collateralAfter,
                 stateBefore.collateral,
@@ -98,14 +96,14 @@ contract DepositInvariants is InvariantTestBase {
         LeverageManagerHandler.StrategyStateData memory stateBefore,
         StrategyState memory stateAfter
     ) internal view {
-        _assertEmptyStrategyDepositCollateralRatio(depositData, stateBefore, stateAfter);
-        _assertZeroSupplyNonZeroCollateralAndDebtDepositCollateralRatio(depositData, stateBefore, stateAfter);
-        _assertZeroDebtDepositCollateralRatio(depositData, stateBefore, stateAfter);
-        _assertNonEmptyStrategyDepositCollateralRatio(stateBefore, stateAfter);
-        _assertZeroEquityDepositCollateralRatio(depositData, stateBefore, stateAfter);
+        _assertEmptyStrategyDepositCollateralRatioInvariants(depositData, stateBefore, stateAfter);
+        _assertZeroSupplyNonZeroCollateralAndDebtDepositCollateralRatioInvariants(depositData, stateBefore, stateAfter);
+        _assertZeroDebtDepositCollateralRatioInvariants(depositData, stateBefore, stateAfter);
+        _assertNonEmptyStrategyDepositCollateralRatioInvariants(stateBefore, stateAfter);
+        _assertZeroEquityDepositCollateralRatioInvariants(depositData, stateBefore, stateAfter);
     }
 
-    function _assertEmptyStrategyDepositCollateralRatio(
+    function _assertEmptyStrategyDepositCollateralRatioInvariants(
         LeverageManagerHandler.DepositActionData memory depositData,
         LeverageManagerHandler.StrategyStateData memory stateBefore,
         StrategyState memory stateAfter
@@ -147,7 +145,7 @@ contract DepositInvariants is InvariantTestBase {
         }
     }
 
-    function _assertZeroSupplyNonZeroCollateralAndDebtDepositCollateralRatio(
+    function _assertZeroSupplyNonZeroCollateralAndDebtDepositCollateralRatioInvariants(
         LeverageManagerHandler.DepositActionData memory depositData,
         LeverageManagerHandler.StrategyStateData memory stateBefore,
         StrategyState memory stateAfter
@@ -171,7 +169,7 @@ contract DepositInvariants is InvariantTestBase {
         }
     }
 
-    function _assertZeroDebtDepositCollateralRatio(
+    function _assertZeroDebtDepositCollateralRatioInvariants(
         LeverageManagerHandler.DepositActionData memory depositData,
         LeverageManagerHandler.StrategyStateData memory stateBefore,
         StrategyState memory stateAfter
@@ -195,7 +193,7 @@ contract DepositInvariants is InvariantTestBase {
         }
     }
 
-    function _assertNonEmptyStrategyDepositCollateralRatio(
+    function _assertNonEmptyStrategyDepositCollateralRatioInvariants(
         LeverageManagerHandler.StrategyStateData memory stateBefore,
         StrategyState memory stateAfter
     ) internal pure {
@@ -214,6 +212,20 @@ contract DepositInvariants is InvariantTestBase {
             assertTrue(
                 stateAfter.collateralRatio >= stateBefore.collateralRatio && stateBefore.collateralRatio == 0,
                 "Invariant Violated: Collateral ratio after deposit must be greater than or equal to the initial collateral ratio when collateral in debt asset was 0 (and thus the initial collateral ratio was 0)."
+            );
+        }
+    }
+
+    function _assertZeroEquityDepositCollateralRatioInvariants(
+        LeverageManagerHandler.DepositActionData memory depositData,
+        LeverageManagerHandler.StrategyStateData memory stateBefore,
+        StrategyState memory stateAfter
+    ) internal pure {
+        if (depositData.equityInCollateralAsset == 0) {
+            assertEq(
+                stateAfter.collateralRatio,
+                stateBefore.collateralRatio,
+                "Invariant Violated: Collateral ratio after a deposit of zero equity should be equal to the initial collateral ratio."
             );
         }
     }
@@ -239,19 +251,5 @@ contract DepositInvariants is InvariantTestBase {
             ),
             errorMessage
         );
-    }
-
-    function _assertZeroEquityDepositCollateralRatio(
-        LeverageManagerHandler.DepositActionData memory depositData,
-        LeverageManagerHandler.StrategyStateData memory stateBefore,
-        StrategyState memory stateAfter
-    ) internal pure {
-        if (depositData.equityInCollateralAsset == 0) {
-            assertEq(
-                stateAfter.collateralRatio,
-                stateBefore.collateralRatio,
-                "Invariant Violated: Collateral ratio after a deposit of zero equity should be equal to the initial collateral ratio."
-            );
-        }
     }
 }
