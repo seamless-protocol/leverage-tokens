@@ -17,6 +17,8 @@ contract SetMinPriceMultiplierTest is DutchAuctionRebalancerTest {
 
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_setMinPriceMultiplier(uint256 newMultiplier) public {
+        vm.assume(newMultiplier < DEFAULT_INITIAL_PRICE_MULTIPLIER);
+
         vm.prank(owner);
         auctionRebalancer.setMinPriceMultiplier(strategy, newMultiplier);
 
@@ -30,5 +32,21 @@ contract SetMinPriceMultiplierTest is DutchAuctionRebalancerTest {
         vm.prank(notOwner);
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, notOwner));
         auctionRebalancer.setMinPriceMultiplier(strategy, newMultiplier);
+    }
+
+    /// forge-config: default.fuzz.runs = 1
+    function testFuzz_setMinPriceMultiplier_RevertIf_MinPriceMultiplierHigherThanInitial(
+        uint256 initialPriceMultiplier,
+        uint256 minMultiplier
+    ) public {
+        vm.assume(minMultiplier > initialPriceMultiplier);
+
+        vm.startPrank(owner);
+        auctionRebalancer.setInitialPriceMultiplier(strategy, initialPriceMultiplier);
+
+        vm.expectRevert(IDutchAuctionRebalancer.MinPriceMultiplierHigherThanInitial.selector);
+        auctionRebalancer.setMinPriceMultiplier(strategy, minMultiplier);
+
+        vm.stopPrank();
     }
 }

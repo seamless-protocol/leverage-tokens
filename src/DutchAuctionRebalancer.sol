@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -83,7 +82,6 @@ contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
         uint256 elapsed = block.timestamp - auction.startTimestamp;
         uint256 duration = auction.endTimestamp - auction.startTimestamp;
 
-        // Early return for edge cases
         if (elapsed > duration) {
             return auction.minPriceMultiplier;
         }
@@ -124,12 +122,20 @@ contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
 
     /// @inheritdoc IDutchAuctionRebalancer
     function setInitialPriceMultiplier(IStrategy strategy, uint256 newMultiplier) external onlyOwner {
+        if (newMultiplier < minPriceMultiplier[strategy]) {
+            revert MinPriceMultiplierHigherThanInitial();
+        }
+
         initialPriceMultiplier[strategy] = newMultiplier;
         emit InitialPriceMultiplierSet(strategy, newMultiplier);
     }
 
     /// @inheritdoc IDutchAuctionRebalancer
     function setMinPriceMultiplier(IStrategy strategy, uint256 newMultiplier) external onlyOwner {
+        if (newMultiplier > initialPriceMultiplier[strategy]) {
+            revert MinPriceMultiplierHigherThanInitial();
+        }
+
         minPriceMultiplier[strategy] = newMultiplier;
         emit MinPriceMultiplierSet(strategy, newMultiplier);
     }
@@ -193,7 +199,7 @@ contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
         }
     }
 
-    /// @notice Executes the rebalance operation
+    /// @notice Executes the rebalance up operation
     /// @param strategy Strategy to rebalance
     /// @param collateralAmount Amount of collateral to add
     /// @param debtAmount Amount of debt to borrow
@@ -223,7 +229,7 @@ contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
         debtAsset.safeTransfer(msg.sender, debtAmount);
     }
 
-    /// @notice Executes the rebalance operation
+    /// @notice Executes the rebalance down operation
     /// @param strategy Strategy to rebalance
     /// @param collateralAmount Amount of collateral to remove
     /// @param debtAmount Amount of debt to repay
