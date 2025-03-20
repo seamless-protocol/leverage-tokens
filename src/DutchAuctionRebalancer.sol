@@ -187,9 +187,9 @@ contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
         uint256 amountIn = getAmountIn(strategy, amountOut);
 
         if (auctions[strategy].isOverCollateralized) {
-            _executeRebalanceUp(strategy, amountIn, amountOut);
+            _executeRebalanceDown(strategy, amountIn, amountOut);
         } else {
-            _executeRebalanceDown(strategy, amountOut, amountIn);
+            _executeRebalanceUp(strategy, amountOut, amountIn);
         }
 
         emit Take(strategy, msg.sender, amountIn, amountOut);
@@ -199,12 +199,12 @@ contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
         }
     }
 
-    /// @notice Executes the rebalance up operation
+    /// @notice Executes the rebalance down operation, meaning decreasing collateral ratio
     /// @param strategy Strategy to rebalance
     /// @param collateralAmount Amount of collateral to add
     /// @param debtAmount Amount of debt to borrow
     /// @dev This function prepares rebalance parameters, takes collateral token from sender, executes rebalance and returns debt token to sender
-    function _executeRebalanceUp(IStrategy strategy, uint256 collateralAmount, uint256 debtAmount) internal {
+    function _executeRebalanceDown(IStrategy strategy, uint256 collateralAmount, uint256 debtAmount) internal {
         // Get token addresses
         IERC20 collateralAsset = leverageManager.getStrategyCollateralAsset(strategy);
         IERC20 debtAsset = leverageManager.getStrategyDebtAsset(strategy);
@@ -229,12 +229,12 @@ contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
         debtAsset.safeTransfer(msg.sender, debtAmount);
     }
 
-    /// @notice Executes the rebalance down operation
+    /// @notice Executes the rebalance up operation, meaning increasing collateral ratio
     /// @param strategy Strategy to rebalance
     /// @param collateralAmount Amount of collateral to remove
     /// @param debtAmount Amount of debt to repay
     /// @dev This function prepares rebalance parameters, takes debt token from sender, executes rebalance and returns collateral token to sender
-    function _executeRebalanceDown(IStrategy strategy, uint256 collateralAmount, uint256 debtAmount) internal {
+    function _executeRebalanceUp(IStrategy strategy, uint256 collateralAmount, uint256 debtAmount) internal {
         // Get token addresses
         IERC20 collateralAsset = leverageManager.getStrategyCollateralAsset(strategy);
         IERC20 debtAsset = leverageManager.getStrategyDebtAsset(strategy);
