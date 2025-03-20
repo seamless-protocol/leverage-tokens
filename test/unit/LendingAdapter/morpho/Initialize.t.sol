@@ -7,6 +7,7 @@ import {Test} from "forge-std/Test.sol";
 // Dependency imports
 import {Id, MarketParams, IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 // Internal imports
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
@@ -36,7 +37,7 @@ contract MorphoLendingAdapterInitializeTest is MorphoLendingAdapterBaseTest {
         assertEq(address(_lendingAdapter.morpho()), address(morpho));
 
         vm.expectEmit(true, true, true, true);
-        emit IMorphoLendingAdapter.Initialized(marketId);
+        emit Initializable.Initialized(1);
         _lendingAdapter.initialize(marketId);
 
         assertEq(address(_lendingAdapter.leverageManager()), address(leverageManager));
@@ -55,7 +56,7 @@ contract MorphoLendingAdapterInitializeTest is MorphoLendingAdapterBaseTest {
         MorphoLendingAdapter _lendingAdapter = new MorphoLendingAdapter(leverageManager, IMorpho(address(morpho)));
         _lendingAdapter.initialize(defaultMarketId);
 
-        vm.expectRevert(abi.encodeWithSelector(IMorphoLendingAdapter.AlreadyInitialized.selector));
+        vm.expectRevert(abi.encodeWithSelector(Initializable.InvalidInitialization.selector));
         _lendingAdapter.initialize(defaultMarketId);
     }
 }

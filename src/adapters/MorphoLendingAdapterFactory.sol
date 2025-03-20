@@ -8,6 +8,7 @@ import {Clones} from "openzeppelin-contracts/contracts/proxy/Clones.sol";
 // Internal imports
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {IMorphoLendingAdapterFactory} from "src/interfaces/IMorphoLendingAdapterFactory.sol";
+import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
 
 contract MorphoLendingAdapterFactory is IMorphoLendingAdapterFactory {
     using Clones for address;
@@ -30,7 +31,7 @@ contract MorphoLendingAdapterFactory is IMorphoLendingAdapterFactory {
         IMorphoLendingAdapter lendingAdapter =
             IMorphoLendingAdapter(address(lendingAdapterLogic).cloneDeterministic(salt(msg.sender, baseSalt)));
         emit MorphoLendingAdapterDeployed(lendingAdapter);
-        lendingAdapter.initialize(morphoMarketId);
+        MorphoLendingAdapter(address(lendingAdapter)).initialize(morphoMarketId);
 
         return lendingAdapter;
     }

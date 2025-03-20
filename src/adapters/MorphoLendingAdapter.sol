@@ -11,13 +11,14 @@ import {MorphoLib} from "@morpho-blue/libraries/periphery/MorphoLib.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Initializable} from "openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
 
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 
-contract MorphoLendingAdapter is IMorphoLendingAdapter {
+contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     /// @inheritdoc IMorphoLendingAdapter
     ILeverageManager public immutable leverageManager;
 
@@ -29,10 +30,6 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter {
 
     /// @inheritdoc IMorphoLendingAdapter
     MarketParams public marketParams;
-
-    /// @notice Whether the lending adapter is initialized
-    /// @return initialized Whether the lending adapter is initialized
-    bool public initialized;
 
     /// @dev Reverts if the caller is not the stored leverageManager address
     modifier onlyLeverageManager() {
@@ -50,13 +47,9 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter {
 
     /// @notice Initializes the Morpho lending adapter
     /// @param _morphoMarketId The Morpho market ID
-    function initialize(Id _morphoMarketId) external {
-        if (initialized) revert AlreadyInitialized();
-
+    function initialize(Id _morphoMarketId) external initializer {
         morphoMarketId = _morphoMarketId;
         marketParams = morpho.idToMarketParams(_morphoMarketId);
-        initialized = true;
-        emit Initialized(_morphoMarketId);
     }
 
     /// @inheritdoc ILendingAdapter
