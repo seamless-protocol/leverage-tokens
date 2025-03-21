@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-/*
+// Dependency imports
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
+// Internal imports
+import {ISeamlessRebalanceModule} from "./interfaces/ISeamlessRebalanceModule.sol";
 import {IDutchAuctionRebalancer} from "./interfaces/IDutchAuctionRebalancer.sol";
 import {ILeverageManager} from "./interfaces/ILeverageManager.sol";
 import {IStrategy} from "./interfaces/IStrategy.sol";
@@ -48,15 +50,15 @@ contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
         returns (bool isEligibleForRebalance, bool isOverCollateralized)
     {
         StrategyState memory state = leverageManager.getStrategyState(strategy);
-        CollateralRatios memory ratios = leverageManager.getStrategyCollateralRatios(strategy);
 
-        ISeamlessRebalanceModule rebalanceModule = 
+        ISeamlessRebalanceModule rebalanceModule =
+            ISeamlessRebalanceModule(address(leverageManager.getStrategyRebalanceModule(strategy)));
 
-        uint256 minColl
+        uint256 minColRatio = rebalanceModule.getStrategyMinCollateralRatio(strategy);
+        uint256 maxColRatio = rebalanceModule.getStrategyMaxCollateralRatio(strategy);
 
-        isEligibleForRebalance =
-            state.collateralRatio < ratios.minCollateralRatio || state.collateralRatio > ratios.maxCollateralRatio;
-        isOverCollateralized = state.collateralRatio > ratios.maxCollateralRatio;
+        isEligibleForRebalance = state.collateralRatio < minColRatio || state.collateralRatio > maxColRatio;
+        isOverCollateralized = state.collateralRatio > maxColRatio;
 
         return (isEligibleForRebalance, isOverCollateralized);
     }
@@ -264,4 +266,3 @@ contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
         collateralAsset.safeTransfer(msg.sender, collateralAmount);
     }
 }
-*/
