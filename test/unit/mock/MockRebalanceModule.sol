@@ -11,6 +11,14 @@ contract MockRebalanceModule {
     mapping(IStrategy => uint256) public strategyMinCollateralRatio;
     mapping(IStrategy => uint256) public strategyMaxCollateralRatio;
 
+    function getStrategyMinCollateralRatio(IStrategy strategy) external view returns (uint256) {
+        return strategyMinCollateralRatio[strategy];
+    }
+
+    function getStrategyMaxCollateralRatio(IStrategy strategy) external view returns (uint256) {
+        return strategyMaxCollateralRatio[strategy];
+    }
+
     function mockSetStrategyMinCollateralRatio(IStrategy strategy, uint256 minCollateralRatio) public {
         strategyMinCollateralRatio[strategy] = minCollateralRatio;
     }

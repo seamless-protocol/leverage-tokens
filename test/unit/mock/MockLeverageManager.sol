@@ -83,12 +83,18 @@ contract MockLeverageManager is Test {
 
     mapping(bytes32 => MockPreviewWithdrawData) public mockPreviewWithdrawData;
 
+    mapping(IStrategy => address) public strategyRebalanceModule;
+
     function getStrategyCollateralAsset(IStrategy strategy) external view returns (IERC20) {
         return strategies[strategy].collateralAsset;
     }
 
     function getStrategyLendingAdapter(IStrategy strategy) external view returns (ILendingAdapter) {
         return strategies[strategy].lendingAdapter;
+    }
+
+    function getStrategyRebalanceModule(IStrategy strategy) external view returns (address) {
+        return strategyRebalanceModule[strategy];
     }
 
     function getStrategyState(IStrategy strategy) external view returns (StrategyState memory) {
@@ -113,6 +119,10 @@ contract MockLeverageManager is Test {
 
     function setStrategyState(IStrategy strategy, StrategyState memory _strategyState) external {
         strategyStates[strategy] = _strategyState;
+    }
+
+    function setStrategyRebalanceModule(IStrategy strategy, address _rebalanceModule) external {
+        strategyRebalanceModule[strategy] = _rebalanceModule;
     }
 
     function setMockPreviewDepositData(
