@@ -6,7 +6,7 @@ import {Test} from "forge-std/Test.sol";
 
 // Internal imports
 import {MockRebalanceModule} from "../mock/MockRebalanceModule.sol";
-import {DutchAuctionRebalancer} from "src/DutchAuctionRebalancer.sol";
+import {DutchAuctionRebalancer} from "src/rebalance/DutchAuctionRebalancer.sol";
 import {DutchAuctionRebalancerHarness} from "./harness/DutchAuctionRebalancerHarness.t.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";

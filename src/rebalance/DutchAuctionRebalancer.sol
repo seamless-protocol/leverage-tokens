@@ -8,12 +8,12 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 // Internal imports
-import {ISeamlessRebalanceModule} from "./interfaces/ISeamlessRebalanceModule.sol";
-import {IDutchAuctionRebalancer} from "./interfaces/IDutchAuctionRebalancer.sol";
-import {ILeverageManager} from "./interfaces/ILeverageManager.sol";
-import {IStrategy} from "./interfaces/IStrategy.sol";
-import {ILendingAdapter} from "./interfaces/ILendingAdapter.sol";
-import {RebalanceAction, TokenTransfer, ActionType, StrategyState} from "./types/DataTypes.sol";
+import {ISeamlessRebalanceModule} from "src/interfaces/ISeamlessRebalanceModule.sol";
+import {IDutchAuctionRebalancer} from "src/interfaces/IDutchAuctionRebalancer.sol";
+import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
+import {IStrategy} from "src/interfaces/IStrategy.sol";
+import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
+import {RebalanceAction, TokenTransfer, ActionType, StrategyState} from "src/types/DataTypes.sol";
 
 contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
     using SafeERC20 for IERC20;
