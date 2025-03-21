@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-import {console} from "forge-std/console.sol";
-
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -363,29 +361,19 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         view
         returns (ActionData memory data)
     {
-        console.log("preview action start");
-
         (uint256 equityToCover, uint256 equityForShares, uint256 strategyFee, uint256 treasuryFee) =
             _computeEquityFees(strategy, equityInCollateralAsset, action);
 
-        console.log("compute equity fees end");
-
         uint256 shares = _convertToShares(strategy, equityForShares);
-
-        console.log("convert to shares end");
 
         (uint256 collateralForStrategy, uint256 debtForStrategy) =
             _computeCollateralAndDebtForAction(strategy, equityToCover, action);
-
-        console.log("compute collateral and debt end");
 
         // The collateral returned by `_computeCollateralAndDebtForAction` can be zero if the amount of equity for the strategy
         // cannot be exchanged for at least 1 strategy share due to rounding down in the exchange rate calculation.
         // The treasury fee returned by `_computeEquityFees` is wrt the equity amount, not the share amount, thus it's possible
         // for it to be non-zero even if the collateral amount is zero. In this case, the treasury fee should be set to 0
         treasuryFee = collateralForStrategy == 0 ? 0 : treasuryFee;
-
-        console.log("preview action end");
 
         return ActionData({
             collateral: collateralForStrategy,
@@ -412,33 +400,21 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         uint256 totalDebt = lendingAdapter.getDebt();
         uint256 totalShares = strategy.totalSupply();
 
-        console.log("compute collateral and debt for action start");
-
         Math.Rounding collateralRounding = action == ExternalAction.Deposit ? Math.Rounding.Ceil : Math.Rounding.Floor;
         Math.Rounding debtRounding = action == ExternalAction.Deposit ? Math.Rounding.Floor : Math.Rounding.Ceil;
 
         uint256 shares = _convertToShares(strategy, equityInCollateralAsset);
 
-        console.log("convert to shares end");
-
         // If action is deposit there might be some dust in collateral but debt can be 0. In that case we should follow target ratio
         bool shouldFollowTargetRatio = totalShares == 0 || (action == ExternalAction.Deposit && totalDebt == 0);
 
-        console.log("should follow target ratio end");
-
         if (shouldFollowTargetRatio) {
-            console.log("should follow target ratio true");
             uint256 targetRatio = getStrategyTargetCollateralRatio(strategy);
             collateral = Math.mulDiv(equityInCollateralAsset, targetRatio, targetRatio - BASE_RATIO, collateralRounding);
-            console.log("collateral after target ratio", collateral);
             debt = lendingAdapter.convertCollateralToDebtAsset(collateral - equityInCollateralAsset);
-
-            console.log("target ratio end");
         } else {
-            console.log("should follow target ratio false");
             collateral = Math.mulDiv(lendingAdapter.getCollateral(), shares, totalShares, collateralRounding);
             debt = Math.mulDiv(totalDebt, shares, totalShares, debtRounding);
-            console.log("compute collateral and debt for action end");
         }
 
         return (collateral, debt);

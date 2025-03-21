@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-import {console} from "forge-std/console.sol";
-
 // Dependency imports
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
@@ -51,9 +49,7 @@ contract LeverageManagerDepositTest is LeverageManagerBase {
 
         uint256 equityInCollateralAsset = 10 ether;
         uint256 collateralToAdd = 2 * equityInCollateralAsset;
-        console.log("pre deposit");
         _deposit(user, equityInCollateralAsset, collateralToAdd);
-        console.log("post deposit");
 
         // 8 ether because 10% of equity is for treasury fee and 10% is for strategy
         assertEq(strategy.balanceOf(user), 8 ether);
