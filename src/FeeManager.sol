@@ -14,8 +14,9 @@ import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 
 contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
-    // Max fee that can be set, 100_00 is 100%
+    /// @inheritdoc IFeeManager
     uint256 public constant MAX_FEE = 100_00;
+
     bytes32 public constant FEE_MANAGER_ROLE = keccak256("FEE_MANAGER_ROLE");
 
     /// @dev Struct containing all state for the FeeManager contract
@@ -25,7 +26,7 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
         address treasury;
         /// @dev Treasury fee for each action
         mapping(ExternalAction action => uint256) treasuryActionFee;
-        /// @dev Strategy address => Action => Fee
+        /// @dev Strategy fee for each action
         mapping(IStrategy strategy => mapping(ExternalAction action => uint256)) strategyActionFee;
     }
 
@@ -59,20 +60,6 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
     /// @inheritdoc IFeeManager
     function getTreasuryActionFee(ExternalAction action) public view returns (uint256 fee) {
         return _getFeeManagerStorage().treasuryActionFee[action];
-    }
-
-    /// @inheritdoc IFeeManager
-    function setStrategyActionFee(IStrategy strategy, ExternalAction action, uint256 fee)
-        external
-        onlyRole(FEE_MANAGER_ROLE)
-    {
-        // Check if fees are not higher than 100%
-        if (fee > MAX_FEE) {
-            revert FeeTooHigh(fee, MAX_FEE);
-        }
-
-        _getFeeManagerStorage().strategyActionFee[strategy][action] = fee;
-        emit StrategyActionFeeSet(strategy, action, fee);
     }
 
     /// @inheritdoc IFeeManager
@@ -158,5 +145,20 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
         if (treasury != address(0)) {
             SafeERC20.safeTransfer(collateralAsset, treasury, amount);
         }
+    }
+
+    /// @notice Sets strategy fee for specific action
+    /// @param strategy Strategy to set fee for
+    /// @param action Action to set fee for
+    /// @param fee Fee for action, 100_00 is 100%
+    /// @dev If caller tries to set fee above 100% it reverts with FeeTooHigh error
+    function _setStrategyActionFee(IStrategy strategy, ExternalAction action, uint256 fee) internal {
+        // Check if fees are not higher than 100%
+        if (fee > MAX_FEE) {
+            revert FeeTooHigh(fee, MAX_FEE);
+        }
+
+        _getFeeManagerStorage().strategyActionFee[strategy][action] = fee;
+        emit StrategyActionFeeSet(strategy, action, fee);
     }
 }

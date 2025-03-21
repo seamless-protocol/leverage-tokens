@@ -20,27 +20,9 @@ contract SetStrategyActionFeeTest is FeeManagerBaseTest {
         vm.expectEmit(true, true, true, true);
         emit IFeeManager.StrategyActionFeeSet(strategy, action, fee);
 
-        _setStrategyActionFee(feeManagerRole, strategy, action, fee);
+        feeManager.exposed_setStrategyActionFee(strategy, action, fee);
 
         assertEq(feeManager.getStrategyActionFee(strategy, action), fee);
-    }
-
-    /// forge-config: default.fuzz.runs = 1
-    function testFuzz_setStrategyActionFee_CallerIsNotFeeManagerRole(
-        address caller,
-        IStrategy strategy,
-        uint256 actionNum,
-        uint256 fee
-    ) public {
-        vm.assume(caller != feeManagerRole);
-        ExternalAction action = ExternalAction(actionNum % 2);
-
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, caller, feeManager.FEE_MANAGER_ROLE()
-            )
-        );
-        _setStrategyActionFee(caller, strategy, action, fee);
     }
 
     /// forge-config: default.fuzz.runs = 1
@@ -51,6 +33,6 @@ contract SetStrategyActionFeeTest is FeeManagerBaseTest {
         fee = bound(fee, feeManager.MAX_FEE() + 1, type(uint256).max);
 
         vm.expectRevert(abi.encodeWithSelector(IFeeManager.FeeTooHigh.selector, fee, feeManager.MAX_FEE()));
-        _setStrategyActionFee(feeManagerRole, strategy, action, fee);
+        feeManager.exposed_setStrategyActionFee(strategy, action, fee);
     }
 }

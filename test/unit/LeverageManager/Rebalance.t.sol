@@ -16,26 +16,29 @@ import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {RebalanceAction, ActionType, TokenTransfer, StrategyState} from "src/types/DataTypes.sol";
 import {MockRebalanceModule} from "test/unit/mock/MockRebalanceModule.sol";
 import {IRebalanceModule} from "src/interfaces/IRebalanceModule.sol";
+import {RebalanceAction, ActionType, TokenTransfer, StrategyConfig, StrategyState} from "src/types/DataTypes.sol";
 
 contract RebalanceTest is LeverageManagerBaseTest {
     ERC20Mock public WETH = new ERC20Mock();
     ERC20Mock public USDC = new ERC20Mock();
 
-    MockRebalanceModule public rebalanceAdapter;
+    MockRebalanceModule public rebalanceModule;
     MockLendingAdapter public adapter;
 
     function setUp() public override {
         super.setUp();
 
         adapter = new MockLendingAdapter(address(WETH), address(USDC));
-        rebalanceAdapter = new MockRebalanceModule();
+        rebalanceModule = new MockRebalanceModule();
 
         _createNewStrategy(
             manager,
-            ILeverageManager.StrategyConfig({
+            StrategyConfig({
                 lendingAdapter: ILendingAdapter(address(adapter)),
                 targetCollateralRatio: 2 * _BASE_RATIO(), // 2x leverage
-                rebalanceAdapter: IRebalanceModule(address(rebalanceAdapter))
+                rebalanceModule: IRebalanceModule(address(rebalanceModule)),
+                strategyDepositFee: 0,
+                strategyWithdrawFee: 0
             }),
             address(WETH),
             address(USDC),
@@ -45,8 +48,8 @@ contract RebalanceTest is LeverageManagerBaseTest {
     }
 
     function test_Rebalance_SimpleRebalanceSingleStrategy_Overcollateralized() public {
-        rebalanceAdapter.mockIsEligibleForRebalance(strategy, true);
-        rebalanceAdapter.mockIsValidStateAfterRebalance(strategy, true);
+        rebalanceModule.mockIsEligibleForRebalance(strategy, true);
+        rebalanceModule.mockIsValidStateAfterRebalance(strategy, true);
 
         adapter.mockConvertCollateralToDebtAssetExchangeRate(2_000_00000000); // ETH = 2000 USDC
         adapter.mockCollateral(10 ether); // 10 ETH = 20,000 USDC
@@ -82,8 +85,8 @@ contract RebalanceTest is LeverageManagerBaseTest {
     }
 
     function test_Rebalance_SimpleRebalanceSingleStrategy_RebalancerTakesReward_Overcollateralized() public {
-        rebalanceAdapter.mockIsEligibleForRebalance(strategy, true);
-        rebalanceAdapter.mockIsValidStateAfterRebalance(strategy, true);
+        rebalanceModule.mockIsEligibleForRebalance(strategy, true);
+        rebalanceModule.mockIsValidStateAfterRebalance(strategy, true);
 
         adapter.mockConvertCollateralToDebtAssetExchangeRate(2_000_00000000); // ETH = 2000 USDC
         adapter.mockCollateral(10 ether); // 10 ETH = 20,000 USDC
@@ -119,8 +122,8 @@ contract RebalanceTest is LeverageManagerBaseTest {
     }
 
     function test_Rebalance_SimpleRebalanceSingleStrategy_RebalancerTakesReward_Undercollateralized() public {
-        rebalanceAdapter.mockIsEligibleForRebalance(strategy, true);
-        rebalanceAdapter.mockIsValidStateAfterRebalance(strategy, true);
+        rebalanceModule.mockIsEligibleForRebalance(strategy, true);
+        rebalanceModule.mockIsValidStateAfterRebalance(strategy, true);
 
         adapter.mockConvertCollateralToDebtAssetExchangeRate(2_000_00000000); // ETH = 2000 USDC, mock ETH price
         adapter.mockCollateral(10 ether); // 10 ETH = 20,000 USDC
@@ -162,19 +165,21 @@ contract RebalanceTest is LeverageManagerBaseTest {
         MockLendingAdapter ethShortAdapter = new MockLendingAdapter(address(USDC), address(WETH));
 
         IStrategy ethShort = leverageManager.createNewStrategy(
-            ILeverageManager.StrategyConfig({
+            StrategyConfig({
                 lendingAdapter: ILendingAdapter(address(ethShortAdapter)),
                 targetCollateralRatio: 15 * _BASE_RATIO() / 10, // 3x leverage which means 2x price exposure
-                rebalanceAdapter: IRebalanceModule(address(rebalanceAdapter))
+                rebalanceModule: IRebalanceModule(address(rebalanceModule)),
+                strategyDepositFee: 0,
+                strategyWithdrawFee: 0
             }),
             "ETH Short 2x",
             "ETHS2x"
         );
 
-        rebalanceAdapter.mockIsEligibleForRebalance(ethLong, true);
-        rebalanceAdapter.mockIsValidStateAfterRebalance(ethLong, true);
-        rebalanceAdapter.mockIsEligibleForRebalance(ethShort, true);
-        rebalanceAdapter.mockIsValidStateAfterRebalance(ethShort, true);
+        rebalanceModule.mockIsEligibleForRebalance(ethLong, true);
+        rebalanceModule.mockIsValidStateAfterRebalance(ethLong, true);
+        rebalanceModule.mockIsEligibleForRebalance(ethShort, true);
+        rebalanceModule.mockIsValidStateAfterRebalance(ethShort, true);
 
         ethLongAdapter.mockConvertCollateralToDebtAssetExchangeRate(2_000_00000000); // ETH = 2000 USDC
         ethLongAdapter.mockCollateral(10 ether); // 10 ETH = 20,000 USDC
@@ -230,7 +235,7 @@ contract RebalanceTest is LeverageManagerBaseTest {
     }
 
     function test_rebalance_RevertIf_NotEligibleForRebalance() external {
-        rebalanceAdapter.mockIsEligibleForRebalance(strategy, false);
+        rebalanceModule.mockIsEligibleForRebalance(strategy, false);
 
         adapter.mockConvertCollateralToDebtAssetExchangeRate(2_000_00000000); // ETH = 2000 USDC
         adapter.mockCollateral(10 ether); // 10 ETH = 20,000 USDC
@@ -261,8 +266,8 @@ contract RebalanceTest is LeverageManagerBaseTest {
     }
 
     function test_rebalance_RevertIf_InvalidStateAfterRebalance() external {
-        rebalanceAdapter.mockIsEligibleForRebalance(strategy, true);
-        rebalanceAdapter.mockIsValidStateAfterRebalance(strategy, false);
+        rebalanceModule.mockIsEligibleForRebalance(strategy, true);
+        rebalanceModule.mockIsValidStateAfterRebalance(strategy, false);
 
         adapter.mockConvertCollateralToDebtAssetExchangeRate(2_000_00000000); // ETH = 2000 USDC
         adapter.mockCollateral(10 ether); // 10 ETH = 20,000 USDC

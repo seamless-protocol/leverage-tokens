@@ -9,20 +9,10 @@ import {IFeeManager} from "./IFeeManager.sol";
 import {IStrategy} from "./IStrategy.sol";
 import {IBeaconProxyFactory} from "./IBeaconProxyFactory.sol";
 import {ILendingAdapter} from "./ILendingAdapter.sol";
-import {ActionData, RebalanceAction, TokenTransfer, StrategyState} from "src/types/DataTypes.sol";
+import {ActionData, StrategyState, RebalanceAction, TokenTransfer, StrategyConfig} from "src/types/DataTypes.sol";
 import {IRebalanceModule} from "./IRebalanceModule.sol";
 
 interface ILeverageManager is IFeeManager {
-    /// @dev Struct that contains entire strategy config
-    struct StrategyConfig {
-        /// @dev Lending adapter for strategy
-        ILendingAdapter lendingAdapter;
-        /// @dev Rebalance adapter for strategy
-        IRebalanceModule rebalanceAdapter;
-        /// @dev Target collateral ratio of the strategy on 8 decimals
-        uint256 targetCollateralRatio;
-    }
-
     /// @notice Error thrown when someone tries to create strategy with lending adapter that already exists
     error LendingAdapterAlreadyInUse(address adapter);
 

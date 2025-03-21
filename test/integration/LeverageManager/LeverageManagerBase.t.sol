@@ -21,11 +21,6 @@ contract LeverageManagerBase is IntegrationTestBase {
         assertEq(address(leverageManager.getStrategyCollateralAsset(strategy)), address(WETH));
         assertEq(address(leverageManager.getStrategyDebtAsset(strategy)), address(USDC));
 
-        // CollateralRatios memory ratios = leverageManager.getStrategyCollateralRatios(strategy);
-        // assertEq(ratios.minCollateralRatio, BASE_RATIO);
-        // assertEq(ratios.maxCollateralRatio, 3 * BASE_RATIO);
-        // assertEq(ratios.targetCollateralRatio, 2 * BASE_RATIO);
-
         assertEq(leverageManager.getIsLendingAdapterUsed(address(morphoLendingAdapter)), true);
         assertEq(leverageManager.getStrategyTargetCollateralRatio(strategy), 2 * BASE_RATIO);
     }

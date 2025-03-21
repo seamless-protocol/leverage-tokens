@@ -10,8 +10,8 @@ import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageManagerBaseTest} from "./LeverageManagerBase.t.sol";
 import {MockLendingAdapter} from "test/unit/mock/MockLendingAdapter.sol";
-import {ActionType} from "src/types/DataTypes.sol";
 import {IRebalanceModule} from "src/interfaces/IRebalanceModule.sol";
+import {ActionType, StrategyConfig} from "src/types/DataTypes.sol";
 
 contract ExecuteActionTest is LeverageManagerBaseTest {
     function setUp() public override {
@@ -19,10 +19,12 @@ contract ExecuteActionTest is LeverageManagerBaseTest {
 
         _createNewStrategy(
             manager,
-            ILeverageManager.StrategyConfig({
+            StrategyConfig({
                 lendingAdapter: ILendingAdapter(address(lendingAdapter)),
                 targetCollateralRatio: _BASE_RATIO() + 1, // 1.1x
-                rebalanceAdapter: IRebalanceModule(address(0))
+                rebalanceModule: IRebalanceModule(address(0)),
+                strategyDepositFee: 0,
+                strategyWithdrawFee: 0
             }),
             address(collateralToken),
             address(debtToken),

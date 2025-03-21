@@ -8,6 +8,9 @@ import {IOracle} from "@morpho-blue/interfaces/IOracle.sol";
 
 // Internal imports
 import {ExternalAction} from "src/types/DataTypes.sol";
+import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
+import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
+import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
 import {LeverageManagerBase} from "./LeverageManagerBase.t.sol";
 import {ActionData, StrategyState} from "src/types/DataTypes.sol";
 
@@ -157,8 +160,10 @@ contract LeverageManagerWithdrawTest is LeverageManagerBase {
     }
 
     function testFork_withdraw_withFee() public {
-        leverageManager.setTreasuryActionFee(ExternalAction.Withdraw, 10_00); // 10%
-        leverageManager.setStrategyActionFee(strategy, ExternalAction.Withdraw, 10_00); // 10%
+        uint256 fee = 10_00; // 10%
+        leverageManager.setTreasuryActionFee(ExternalAction.Withdraw, fee); // 10%
+        strategy = _createNewStrategy(BASE_RATIO, 2 * BASE_RATIO, 3 * BASE_RATIO, fee, 0);
+        morphoLendingAdapter = MorphoLendingAdapter(address(leverageManager.getStrategyLendingAdapter(strategy)));
 
         uint256 equityInCollateralAsset = 10 ether;
         uint256 collateralToAdd = 2 * equityInCollateralAsset;

@@ -14,20 +14,20 @@ import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageManagerBaseTest} from "./LeverageManagerBase.t.sol";
+import {StrategyConfig} from "src/types/DataTypes.sol";
 import {Strategy} from "src/Strategy.sol";
 
 contract CreateNewStrategyTest is LeverageManagerBaseTest {
-    function setUp() public override {
-        super.setUp();
-    }
-
     function testFuzz_CreateNewStrategy(
-        ILeverageManager.StrategyConfig memory config,
+        StrategyConfig memory config,
         address collateralAsset,
         address debtAsset,
         string memory name,
         string memory symbol
     ) public {
+        config.strategyDepositFee = bound(config.strategyDepositFee, 0, _MAX_FEE());
+        config.strategyWithdrawFee = bound(config.strategyWithdrawFee, 0, _MAX_FEE());
+
         address expectedStrategyAddress = strategyTokenFactory.computeProxyAddress(
             address(leverageManager),
             abi.encodeWithSelector(Strategy.initialize.selector, address(leverageManager), name, symbol),
@@ -47,9 +47,12 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
         assertEq(IERC20Metadata(expectedStrategyAddress).symbol(), symbol);
 
         // Check if the strategy core is set correctly
-        ILeverageManager.StrategyConfig memory configAfter = leverageManager.getStrategyConfig(strategy);
+        StrategyConfig memory configAfter = leverageManager.getStrategyConfig(strategy);
         assertEq(address(configAfter.lendingAdapter), address(config.lendingAdapter));
-        assertEq(address(configAfter.rebalanceAdapter), address(config.rebalanceAdapter));
+        assertEq(address(configAfter.rebalanceModule), address(config.rebalanceModule));
+
+        assertEq(configAfter.strategyDepositFee, config.strategyDepositFee);
+        assertEq(configAfter.strategyWithdrawFee, config.strategyWithdrawFee);
 
         assertEq(address(leverageManager.getStrategyCollateralAsset(strategy)), collateralAsset);
         assertEq(address(leverageManager.getStrategyDebtAsset(strategy)), debtAsset);
@@ -59,12 +62,15 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
     }
 
     function test_CreateNewStrategy_RevertIf_LendingAdapterAlreadyInUse(
-        ILeverageManager.StrategyConfig memory config,
+        StrategyConfig memory config,
         address collateralAsset,
         address debtAsset,
         string memory name,
         string memory symbol
     ) public {
+        config.strategyDepositFee = bound(config.strategyDepositFee, 0, _MAX_FEE());
+        config.strategyWithdrawFee = bound(config.strategyWithdrawFee, 0, _MAX_FEE());
+
         _createNewStrategy(manager, config, collateralAsset, debtAsset, name, symbol);
 
         vm.expectRevert(

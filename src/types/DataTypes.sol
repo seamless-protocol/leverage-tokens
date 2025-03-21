@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
+import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
+import {IRebalanceModule} from "src/interfaces/IRebalanceModule.sol";
 
 /// @dev Enum defining the type of external action user can perform
 enum ExternalAction {
@@ -32,6 +34,16 @@ struct ActionData {
     uint256 treasuryFee;
 }
 
+/// @dev Struct that contains base strategy config stored in LeverageManager
+struct BaseStrategyConfig {
+    /// @dev Lending adapter for strategy
+    ILendingAdapter lendingAdapter;
+    /// @dev Rebalance module for strategy
+    IRebalanceModule rebalanceModule;
+    /// @dev Target collateral ratio of the strategy on 8 decimals
+    uint256 targetCollateralRatio;
+}
+
 /// @dev Struct that contains all data related to a rebalance action
 struct RebalanceAction {
     /// @dev Strategy to perform the action on
@@ -40,6 +52,20 @@ struct RebalanceAction {
     ActionType actionType;
     /// @dev Amount to perform the action with
     uint256 amount;
+}
+
+/// @dev Struct that contains entire strategy config
+struct StrategyConfig {
+    /// @dev Lending adapter for strategy
+    ILendingAdapter lendingAdapter;
+    /// @dev Rebalance module for strategy
+    IRebalanceModule rebalanceModule;
+    /// @dev Target collateral ratio of the strategy on 8 decimals
+    uint256 targetCollateralRatio;
+    /// @dev Strategy fee for deposit action
+    uint256 strategyDepositFee;
+    /// @dev Strategy fee for withdraw action
+    uint256 strategyWithdrawFee;
 }
 
 /// @dev Struct that contains all data describing the state of a strategy

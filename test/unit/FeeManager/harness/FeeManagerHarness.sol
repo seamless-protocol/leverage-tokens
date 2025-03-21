@@ -30,4 +30,8 @@ contract FeeManagerHarness is FeeManager {
     function exposed_chargeTreasuryFee(IERC20 collateralAsset, uint256 amount) external {
         _chargeTreasuryFee(collateralAsset, amount);
     }
+
+    function exposed_setStrategyActionFee(IStrategy strategy, ExternalAction action, uint256 fee) external {
+        _setStrategyActionFee(strategy, action, fee);
+    }
 }

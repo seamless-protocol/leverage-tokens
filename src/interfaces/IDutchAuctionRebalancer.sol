@@ -32,6 +32,9 @@ interface IDutchAuctionRebalancer {
     /// @notice Error thrown when auction duration is zero
     error InvalidAuctionDuration();
 
+    /// @notice Error thrown when minimum price multiplier is higher than initial price multiplier
+    error MinPriceMultiplierTooHigh();
+
     /// @notice Event emitted when new auction is created
     event AuctionCreated(IStrategy indexed strategy, Auction auction);
 
@@ -86,12 +89,14 @@ interface IDutchAuctionRebalancer {
     /// @notice Returns current auction multiplier
     /// @param strategy Strategy to get multiplier for
     /// @return multiplier Current auction multiplier
+    /// @dev This module uses exponential approximation (1-x)^4 to calculate the current auction multiplier
     function getCurrentAuctionMultiplier(IStrategy strategy) external view returns (uint256 multiplier);
 
     /// @notice Returns amount of tokens to provide for given amount of tokens to receive
     /// @param strategy Strategy to calculate for
     /// @param amountOut Amount of tokens to receive
     /// @return amountIn Amount of tokens to provide
+    /// @dev If there is no valid auction in the current block, this function will still return a value based on the most recent auction
     function getAmountIn(IStrategy strategy, uint256 amountOut) external view returns (uint256 amountIn);
 
     /// @notice Creates new auction for strategy that needs rebalancing

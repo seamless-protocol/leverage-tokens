@@ -19,6 +19,7 @@ import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
 import {BeaconProxyFactory} from "src/BeaconProxyFactory.sol";
 import {LeverageManager} from "src/LeverageManager.sol";
 import {Strategy} from "src/Strategy.sol";
+import {StrategyConfig} from "src/types/DataTypes.sol";
 import {LeverageManagerHarness} from "test/unit/LeverageManager/harness/LeverageManagerHarness.t.sol";
 import {SeamlessRebalanceModule} from "src/rebalance/seamlessRebalanceModule.sol";
 
@@ -80,10 +81,12 @@ contract IntegrationTestBase is Test {
         );
 
         strategy = leverageManager.createNewStrategy(
-            ILeverageManager.StrategyConfig({
+            StrategyConfig({
                 lendingAdapter: ILendingAdapter(address(morphoLendingAdapter)),
                 targetCollateralRatio: 2 * BASE_RATIO,
-                rebalanceAdapter: IRebalanceModule(address(seamlessRebalanceModule))
+                rebalanceModule: IRebalanceModule(address(seamlessRebalanceModule)),
+                strategyDepositFee: 0,
+                strategyWithdrawFee: 0
             }),
             "Seamless ETH/USDC 2x leverage token",
             "ltETH/USDC-2x"
@@ -120,5 +123,35 @@ contract IntegrationTestBase is Test {
             strategy.totalSupply() + 1,
             Math.Rounding.Floor
         );
+    }
+
+    function _createNewStrategy(
+        uint256 minColRatio,
+        uint256 targetCollateralRatio,
+        uint256 maxColRatio,
+        uint256 depositFee,
+        uint256 withdrawFee
+    ) internal returns (IStrategy) {
+        ILendingAdapter lendingAdapter = ILendingAdapter(
+            morphoLendingAdapterFactory.createProxy(
+                abi.encodeWithSelector(MorphoLendingAdapter.initialize.selector, WETH_USDC_MARKET_ID),
+                keccak256(abi.encode(vm.randomUint()))
+            )
+        );
+        IStrategy _strategy = leverageManager.createNewStrategy(
+            StrategyConfig({
+                lendingAdapter: lendingAdapter,
+                targetCollateralRatio: targetCollateralRatio,
+                rebalanceModule: IRebalanceModule(address(0)),
+                strategyDepositFee: depositFee,
+                strategyWithdrawFee: withdrawFee
+            }),
+            "dummy name",
+            "dummy symbol"
+        );
+
+        seamlessRebalanceModule.setStrategyCollateralRatios(_strategy, minColRatio, maxColRatio);
+
+        return _strategy;
     }
 }

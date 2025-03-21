@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
+import {console} from "forge-std/console.sol";
+
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -20,7 +22,15 @@ import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {FeeManager} from "src/FeeManager.sol";
 import {StrategyState} from "src/types/DataTypes.sol";
 import {Strategy} from "src/Strategy.sol";
-import {ActionData, ActionType, ExternalAction, RebalanceAction, TokenTransfer} from "src/types/DataTypes.sol";
+import {
+    ActionData,
+    ActionType,
+    ExternalAction,
+    StrategyConfig,
+    BaseStrategyConfig,
+    RebalanceAction,
+    TokenTransfer
+} from "src/types/DataTypes.sol";
 import {IRebalanceModule} from "src/interfaces/IRebalanceModule.sol";
 
 contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManager, UUPSUpgradeable {
@@ -39,8 +49,8 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     struct LeverageManagerStorage {
         /// @dev Factory for deploying new strategy tokens when creating new strategies
         IBeaconProxyFactory strategyTokenFactory;
-        /// @dev Strategy address => Config for strategy
-        mapping(IStrategy strategy => ILeverageManager.StrategyConfig) config;
+        /// @dev Strategy address => Base config for strategy
+        mapping(IStrategy strategy => BaseStrategyConfig) config;
         /// @dev Lending adapter address => Is lending adapter registered. Two strategies can't have same lending adapter
         mapping(address lendingAdapter => bool) isLendingAdapterUsed;
     }
@@ -79,13 +89,23 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function getStrategyRebalanceModule(IStrategy strategy) public view returns (IRebalanceModule adapter) {
-        return _getLeverageManagerStorage().config[strategy].rebalanceAdapter;
+    function getStrategyRebalanceModule(IStrategy strategy) public view returns (IRebalanceModule module) {
+        return _getLeverageManagerStorage().config[strategy].rebalanceModule;
     }
 
     /// @inheritdoc ILeverageManager
     function getStrategyConfig(IStrategy strategy) external view returns (StrategyConfig memory config) {
-        return _getLeverageManagerStorage().config[strategy];
+        BaseStrategyConfig memory baseConfig = _getLeverageManagerStorage().config[strategy];
+        uint256 strategyDepositFee = getStrategyActionFee(strategy, ExternalAction.Deposit);
+        uint256 strategyWithdrawFee = getStrategyActionFee(strategy, ExternalAction.Withdraw);
+
+        return StrategyConfig({
+            lendingAdapter: baseConfig.lendingAdapter,
+            targetCollateralRatio: baseConfig.targetCollateralRatio,
+            rebalanceModule: baseConfig.rebalanceModule,
+            strategyDepositFee: strategyDepositFee,
+            strategyWithdrawFee: strategyWithdrawFee
+        });
     }
 
     /// @inheritdoc ILeverageManager
@@ -141,8 +161,14 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             revert LendingAdapterAlreadyInUse(address(strategyConfig.lendingAdapter));
         }
 
-        _getLeverageManagerStorage().config[strategy] = strategyConfig;
+        _getLeverageManagerStorage().config[strategy] = BaseStrategyConfig({
+            lendingAdapter: strategyConfig.lendingAdapter,
+            rebalanceModule: strategyConfig.rebalanceModule,
+            targetCollateralRatio: strategyConfig.targetCollateralRatio
+        });
         _getLeverageManagerStorage().isLendingAdapterUsed[address(strategyConfig.lendingAdapter)] = true;
+        _setStrategyActionFee(strategy, ExternalAction.Deposit, strategyConfig.strategyDepositFee);
+        _setStrategyActionFee(strategy, ExternalAction.Withdraw, strategyConfig.strategyWithdrawFee);
 
         emit StrategyCreated(
             strategy,
@@ -278,8 +304,8 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
                 StrategyState memory state = getStrategyState(strategy);
                 strategiesStateBefore[i] = state;
 
-                IRebalanceModule rebalanceAdapter = getStrategyRebalanceModule(strategy);
-                if (!rebalanceAdapter.isEligibleForRebalance(strategy, state, msg.sender)) {
+                IRebalanceModule rebalanceModule = getStrategyRebalanceModule(strategy);
+                if (!rebalanceModule.isEligibleForRebalance(strategy, state, msg.sender)) {
                     revert StrategyNotEligibleForRebalance(strategy);
                 }
             }
@@ -291,9 +317,9 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             // Validate the strategy state after rebalancing if it has not been validated yet in a previous iteration of the loop
             if (!_isElementInSlice(actions, actions[i].strategy, i)) {
                 IStrategy strategy = actions[i].strategy;
-                IRebalanceModule rebalanceAdapter = getStrategyRebalanceModule(strategy);
+                IRebalanceModule rebalanceModule = getStrategyRebalanceModule(strategy);
 
-                if (!rebalanceAdapter.isStateAfterRebalanceValid(strategy, strategiesStateBefore[i])) {
+                if (!rebalanceModule.isStateAfterRebalanceValid(strategy, strategiesStateBefore[i])) {
                     revert InvalidStrategyStateAfterRebalance(strategy);
                 }
             }
@@ -337,19 +363,29 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         view
         returns (ActionData memory data)
     {
+        console.log("preview action start");
+
         (uint256 equityToCover, uint256 equityForShares, uint256 strategyFee, uint256 treasuryFee) =
             _computeEquityFees(strategy, equityInCollateralAsset, action);
 
+        console.log("compute equity fees end");
+
         uint256 shares = _convertToShares(strategy, equityForShares);
+
+        console.log("convert to shares end");
 
         (uint256 collateralForStrategy, uint256 debtForStrategy) =
             _computeCollateralAndDebtForAction(strategy, equityToCover, action);
+
+        console.log("compute collateral and debt end");
 
         // The collateral returned by `_computeCollateralAndDebtForAction` can be zero if the amount of equity for the strategy
         // cannot be exchanged for at least 1 strategy share due to rounding down in the exchange rate calculation.
         // The treasury fee returned by `_computeEquityFees` is wrt the equity amount, not the share amount, thus it's possible
         // for it to be non-zero even if the collateral amount is zero. In this case, the treasury fee should be set to 0
         treasuryFee = collateralForStrategy == 0 ? 0 : treasuryFee;
+
+        console.log("preview action end");
 
         return ActionData({
             collateral: collateralForStrategy,
@@ -376,20 +412,33 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         uint256 totalDebt = lendingAdapter.getDebt();
         uint256 totalShares = strategy.totalSupply();
 
+        console.log("compute collateral and debt for action start");
+
         Math.Rounding collateralRounding = action == ExternalAction.Deposit ? Math.Rounding.Ceil : Math.Rounding.Floor;
         Math.Rounding debtRounding = action == ExternalAction.Deposit ? Math.Rounding.Floor : Math.Rounding.Ceil;
 
         uint256 shares = _convertToShares(strategy, equityInCollateralAsset);
 
+        console.log("convert to shares end");
+
         // If action is deposit there might be some dust in collateral but debt can be 0. In that case we should follow target ratio
         bool shouldFollowTargetRatio = totalShares == 0 || (action == ExternalAction.Deposit && totalDebt == 0);
+
+        console.log("should follow target ratio end");
+
         if (shouldFollowTargetRatio) {
+            console.log("should follow target ratio true");
             uint256 targetRatio = getStrategyTargetCollateralRatio(strategy);
             collateral = Math.mulDiv(equityInCollateralAsset, targetRatio, targetRatio - BASE_RATIO, collateralRounding);
+            console.log("collateral after target ratio", collateral);
             debt = lendingAdapter.convertCollateralToDebtAsset(collateral - equityInCollateralAsset);
+
+            console.log("target ratio end");
         } else {
+            console.log("should follow target ratio false");
             collateral = Math.mulDiv(lendingAdapter.getCollateral(), shares, totalShares, collateralRounding);
             debt = Math.mulDiv(totalDebt, shares, totalShares, debtRounding);
+            console.log("compute collateral and debt for action end");
         }
 
         return (collateral, debt);

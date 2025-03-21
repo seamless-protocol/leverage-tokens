@@ -11,7 +11,7 @@ interface IFeeManager {
     /// @notice Error emitted when trying to set treasury fee when treasury address is not set
     error TreasuryNotSet();
 
-    /// @notice Emitted when fee is set for strategy for specific action
+    /// @notice Emitted when fee is set for specific action
     event StrategyActionFeeSet(IStrategy strategy, ExternalAction action, uint256 fee);
 
     /// @notice Emitted when treasury fee is set for specific action
@@ -20,10 +20,10 @@ interface IFeeManager {
     /// @notice Emitted when treasury is set
     event TreasurySet(address treasury);
 
-    /// @notice Returns fee for specific action on strategy
+    /// @notice Returns strategy fee for specific action
     /// @param strategy Strategy to get fee for
     /// @param action Action to get fee for
-    /// @return fee Fee for action on strategy, 100_00 is 100%
+    /// @return fee Fee for action, 100_00 is 100%
     function getStrategyActionFee(IStrategy strategy, ExternalAction action) external view returns (uint256 fee);
 
     /// @notice Returns address of the treasury
@@ -35,13 +35,9 @@ interface IFeeManager {
     /// @return fee Fee for action, 100_00 is 100%
     function getTreasuryActionFee(ExternalAction action) external view returns (uint256 fee);
 
-    /// @notice Sets fee for specific action on strategy
-    /// @param strategy Strategy to set fee for
-    /// @param action Action to set fee for
-    /// @param fee Fee for action on strategy, 100_00 is 100%
-    /// @dev Only FEE_MANAGER role can call this function.
-    ///      If manager tries to set fee above 100% it reverts with FeeTooHigh error
-    function setStrategyActionFee(IStrategy strategy, ExternalAction action, uint256 fee) external;
+    /// @notice Returns the max fee that can be set
+    /// @return maxFee Max fee, 100_00 is 100%
+    function MAX_FEE() external view returns (uint256 maxFee);
 
     /// @notice Sets address of the treasury. Treasury receives all fees from LeverageManager. If the treasury is set to
     ///         the zero address, the treasury fees are reset to 0 as well

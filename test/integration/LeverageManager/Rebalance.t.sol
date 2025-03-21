@@ -9,7 +9,7 @@ import {IOracle} from "@morpho-blue/interfaces/IOracle.sol";
 // Internal imports
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageManagerHarness} from "test/unit/LeverageManager/harness/LeverageManagerHarness.t.sol";
-import {StrategyState, RebalanceAction, ActionType, TokenTransfer} from "src/types/DataTypes.sol";
+import {StrategyState, RebalanceAction, ActionType, StrategyConfig, TokenTransfer} from "src/types/DataTypes.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {LeverageManagerBase} from "test/integration/LeverageManager/LeverageManagerBase.t.sol";
@@ -49,20 +49,24 @@ contract RebalanceTest is LeverageManagerBase {
         );
 
         ethLong2x = leverageManager.createNewStrategy(
-            ILeverageManager.StrategyConfig({
+            StrategyConfig({
                 lendingAdapter: ILendingAdapter(address(ethLong2xAdapter)),
-                rebalanceAdapter: IRebalanceModule(address(seamlessRebalanceModule)),
-                targetCollateralRatio: 2 * BASE_RATIO // 2x
+                rebalanceModule: IRebalanceModule(address(seamlessRebalanceModule)),
+                targetCollateralRatio: 2 * BASE_RATIO, // 2x
+                strategyDepositFee: 0,
+                strategyWithdrawFee: 0
             }),
             "Seamless ETH/USDC 2x leverage token",
             "ltETH/USDC-2x"
         );
 
         ethShort2x = leverageManager.createNewStrategy(
-            ILeverageManager.StrategyConfig({
+            StrategyConfig({
                 lendingAdapter: ILendingAdapter(address(ethShort2xAdapter)),
-                rebalanceAdapter: IRebalanceModule(address(seamlessRebalanceModule)),
-                targetCollateralRatio: 15 * BASE_RATIO / 10 // 1.5x
+                rebalanceModule: IRebalanceModule(address(seamlessRebalanceModule)),
+                targetCollateralRatio: 15 * BASE_RATIO / 10, // 1.5x
+                strategyDepositFee: 0,
+                strategyWithdrawFee: 0
             }),
             "Seamless USDC/ETH 2x leverage token",
             "ltUSDC/ETH-2x"
