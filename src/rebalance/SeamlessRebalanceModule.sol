@@ -9,7 +9,7 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeab
 
 // Internal imports
 import {IRebalanceModule} from "src/interfaces/IRebalanceModule.sol";
-import {ISeamlessRebalanceModule} from "src/interfaces/IseamlessRebalanceModule.sol";
+import {ISeamlessRebalanceModule} from "src/interfaces/ISeamlessRebalanceModule.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {StrategyState} from "src/types/DataTypes.sol";

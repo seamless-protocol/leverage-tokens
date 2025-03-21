@@ -21,7 +21,7 @@ import {LeverageManager} from "src/LeverageManager.sol";
 import {Strategy} from "src/Strategy.sol";
 import {StrategyConfig} from "src/types/DataTypes.sol";
 import {LeverageManagerHarness} from "test/unit/LeverageManager/harness/LeverageManagerHarness.t.sol";
-import {SeamlessRebalanceModule} from "src/rebalance/seamlessRebalanceModule.sol";
+import {SeamlessRebalanceModule} from "src/rebalance/SeamlessRebalanceModule.sol";
 
 contract IntegrationTestBase is Test {
     uint256 public constant FORK_BLOCK_NUMBER = 25473904;
