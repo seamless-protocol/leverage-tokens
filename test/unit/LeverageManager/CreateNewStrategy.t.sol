@@ -59,6 +59,7 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
 
         assertEq(leverageManager.getIsLendingAdapterUsed(address(config.lendingAdapter)), true);
         assertEq(leverageManager.getStrategyTargetCollateralRatio(strategy), config.targetCollateralRatio);
+        assertEq(address(leverageManager.getStrategyRebalanceModule(strategy)), address(config.rebalanceModule));
     }
 
     function test_CreateNewStrategy_RevertIf_LendingAdapterAlreadyInUse(
