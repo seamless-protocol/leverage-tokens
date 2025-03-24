@@ -7,13 +7,12 @@ import {Test} from "forge-std/Test.sol";
 // Dependency imports
 import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {IMorpho, Id} from "@morpho-blue/interfaces/IMorpho.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IMorpho, Id} from "@morpho-blue/interfaces/IMorpho.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
-import {IRebalanceRewardDistributor} from "src/interfaces/IRebalanceRewardDistributor.sol";
-import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
+import {IRebalanceModule} from "src/interfaces/IRebalanceModule.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
@@ -22,6 +21,7 @@ import {LeverageManager} from "src/LeverageManager.sol";
 import {Strategy} from "src/Strategy.sol";
 import {StrategyConfig} from "src/types/DataTypes.sol";
 import {LeverageManagerHarness} from "test/unit/LeverageManager/harness/LeverageManagerHarness.t.sol";
+import {SeamlessRebalanceModule} from "src/rebalance/SeamlessRebalanceModule.sol";
 
 contract IntegrationTestBase is Test {
     uint256 public constant FORK_BLOCK_NUMBER = 25473904;
@@ -32,6 +32,7 @@ contract IntegrationTestBase is Test {
     Id public constant WETH_USDC_MARKET_ID = Id.wrap(0x8793cf302b8ffd655ab97bd1c695dbd967807e8367a65cb2f4edaf1380ba1bda);
 
     uint256 public BASE_RATIO;
+    address public dutchAuctionModule = makeAddr("dutchAuctionModule");
     address public user = makeAddr("user");
     address public treasury = makeAddr("treasury");
     IStrategy public strategy;
@@ -39,6 +40,7 @@ contract IntegrationTestBase is Test {
     BeaconProxyFactory public morphoLendingAdapterFactory;
     ILeverageManager public leverageManager = ILeverageManager(makeAddr("leverageManager"));
     MorphoLendingAdapter public morphoLendingAdapter;
+    SeamlessRebalanceModule public seamlessRebalanceModule;
 
     function setUp() public virtual {
         vm.createSelectFork(vm.envString("BASE_RPC_URL"), FORK_BLOCK_NUMBER);
@@ -70,14 +72,20 @@ contract IntegrationTestBase is Test {
 
         leverageManager.setStrategyTokenFactory(address(strategyFactory));
 
+        SeamlessRebalanceModule seamlessRebalanceModuleImplementation = new SeamlessRebalanceModule();
+        seamlessRebalanceModule = SeamlessRebalanceModule(
+            UnsafeUpgrades.deployUUPSProxy(
+                address(seamlessRebalanceModuleImplementation),
+                abi.encodeWithSelector(SeamlessRebalanceModule.initialize.selector, address(this))
+            )
+        );
+        seamlessRebalanceModule.setIsRebalancer(dutchAuctionModule, true);
+
         strategy = leverageManager.createNewStrategy(
             StrategyConfig({
                 lendingAdapter: ILendingAdapter(address(morphoLendingAdapter)),
-                minCollateralRatio: BASE_RATIO,
                 targetCollateralRatio: 2 * BASE_RATIO,
-                maxCollateralRatio: 3 * BASE_RATIO,
-                rebalanceRewardDistributor: IRebalanceRewardDistributor(address(0)),
-                rebalanceWhitelist: IRebalanceWhitelist(address(0)),
+                rebalanceModule: IRebalanceModule(address(seamlessRebalanceModule)),
                 strategyDepositFee: 0,
                 strategyWithdrawFee: 0
             }),
@@ -119,9 +127,9 @@ contract IntegrationTestBase is Test {
     }
 
     function _createNewStrategy(
-        uint256 minCollateralRatio,
+        uint256 minColRatio,
         uint256 targetCollateralRatio,
-        uint256 maxCollateralRatio,
+        uint256 maxColRatio,
         uint256 depositFee,
         uint256 withdrawFee
     ) internal returns (IStrategy) {
@@ -134,17 +142,17 @@ contract IntegrationTestBase is Test {
         IStrategy _strategy = leverageManager.createNewStrategy(
             StrategyConfig({
                 lendingAdapter: lendingAdapter,
-                minCollateralRatio: minCollateralRatio,
                 targetCollateralRatio: targetCollateralRatio,
-                maxCollateralRatio: maxCollateralRatio,
-                rebalanceRewardDistributor: IRebalanceRewardDistributor(address(0)),
-                rebalanceWhitelist: IRebalanceWhitelist(address(0)),
+                rebalanceModule: IRebalanceModule(address(0)),
                 strategyDepositFee: depositFee,
                 strategyWithdrawFee: withdrawFee
             }),
             "dummy name",
             "dummy symbol"
         );
+
+        seamlessRebalanceModule.setStrategyCollateralRatios(_strategy, minColRatio, maxColRatio);
+
         return _strategy;
     }
 }

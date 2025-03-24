@@ -9,8 +9,8 @@ import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 import {ExternalAction} from "src/types/DataTypes.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {ActionData, CollateralRatios, StrategyState} from "src/types/DataTypes.sol";
-import {PreviewActionTest} from "../LeverageManager/PreviewAction.t.sol";
+import {ActionData, StrategyState} from "src/types/DataTypes.sol";
+import {PreviewActionTest} from "./PreviewAction.t.sol";
 
 contract DepositTest is PreviewActionTest {
     function test_deposit() public {

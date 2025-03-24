@@ -11,7 +11,7 @@ import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
-import {StrategyState, ActionData, CollateralRatios, RebalanceAction, TokenTransfer} from "src/types/DataTypes.sol";
+import {StrategyState, ActionData, RebalanceAction, TokenTransfer} from "src/types/DataTypes.sol";
 
 contract MockLeverageManager is Test {
     uint256 public BASE_RATIO = 1e8;
@@ -83,7 +83,7 @@ contract MockLeverageManager is Test {
 
     mapping(bytes32 => MockPreviewWithdrawData) public mockPreviewWithdrawData;
 
-    mapping(IStrategy => CollateralRatios) public strategyCollateralRatios;
+    mapping(IStrategy => address) public strategyRebalanceModule;
 
     function getStrategyCollateralAsset(IStrategy strategy) external view returns (IERC20) {
         return strategies[strategy].collateralAsset;
@@ -91,6 +91,10 @@ contract MockLeverageManager is Test {
 
     function getStrategyLendingAdapter(IStrategy strategy) external view returns (ILendingAdapter) {
         return strategies[strategy].lendingAdapter;
+    }
+
+    function getStrategyRebalanceModule(IStrategy strategy) external view returns (address) {
+        return strategyRebalanceModule[strategy];
     }
 
     function getStrategyState(IStrategy strategy) external view returns (StrategyState memory) {
@@ -105,14 +109,6 @@ contract MockLeverageManager is Test {
         return strategies[strategy].debtAsset;
     }
 
-    function getStrategyCollateralRatios(IStrategy strategy) external view returns (CollateralRatios memory) {
-        return strategyCollateralRatios[strategy];
-    }
-
-    function setStrategyCollateralRatios(IStrategy strategy, CollateralRatios memory ratios) external {
-        strategyCollateralRatios[strategy] = ratios;
-    }
-
     function setStrategyData(IStrategy strategy, StrategyData memory _strategyData) external {
         strategies[strategy] = _strategyData;
     }
@@ -123,6 +119,10 @@ contract MockLeverageManager is Test {
 
     function setStrategyState(IStrategy strategy, StrategyState memory _strategyState) external {
         strategyStates[strategy] = _strategyState;
+    }
+
+    function setStrategyRebalanceModule(IStrategy strategy, address _rebalanceModule) external {
+        strategyRebalanceModule[strategy] = _rebalanceModule;
     }
 
     function setMockPreviewDepositData(
@@ -279,7 +279,7 @@ contract MockLeverageManager is Test {
     }
 
     function rebalance(
-        RebalanceAction[] calldata actions,
+        RebalanceAction[] calldata,
         TokenTransfer[] calldata tokensIn,
         TokenTransfer[] calldata tokensOut
     ) external {

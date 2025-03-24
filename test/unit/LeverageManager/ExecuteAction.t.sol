@@ -6,12 +6,11 @@ import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol"
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 
 // Internal imports
-import {IRebalanceRewardDistributor} from "src/interfaces/IRebalanceRewardDistributor.sol";
-import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageManagerBaseTest} from "./LeverageManagerBase.t.sol";
 import {MockLendingAdapter} from "test/unit/mock/MockLendingAdapter.sol";
+import {IRebalanceModule} from "src/interfaces/IRebalanceModule.sol";
 import {ActionType, StrategyConfig} from "src/types/DataTypes.sol";
 
 contract ExecuteActionTest is LeverageManagerBaseTest {
@@ -22,11 +21,8 @@ contract ExecuteActionTest is LeverageManagerBaseTest {
             manager,
             StrategyConfig({
                 lendingAdapter: ILendingAdapter(address(lendingAdapter)),
-                minCollateralRatio: _BASE_RATIO(),
-                maxCollateralRatio: _BASE_RATIO() + 2,
-                targetCollateralRatio: _BASE_RATIO() + 1,
-                rebalanceRewardDistributor: IRebalanceRewardDistributor(address(0)),
-                rebalanceWhitelist: IRebalanceWhitelist(address(0)),
+                targetCollateralRatio: _BASE_RATIO() + 1, // 1.00000001x
+                rebalanceModule: IRebalanceModule(address(0)),
                 strategyDepositFee: 0,
                 strategyWithdrawFee: 0
             }),

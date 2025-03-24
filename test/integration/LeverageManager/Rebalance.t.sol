@@ -11,19 +11,16 @@ import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageManagerHarness} from "test/unit/LeverageManager/harness/LeverageManagerHarness.t.sol";
 import {StrategyState, RebalanceAction, ActionType, StrategyConfig, TokenTransfer} from "src/types/DataTypes.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
-import {IRebalanceRewardDistributor} from "src/interfaces/IRebalanceRewardDistributor.sol";
-import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {LeverageManagerBase} from "test/integration/LeverageManager/LeverageManagerBase.t.sol";
-import {LeverageManagerBase} from "test/integration/LeverageManager/LeverageManagerBase.t.sol";
-import {MockRebalanceRewardDistributor} from "test/unit/mock/MockRebalanceRewardDistributor.sol";
 import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
+import {IRebalanceModule} from "src/interfaces/IRebalanceModule.sol";
 
 contract RebalanceTest is LeverageManagerBase {
     int256 public constant MAX_PERCENTAGE = 100_00; // 100%
 
     Id public constant USDC_WETH_MARKET_ID = Id.wrap(0x3b3769cfca57be2eaed03fcc5299c25691b77781a1e124e7a8d520eb9a7eabb5);
-    address public rebalancer = makeAddr("rebalancer");
+    address public rebalancer = dutchAuctionModule;
 
     IStrategy ethLong2x;
     IStrategy ethShort2x;
@@ -36,7 +33,6 @@ contract RebalanceTest is LeverageManagerBase {
 
         // Deploying simple reward distributor for now because more complex reward distributor will be tested separately
         // The same reward distributor can be used for multiple strategies because it is state-less
-        MockRebalanceRewardDistributor mockRebalanceRewardDistributor = new MockRebalanceRewardDistributor();
 
         ethLong2xAdapter = MorphoLendingAdapter(
             morphoLendingAdapterFactory.createProxy(
@@ -55,11 +51,8 @@ contract RebalanceTest is LeverageManagerBase {
         ethLong2x = leverageManager.createNewStrategy(
             StrategyConfig({
                 lendingAdapter: ILendingAdapter(address(ethLong2xAdapter)),
-                minCollateralRatio: 18 * BASE_RATIO / 10, // 1.8x
+                rebalanceModule: IRebalanceModule(address(seamlessRebalanceModule)),
                 targetCollateralRatio: 2 * BASE_RATIO, // 2x
-                maxCollateralRatio: 22 * BASE_RATIO / 10, // 2.2x
-                rebalanceRewardDistributor: IRebalanceRewardDistributor(address(mockRebalanceRewardDistributor)),
-                rebalanceWhitelist: IRebalanceWhitelist(address(0)),
                 strategyDepositFee: 0,
                 strategyWithdrawFee: 0
             }),
@@ -70,17 +63,17 @@ contract RebalanceTest is LeverageManagerBase {
         ethShort2x = leverageManager.createNewStrategy(
             StrategyConfig({
                 lendingAdapter: ILendingAdapter(address(ethShort2xAdapter)),
-                minCollateralRatio: 13 * BASE_RATIO / 10, // 1.3x
+                rebalanceModule: IRebalanceModule(address(seamlessRebalanceModule)),
                 targetCollateralRatio: 15 * BASE_RATIO / 10, // 1.5x
-                maxCollateralRatio: 2 * BASE_RATIO, // 2x
-                rebalanceRewardDistributor: IRebalanceRewardDistributor(address(mockRebalanceRewardDistributor)),
-                rebalanceWhitelist: IRebalanceWhitelist(address(0)),
                 strategyDepositFee: 0,
                 strategyWithdrawFee: 0
             }),
             "Seamless USDC/ETH 2x leverage token",
             "ltUSDC/ETH-2x"
         );
+
+        seamlessRebalanceModule.setStrategyCollateralRatios(ethLong2x, 18 * BASE_RATIO / 10, 22 * BASE_RATIO / 10);
+        seamlessRebalanceModule.setStrategyCollateralRatios(ethShort2x, 13 * BASE_RATIO / 10, 2 * BASE_RATIO);
     }
 
     /// @dev In this block price on oracle 3392.292471591441746049801068
@@ -161,20 +154,6 @@ contract RebalanceTest is LeverageManagerBase {
         assertEq(WETH.balanceOf(rebalancer), 1e18);
     }
 
-    function test_rebalance_RevertIf_EquityLossTooBig() public {
-        _depositEthLong2x();
-
-        // Move price of ETH 20% upwards
-        _moveEthPrice(20_00);
-
-        (RebalanceAction[] memory actions, TokenTransfer[] memory transfersIn, TokenTransfer[] memory transfersOut) =
-            _prepareForRebalance(ethLong2x, 1e18, 0, 5000 * 1e6, 0);
-
-        vm.prank(rebalancer);
-        vm.expectRevert(ILeverageManager.EquityLossTooBig.selector);
-        leverageManager.rebalance(actions, transfersIn, transfersOut);
-    }
-
     /// @dev In this block price on oracle 3392.292471591441746049801068
     function test_rebalance_RevertIf_ExposureDirectionChanged() public {
         _depositEthLong2x();
@@ -187,7 +166,7 @@ contract RebalanceTest is LeverageManagerBase {
             _prepareForRebalance(ethLong2x, 10 * 1e18, 0, 0, 0);
 
         vm.prank(rebalancer);
-        vm.expectRevert(ILeverageManager.ExposureDirectionChanged.selector);
+        vm.expectRevert(abi.encodeWithSelector(ILeverageManager.InvalidStrategyStateAfterRebalance.selector, ethLong2x));
         leverageManager.rebalance(actions, transfersIn, transfersOut);
     }
 

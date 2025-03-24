@@ -7,7 +7,6 @@ import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {LeverageRouterBaseTest} from "./LeverageRouterBase.t.sol";
-import {MockLeverageManager} from "../mock/MockLeverageManager.sol";
 
 contract DepositTest is LeverageRouterBaseTest {
     function testFuzz_deposit_DebtSwapLessThanRequiredFlashLoanRepaymentCollateral_SenderSuppliesSufficientCollateral(
