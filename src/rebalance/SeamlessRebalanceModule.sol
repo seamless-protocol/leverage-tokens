@@ -2,8 +2,6 @@
 pragma solidity ^0.8.26;
 
 // Dependency imports
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {SignedMath} from "@openzeppelin/contracts/utils/math/SignedMath.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 
@@ -15,15 +13,11 @@ import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {StrategyState} from "src/types/DataTypes.sol";
 
 contract SeamlessRebalanceModule is UUPSUpgradeable, OwnableUpgradeable, ISeamlessRebalanceModule {
-    using SafeCast for uint256;
-    using SafeCast for int256;
-    using SignedMath for int256;
-
     /// @dev Struct containing all state for the SeamlessRebalanceModule contract
     /// @custom:storage-location erc7201:seamless.contracts.storage.SeamlessRebalanceModule
     struct SeamlessRebalanceModuleStorage {
-        /// @dev Address of the dutch auction module
-        address dutchAuctionModule;
+        /// @dev Whether the address is authorized to rebalance
+        mapping(address rebalancer => bool) isRebalancer;
         /// @dev Minimum collateral ratio for a strategy, immutable
         mapping(IStrategy strategy => uint256) minCollateralRatio;
         /// @dev Maximum collateral ratio for the strategy, immutable
@@ -31,21 +25,22 @@ contract SeamlessRebalanceModule is UUPSUpgradeable, OwnableUpgradeable, ISeamle
     }
 
     function _getSeamlessRebalanceModuleStorage() internal pure returns (SeamlessRebalanceModuleStorage storage $) {
+        // slither-disable-next-line assembly
         assembly {
-            $.slot := 0x326e20d598a681eb69bc11b5176604d340fccf9864170f09484f3c317edf3600
+            // keccak256(abi.encode(uint256(keccak256("seamless.contracts.storage.SeamlessRebalanceModule")) - 1)) & ~bytes32(uint256(0xff));
+            $.slot := 0x42cbc1dbee1f6a8a1b69de505df10f495d5467d974273715656d68e18b8fdd00
         }
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
-    function initialize(address initialOwner, address dutchAuctionModule) external initializer {
+    function initialize(address initialOwner) external initializer {
         __Ownable_init(initialOwner);
-        _getSeamlessRebalanceModuleStorage().dutchAuctionModule = dutchAuctionModule;
     }
 
     /// @inheritdoc ISeamlessRebalanceModule
-    function getDutchAuctionModule() public view returns (address) {
-        return _getSeamlessRebalanceModuleStorage().dutchAuctionModule;
+    function getIsRebalancer(address rebalancer) public view returns (bool) {
+        return _getSeamlessRebalanceModuleStorage().isRebalancer[rebalancer];
     }
 
     /// @inheritdoc ISeamlessRebalanceModule
@@ -64,7 +59,7 @@ contract SeamlessRebalanceModule is UUPSUpgradeable, OwnableUpgradeable, ISeamle
         view
         returns (bool isEligible)
     {
-        if (caller != getDutchAuctionModule()) {
+        if (!getIsRebalancer(caller)) {
             return false;
         }
 
@@ -100,6 +95,13 @@ contract SeamlessRebalanceModule is UUPSUpgradeable, OwnableUpgradeable, ISeamle
         return true;
     }
 
+    /// @inheritdoc ISeamlessRebalanceModule
+    function setIsRebalancer(address rebalancer, bool isRebalancer) external onlyOwner {
+        _getSeamlessRebalanceModuleStorage().isRebalancer[rebalancer] = isRebalancer;
+        emit IsRebalancerSet(rebalancer, isRebalancer);
+    }
+
+    /// @inheritdoc ISeamlessRebalanceModule
     function setStrategyCollateralRatios(IStrategy strategy, uint256 minCollateralRatio, uint256 maxCollateralRatio)
         external
         onlyOwner

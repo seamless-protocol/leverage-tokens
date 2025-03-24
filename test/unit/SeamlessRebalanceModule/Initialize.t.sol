@@ -14,20 +14,19 @@ import {SeamlessRebalanceModule} from "src/rebalance/SeamlessRebalanceModule.sol
 
 contract InitializeTest is SeamlessRebalanceModuleBaseTest {
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_initialize(address initialOwner, address _dutchAuctionModule) public {
+    function testFuzz_initialize(address initialOwner) public {
         address rebalanceModuleImplementation = address(new SeamlessRebalanceModuleHarness());
         address rebalanceModuleProxy = UnsafeUpgrades.deployUUPSProxy(
             rebalanceModuleImplementation,
-            abi.encodeWithSelector(SeamlessRebalanceModule.initialize.selector, initialOwner, _dutchAuctionModule)
+            abi.encodeWithSelector(SeamlessRebalanceModule.initialize.selector, initialOwner)
         );
         SeamlessRebalanceModuleHarness newModule = SeamlessRebalanceModuleHarness(rebalanceModuleProxy);
 
         assertEq(newModule.owner(), initialOwner);
-        assertEq(newModule.getDutchAuctionModule(), _dutchAuctionModule);
     }
 
     function test_initialize_RevertIf_AlreadyInitialized() public {
         vm.expectRevert(Initializable.InvalidInitialization.selector);
-        rebalanceModule.initialize(defaultAdmin, dutchAuctionModule);
+        rebalanceModule.initialize(defaultAdmin);
     }
 }

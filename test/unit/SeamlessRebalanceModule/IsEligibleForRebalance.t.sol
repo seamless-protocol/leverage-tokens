@@ -10,6 +10,7 @@ contract IsEligibleForRebalanceTest is SeamlessRebalanceModuleBaseTest {
         super.setUp();
 
         vm.startPrank(defaultAdmin);
+        rebalanceModule.setIsRebalancer(dutchAuctionModule, true);
         rebalanceModule.setStrategyCollateralRatios(strategy, 1.5 * 1e8, 2.5 * 1e8);
         vm.stopPrank();
     }

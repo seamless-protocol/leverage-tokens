@@ -79,9 +79,10 @@ contract IntegrationTestBase is Test {
         seamlessRebalanceModule = SeamlessRebalanceModule(
             UnsafeUpgrades.deployUUPSProxy(
                 address(seamlessRebalanceModuleImplementation),
-                abi.encodeWithSelector(SeamlessRebalanceModule.initialize.selector, address(this), dutchAuctionModule)
+                abi.encodeWithSelector(SeamlessRebalanceModule.initialize.selector, address(this))
             )
         );
+        seamlessRebalanceModule.setIsRebalancer(dutchAuctionModule, true);
 
         strategy = leverageManager.createNewStrategy(
             StrategyConfig({

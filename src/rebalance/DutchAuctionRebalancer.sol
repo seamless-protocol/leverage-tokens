@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-import {console} from "forge-std/console.sol";
-
 // Dependency imports
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -232,8 +230,6 @@ contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
 
         TokenTransfer[] memory tokensOut = new TokenTransfer[](1);
         tokensOut[0] = TokenTransfer({token: address(debtAsset), amount: debtAmount});
-
-        console.log("collateralAmount", collateralAmount);
 
         collateralAsset.safeTransferFrom(msg.sender, address(this), collateralAmount);
         collateralAsset.approve(address(leverageManager), collateralAmount);
