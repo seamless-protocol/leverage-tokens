@@ -21,7 +21,7 @@ contract ExecuteActionTest is LeverageManagerBaseTest {
             manager,
             StrategyConfig({
                 lendingAdapter: ILendingAdapter(address(lendingAdapter)),
-                targetCollateralRatio: _BASE_RATIO() + 1, // 1.1x
+                targetCollateralRatio: _BASE_RATIO() + 1, // 1.00000001x
                 rebalanceModule: IRebalanceModule(address(0)),
                 strategyDepositFee: 0,
                 strategyWithdrawFee: 0

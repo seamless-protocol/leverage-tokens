@@ -70,9 +70,9 @@ interface ILeverageManager is IFeeManager {
     /// @return debtAsset Debt asset for the strategy
     function getStrategyDebtAsset(IStrategy strategy) external view returns (IERC20 debtAsset);
 
-    /// @notice Returns rebalance adapter for strategy
-    /// @param strategy Strategy to get rebalance adapter for
-    /// @return adapter Rebalance adapter for the strategy
+    /// @notice Returns the rebalance module for the strategy
+    /// @param strategy Strategy to get the rebalance module for
+    /// @return adapter Rebalance module for the strategy
     function getStrategyRebalanceModule(IStrategy strategy) external view returns (IRebalanceModule adapter);
 
     /// @notice Returns target ratio for a strategy

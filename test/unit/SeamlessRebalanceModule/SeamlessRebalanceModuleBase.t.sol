@@ -2,14 +2,13 @@
 pragma solidity ^0.8.26;
 
 // Forge imports
-import {Test, console} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 
 // Dependency imports
 import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 
 // Internal imports
 import {IStrategy} from "src/interfaces/IStrategy.sol";
-import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {MockLeverageManager} from "../mock/MockLeverageManager.sol";
 import {SeamlessRebalanceModule} from "src/rebalance/SeamlessRebalanceModule.sol";
 import {SeamlessRebalanceModuleHarness} from "./harness/SeamlessRebalanceModuleHarness.sol";
@@ -20,7 +19,6 @@ contract SeamlessRebalanceModuleBaseTest is Test {
 
     IStrategy public strategy = IStrategy(makeAddr("strategy"));
     address public defaultAdmin = makeAddr("defaultAdmin");
-    address public dutchAuctionModule = makeAddr("dutchAuctionModule");
 
     MockLeverageManager public leverageManager;
     SeamlessRebalanceModuleHarness public rebalanceModule;
@@ -29,16 +27,17 @@ contract SeamlessRebalanceModuleBaseTest is Test {
         address rebalanceModuleImplementation = address(new SeamlessRebalanceModuleHarness());
         address rebalanceModuleProxy = UnsafeUpgrades.deployUUPSProxy(
             rebalanceModuleImplementation,
-            abi.encodeWithSelector(SeamlessRebalanceModule.initialize.selector, defaultAdmin, dutchAuctionModule)
+            abi.encodeWithSelector(SeamlessRebalanceModule.initialize.selector, defaultAdmin)
         );
         rebalanceModule = SeamlessRebalanceModuleHarness(rebalanceModuleProxy);
         leverageManager = new MockLeverageManager();
     }
 
     function test_setUp() public virtual {
-        bytes32 expectedSlot = 0x326e20d598a681eb69bc11b5176604d340fccf9864170f09484f3c317edf3600;
+        bytes32 expectedSlot = keccak256(
+            abi.encode(uint256(keccak256("seamless.contracts.storage.SeamlessRebalanceModule")) - 1)
+        ) & ~bytes32(uint256(0xff));
         assertEq(rebalanceModule.exposed_getSeamlessRebalanceModuleStorage(), expectedSlot);
-        assertEq(rebalanceModule.getDutchAuctionModule(), dutchAuctionModule);
         assertTrue(rebalanceModule.owner() == defaultAdmin);
     }
 

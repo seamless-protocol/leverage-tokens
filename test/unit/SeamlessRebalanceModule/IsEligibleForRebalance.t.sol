@@ -6,10 +6,13 @@ import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {StrategyState} from "src/types/DataTypes.sol";
 
 contract IsEligibleForRebalanceTest is SeamlessRebalanceModuleBaseTest {
+    address public dutchAuctionModule = makeAddr("dutchAuctionModule");
+
     function setUp() public override {
         super.setUp();
 
         vm.startPrank(defaultAdmin);
+        rebalanceModule.setIsRebalancer(dutchAuctionModule, true);
         rebalanceModule.setStrategyCollateralRatios(strategy, 1.5 * 1e8, 2.5 * 1e8);
         vm.stopPrank();
     }

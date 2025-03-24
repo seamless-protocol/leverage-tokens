@@ -14,14 +14,18 @@ interface ISeamlessRebalanceModule is IRebalanceModule {
     /// @notice Error thrown when min collateral ratio is too high
     error MinCollateralRatioTooHigh();
 
+    /// @notice Event emitted when rebalancer is set
+    event IsRebalancerSet(address indexed rebalancer, bool isRebalancer);
+
     /// @notice Event emitted when collateral ratios are set
     event StrategyCollateralRatiosSet(
         IStrategy indexed strategy, uint256 minCollateralRatio, uint256 maxCollateralRatio
     );
 
-    /// @notice Returns the Dutch auction module address
-    /// @return dutchAuctionModule Dutch auction module address
-    function getDutchAuctionModule() external view returns (address dutchAuctionModule);
+    /// @notice Returns whether the address is a rebalancer
+    /// @param rebalancer Address to check
+    /// @return isRebalancer Whether the address is a rebalancer
+    function getIsRebalancer(address rebalancer) external view returns (bool isRebalancer);
 
     /// @notice Returns the minimum collateral ratio for a strategy
     /// @param strategy Strategy to get the minimum collateral ratio for
@@ -32,6 +36,11 @@ interface ISeamlessRebalanceModule is IRebalanceModule {
     /// @param strategy Strategy to get the maximum collateral ratio for
     /// @return maxCollateralRatio Maximum collateral ratio for the strategy
     function getStrategyMaxCollateralRatio(IStrategy strategy) external view returns (uint256 maxCollateralRatio);
+
+    /// @notice Sets whether the address is a rebalancer
+    /// @param rebalancer Address to set
+    /// @param isRebalancer Whether the address is a rebalancer
+    function setIsRebalancer(address rebalancer, bool isRebalancer) external;
 
     /// @notice Sets the minimum and maximum collateral ratios for a strategy
     /// @param strategy Strategy to set the collateral ratios for
