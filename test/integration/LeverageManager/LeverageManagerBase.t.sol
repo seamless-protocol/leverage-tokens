@@ -11,25 +11,15 @@ import {BeaconProxyFactory} from "src/BeaconProxyFactory.sol";
 import {Strategy} from "src/Strategy.sol";
 import {LeverageManagerHarness} from "test/unit/LeverageManager/harness/LeverageManagerHarness.t.sol";
 import {MorphoLendingAdapterTest} from "../MorphoLendingAdapter.t.sol";
-import {IRebalanceRewardDistributor} from "src/interfaces/IRebalanceRewardDistributor.sol";
-import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IntegrationTestBase} from "../IntegrationTestBase.t.sol";
-import {StrategyState, CollateralRatios} from "src/types/DataTypes.sol";
+import {StrategyState} from "src/types/DataTypes.sol";
 
 contract LeverageManagerBase is IntegrationTestBase {
     function testFork_setUp() public view override {
         assertEq(address(leverageManager.getStrategyCollateralAsset(strategy)), address(WETH));
         assertEq(address(leverageManager.getStrategyDebtAsset(strategy)), address(USDC));
-
-        CollateralRatios memory ratios = leverageManager.getStrategyCollateralRatios(strategy);
-        assertEq(ratios.minCollateralRatio, BASE_RATIO);
-        assertEq(ratios.maxCollateralRatio, 3 * BASE_RATIO);
-        assertEq(ratios.targetCollateralRatio, 2 * BASE_RATIO);
-
-        assertEq(address(leverageManager.getStrategyRebalanceRewardDistributor(strategy)), address(0));
-        assertEq(address(leverageManager.getStrategyRebalanceWhitelist(strategy)), address(0));
 
         assertEq(leverageManager.getIsLendingAdapterUsed(address(morphoLendingAdapter)), true);
         assertEq(leverageManager.getStrategyTargetCollateralRatio(strategy), 2 * BASE_RATIO);
@@ -61,7 +51,7 @@ contract LeverageManagerBase is IntegrationTestBase {
         return shares;
     }
 
-    function _getStrategyState() internal view returns (StrategyState memory) {
-        return LeverageManagerHarness(address(leverageManager)).exposed_getStrategyState(strategy);
+    function getStrategyState() internal view returns (StrategyState memory) {
+        return LeverageManagerHarness(address(leverageManager)).getStrategyState(strategy);
     }
 }

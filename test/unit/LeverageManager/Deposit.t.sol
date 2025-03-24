@@ -9,8 +9,8 @@ import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 import {ExternalAction} from "src/types/DataTypes.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {ActionData, CollateralRatios, StrategyState} from "src/types/DataTypes.sol";
-import {PreviewActionTest} from "../LeverageManager/PreviewAction.t.sol";
+import {ActionData, StrategyState} from "src/types/DataTypes.sol";
+import {PreviewActionTest} from "./PreviewAction.t.sol";
 
 contract DepositTest is PreviewActionTest {
     function test_deposit() public {
@@ -27,7 +27,7 @@ contract DepositTest is PreviewActionTest {
     }
 
     function test_deposit_WithFees() public {
-        _setStrategyActionFee(strategy, ExternalAction.Deposit, 0.05e4); // 5% fee
+        leverageManager.exposed_setStrategyActionFee(strategy, ExternalAction.Deposit, 0.05e4); // 5% fee
         _setTreasuryActionFee(ExternalAction.Deposit, 0.1e4); // 10% fee
 
         MockLeverageManagerStateForAction memory beforeState =
@@ -95,7 +95,7 @@ contract DepositTest is PreviewActionTest {
         // Does not revert
         leverageManager.deposit(strategy, equityToAddInCollateralAsset, equityToAddInCollateralAsset - 1);
 
-        StrategyState memory afterState = leverageManager.exposed_getStrategyState(strategy);
+        StrategyState memory afterState = leverageManager.getStrategyState(strategy);
         assertEq(afterState.collateralInDebtAsset, 20 ether); // 1:1 exchange rate, 2x CR
         assertEq(afterState.debt, 10 ether);
         assertEq(afterState.collateralRatio, 2 * _BASE_RATIO());
@@ -128,7 +128,7 @@ contract DepositTest is PreviewActionTest {
         assertEq(depositData.strategyFee, 0);
         assertEq(depositData.treasuryFee, 0);
 
-        StrategyState memory afterState = leverageManager.exposed_getStrategyState(strategy);
+        StrategyState memory afterState = leverageManager.getStrategyState(strategy);
         assertEq(afterState.collateralInDebtAsset, expectedCollateralToAdd + beforeState.collateral);
         assertEq(afterState.debt, expectedDebtToBorrow + beforeState.debt); // 1:1 collateral to debt exchange rate, 2x target CR
         assertEq(
@@ -165,7 +165,7 @@ contract DepositTest is PreviewActionTest {
     }
 
     function _testDeposit(uint256 equityToAddInCollateralAsset, uint256 collateralRatioDeltaRelative) internal {
-        StrategyState memory beforeState = leverageManager.exposed_getStrategyState(strategy);
+        StrategyState memory beforeState = leverageManager.getStrategyState(strategy);
         uint256 beforeSharesTotalSupply = strategy.totalSupply();
 
         // The assertion for collateral ratio before and after the deposit in this helper only makes sense to use
@@ -201,7 +201,7 @@ contract DepositTest is PreviewActionTest {
         assertEq(actualDepositData.strategyFee, expectedDepositData.strategyFee, "Strategy fee mismatch");
         assertEq(actualDepositData.treasuryFee, expectedDepositData.treasuryFee, "Treasury fee mismatch");
 
-        StrategyState memory afterState = leverageManager.exposed_getStrategyState(strategy);
+        StrategyState memory afterState = leverageManager.getStrategyState(strategy);
         assertEq(
             afterState.collateralInDebtAsset,
             beforeState.collateralInDebtAsset

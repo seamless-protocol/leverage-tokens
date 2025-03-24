@@ -8,8 +8,11 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IOracle} from "@morpho-blue/interfaces/IOracle.sol";
 
 // Internal imports
+import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
+import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
+import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
 import {LeverageManagerBase} from "./LeverageManagerBase.t.sol";
-import {StrategyState, CollateralRatios, ExternalAction} from "src/types/DataTypes.sol";
+import {StrategyState, ExternalAction} from "src/types/DataTypes.sol";
 
 contract LeverageManagerDepositTest is LeverageManagerBase {
     /// @dev In this block price on oracle 3392.292471591441746049801068
@@ -40,8 +43,9 @@ contract LeverageManagerDepositTest is LeverageManagerBase {
 
     function testFork_deposit_WithFees() public {
         uint256 fee = 10_00; // 10%
-        leverageManager.setStrategyActionFee(strategy, ExternalAction.Deposit, fee);
         leverageManager.setTreasuryActionFee(ExternalAction.Deposit, fee);
+        strategy = _createNewStrategy(BASE_RATIO, 2 * BASE_RATIO, 3 * BASE_RATIO, fee, 0);
+        morphoLendingAdapter = MorphoLendingAdapter(address(leverageManager.getStrategyLendingAdapter(strategy)));
 
         uint256 equityInCollateralAsset = 10 ether;
         uint256 collateralToAdd = 2 * equityInCollateralAsset;
@@ -59,7 +63,14 @@ contract LeverageManagerDepositTest is LeverageManagerBase {
     }
 
     function testFork_deposit_PriceChangedBetweenDeposits_CollateralRatioDoesNotChange() public {
-        leverageManager.setStrategyActionFee(strategy, ExternalAction.Deposit, 1); // 0.01%
+        strategy = _createNewStrategy(
+            BASE_RATIO,
+            2 * BASE_RATIO,
+            3 * BASE_RATIO,
+            1, // 0.01% strategy fee
+            0
+        );
+        morphoLendingAdapter = MorphoLendingAdapter(address(leverageManager.getStrategyLendingAdapter(strategy)));
 
         // Deposit again like in previous test
         uint256 equityInCollateralAsset = 10 ether;
@@ -73,7 +84,7 @@ contract LeverageManagerDepositTest is LeverageManagerBase {
         vm.mockCall(address(oracle), abi.encodeWithSelector(IOracle.price.selector), abi.encode(newPrice));
 
         // Since price of ETH doubled current collateral ratio should be 4x and not 2x
-        StrategyState memory stateBefore = _getStrategyState();
+        StrategyState memory stateBefore = getStrategyState();
         assertGe(stateBefore.collateralRatio, 4 * BASE_RATIO - 1);
         assertLe(stateBefore.collateralRatio, 4 * BASE_RATIO);
 
@@ -90,7 +101,7 @@ contract LeverageManagerDepositTest is LeverageManagerBase {
 
         // Validate that collateral ratio did not change which means that new deposit follows current collateral ratio and not target
         // It is important that there can be rounding error but it should bring collateral ratio up not down
-        StrategyState memory stateAfter = _getStrategyState();
+        StrategyState memory stateAfter = getStrategyState();
         assertGe(stateAfter.collateralRatio, stateBefore.collateralRatio);
         assertLe(stateAfter.collateralRatio, stateBefore.collateralRatio + 1);
 
@@ -98,7 +109,7 @@ contract LeverageManagerDepositTest is LeverageManagerBase {
         newPrice /= 3;
         vm.mockCall(address(oracle), abi.encodeWithSelector(IOracle.price.selector), abi.encode(newPrice));
 
-        stateBefore = _getStrategyState();
+        stateBefore = getStrategyState();
 
         collateral = leverageManager.previewDeposit(strategy, equityInCollateralAsset).collateral;
         shares = _deposit(user, equityInCollateralAsset, collateral);
@@ -108,7 +119,7 @@ contract LeverageManagerDepositTest is LeverageManagerBase {
         assertGe(equityInCollateralAsset, equityAfterDeposit);
 
         // Validate that collateral ratio did not change which means that new deposit follows current collateral ratio and not target
-        stateAfter = _getStrategyState();
+        stateAfter = getStrategyState();
         assertEq(stateAfter.collateralRatio, stateBefore.collateralRatio);
     }
 }

@@ -14,25 +14,19 @@ import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageManagerBaseTest} from "./LeverageManagerBase.t.sol";
-import {CollateralRatios} from "src/types/DataTypes.sol";
+import {StrategyConfig} from "src/types/DataTypes.sol";
 import {Strategy} from "src/Strategy.sol";
 
 contract CreateNewStrategyTest is LeverageManagerBaseTest {
-    function setUp() public override {
-        super.setUp();
-    }
-
     function testFuzz_CreateNewStrategy(
-        ILeverageManager.StrategyConfig memory config,
+        StrategyConfig memory config,
         address collateralAsset,
         address debtAsset,
         string memory name,
         string memory symbol
     ) public {
-        config.targetCollateralRatio = bound(config.minCollateralRatio, _BASE_RATIO() + 1, type(uint256).max - 1);
-        config.minCollateralRatio = bound(config.minCollateralRatio, _BASE_RATIO(), config.targetCollateralRatio - 1);
-        config.maxCollateralRatio =
-            bound(config.maxCollateralRatio, config.targetCollateralRatio + 1, type(uint256).max);
+        config.strategyDepositFee = bound(config.strategyDepositFee, 0, _MAX_FEE());
+        config.strategyWithdrawFee = bound(config.strategyWithdrawFee, 0, _MAX_FEE());
 
         address expectedStrategyAddress = strategyTokenFactory.computeProxyAddress(
             address(leverageManager),
@@ -53,37 +47,30 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
         assertEq(IERC20Metadata(expectedStrategyAddress).symbol(), symbol);
 
         // Check if the strategy core is set correctly
-        ILeverageManager.StrategyConfig memory configAfter = leverageManager.getStrategyConfig(strategy);
+        StrategyConfig memory configAfter = leverageManager.getStrategyConfig(strategy);
         assertEq(address(configAfter.lendingAdapter), address(config.lendingAdapter));
+        assertEq(address(configAfter.rebalanceModule), address(config.rebalanceModule));
 
-        CollateralRatios memory ratios = leverageManager.getStrategyCollateralRatios(strategy);
-        assertEq(ratios.minCollateralRatio, config.minCollateralRatio);
-        assertEq(ratios.maxCollateralRatio, config.maxCollateralRatio);
-        assertEq(ratios.targetCollateralRatio, config.targetCollateralRatio);
+        assertEq(configAfter.strategyDepositFee, config.strategyDepositFee);
+        assertEq(configAfter.strategyWithdrawFee, config.strategyWithdrawFee);
 
         assertEq(address(leverageManager.getStrategyCollateralAsset(strategy)), collateralAsset);
         assertEq(address(leverageManager.getStrategyDebtAsset(strategy)), debtAsset);
 
         assertEq(leverageManager.getIsLendingAdapterUsed(address(config.lendingAdapter)), true);
         assertEq(leverageManager.getStrategyTargetCollateralRatio(strategy), config.targetCollateralRatio);
-        assertEq(
-            address(leverageManager.getStrategyRebalanceRewardDistributor(strategy)),
-            address(config.rebalanceRewardDistributor)
-        );
-        assertEq(address(leverageManager.getStrategyRebalanceWhitelist(strategy)), address(config.rebalanceWhitelist));
+        assertEq(address(leverageManager.getStrategyRebalanceModule(strategy)), address(config.rebalanceModule));
     }
 
     function test_CreateNewStrategy_RevertIf_LendingAdapterAlreadyInUse(
-        ILeverageManager.StrategyConfig memory config,
+        StrategyConfig memory config,
         address collateralAsset,
         address debtAsset,
         string memory name,
         string memory symbol
     ) public {
-        config.targetCollateralRatio = bound(config.minCollateralRatio, _BASE_RATIO() + 1, type(uint256).max - 1);
-        config.minCollateralRatio = bound(config.minCollateralRatio, _BASE_RATIO(), config.targetCollateralRatio - 1);
-        config.maxCollateralRatio =
-            bound(config.maxCollateralRatio, config.targetCollateralRatio + 1, type(uint256).max);
+        config.strategyDepositFee = bound(config.strategyDepositFee, 0, _MAX_FEE());
+        config.strategyWithdrawFee = bound(config.strategyWithdrawFee, 0, _MAX_FEE());
 
         _createNewStrategy(manager, config, collateralAsset, debtAsset, name, symbol);
 

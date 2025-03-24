@@ -6,32 +6,13 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
 import {IFeeManager} from "./IFeeManager.sol";
-import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
 import {IStrategy} from "./IStrategy.sol";
-import {CollateralRatios} from "src/types/DataTypes.sol";
 import {IBeaconProxyFactory} from "./IBeaconProxyFactory.sol";
 import {ILendingAdapter} from "./ILendingAdapter.sol";
-import {ActionData, RebalanceAction, TokenTransfer} from "src/types/DataTypes.sol";
-import {IRebalanceRewardDistributor} from "./IRebalanceRewardDistributor.sol";
+import {ActionData, StrategyState, RebalanceAction, TokenTransfer, StrategyConfig} from "src/types/DataTypes.sol";
+import {IRebalanceModule} from "./IRebalanceModule.sol";
 
 interface ILeverageManager is IFeeManager {
-    /// @dev Struct that contains entire strategy config
-    struct StrategyConfig {
-        /// @dev Lending adapter for strategy
-        ILendingAdapter lendingAdapter;
-        /// @dev Minimum collateral ratio allowed for strategy before a rebalance can occur. 8 decimals of precision
-        ///      Collateral ratio is calculated as collateral value / debt value
-        uint256 minCollateralRatio;
-        /// @dev Maximum collateral ratio allowed for strategy before a rebalance can occur. 8 decimals of precision
-        uint256 maxCollateralRatio;
-        /// @dev Target collateral ratio of the strategy on 8 decimals
-        uint256 targetCollateralRatio;
-        /// @dev Rebalance reward distributor module for strategy
-        IRebalanceRewardDistributor rebalanceRewardDistributor;
-        /// @dev Whitelist module for strategy, if not set rebalance is open for everybody
-        IRebalanceWhitelist rebalanceWhitelist;
-    }
-
     /// @notice Error thrown when someone tries to create strategy with lending adapter that already exists
     error LendingAdapterAlreadyInUse(address adapter);
 
@@ -50,14 +31,8 @@ interface ILeverageManager is IFeeManager {
     /// @notice Error thrown when strategy is not eligible for rebalance
     error StrategyNotEligibleForRebalance(IStrategy strategy);
 
-    /// @notice Error thrown when collateral ratio after rebalance is worse than before rebalance
-    error CollateralRatioInvalid();
-
-    /// @notice Error thrown when collateral ratio after rebalance is on the opposite side of target ratio than before rebalance
-    error ExposureDirectionChanged();
-
-    /// @notice Error thrown when equity loss on rebalance is too big
-    error EquityLossTooBig();
+    /// @notice Error thrown when strategy state after rebalance is invalid
+    error InvalidStrategyStateAfterRebalance(IStrategy strategy);
 
     /// @notice Event emitted when strategy token factory is set
     event StrategyTokenFactorySet(address factory);
@@ -95,23 +70,10 @@ interface ILeverageManager is IFeeManager {
     /// @return debtAsset Debt asset for the strategy
     function getStrategyDebtAsset(IStrategy strategy) external view returns (IERC20 debtAsset);
 
-    /// @notice Returns module for distributing rewards for rebalancing strategy
-    /// @param strategy Strategy to get module for
-    /// @return distributor Module for distributing rewards for rebalancing strategy
-    function getStrategyRebalanceRewardDistributor(IStrategy strategy)
-        external
-        view
-        returns (IRebalanceRewardDistributor distributor);
-
-    /// @notice Returns rebalance whitelist module for strategy
-    /// @param strategy Strategy to get rebalance whitelist for
-    /// @param whitelist Rebalance whitelist module
-    function getStrategyRebalanceWhitelist(IStrategy strategy) external view returns (IRebalanceWhitelist whitelist);
-
-    /// @notice Returns leverage config for a strategy including min, max and target
-    /// @param strategy Strategy to get leverage config for
-    /// @return ratios Collateral ratios for the strategy
-    function getStrategyCollateralRatios(IStrategy strategy) external view returns (CollateralRatios memory ratios);
+    /// @notice Returns the rebalance module for the strategy
+    /// @param strategy Strategy to get the rebalance module for
+    /// @return adapter Rebalance module for the strategy
+    function getStrategyRebalanceModule(IStrategy strategy) external view returns (IRebalanceModule adapter);
 
     /// @notice Returns target ratio for a strategy
     /// @param strategy Strategy to get target ratio for
@@ -122,6 +84,11 @@ interface ILeverageManager is IFeeManager {
     /// @param strategy Address of the strategy to get config for
     /// @return config Strategy configuration
     function getStrategyConfig(IStrategy strategy) external view returns (StrategyConfig memory config);
+
+    /// @notice Returns all data required to describe current strategy state - collateral, debt, equity and collateral ratio
+    /// @param strategy Strategy to query state for
+    /// @return state Strategy state
+    function getStrategyState(IStrategy strategy) external view returns (StrategyState memory state);
 
     /// @notice Sets factory for creating new strategy tokens
     /// @param factory Factory to set

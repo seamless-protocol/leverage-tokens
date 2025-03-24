@@ -3,7 +3,6 @@ pragma solidity ^0.8.26;
 
 // Forge imports
 import {Test} from "forge-std/Test.sol";
-
 // Dependency imports
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -12,7 +11,7 @@ import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
-import {ActionData, StrategyState} from "src/types/DataTypes.sol";
+import {StrategyState, ActionData, RebalanceAction, TokenTransfer} from "src/types/DataTypes.sol";
 
 contract MockLeverageManager is Test {
     uint256 public BASE_RATIO = 1e8;
@@ -84,12 +83,18 @@ contract MockLeverageManager is Test {
 
     mapping(bytes32 => MockPreviewWithdrawData) public mockPreviewWithdrawData;
 
+    mapping(IStrategy => address) public strategyRebalanceModule;
+
     function getStrategyCollateralAsset(IStrategy strategy) external view returns (IERC20) {
         return strategies[strategy].collateralAsset;
     }
 
     function getStrategyLendingAdapter(IStrategy strategy) external view returns (ILendingAdapter) {
         return strategies[strategy].lendingAdapter;
+    }
+
+    function getStrategyRebalanceModule(IStrategy strategy) external view returns (address) {
+        return strategyRebalanceModule[strategy];
     }
 
     function getStrategyState(IStrategy strategy) external view returns (StrategyState memory) {
@@ -114,6 +119,10 @@ contract MockLeverageManager is Test {
 
     function setStrategyState(IStrategy strategy, StrategyState memory _strategyState) external {
         strategyStates[strategy] = _strategyState;
+    }
+
+    function setStrategyRebalanceModule(IStrategy strategy, address _rebalanceModule) external {
+        strategyRebalanceModule[strategy] = _rebalanceModule;
     }
 
     function setMockPreviewDepositData(
@@ -267,5 +276,21 @@ contract MockLeverageManager is Test {
 
         // If no mock withdraw data is found, revert
         revert("No mock withdraw data found for MockLeverageManager.withdraw");
+    }
+
+    function rebalance(
+        RebalanceAction[] calldata,
+        TokenTransfer[] calldata tokensIn,
+        TokenTransfer[] calldata tokensOut
+    ) external {
+        // Transfer tokens in from caller to this contract
+        for (uint256 i = 0; i < tokensIn.length; i++) {
+            IERC20(tokensIn[i].token).transferFrom(msg.sender, address(this), tokensIn[i].amount);
+        }
+
+        // Transfer tokens out from this contract to caller
+        for (uint256 i = 0; i < tokensOut.length; i++) {
+            IERC20(tokensOut[i].token).transfer(msg.sender, tokensOut[i].amount);
+        }
     }
 }

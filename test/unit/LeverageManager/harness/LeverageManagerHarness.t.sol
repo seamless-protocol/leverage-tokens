@@ -28,34 +28,6 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
         _authorizeUpgrade(newImplementation);
     }
 
-    function exposed_validateIsAuthorizedToRebalance(IStrategy strategy) external view {
-        _validateIsAuthorizedToRebalance(strategy);
-    }
-
-    function exposed_validateRebalanceEligibility(IStrategy strategy, uint256 currRatio) external view {
-        _validateRebalanceEligibility(strategy, currRatio);
-    }
-
-    function exposed_validateCollateralRatioAfterRebalance(
-        IStrategy strategy,
-        uint256 collateralRatioBefore,
-        uint256 collateralRatioAfter
-    ) external view {
-        _validateCollateralRatioAfterRebalance(strategy, collateralRatioBefore, collateralRatioAfter);
-    }
-
-    function exposed_validateEquityChange(
-        IStrategy strategy,
-        StrategyState memory stateBefore,
-        StrategyState memory stateAfter
-    ) external view {
-        _validateEquityChange(strategy, stateBefore, stateAfter);
-    }
-
-    function exposed_getStrategyState(IStrategy strategy) external view returns (StrategyState memory strategyState) {
-        return _getStrategyState(strategy);
-    }
-
     function exposed_isElementInSlice(RebalanceAction[] calldata actions, IStrategy strategy, uint256 untilIndex)
         external
         pure

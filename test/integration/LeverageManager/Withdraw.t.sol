@@ -8,6 +8,9 @@ import {IOracle} from "@morpho-blue/interfaces/IOracle.sol";
 
 // Internal imports
 import {ExternalAction} from "src/types/DataTypes.sol";
+import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
+import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
+import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
 import {LeverageManagerBase} from "./LeverageManagerBase.t.sol";
 import {ActionData, StrategyState} from "src/types/DataTypes.sol";
 
@@ -18,13 +21,13 @@ contract LeverageManagerWithdrawTest is LeverageManagerBase {
         uint256 collateralToAdd = 2 * equityInCollateralAsset;
         _deposit(user, equityInCollateralAsset, collateralToAdd);
 
-        StrategyState memory stateBefore = _getStrategyState();
+        StrategyState memory stateBefore = getStrategyState();
 
         uint256 equityToWithdraw = 5 ether;
         ActionData memory previewData = leverageManager.previewWithdraw(strategy, equityToWithdraw);
         _withdraw(user, equityToWithdraw, previewData.debt);
 
-        StrategyState memory stateAfter = _getStrategyState();
+        StrategyState memory stateAfter = getStrategyState();
 
         // Ensure that collateral ratio is the same. Allow for 1 wei mistake but it must be in favour of strategy
         assertGe(stateAfter.collateralRatio, stateBefore.collateralRatio);
@@ -79,13 +82,13 @@ contract LeverageManagerWithdrawTest is LeverageManagerBase {
         uint256 collateralToAdd = 2 * equityInCollateralAsset;
         _deposit(user, equityInCollateralAsset, collateralToAdd);
 
-        StrategyState memory stateBefore = _getStrategyState();
+        StrategyState memory stateBefore = getStrategyState();
 
         uint256 equityToWithdraw = 5 ether;
         ActionData memory previewData = leverageManager.previewWithdraw(strategy, equityToWithdraw);
         _withdraw(user, equityToWithdraw, previewData.debt);
 
-        StrategyState memory stateAfter = _getStrategyState();
+        StrategyState memory stateAfter = getStrategyState();
         uint256 equityInCollateralAssetAfter = morphoLendingAdapter.getEquityInCollateralAsset();
 
         // Ensure that collateral ratio is the same. Allow for 1 wei mistake but it must be in favour of strategy
@@ -108,13 +111,13 @@ contract LeverageManagerWithdrawTest is LeverageManagerBase {
         (,, address oracle,,) = morphoLendingAdapter.marketParams();
         vm.mockCall(address(oracle), abi.encodeWithSelector(IOracle.price.selector), abi.encode(4000e24));
 
-        StrategyState memory stateBefore = _getStrategyState();
+        StrategyState memory stateBefore = getStrategyState();
 
         uint256 equityToWithdraw = 5 ether;
         ActionData memory previewData = leverageManager.previewWithdraw(strategy, equityToWithdraw);
         _withdraw(user, equityToWithdraw, previewData.debt);
 
-        StrategyState memory stateAfter = _getStrategyState();
+        StrategyState memory stateAfter = getStrategyState();
 
         // Ensure that collateral ratio is the same. Allow for 1 wei mistake but it must be in favour of strategy
         assertGe(stateAfter.collateralRatio, stateBefore.collateralRatio);
@@ -157,8 +160,10 @@ contract LeverageManagerWithdrawTest is LeverageManagerBase {
     }
 
     function testFork_withdraw_withFee() public {
-        leverageManager.setTreasuryActionFee(ExternalAction.Withdraw, 10_00); // 10%
-        leverageManager.setStrategyActionFee(strategy, ExternalAction.Withdraw, 10_00); // 10%
+        uint256 fee = 10_00; // 10%
+        leverageManager.setTreasuryActionFee(ExternalAction.Withdraw, fee); // 10%
+        strategy = _createNewStrategy(BASE_RATIO, 2 * BASE_RATIO, 3 * BASE_RATIO, fee, 0);
+        morphoLendingAdapter = MorphoLendingAdapter(address(leverageManager.getStrategyLendingAdapter(strategy)));
 
         uint256 equityInCollateralAsset = 10 ether;
         uint256 collateralToAdd = 2 * equityInCollateralAsset;
