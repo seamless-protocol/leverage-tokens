@@ -16,7 +16,7 @@ contract SeamlessRebalanceModule is UUPSUpgradeable, OwnableUpgradeable, ISeamle
     /// @dev Struct containing all state for the SeamlessRebalanceModule contract
     /// @custom:storage-location erc7201:seamless.contracts.storage.SeamlessRebalanceModule
     struct SeamlessRebalanceModuleStorage {
-        /// @dev Whether the address is a rebalancer such as DutchAuctionRebalancer
+        /// @dev Whether the address is authorized to rebalance
         mapping(address rebalancer => bool) isRebalancer;
         /// @dev Minimum collateral ratio for a strategy, immutable
         mapping(IStrategy strategy => uint256) minCollateralRatio;
