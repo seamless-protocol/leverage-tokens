@@ -24,6 +24,10 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
         }
     }
 
+    function exposed_authorizeUpgrade(address newImplementation) external {
+        _authorizeUpgrade(newImplementation);
+    }
+
     function exposed_validateIsAuthorizedToRebalance(IStrategy strategy) external view {
         _validateIsAuthorizedToRebalance(strategy);
     }
