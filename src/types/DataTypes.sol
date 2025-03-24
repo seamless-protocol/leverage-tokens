@@ -87,3 +87,17 @@ struct TokenTransfer {
     /// @dev Amount to transfer
     uint256 amount;
 }
+
+/// @notice Struct containing auction parameters
+struct Auction {
+    /// @notice Whether the strategy is over-collateralized
+    bool isOverCollateralized;
+    /// @notice Initial price multiplier for the auction
+    uint256 initialPriceMultiplier;
+    /// @notice Minimum price multiplier for the auction
+    uint256 minPriceMultiplier;
+    /// @notice Timestamp when auction started
+    uint256 startTimestamp;
+    /// @notice Timestamp when auction ends/ended
+    uint256 endTimestamp;
+}

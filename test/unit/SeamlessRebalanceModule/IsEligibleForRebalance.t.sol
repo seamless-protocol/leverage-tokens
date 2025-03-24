@@ -6,8 +6,6 @@ import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {StrategyState} from "src/types/DataTypes.sol";
 
 contract IsEligibleForRebalanceTest is SeamlessRebalanceModuleBaseTest {
-    address public dutchAuctionModule = makeAddr("dutchAuctionModule");
-
     function setUp() public override {
         super.setUp();
 
@@ -17,7 +15,7 @@ contract IsEligibleForRebalanceTest is SeamlessRebalanceModuleBaseTest {
         vm.stopPrank();
     }
 
-    function test_isEligibleForRebalance_WhenCollateralRatioTooLow() public {
+    function test_isEligibleForRebalance_WhenCollateralRatioTooLow() public view {
         StrategyState memory state =
             StrategyState({collateralInDebtAsset: 100 ether, debt: 100 ether, equity: 0, collateralRatio: 1e8});
 
@@ -25,7 +23,7 @@ contract IsEligibleForRebalanceTest is SeamlessRebalanceModuleBaseTest {
         assertTrue(isEligible);
     }
 
-    function test_isEligibleForRebalance_WhenCollateralRatioTooHigh() public {
+    function test_isEligibleForRebalance_WhenCollateralRatioTooHigh() public view {
         StrategyState memory state =
             StrategyState({collateralInDebtAsset: 300 ether, debt: 100 ether, equity: 200 ether, collateralRatio: 3e8});
 
@@ -33,7 +31,7 @@ contract IsEligibleForRebalanceTest is SeamlessRebalanceModuleBaseTest {
         assertTrue(isEligible);
     }
 
-    function test_isEligibleForRebalance_WhenCollateralRatioInRange() public {
+    function test_isEligibleForRebalance_WhenCollateralRatioInRange() public view {
         StrategyState memory state =
             StrategyState({collateralInDebtAsset: 200 ether, debt: 100 ether, equity: 100 ether, collateralRatio: 2e8});
 
@@ -44,6 +42,7 @@ contract IsEligibleForRebalanceTest is SeamlessRebalanceModuleBaseTest {
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_isEligibleForRebalance_WhenCallerNotDutchAuctionModule(address caller, StrategyState memory state)
         public
+        view
     {
         vm.assume(caller != dutchAuctionModule);
 
@@ -52,7 +51,7 @@ contract IsEligibleForRebalanceTest is SeamlessRebalanceModuleBaseTest {
     }
 
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_isEligibleForRebalance(uint256 collateralRatio) public {
+    function testFuzz_isEligibleForRebalance(uint256 collateralRatio) public view {
         uint256 minRatio = rebalanceModule.getStrategyMinCollateralRatio(strategy);
         uint256 maxRatio = rebalanceModule.getStrategyMaxCollateralRatio(strategy);
 

@@ -21,6 +21,7 @@ import {LeverageManager} from "src/LeverageManager.sol";
 import {Strategy} from "src/Strategy.sol";
 import {StrategyConfig} from "src/types/DataTypes.sol";
 import {LeverageManagerHarness} from "test/unit/LeverageManager/harness/LeverageManagerHarness.t.sol";
+import {DutchAuctionRebalancer} from "src/rebalance/DutchAuctionRebalancer.sol";
 import {SeamlessRebalanceModule} from "src/rebalance/SeamlessRebalanceModule.sol";
 
 contract IntegrationTestBase is Test {
@@ -71,6 +72,8 @@ contract IntegrationTestBase is Test {
         BeaconProxyFactory strategyFactory = new BeaconProxyFactory(address(strategyImplementation), address(this));
 
         leverageManager.setStrategyTokenFactory(address(strategyFactory));
+
+        dutchAuctionModule = address(new DutchAuctionRebalancer(address(this), leverageManager));
 
         SeamlessRebalanceModule seamlessRebalanceModuleImplementation = new SeamlessRebalanceModule();
         seamlessRebalanceModule = SeamlessRebalanceModule(

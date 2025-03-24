@@ -19,6 +19,7 @@ contract SeamlessRebalanceModuleBaseTest is Test {
 
     IStrategy public strategy = IStrategy(makeAddr("strategy"));
     address public defaultAdmin = makeAddr("defaultAdmin");
+    address public dutchAuctionModule = makeAddr("dutchAuctionModule");
 
     MockLeverageManager public leverageManager;
     SeamlessRebalanceModuleHarness public rebalanceModule;

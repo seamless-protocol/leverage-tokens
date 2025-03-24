@@ -17,7 +17,7 @@ import {IntegrationTestBase} from "../IntegrationTestBase.t.sol";
 import {StrategyState} from "src/types/DataTypes.sol";
 
 contract LeverageManagerBase is IntegrationTestBase {
-    function testFork_setUp() public view override {
+    function testFork_setUp() public view virtual override {
         assertEq(address(leverageManager.getStrategyCollateralAsset(strategy)), address(WETH));
         assertEq(address(leverageManager.getStrategyDebtAsset(strategy)), address(USDC));
 

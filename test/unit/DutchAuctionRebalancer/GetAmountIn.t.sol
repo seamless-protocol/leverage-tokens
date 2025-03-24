@@ -6,7 +6,7 @@ import {IDutchAuctionRebalancer} from "src/interfaces/IDutchAuctionRebalancer.so
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract GetAmountInTest is DutchAuctionRebalancerBaseTest {
-    function test_getAmountIn_NoAuction() public {
+    function test_getAmountIn_NoAuction() public view {
         assertEq(auctionRebalancer.getAmountIn(strategy, 1000), 0);
     }
 

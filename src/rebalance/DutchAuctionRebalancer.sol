@@ -13,7 +13,7 @@ import {IDutchAuctionRebalancer} from "src/interfaces/IDutchAuctionRebalancer.so
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
-import {RebalanceAction, TokenTransfer, ActionType, StrategyState} from "src/types/DataTypes.sol";
+import {RebalanceAction, TokenTransfer, ActionType, StrategyState, Auction} from "src/types/DataTypes.sol";
 
 contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
     using SafeERC20 for IERC20;
