@@ -226,11 +226,10 @@ contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
 
         collateralAsset.safeTransferFrom(msg.sender, address(this), collateralAmount);
 
-        // slither-disable-next-line reentrancy-no-eth
-        // slither-disable-next-line reentrancy-events
+        // slither-disable-next-line reentrancy-no-eth,reentrancy-events
         collateralAsset.approve(address(leverageManager), collateralAmount);
 
-        // slither-disable-next-line reentrancy-no-eth
+        // slither-disable-next-line reentrancy-no-eth,reentrancy-events
         leverageManager.rebalance(actions, tokensIn, tokensOut);
 
         debtAsset.safeTransfer(msg.sender, debtAmount);
@@ -261,11 +260,10 @@ contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
 
         debtAsset.safeTransferFrom(msg.sender, address(this), debtAmount);
 
-        // slither-disable-next-line reentrancy-no-eth
-        // slither-disable-next-line reentrancy-events
+        // slither-disable-next-line reentrancy-no-eth,reentrancy-events
         debtAsset.approve(address(leverageManager), debtAmount);
 
-        // slither-disable-next-line reentrancy-no-eth
+        // slither-disable-next-line reentrancy-no-eth,reentrancy-events
         leverageManager.rebalance(actions, tokensIn, tokensOut);
 
         collateralAsset.safeTransfer(msg.sender, collateralAmount);
