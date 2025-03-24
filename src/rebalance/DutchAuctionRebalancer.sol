@@ -163,8 +163,6 @@ contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
         uint256 startTimestamp = block.timestamp;
         uint256 endTimestamp = startTimestamp + auctionDuration[strategy];
 
-        console.log("isOverCollateralized", isOverCollateralized);
-
         Auction memory auction = Auction({
             isOverCollateralized: isOverCollateralized,
             initialPriceMultiplier: initialPriceMultiplier[strategy],

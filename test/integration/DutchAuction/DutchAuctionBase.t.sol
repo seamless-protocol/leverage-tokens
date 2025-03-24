@@ -50,8 +50,6 @@ contract DutchAuctionBase is RebalanceTest {
             uint256 endTimestamp
         ) = DutchAuctionRebalancer(dutchAuctionModule).auctions(ethLong2x);
 
-        StrategyState memory state = leverageManager.getStrategyState(ethLong2x);
-
         assertEq(isOverCollateralized, false);
         assertEq(initialPriceMultiplier, 1.2 * 1e18);
         assertEq(minPriceMultiplier, 0.9 * 1e18);
