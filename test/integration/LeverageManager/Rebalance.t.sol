@@ -20,7 +20,7 @@ contract RebalanceTest is LeverageManagerBase {
     int256 public constant MAX_PERCENTAGE = 100_00; // 100%
 
     Id public constant USDC_WETH_MARKET_ID = Id.wrap(0x3b3769cfca57be2eaed03fcc5299c25691b77781a1e124e7a8d520eb9a7eabb5);
-    address public rebalancer = dutchAuctionModule;
+    address public rebalancer;
 
     IStrategy ethLong2x;
     IStrategy ethShort2x;
@@ -74,6 +74,7 @@ contract RebalanceTest is LeverageManagerBase {
 
         seamlessRebalanceModule.setStrategyCollateralRatios(ethLong2x, 18 * BASE_RATIO / 10, 22 * BASE_RATIO / 10);
         seamlessRebalanceModule.setStrategyCollateralRatios(ethShort2x, 13 * BASE_RATIO / 10, 2 * BASE_RATIO);
+        rebalancer = dutchAuctionModule;
     }
 
     /// @dev In this block price on oracle 3392.292471591441746049801068
