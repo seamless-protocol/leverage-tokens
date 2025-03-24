@@ -123,7 +123,7 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
         SafeERC20.safeTransferFrom(IERC20(_marketParams.collateralToken), msg.sender, address(this), amount);
 
         // Supply the collateral to the Morpho market
-        IERC20(_marketParams.collateralToken).approve(address(morpho), amount);
+        SafeERC20.forceApprove(IERC20(_marketParams.collateralToken), address(morpho), amount);
         morpho.supplyCollateral(_marketParams, amount, address(this), hex"");
     }
 
@@ -165,7 +165,7 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
         uint256 maxSharesToRepay = position.borrowShares;
         uint256 maxAssetsToRepay = SharesMathLib.toAssetsUp(maxSharesToRepay, totalBorrowAssets, totalBorrowShares);
 
-        IERC20(_marketParams.loanToken).approve(address(morpho), amount);
+        SafeERC20.forceApprove(IERC20(_marketParams.loanToken), address(morpho), amount);
 
         // Repay all shares if we are trying to repay more assets than we owe
         if (amount >= maxAssetsToRepay) {

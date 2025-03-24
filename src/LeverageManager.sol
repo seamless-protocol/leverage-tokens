@@ -558,7 +558,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         if (actionType == ActionType.AddCollateral) {
             IERC20 collateralAsset = lendingAdapter.getCollateralAsset();
             // slither-disable-next-line reentrancy-events
-            collateralAsset.approve(address(lendingAdapter), amount);
+            SafeERC20.forceApprove(collateralAsset, address(lendingAdapter), amount);
             // slither-disable-next-line reentrancy-events
             lendingAdapter.addCollateral(amount);
         } else if (actionType == ActionType.RemoveCollateral) {
@@ -570,7 +570,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         } else if (actionType == ActionType.Repay) {
             IERC20 debtAsset = lendingAdapter.getDebtAsset();
             // slither-disable-next-line reentrancy-events
-            debtAsset.approve(address(lendingAdapter), amount);
+            SafeERC20.forceApprove(debtAsset, address(lendingAdapter), amount);
             // slither-disable-next-line reentrancy-events
             lendingAdapter.repay(amount);
         }

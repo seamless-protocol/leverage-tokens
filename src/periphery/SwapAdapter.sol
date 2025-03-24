@@ -87,7 +87,7 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
     ) internal returns (uint256 outputAmount) {
         IAerodromeRouter.Route[] memory routes = _generateAerodromeRoutes(path, aerodromePoolFactory);
 
-        IERC20(path[0]).approve(aerodromeRouter, inputAmount);
+        SafeERC20.forceApprove(IERC20(path[0]), address(aerodromeRouter), inputAmount);
         uint256[] memory amounts = IAerodromeRouter(aerodromeRouter).swapExactTokensForTokens(
             inputAmount, minOutputAmount, routes, receiver, block.timestamp
         );
@@ -120,7 +120,7 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
         IAerodromeSlipstreamRouter aerodromeSlipstreamRouter =
             IAerodromeSlipstreamRouter(swapContext.exchangeAddresses.aerodromeSlipstreamRouter);
 
-        IERC20(swapContext.path[0]).approve(address(aerodromeSlipstreamRouter), inputAmount);
+        SafeERC20.forceApprove(IERC20(swapContext.path[0]), address(aerodromeSlipstreamRouter), inputAmount);
 
         if (swapContext.path.length == 2) {
             IAerodromeSlipstreamRouter.ExactInputSingleParams memory swapParams = IAerodromeSlipstreamRouter
@@ -155,7 +155,7 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
     {
         IUniswapV2Router02 uniswapV2Router02 = IUniswapV2Router02(swapContext.exchangeAddresses.uniswapV2Router02);
 
-        IERC20(swapContext.path[0]).approve(address(uniswapV2Router02), inputAmount);
+        SafeERC20.forceApprove(IERC20(swapContext.path[0]), address(uniswapV2Router02), inputAmount);
 
         uint256[] memory amounts = uniswapV2Router02.swapExactTokensForTokens(
             inputAmount, minOutputAmount, swapContext.path, msg.sender, block.timestamp
@@ -173,7 +173,7 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
         IUniswapSwapRouter02 uniswapSwapRouter02 =
             IUniswapSwapRouter02(swapContext.exchangeAddresses.uniswapSwapRouter02);
 
-        IERC20(swapContext.path[0]).approve(address(uniswapSwapRouter02), inputAmount);
+        SafeERC20.forceApprove(IERC20(swapContext.path[0]), address(uniswapSwapRouter02), inputAmount);
 
         if (swapContext.path.length == 2) {
             IUniswapSwapRouter02.ExactInputSingleParams memory params = IUniswapSwapRouter02.ExactInputSingleParams({
@@ -245,7 +245,7 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
         IAerodromeSlipstreamRouter aerodromeSlipstreamRouter =
             IAerodromeSlipstreamRouter(swapContext.exchangeAddresses.aerodromeSlipstreamRouter);
 
-        IERC20(swapContext.path[0]).approve(address(aerodromeSlipstreamRouter), maxInputAmount);
+        SafeERC20.forceApprove(IERC20(swapContext.path[0]), address(aerodromeSlipstreamRouter), maxInputAmount);
 
         if (swapContext.path.length == 2) {
             IAerodromeSlipstreamRouter.ExactOutputSingleParams memory swapParams = IAerodromeSlipstreamRouter
@@ -280,7 +280,7 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
     {
         IUniswapV2Router02 uniswapV2Router02 = IUniswapV2Router02(swapContext.exchangeAddresses.uniswapV2Router02);
 
-        IERC20(swapContext.path[0]).approve(address(uniswapV2Router02), maxInputAmount);
+        SafeERC20.forceApprove(IERC20(swapContext.path[0]), address(uniswapV2Router02), maxInputAmount);
 
         return uniswapV2Router02.swapTokensForExactTokens(
             outputAmount, maxInputAmount, swapContext.path, msg.sender, block.timestamp
@@ -297,7 +297,7 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
         IUniswapSwapRouter02 uniswapSwapRouter02 =
             IUniswapSwapRouter02(swapContext.exchangeAddresses.uniswapSwapRouter02);
 
-        IERC20(swapContext.path[0]).approve(address(uniswapSwapRouter02), maxInputAmount);
+        SafeERC20.forceApprove(IERC20(swapContext.path[0]), address(uniswapSwapRouter02), maxInputAmount);
 
         if (swapContext.path.length == 2) {
             IUniswapSwapRouter02.ExactOutputSingleParams memory params = IUniswapSwapRouter02.ExactOutputSingleParams({
