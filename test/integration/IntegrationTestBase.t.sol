@@ -132,9 +132,8 @@ contract IntegrationTestBase is Test {
         uint256 depositFee,
         uint256 withdrawFee
     ) internal returns (IStrategy) {
-        ILendingAdapter lendingAdapter = ILendingAdapter(
-            morphoLendingAdapterFactory.deployAdapter(WETH_USDC_MARKET_ID, bytes32(vm.randomUint()))
-        );
+        ILendingAdapter lendingAdapter =
+            ILendingAdapter(morphoLendingAdapterFactory.deployAdapter(WETH_USDC_MARKET_ID, bytes32(vm.randomUint())));
         IStrategy _strategy = leverageManager.createNewStrategy(
             StrategyConfig({
                 lendingAdapter: lendingAdapter,
