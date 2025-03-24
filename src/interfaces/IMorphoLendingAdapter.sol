@@ -10,12 +10,12 @@ import {ILeverageManager} from "./ILeverageManager.sol";
 
 interface IMorphoLendingAdapter is ILendingAdapter {
     /// @notice The Seamless ilm-v2 LeverageManager contract
-    /// @return leverageManager The Seamless ilm-v2 LeverageManager contract
-    function leverageManager() external view returns (ILeverageManager leverageManager);
+    /// @return _leverageManager The Seamless ilm-v2 LeverageManager contract
+    function leverageManager() external view returns (ILeverageManager _leverageManager);
 
     /// @notice The ID of the Morpho market that the lending adapter manages a position in
-    /// @return morphoMarketId The ID of the Morpho market that the lending adapter manages a position in
-    function morphoMarketId() external view returns (Id morphoMarketId);
+    /// @return _morphoMarketId The ID of the Morpho market that the lending adapter manages a position in
+    function morphoMarketId() external view returns (Id _morphoMarketId);
 
     /// @notice The market parameters of the Morpho lending pool
     /// @return loanToken The loan token of the Morpho lending pool
@@ -29,6 +29,6 @@ interface IMorphoLendingAdapter is ILendingAdapter {
         returns (address loanToken, address collateralToken, address oracle, address irm, uint256 lltv);
 
     /// @notice The Morpho core protocol contract
-    /// @return morpho The Morpho core protocol contract
-    function morpho() external view returns (IMorpho morpho);
+    /// @return _morpho The Morpho core protocol contract
+    function morpho() external view returns (IMorpho _morpho);
 }

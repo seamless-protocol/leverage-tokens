@@ -12,8 +12,8 @@ interface IBeaconProxyFactory {
     event BeaconProxyCreated(address indexed proxy, bytes data, bytes32 baseSalt);
 
     /// @notice The beacon contract
-    /// @return beacon The address of the beacon contract
-    function beacon() external view returns (address beacon);
+    /// @return _beacon The address of the beacon contract
+    function beacon() external view returns (address _beacon);
 
     /// @notice Computes the address of a beacon proxy before deployment
     /// @param sender The address that will deploy the beacon proxy using the factory
@@ -26,8 +26,8 @@ interface IBeaconProxyFactory {
         returns (address proxy);
 
     /// @notice The list of beacon proxies deployed by the factory
-    /// @return proxies The list of beacon proxies
-    function getProxies() external view returns (address[] memory proxies);
+    /// @return _proxies The list of beacon proxies
+    function getProxies() external view returns (address[] memory _proxies);
 
     /// @notice Returns the address of a beacon proxy by index in the stored list of beacon proxies deployed by the factory
     /// @param index The index of the beacon proxy in the stored list of beacon proxies

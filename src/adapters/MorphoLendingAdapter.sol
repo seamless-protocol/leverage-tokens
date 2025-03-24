@@ -139,7 +139,7 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
         if (amount == 0) return;
 
         // Borrow the debt asset from the Morpho market and send it to the caller
-        //slither-disable-next-line unused-return
+        // slither-disable-next-line unused-return
         morpho.borrow(marketParams, amount, 0, address(this), msg.sender);
     }
 
@@ -169,10 +169,10 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
 
         // Repay all shares if we are trying to repay more assets than we owe
         if (amount >= maxAssetsToRepay) {
-            //slither-disable-next-line unused-return
+            // slither-disable-next-line unused-return
             morpho.repay(_marketParams, 0, maxSharesToRepay, address(this), hex"");
         } else {
-            //slither-disable-next-line unused-return
+            // slither-disable-next-line unused-return
             morpho.repay(_marketParams, amount, 0, address(this), hex"");
         }
     }

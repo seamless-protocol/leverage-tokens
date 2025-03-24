@@ -54,13 +54,13 @@ interface IDutchAuctionRebalancer {
     event MinPriceMultiplierSet(IStrategy indexed strategy, uint256 newMultiplier);
 
     /// @notice Returns leverage manager
-    /// @return leverageManager Leverage manager
-    function leverageManager() external view returns (ILeverageManager leverageManager);
+    /// @return _leverageManager Leverage manager
+    function leverageManager() external view returns (ILeverageManager _leverageManager);
 
     /// @notice Returns auction duration
     /// @param strategy Strategy to get duration for
-    /// @return auctionDuration Auction duration
-    function auctionDuration(IStrategy strategy) external view returns (uint256 auctionDuration);
+    /// @return _auctionDuration Auction duration
+    function auctionDuration(IStrategy strategy) external view returns (uint256 _auctionDuration);
 
     /// @notice Returns initial price multiplier
     /// @param strategy Strategy to get multiplier for

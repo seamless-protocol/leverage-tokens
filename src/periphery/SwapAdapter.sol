@@ -68,6 +68,8 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
 
         // Transfer back excess inputToken not used for the swap to the sender
         uint256 excessInputAmount = maxInputAmount - inputAmount;
+
+        // slither-disable-next-line timestamp
         if (excessInputAmount > 0) {
             SafeERC20.safeTransfer(inputToken, msg.sender, excessInputAmount);
         }
@@ -211,6 +213,7 @@ contract SwapAdapter is ISwapAdapter, AccessControlUpgradeable, UUPSUpgradeable 
         );
 
         // We only need outputAmount of the received tokens, so we swap the surplus back to the inputToken and send it back to sender
+        // slither-disable-next-line timestamp
         if (outputAmountReceived > outputAmount) {
             uint256 surplusInputAmount = _swapAerodrome(
                 outputAmountReceived - outputAmount,
