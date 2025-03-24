@@ -6,6 +6,7 @@ import {console} from "forge-std/console.sol";
 import {DutchAuctionBase} from "./DutchAuctionBase.t.sol";
 import {DutchAuctionRebalancer} from "src/rebalance/DutchAuctionRebalancer.sol";
 import {StrategyState} from "src/types/DataTypes.sol";
+import {IDutchAuctionRebalancer} from "src/interfaces/IDutchAuctionRebalancer.sol";
 
 contract Take is DutchAuctionBase {
     address public alice = makeAddr("alice");
@@ -92,7 +93,7 @@ contract Take is DutchAuctionBase {
         uint256 maxLoss = stateBefore.equity / 100;
         assertGe(stateAfter.equity, stateBefore.equity - maxLoss);
 
-        // Check if user received correct amount of debt
+        // Check if user received correct amount of collateral
         assertEq(WETH.balanceOf(alice), 1e18);
         assertEq(WETH.balanceOf(bob), 1e18);
         assertEq(WETH.balanceOf(charlie), 1 * 1e18);
@@ -114,6 +115,22 @@ contract Take is DutchAuctionBase {
 
         assertLe(amountInBob, amountInAlice);
         assertLe(amountInCharlie, amountInBob);
+    }
+
+    function testFork_take_StrategyBackToHealthy() public {
+        _prepareOverCollateralizedState();
+
+        // Start auction
+        DutchAuctionRebalancer(dutchAuctionModule).createAuction(ethLong2x);
+
+        // Alice takes
+        _take_OverCollateralized(alice, 2_000 * 1e6);
+
+        _moveEthPrice(-15_00); // Move ETH price 15% down to bring strategy back to healthy state
+
+        // Try to take and reverts
+        vm.expectRevert(IDutchAuctionRebalancer.AuctionNotValid.selector);
+        DutchAuctionRebalancer(dutchAuctionModule).take(ethLong2x, 1e18);
     }
 
     function _take_OverCollateralized(address user, uint256 amountOut) internal returns (uint256) {
