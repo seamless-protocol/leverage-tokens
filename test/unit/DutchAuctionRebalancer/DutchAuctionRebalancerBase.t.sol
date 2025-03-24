@@ -5,7 +5,8 @@ pragma solidity ^0.8.26;
 import {Test} from "forge-std/Test.sol";
 
 // Internal imports
-import {DutchAuctionRebalancer} from "src/DutchAuctionRebalancer.sol";
+import {MockRebalanceModule} from "../mock/MockRebalanceModule.sol";
+import {DutchAuctionRebalancer} from "src/rebalance/DutchAuctionRebalancer.sol";
 import {DutchAuctionRebalancerHarness} from "./harness/DutchAuctionRebalancerHarness.t.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
@@ -13,7 +14,7 @@ import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {MockERC20} from "../mock/MockERC20.sol";
 import {MockLendingAdapter} from "../mock/MockLendingAdapter.sol";
 import {MockLeverageManager} from "../mock/MockLeverageManager.sol";
-import {StrategyState, CollateralRatios, RebalanceAction, TokenTransfer} from "src/types/DataTypes.sol";
+import {StrategyState} from "src/types/DataTypes.sol";
 
 contract DutchAuctionRebalancerBaseTest is Test {
     // Common constants used across tests
@@ -34,6 +35,7 @@ contract DutchAuctionRebalancerBaseTest is Test {
     MockLendingAdapter public lendingAdapter;
     MockLeverageManager public leverageManager;
     DutchAuctionRebalancerHarness public auctionRebalancer;
+    MockRebalanceModule public rebalanceModule;
 
     address public owner = makeAddr("owner");
 
@@ -46,6 +48,7 @@ contract DutchAuctionRebalancerBaseTest is Test {
         // Setup mock adapters and managers
         lendingAdapter = new MockLendingAdapter(address(collateralToken), address(debtToken));
         leverageManager = new MockLeverageManager();
+        rebalanceModule = new MockRebalanceModule();
 
         // Setup strategy data in leverage manager
         leverageManager.setStrategyData(
@@ -58,12 +61,13 @@ contract DutchAuctionRebalancerBaseTest is Test {
                 targetCollateralRatio: TARGET_RATIO
             })
         );
+        leverageManager.setStrategyRebalanceModule(strategy, address(rebalanceModule));
 
         // Setup owner and deploy auction rebalancer harness
         auctionRebalancer = new DutchAuctionRebalancerHarness(owner, ILeverageManager(address(leverageManager)));
 
         // Set default collateral ratios
-        _setStrategyCollateralRatios(MIN_RATIO, MAX_RATIO, TARGET_RATIO);
+        _mockStrategyCollateralRatios(MIN_RATIO, MAX_RATIO);
 
         // Set default auction parameters
         _setAuctionParameters(DEFAULT_INITIAL_PRICE_MULTIPLIER, DEFAULT_MIN_PRICE_MULTIPLIER);
@@ -82,13 +86,13 @@ contract DutchAuctionRebalancerBaseTest is Test {
         vm.stopPrank();
     }
 
-    function _setStrategyCollateralRatios(uint256 minRatio, uint256 maxRatio, uint256 targetRatio) internal {
-        CollateralRatios memory ratios = CollateralRatios({
-            minCollateralRatio: minRatio,
-            maxCollateralRatio: maxRatio,
-            targetCollateralRatio: targetRatio
-        });
-        leverageManager.setStrategyCollateralRatios(strategy, ratios);
+    function _mockStrategyCollateralRatios(uint256 minRatio, uint256 maxRatio) internal {
+        rebalanceModule.mockSetStrategyMinCollateralRatio(strategy, minRatio);
+        rebalanceModule.mockSetStrategyMaxCollateralRatio(strategy, maxRatio);
+    }
+
+    function _mockIsEligibleForRebalance(bool isEligible) internal {
+        rebalanceModule.mockIsEligibleForRebalance(strategy, isEligible);
     }
 
     function _setStrategyCollateralRatio(uint256 collateralRatio) internal {

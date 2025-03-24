@@ -7,7 +7,7 @@ import {IDutchAuctionRebalancer} from "src/interfaces/IDutchAuctionRebalancer.so
 contract CreateAuctionTest is DutchAuctionRebalancerBaseTest {
     function test_createAuction_UnderCollateralized() public {
         // Set higher min ratio for this test
-        _setStrategyCollateralRatios(1.5e8, MAX_RATIO, TARGET_RATIO);
+        _mockStrategyCollateralRatios(1.5e8, MAX_RATIO);
 
         // Set current ratio to be below min (under-collateralized)
         _setStrategyCollateralRatio(1.4e8);

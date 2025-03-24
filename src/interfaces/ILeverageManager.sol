@@ -6,13 +6,11 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
 import {IFeeManager} from "./IFeeManager.sol";
-import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
 import {IStrategy} from "./IStrategy.sol";
-import {CollateralRatios} from "src/types/DataTypes.sol";
 import {IBeaconProxyFactory} from "./IBeaconProxyFactory.sol";
 import {ILendingAdapter} from "./ILendingAdapter.sol";
 import {ActionData, StrategyState, RebalanceAction, TokenTransfer, StrategyConfig} from "src/types/DataTypes.sol";
-import {IRebalanceRewardDistributor} from "./IRebalanceRewardDistributor.sol";
+import {IRebalanceModule} from "./IRebalanceModule.sol";
 
 interface ILeverageManager is IFeeManager {
     /// @notice Error thrown when someone tries to create strategy with lending adapter that already exists
@@ -33,14 +31,8 @@ interface ILeverageManager is IFeeManager {
     /// @notice Error thrown when strategy is not eligible for rebalance
     error StrategyNotEligibleForRebalance(IStrategy strategy);
 
-    /// @notice Error thrown when collateral ratio after rebalance is worse than before rebalance
-    error CollateralRatioInvalid();
-
-    /// @notice Error thrown when collateral ratio after rebalance is on the opposite side of target ratio than before rebalance
-    error ExposureDirectionChanged();
-
-    /// @notice Error thrown when equity loss on rebalance is too big
-    error EquityLossTooBig();
+    /// @notice Error thrown when strategy state after rebalance is invalid
+    error InvalidStrategyStateAfterRebalance(IStrategy strategy);
 
     /// @notice Event emitted when strategy token factory is set
     event StrategyTokenFactorySet(address factory);
@@ -78,23 +70,10 @@ interface ILeverageManager is IFeeManager {
     /// @return debtAsset Debt asset for the strategy
     function getStrategyDebtAsset(IStrategy strategy) external view returns (IERC20 debtAsset);
 
-    /// @notice Returns module for distributing rewards for rebalancing strategy
-    /// @param strategy Strategy to get module for
-    /// @return distributor Module for distributing rewards for rebalancing strategy
-    function getStrategyRebalanceRewardDistributor(IStrategy strategy)
-        external
-        view
-        returns (IRebalanceRewardDistributor distributor);
-
-    /// @notice Returns rebalance whitelist module for strategy
-    /// @param strategy Strategy to get rebalance whitelist for
-    /// @param whitelist Rebalance whitelist module
-    function getStrategyRebalanceWhitelist(IStrategy strategy) external view returns (IRebalanceWhitelist whitelist);
-
-    /// @notice Returns leverage config for a strategy including min, max and target
-    /// @param strategy Strategy to get leverage config for
-    /// @return ratios Collateral ratios for the strategy
-    function getStrategyCollateralRatios(IStrategy strategy) external view returns (CollateralRatios memory ratios);
+    /// @notice Returns the rebalance module for the strategy
+    /// @param strategy Strategy to get the rebalance module for
+    /// @return adapter Rebalance module for the strategy
+    function getStrategyRebalanceModule(IStrategy strategy) external view returns (IRebalanceModule adapter);
 
     /// @notice Returns target ratio for a strategy
     /// @param strategy Strategy to get target ratio for

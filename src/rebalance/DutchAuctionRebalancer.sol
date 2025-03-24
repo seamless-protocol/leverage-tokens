@@ -1,16 +1,19 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
+// Dependency imports
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-import {IDutchAuctionRebalancer} from "./interfaces/IDutchAuctionRebalancer.sol";
-import {ILeverageManager} from "./interfaces/ILeverageManager.sol";
-import {IStrategy} from "./interfaces/IStrategy.sol";
-import {ILendingAdapter} from "./interfaces/ILendingAdapter.sol";
-import {RebalanceAction, TokenTransfer, ActionType, StrategyState, CollateralRatios} from "./types/DataTypes.sol";
+// Internal imports
+import {ISeamlessRebalanceModule} from "src/interfaces/ISeamlessRebalanceModule.sol";
+import {IDutchAuctionRebalancer} from "src/interfaces/IDutchAuctionRebalancer.sol";
+import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
+import {IStrategy} from "src/interfaces/IStrategy.sol";
+import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
+import {RebalanceAction, TokenTransfer, ActionType, StrategyState} from "src/types/DataTypes.sol";
 
 contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
     using SafeERC20 for IERC20;
@@ -47,11 +50,15 @@ contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
         returns (bool isEligibleForRebalance, bool isOverCollateralized)
     {
         StrategyState memory state = leverageManager.getStrategyState(strategy);
-        CollateralRatios memory ratios = leverageManager.getStrategyCollateralRatios(strategy);
 
-        isEligibleForRebalance =
-            state.collateralRatio < ratios.minCollateralRatio || state.collateralRatio > ratios.maxCollateralRatio;
-        isOverCollateralized = state.collateralRatio > ratios.maxCollateralRatio;
+        ISeamlessRebalanceModule rebalanceModule =
+            ISeamlessRebalanceModule(address(leverageManager.getStrategyRebalanceModule(strategy)));
+
+        uint256 minColRatio = rebalanceModule.getStrategyMinCollateralRatio(strategy);
+        uint256 maxColRatio = rebalanceModule.getStrategyMaxCollateralRatio(strategy);
+
+        isEligibleForRebalance = state.collateralRatio < minColRatio || state.collateralRatio > maxColRatio;
+        isOverCollateralized = state.collateralRatio > maxColRatio;
 
         return (isEligibleForRebalance, isOverCollateralized);
     }

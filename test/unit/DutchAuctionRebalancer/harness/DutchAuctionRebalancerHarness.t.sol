@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-import {DutchAuctionRebalancer} from "src/DutchAuctionRebalancer.sol";
+import {DutchAuctionRebalancer} from "src/rebalance/DutchAuctionRebalancer.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {RebalanceAction, TokenTransfer} from "src/types/DataTypes.sol";

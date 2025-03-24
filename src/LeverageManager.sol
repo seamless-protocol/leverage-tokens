@@ -16,22 +16,20 @@ import {IBeaconProxyFactory} from "src/interfaces/IBeaconProxyFactory.sol";
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {IRebalanceRewardDistributor} from "src/interfaces/IRebalanceRewardDistributor.sol";
-import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {FeeManager} from "src/FeeManager.sol";
-import {CollateralRatios, StrategyState} from "src/types/DataTypes.sol";
+import {StrategyState} from "src/types/DataTypes.sol";
 import {Strategy} from "src/Strategy.sol";
 import {
     ActionData,
     ActionType,
-    BaseStrategyConfig,
     ExternalAction,
-    RebalanceAction,
     StrategyConfig,
-    StrategyState,
+    BaseStrategyConfig,
+    RebalanceAction,
     TokenTransfer
 } from "src/types/DataTypes.sol";
+import {IRebalanceModule} from "src/interfaces/IRebalanceModule.sol";
 
 contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManager, UUPSUpgradeable {
     using SafeCast for uint256;
@@ -90,16 +88,8 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function getStrategyRebalanceRewardDistributor(IStrategy strategy)
-        public
-        view
-        returns (IRebalanceRewardDistributor distributor)
-    {
-        return _getLeverageManagerStorage().config[strategy].rebalanceRewardDistributor;
-    }
-
-    function getStrategyRebalanceWhitelist(IStrategy strategy) public view returns (IRebalanceWhitelist whitelist) {
-        return _getLeverageManagerStorage().config[strategy].rebalanceWhitelist;
+    function getStrategyRebalanceModule(IStrategy strategy) public view returns (IRebalanceModule module) {
+        return _getLeverageManagerStorage().config[strategy].rebalanceModule;
     }
 
     /// @inheritdoc ILeverageManager
@@ -110,11 +100,8 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
         return StrategyConfig({
             lendingAdapter: baseConfig.lendingAdapter,
-            minCollateralRatio: baseConfig.minCollateralRatio,
-            maxCollateralRatio: baseConfig.maxCollateralRatio,
             targetCollateralRatio: baseConfig.targetCollateralRatio,
-            rebalanceRewardDistributor: baseConfig.rebalanceRewardDistributor,
-            rebalanceWhitelist: baseConfig.rebalanceWhitelist,
+            rebalanceModule: baseConfig.rebalanceModule,
             strategyDepositFee: strategyDepositFee,
             strategyWithdrawFee: strategyWithdrawFee
         });
@@ -123,17 +110,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     /// @inheritdoc ILeverageManager
     function getStrategyLendingAdapter(IStrategy strategy) public view returns (ILendingAdapter adapter) {
         return _getLeverageManagerStorage().config[strategy].lendingAdapter;
-    }
-
-    /// @inheritdoc ILeverageManager
-    function getStrategyCollateralRatios(IStrategy strategy) public view returns (CollateralRatios memory ratios) {
-        BaseStrategyConfig memory config = _getLeverageManagerStorage().config[strategy];
-
-        return CollateralRatios({
-            minCollateralRatio: config.minCollateralRatio,
-            maxCollateralRatio: config.maxCollateralRatio,
-            targetCollateralRatio: config.targetCollateralRatio
-        });
     }
 
     /// @inheritdoc ILeverageManager
@@ -187,11 +163,8 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
         _getLeverageManagerStorage().config[strategy] = BaseStrategyConfig({
             lendingAdapter: strategyConfig.lendingAdapter,
-            minCollateralRatio: strategyConfig.minCollateralRatio,
-            maxCollateralRatio: strategyConfig.maxCollateralRatio,
-            targetCollateralRatio: strategyConfig.targetCollateralRatio,
-            rebalanceRewardDistributor: strategyConfig.rebalanceRewardDistributor,
-            rebalanceWhitelist: strategyConfig.rebalanceWhitelist
+            rebalanceModule: strategyConfig.rebalanceModule,
+            targetCollateralRatio: strategyConfig.targetCollateralRatio
         });
         _getLeverageManagerStorage().isLendingAdapterUsed[address(strategyConfig.lendingAdapter)] = true;
         _setStrategyActionFee(strategy, ExternalAction.Deposit, strategyConfig.strategyDepositFee);
@@ -332,8 +305,10 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
                 StrategyState memory state = getStrategyState(strategy);
                 strategiesStateBefore[i] = state;
 
-                _validateIsAuthorizedToRebalance(strategy);
-                _validateRebalanceEligibility(strategy, state.collateralRatio);
+                IRebalanceModule rebalanceModule = getStrategyRebalanceModule(strategy);
+                if (!rebalanceModule.isEligibleForRebalance(strategy, state, msg.sender)) {
+                    revert StrategyNotEligibleForRebalance(strategy);
+                }
             }
 
             _executeLendingAdapterAction(strategy, actions[i].actionType, actions[i].amount);
@@ -342,97 +317,16 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         for (uint256 i = 0; i < actions.length; i++) {
             // Validate the strategy state after rebalancing if it has not been validated yet in a previous iteration of the loop
             if (!_isElementInSlice(actions, actions[i].strategy, i)) {
-                _validateStrategyStateAfterRebalance(actions[i].strategy, strategiesStateBefore[i]);
+                IStrategy strategy = actions[i].strategy;
+                IRebalanceModule rebalanceModule = getStrategyRebalanceModule(strategy);
+
+                if (!rebalanceModule.isStateAfterRebalanceValid(strategy, strategiesStateBefore[i])) {
+                    revert InvalidStrategyStateAfterRebalance(strategy);
+                }
             }
         }
 
         _transferTokens(tokensOut, address(this), msg.sender);
-    }
-
-    /// @notice Validates if caller is allowed to rebalance strategy
-    /// @param strategy Strategy to validate caller for
-    /// @dev Caller is not allowed to rebalance strategy if they are not whitelisted in the strategy's rebalance whitelist module
-    function _validateIsAuthorizedToRebalance(IStrategy strategy) internal view {
-        IRebalanceWhitelist whitelist = getStrategyRebalanceWhitelist(strategy);
-
-        if (address(whitelist) != address(0) && !whitelist.isAllowedToRebalance(address(strategy), msg.sender)) {
-            revert NotRebalancer(strategy, msg.sender);
-        }
-    }
-
-    /// @notice Validates if strategy should be rebalanced
-    /// @param strategy Strategy to validate
-    /// @param currCollateralRatio Current collateral ratio of the strategy
-    /// @dev Strategy should be rebalanced if it's collateral ratio is outside of the min/max range.
-    ///      If strategy is not eligible for rebalance, function will revert
-    function _validateRebalanceEligibility(IStrategy strategy, uint256 currCollateralRatio) internal view {
-        CollateralRatios memory ratios = getStrategyCollateralRatios(strategy);
-
-        if (currCollateralRatio >= ratios.minCollateralRatio && currCollateralRatio <= ratios.maxCollateralRatio) {
-            revert StrategyNotEligibleForRebalance(strategy);
-        }
-    }
-
-    /// @notice Validates if strategy is in better state after rebalance
-    /// @param strategy Strategy to validate
-    /// @param stateBefore State of the strategy before rebalance that includes collateral, debt, equity and collateral ratio
-    /// @dev Function checks if collateral ratio is closer to target ratio than it was before rebalance. Function also checks
-    ///      if equity is not too much lower. Rebalancer is allowed to take percentage of equity when rebalancing strategy.
-    ///      This percentage is considered as reward for rebalancer.
-    function _validateStrategyStateAfterRebalance(IStrategy strategy, StrategyState memory stateBefore) internal view {
-        // Fetch state after rebalance
-        StrategyState memory stateAfter = getStrategyState(strategy);
-
-        // Validate equity change
-        _validateEquityChange(strategy, stateBefore, stateAfter);
-
-        // Validate collateral ratio change
-        _validateCollateralRatioAfterRebalance(strategy, stateBefore.collateralRatio, stateAfter.collateralRatio);
-    }
-
-    /// @notice Validates collateral ratio after rebalance
-    /// @param strategy Strategy to validate ratio for
-    /// @param collateralRatioBefore Collateral ratio before rebalance
-    /// @param collateralRatioAfter Collateral ratio after rebalance
-    /// @dev Collateral ratio after rebalance needs to be closer to target ratio than before rebalance. Also both collateral ratios
-    ///      need to be on the same side. This means if strategy was overexposed before rebalance it can not be underexposed not and vice verse.
-    function _validateCollateralRatioAfterRebalance(
-        IStrategy strategy,
-        uint256 collateralRatioBefore,
-        uint256 collateralRatioAfter
-    ) internal view {
-        uint256 targetRatio = getStrategyTargetCollateralRatio(strategy);
-
-        int256 targetRatioDiffBefore = collateralRatioBefore.toInt256() - targetRatio.toInt256();
-        int256 targetRatioDiffAfter = collateralRatioAfter.toInt256() - targetRatio.toInt256();
-
-        if (targetRatioDiffBefore * targetRatioDiffAfter < 0) {
-            revert ExposureDirectionChanged();
-        }
-
-        if (targetRatioDiffBefore.abs() < targetRatioDiffAfter.abs()) {
-            revert CollateralRatioInvalid();
-        }
-    }
-
-    /// @notice Validates that strategy has enough equity after rebalance action
-    /// @param stateBefore State of the strategy before rebalance
-    /// @param stateAfter State of the strategy after rebalance
-    function _validateEquityChange(
-        IStrategy strategy,
-        StrategyState memory stateBefore,
-        StrategyState memory stateAfter
-    ) internal view {
-        uint256 equityBefore = stateBefore.equity;
-        uint256 equityAfter = stateAfter.equity;
-
-        uint256 reward = getStrategyRebalanceRewardDistributor(strategy).computeRebalanceReward(
-            address(strategy), stateBefore, stateAfter
-        );
-
-        if (equityAfter < equityBefore - reward) {
-            revert EquityLossTooBig();
-        }
     }
 
     /// @notice Function that converts user's equity to shares
@@ -516,6 +410,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
         // If action is deposit there might be some dust in collateral but debt can be 0. In that case we should follow target ratio
         bool shouldFollowTargetRatio = totalShares == 0 || (action == ExternalAction.Deposit && totalDebt == 0);
+
         if (shouldFollowTargetRatio) {
             uint256 targetRatio = getStrategyTargetCollateralRatio(strategy);
             collateral = Math.mulDiv(equityInCollateralAsset, targetRatio, targetRatio - BASE_RATIO, collateralRounding);

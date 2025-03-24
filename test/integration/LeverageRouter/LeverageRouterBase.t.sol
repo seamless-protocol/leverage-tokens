@@ -13,13 +13,8 @@ import {SwapAdapter} from "src/periphery/SwapAdapter.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
-import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
-import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
-import {LeverageManagerHarness} from "test/unit/LeverageManager/harness/LeverageManagerHarness.t.sol";
-import {IRebalanceRewardDistributor} from "src/interfaces/IRebalanceRewardDistributor.sol";
 import {IntegrationTestBase} from "../IntegrationTestBase.t.sol";
-import {CollateralRatios} from "src/types/DataTypes.sol";
 
 contract LeverageRouterBase is IntegrationTestBase {
     address public constant AERODROME_ROUTER = 0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43;
@@ -53,17 +48,6 @@ contract LeverageRouterBase is IntegrationTestBase {
     function testFork_setUp() public view override {
         assertEq(address(leverageManager.getStrategyCollateralAsset(strategy)), address(WETH));
         assertEq(address(leverageManager.getStrategyDebtAsset(strategy)), address(USDC));
-
-        CollateralRatios memory ratios = leverageManager.getStrategyCollateralRatios(strategy);
-        assertEq(ratios.minCollateralRatio, BASE_RATIO);
-        assertEq(ratios.maxCollateralRatio, 3 * BASE_RATIO);
-        assertEq(ratios.targetCollateralRatio, 2 * BASE_RATIO);
-
-        assertEq(address(leverageManager.getStrategyRebalanceRewardDistributor(strategy)), address(0));
-        assertEq(address(leverageManager.getStrategyRebalanceWhitelist(strategy)), address(0));
-
-        assertEq(leverageManager.getIsLendingAdapterUsed(address(morphoLendingAdapter)), true);
-        assertEq(leverageManager.getStrategyTargetCollateralRatio(strategy), 2 * BASE_RATIO);
 
         assertEq(address(leverageRouter.leverageManager()), address(leverageManager));
         assertEq(address(leverageRouter.morpho()), address(MORPHO));

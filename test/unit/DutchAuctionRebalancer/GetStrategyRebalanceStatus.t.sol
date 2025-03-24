@@ -2,8 +2,6 @@
 pragma solidity ^0.8.26;
 
 import {DutchAuctionRebalancerBaseTest} from "./DutchAuctionRebalancerBase.t.sol";
-import {IDutchAuctionRebalancer} from "src/interfaces/IDutchAuctionRebalancer.sol";
-import {CollateralRatios, StrategyState} from "src/types/DataTypes.sol";
 
 contract GetStrategyRebalanceStatusTest is DutchAuctionRebalancerBaseTest {
     function test_getStrategyRebalanceStatus_NotEligible_WithinBounds() public {
@@ -17,7 +15,7 @@ contract GetStrategyRebalanceStatusTest is DutchAuctionRebalancerBaseTest {
 
     function test_getStrategyRebalanceStatus_Eligible_UnderCollateralized() public {
         // Set higher min ratio for this test
-        _setStrategyCollateralRatios(1.5e8, MAX_RATIO, TARGET_RATIO);
+        _mockStrategyCollateralRatios(1.5e8, MAX_RATIO);
 
         // Set current ratio to be below min (e.g., 1.4x)
         _setStrategyCollateralRatio(1.4e8);
@@ -47,7 +45,7 @@ contract GetStrategyRebalanceStatusTest is DutchAuctionRebalancerBaseTest {
         vm.assume(maxRatio > minRatio);
         vm.assume(targetRatio >= minRatio && targetRatio <= maxRatio);
 
-        _setStrategyCollateralRatios(minRatio, maxRatio, targetRatio);
+        _mockStrategyCollateralRatios(minRatio, maxRatio);
         _setStrategyCollateralRatio(currentRatio);
 
         (bool isEligible, bool isOverCollateralized) = auctionRebalancer.getStrategyRebalanceStatus(strategy);
