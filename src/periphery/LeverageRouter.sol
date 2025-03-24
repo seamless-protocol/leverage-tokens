@@ -158,6 +158,7 @@ contract LeverageRouter is ILeverageRouter {
         IERC20 debtAsset = leverageManager.getStrategyDebtAsset(params.strategy);
 
         // Transfer the collateral from the sender for the deposit
+        //slither-disable-next-line arbitrary-send-erc20
         SafeERC20.safeTransferFrom(
             collateralAsset,
             params.sender,
@@ -208,6 +209,7 @@ contract LeverageRouter is ILeverageRouter {
         IERC20 debtAsset = leverageManager.getStrategyDebtAsset(params.strategy);
 
         // Transfer the shares from the sender
+        //slither-disable-next-line arbitrary-send-erc20
         SafeERC20.safeTransferFrom(params.strategy, params.sender, address(this), params.maxShares);
 
         // Withdraw the equity from the strategy
