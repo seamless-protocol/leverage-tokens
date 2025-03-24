@@ -4,22 +4,9 @@ pragma solidity ^0.8.26;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IStrategy} from "./IStrategy.sol";
 import {ILeverageManager} from "./ILeverageManager.sol";
+import {Auction} from "src/types/DataTypes.sol";
 
 interface IDutchAuctionRebalancer {
-    /// @notice Struct containing auction parameters
-    struct Auction {
-        /// @notice Whether the strategy is over-collateralized
-        bool isOverCollateralized;
-        /// @notice Initial price multiplier for the auction
-        uint256 initialPriceMultiplier;
-        /// @notice Minimum price multiplier for the auction
-        uint256 minPriceMultiplier;
-        /// @notice Timestamp when auction started
-        uint256 startTimestamp;
-        /// @notice Timestamp when auction ends/ended
-        uint256 endTimestamp;
-    }
-
     /// @notice Error thrown when auction is not valid
     error AuctionNotValid();
 

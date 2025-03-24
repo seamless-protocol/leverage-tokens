@@ -28,7 +28,7 @@ contract RebalanceTest is LeverageManagerBase {
     MorphoLendingAdapter ethLong2xAdapter;
     MorphoLendingAdapter ethShort2xAdapter;
 
-    function setUp() public override {
+    function setUp() public virtual override {
         super.setUp();
 
         // Deploying simple reward distributor for now because more complex reward distributor will be tested separately
@@ -315,23 +315,6 @@ contract RebalanceTest is LeverageManagerBase {
         return (actions, transfersIn, transfersOut);
     }
 
-    /// @dev Moves price of ETH for given percentage, if percentage is negative it moves price of ETH down
-    function _moveEthPrice(int256 percentage) internal {
-        // Move price on ETH long
-        (,, address ethLongOracle,,) = ethLong2xAdapter.marketParams();
-        uint256 currentPrice = IOracle(ethLongOracle).price();
-        int256 priceChange = int256(currentPrice) * percentage / MAX_PERCENTAGE;
-        uint256 newPrice = uint256(int256(currentPrice) + priceChange);
-        vm.mockCall(address(ethLongOracle), abi.encodeWithSelector(IOracle.price.selector), abi.encode(newPrice));
-
-        // Move price in different direction on ETH short
-        (,, address ethShortOracle,,) = ethShort2xAdapter.marketParams();
-        currentPrice = IOracle(ethShortOracle).price();
-        priceChange = int256(currentPrice) * percentage / MAX_PERCENTAGE;
-        newPrice = uint256(int256(currentPrice) - priceChange);
-        vm.mockCall(address(ethShortOracle), abi.encodeWithSelector(IOracle.price.selector), abi.encode(newPrice));
-    }
-
     function _supplyWETHForETHShortStrategy() internal {
         deal(address(WETH), address(this), 1000 * 1e18);
         IMorpho morpho = IMorpho(ethShort2xAdapter.morpho());
@@ -385,6 +368,23 @@ contract RebalanceTest is LeverageManagerBase {
         vm.stopPrank();
 
         return shares;
+    }
+
+    /// @dev Moves price of ETH for given percentage, if percentage is negative it moves price of ETH down
+    function _moveEthPrice(int256 percentage) internal {
+        // Move price on ETH long
+        (,, address ethLongOracle,,) = ethLong2xAdapter.marketParams();
+        uint256 currentPrice = IOracle(ethLongOracle).price();
+        int256 priceChange = int256(currentPrice) * percentage / MAX_PERCENTAGE;
+        uint256 newPrice = uint256(int256(currentPrice) + priceChange);
+        vm.mockCall(address(ethLongOracle), abi.encodeWithSelector(IOracle.price.selector), abi.encode(newPrice));
+
+        // Move price in different direction on ETH short
+        (,, address ethShortOracle,,) = ethShort2xAdapter.marketParams();
+        currentPrice = IOracle(ethShortOracle).price();
+        priceChange = int256(currentPrice) * percentage / MAX_PERCENTAGE;
+        newPrice = uint256(int256(currentPrice) - priceChange);
+        vm.mockCall(address(ethShortOracle), abi.encodeWithSelector(IOracle.price.selector), abi.encode(newPrice));
     }
 
     function getStrategyState(IStrategy strategy) internal view returns (StrategyState memory) {

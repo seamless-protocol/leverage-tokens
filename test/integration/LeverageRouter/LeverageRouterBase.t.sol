@@ -45,7 +45,7 @@ contract LeverageRouterBase is IntegrationTestBase {
         vm.label(address(swapAdapter), "swapAdapter");
     }
 
-    function testFork_setUp() public view override {
+    function testFork_setUp() public view virtual override {
         assertEq(address(leverageManager.getStrategyCollateralAsset(strategy)), address(WETH));
         assertEq(address(leverageManager.getStrategyDebtAsset(strategy)), address(USDC));
 

@@ -3,6 +3,7 @@ pragma solidity ^0.8.26;
 
 import {DutchAuctionRebalancerBaseTest} from "./DutchAuctionRebalancerBase.t.sol";
 import {IDutchAuctionRebalancer} from "src/interfaces/IDutchAuctionRebalancer.sol";
+import {Auction} from "src/types/DataTypes.sol";
 
 contract CreateAuctionTest is DutchAuctionRebalancerBaseTest {
     function test_createAuction_UnderCollateralized() public {
@@ -19,7 +20,7 @@ contract CreateAuctionTest is DutchAuctionRebalancerBaseTest {
         vm.expectEmit(true, true, true, true);
         emit IDutchAuctionRebalancer.AuctionCreated(
             strategy,
-            IDutchAuctionRebalancer.Auction({
+            Auction({
                 isOverCollateralized: false,
                 initialPriceMultiplier: auctionRebalancer.initialPriceMultiplier(strategy),
                 minPriceMultiplier: auctionRebalancer.minPriceMultiplier(strategy),
@@ -57,7 +58,7 @@ contract CreateAuctionTest is DutchAuctionRebalancerBaseTest {
         vm.expectEmit(true, true, true, true);
         emit IDutchAuctionRebalancer.AuctionCreated(
             strategy,
-            IDutchAuctionRebalancer.Auction({
+            Auction({
                 isOverCollateralized: true,
                 initialPriceMultiplier: auctionRebalancer.initialPriceMultiplier(strategy),
                 minPriceMultiplier: auctionRebalancer.minPriceMultiplier(strategy),

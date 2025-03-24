@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
+import {console} from "forge-std/console.sol";
+
 // Dependency imports
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -13,7 +15,7 @@ import {IDutchAuctionRebalancer} from "src/interfaces/IDutchAuctionRebalancer.so
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
-import {RebalanceAction, TokenTransfer, ActionType, StrategyState} from "src/types/DataTypes.sol";
+import {RebalanceAction, TokenTransfer, ActionType, StrategyState, Auction} from "src/types/DataTypes.sol";
 
 contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
     using SafeERC20 for IERC20;
@@ -163,6 +165,8 @@ contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
         uint256 startTimestamp = block.timestamp;
         uint256 endTimestamp = startTimestamp + auctionDuration[strategy];
 
+        console.log("isOverCollateralized", isOverCollateralized);
+
         Auction memory auction = Auction({
             isOverCollateralized: isOverCollateralized,
             initialPriceMultiplier: initialPriceMultiplier[strategy],
@@ -228,6 +232,8 @@ contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
 
         TokenTransfer[] memory tokensOut = new TokenTransfer[](1);
         tokensOut[0] = TokenTransfer({token: address(debtAsset), amount: debtAmount});
+
+        console.log("collateralAmount", collateralAmount);
 
         collateralAsset.safeTransferFrom(msg.sender, address(this), collateralAmount);
         collateralAsset.approve(address(leverageManager), collateralAmount);
