@@ -34,9 +34,6 @@ interface ILeverageManager is IFeeManager {
     /// @notice Error thrown when strategy state after rebalance is invalid
     error InvalidStrategyStateAfterRebalance(IStrategy strategy);
 
-    /// @notice Event emitted when strategy token factory is set
-    event StrategyTokenFactorySet(address factory);
-
     /// @notice Event emitted when new strategy is created
     event StrategyCreated(IStrategy indexed strategy, IERC20 collateralAsset, IERC20 debtAsset, StrategyConfig config);
 
@@ -89,11 +86,6 @@ interface ILeverageManager is IFeeManager {
     /// @param strategy Strategy to query state for
     /// @return state Strategy state
     function getStrategyState(IStrategy strategy) external view returns (StrategyState memory state);
-
-    /// @notice Sets factory for creating new strategy tokens
-    /// @param factory Factory to set
-    /// @dev Only DEFAULT_ADMIN_ROLE can call this function
-    function setStrategyTokenFactory(address factory) external;
 
     /// @notice Creates new strategy with given config
     /// @param strategyConfig Configuration of the strategy

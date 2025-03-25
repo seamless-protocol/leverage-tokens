@@ -40,7 +40,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     uint256 public constant BASE_RATIO = 1e8;
     uint256 public constant DECIMALS_OFFSET = 0;
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
-    bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
 
     /// @dev Struct containing all state for the LeverageManager contract
     /// @custom:storage-location erc7201:seamless.contracts.storage.LeverageManager
@@ -60,8 +59,10 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         }
     }
 
-    function initialize(address initialAdmin) external initializer {
+    function initialize(address initialAdmin, IBeaconProxyFactory strategyTokenFactory) external initializer {
         _grantRole(DEFAULT_ADMIN_ROLE, initialAdmin);
+
+        _getLeverageManagerStorage().strategyTokenFactory = strategyTokenFactory;
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}
@@ -133,12 +134,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             equity: equity,
             collateralRatio: collateralRatio
         });
-    }
-
-    /// @inheritdoc ILeverageManager
-    function setStrategyTokenFactory(address factory) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _getLeverageManagerStorage().strategyTokenFactory = IBeaconProxyFactory(factory);
-        emit StrategyTokenFactorySet(factory);
     }
 
     /// @inheritdoc ILeverageManager
