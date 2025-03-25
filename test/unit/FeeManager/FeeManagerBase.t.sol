@@ -8,7 +8,7 @@ import {Test, console} from "forge-std/Test.sol";
 import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 
 // Local imports
-import {IStrategy} from "src/interfaces/IStrategy.sol";
+import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {FeeManager} from "src/FeeManager.sol";
 import {FeeManagerHarness} from "test/unit/FeeManager/harness/FeeManagerHarness.sol";
 import {ExternalAction} from "src/types/DataTypes.sol";
