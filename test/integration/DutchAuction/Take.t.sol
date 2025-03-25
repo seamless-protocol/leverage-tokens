@@ -5,7 +5,7 @@ import {console} from "forge-std/console.sol";
 
 import {DutchAuctionBase} from "./DutchAuctionBase.t.sol";
 import {DutchAuctionRebalancer} from "src/rebalance/DutchAuctionRebalancer.sol";
-import {StrategyState} from "src/types/DataTypes.sol";
+import {LeverageTokenState} from "src/types/DataTypes.sol";
 import {IDutchAuctionRebalancer} from "src/interfaces/IDutchAuctionRebalancer.sol";
 
 contract Take is DutchAuctionBase {
@@ -19,7 +19,7 @@ contract Take is DutchAuctionBase {
         // Start auction
         DutchAuctionRebalancer(dutchAuctionModule).createAuction(ethLong2x);
 
-        StrategyState memory stateBefore = leverageManager.getStrategyState(ethLong2x);
+        LeverageTokenState memory stateBefore = leverageManager.getLeverageTokenState(ethLong2x);
 
         // Initial price is 102% or oracle. Highly unprofitable but is possible to be taken
         uint256 amountInAlice = _take_OverCollateralized(alice, 2_000 * 1e6);
@@ -33,7 +33,7 @@ contract Take is DutchAuctionBase {
         vm.warp(block.timestamp + 4 minutes);
         uint256 amountInCharlie = _take_OverCollateralized(charlie, 2_000 * 1e6);
 
-        StrategyState memory stateAfter = leverageManager.getStrategyState(ethLong2x);
+        LeverageTokenState memory stateAfter = leverageManager.getLeverageTokenState(ethLong2x);
 
         assertLe(stateAfter.collateralRatio, stateBefore.collateralRatio);
 
@@ -46,7 +46,7 @@ contract Take is DutchAuctionBase {
         assertEq(USDC.balanceOf(bob), 2_000 * 1e6);
         assertEq(USDC.balanceOf(charlie), 2_000 * 1e6);
 
-        // Auction should automatically be removed because strategy is back into healthy state
+        // Auction should automatically be removed because leverage token is back into healthy state
         (
             bool isOverCollateralized,
             uint256 initialPriceMultiplier,
@@ -72,7 +72,7 @@ contract Take is DutchAuctionBase {
         // Start auction
         DutchAuctionRebalancer(dutchAuctionModule).createAuction(ethLong2x);
 
-        StrategyState memory stateBefore = leverageManager.getStrategyState(ethLong2x);
+        LeverageTokenState memory stateBefore = leverageManager.getLeverageTokenState(ethLong2x);
 
         // Alice takes for big price
         uint256 amountInAlice = _take_UnderCollateralized(alice, 1e18);
@@ -85,7 +85,7 @@ contract Take is DutchAuctionBase {
         vm.warp(block.timestamp + 4 minutes);
         uint256 amountInCharlie = _take_UnderCollateralized(charlie, 1e18);
 
-        StrategyState memory stateAfter = leverageManager.getStrategyState(ethLong2x);
+        LeverageTokenState memory stateAfter = leverageManager.getLeverageTokenState(ethLong2x);
 
         assertGe(stateAfter.collateralRatio, stateBefore.collateralRatio);
 
@@ -98,7 +98,7 @@ contract Take is DutchAuctionBase {
         assertEq(WETH.balanceOf(bob), 1e18);
         assertEq(WETH.balanceOf(charlie), 1 * 1e18);
 
-        // Auction should automatically be removed because strategy is back into healthy state
+        // Auction should automatically be removed because leverage token is back into healthy state
         (
             bool isOverCollateralized,
             uint256 initialPriceMultiplier,
@@ -117,7 +117,7 @@ contract Take is DutchAuctionBase {
         assertLe(amountInCharlie, amountInBob);
     }
 
-    function testFork_take_StrategyBackToHealthy() public {
+    function testFork_take_LeverageTokenBackToHealthy() public {
         _prepareOverCollateralizedState();
 
         // Start auction
@@ -126,7 +126,7 @@ contract Take is DutchAuctionBase {
         // Alice takes
         _take_OverCollateralized(alice, 2_000 * 1e6);
 
-        _moveEthPrice(-15_00); // Move ETH price 15% down to bring strategy back to healthy state
+        _moveEthPrice(-15_00); // Move ETH price 15% down to bring leverage token is back to healthy state
 
         // Try to take and reverts
         vm.expectRevert(IDutchAuctionRebalancer.AuctionNotValid.selector);

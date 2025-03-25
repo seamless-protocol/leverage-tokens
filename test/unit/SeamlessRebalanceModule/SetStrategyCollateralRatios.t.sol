@@ -6,19 +6,19 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
 import {SeamlessRebalanceModuleBaseTest} from "./SeamlessRebalanceModuleBase.t.sol";
 import {ISeamlessRebalanceModule} from "src/interfaces/ISeamlessRebalanceModule.sol";
 
-contract SetStrategyCollateralRatiosTest is SeamlessRebalanceModuleBaseTest {
-    function test_setStrategyCollateralRatios() public {
+contract SetLeverageTokenCollateralRatiosTest is SeamlessRebalanceModuleBaseTest {
+    function test_setLeverageTokenCollateralRatios() public {
         uint256 minCollateralRatio = 150_00; // 1.5x
         uint256 maxCollateralRatio = 250_00; // 2.5x
 
         vm.prank(defaultAdmin);
-        rebalanceModule.setStrategyCollateralRatios(strategy, minCollateralRatio, maxCollateralRatio);
+        rebalanceModule.setLeverageTokenCollateralRatios(leverageToken, minCollateralRatio, maxCollateralRatio);
 
-        assertEq(rebalanceModule.getStrategyMinCollateralRatio(strategy), minCollateralRatio);
-        assertEq(rebalanceModule.getStrategyMaxCollateralRatio(strategy), maxCollateralRatio);
+        assertEq(rebalanceModule.getLeverageTokenMinCollateralRatio(leverageToken), minCollateralRatio);
+        assertEq(rebalanceModule.getLeverageTokenMaxCollateralRatio(leverageToken), maxCollateralRatio);
     }
 
-    function testFuzz_setStrategyCollateralRatios_RevertIf_NotOwner(
+    function testFuzz_setLeverageTokenCollateralRatios_RevertIf_NotOwner(
         address caller,
         uint256 minCollateralRatio,
         uint256 maxCollateralRatio
@@ -27,11 +27,11 @@ contract SetStrategyCollateralRatiosTest is SeamlessRebalanceModuleBaseTest {
 
         vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, caller));
         vm.prank(caller);
-        rebalanceModule.setStrategyCollateralRatios(strategy, minCollateralRatio, maxCollateralRatio);
+        rebalanceModule.setLeverageTokenCollateralRatios(leverageToken, minCollateralRatio, maxCollateralRatio);
     }
 
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_setStrategyCollateralRatios_RevertIf_CollateralRatiosAlreadySet(
+    function testFuzz_setLeverageTokenCollateralRatios_RevertIf_CollateralRatiosAlreadySet(
         uint256 minCollateralRatio,
         uint256 maxCollateralRatio
     ) public {
@@ -39,15 +39,15 @@ contract SetStrategyCollateralRatiosTest is SeamlessRebalanceModuleBaseTest {
         vm.assume(minCollateralRatio != 0 || maxCollateralRatio != 0);
 
         vm.startPrank(defaultAdmin);
-        rebalanceModule.setStrategyCollateralRatios(strategy, minCollateralRatio, maxCollateralRatio);
+        rebalanceModule.setLeverageTokenCollateralRatios(leverageToken, minCollateralRatio, maxCollateralRatio);
 
         vm.expectRevert(ISeamlessRebalanceModule.CollateralRatiosAlreadySet.selector);
-        rebalanceModule.setStrategyCollateralRatios(strategy, minCollateralRatio, maxCollateralRatio);
+        rebalanceModule.setLeverageTokenCollateralRatios(leverageToken, minCollateralRatio, maxCollateralRatio);
         vm.stopPrank();
     }
 
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_setStrategyCollateralRatios_RevertIf_MinCollateralRatioTooHigh(
+    function testFuzz_setLeverageTokenCollateralRatios_RevertIf_MinCollateralRatioTooHigh(
         uint256 minCollateralRatio,
         uint256 maxCollateralRatio
     ) public {
@@ -56,7 +56,7 @@ contract SetStrategyCollateralRatiosTest is SeamlessRebalanceModuleBaseTest {
         minCollateralRatio = bound(minCollateralRatio, maxCollateralRatio + 1, type(uint256).max);
 
         vm.expectRevert(ISeamlessRebalanceModule.MinCollateralRatioTooHigh.selector);
-        rebalanceModule.setStrategyCollateralRatios(strategy, minCollateralRatio, maxCollateralRatio);
+        rebalanceModule.setLeverageTokenCollateralRatios(leverageToken, minCollateralRatio, maxCollateralRatio);
         vm.stopPrank();
     }
 }

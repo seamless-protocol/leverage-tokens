@@ -11,21 +11,21 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 // Internal imports
 import {BeaconProxyFactory} from "src/BeaconProxyFactory.sol";
-import {Strategy} from "src/Strategy.sol";
+import {LeverageToken} from "src/LeverageToken.sol";
 
 contract BeaconUpgradeToTest is Test {
     address public upgrader = makeAddr("upgrader");
     UpgradeableBeacon public beacon;
     BeaconProxyFactory public factory;
-    Strategy public strategyToken;
+    LeverageToken public leverageToken;
 
     function setUp() public {
-        address strategyTokenImplementation = address(new Strategy());
-        factory = new BeaconProxyFactory(strategyTokenImplementation, upgrader);
+        address leverageTokenImplementation = address(new LeverageToken());
+        factory = new BeaconProxyFactory(leverageTokenImplementation, upgrader);
         beacon = UpgradeableBeacon(address(factory));
-        strategyToken = Strategy(
+        leverageToken = LeverageToken(
             factory.createProxy(
-                abi.encodeWithSelector(Strategy.initialize.selector, address(this), "Test name", "Test symbol"),
+                abi.encodeWithSelector(LeverageToken.initialize.selector, address(this), "Test name", "Test symbol"),
                 bytes32("0")
             )
         );
@@ -33,10 +33,10 @@ contract BeaconUpgradeToTest is Test {
 
     function test_upgradeTo() public {
         address user = makeAddr("user");
-        strategyToken.mint(user, 100);
+        leverageToken.mint(user, 100);
 
         // Deploy new implementation
-        NewStrategy newImplementation = new NewStrategy();
+        NewLeverageToken newImplementation = new NewLeverageToken();
 
         // Expect the Upgraded event to be emitted
         vm.expectEmit(true, true, true, true);
@@ -44,22 +44,22 @@ contract BeaconUpgradeToTest is Test {
 
         vm.prank(upgrader);
         beacon.upgradeTo(address(newImplementation));
-        NewStrategy newProxy = NewStrategy(
+        NewLeverageToken newProxy = NewLeverageToken(
             factory.createProxy(
-                abi.encodeWithSelector(Strategy.initialize.selector, address(this), "Test name 2", "Test symbol 2"),
+                abi.encodeWithSelector(LeverageToken.initialize.selector, address(this), "Test name 2", "Test symbol 2"),
                 bytes32("1")
             )
         );
 
         // Existing proxy deployed from the factory should now point to the new implementation but still have the
         // same storage
-        assertEq(NewStrategy(address(strategyToken)).testFunction(), true);
-        assertEq(strategyToken.balanceOf(user), 100);
-        assertEq(strategyToken.name(), "Test name");
-        assertEq(strategyToken.symbol(), "Test symbol");
+        assertEq(NewLeverageToken(address(leverageToken)).testFunction(), true);
+        assertEq(leverageToken.balanceOf(user), 100);
+        assertEq(leverageToken.name(), "Test name");
+        assertEq(leverageToken.symbol(), "Test symbol");
 
         // New proxies should use the new implementation
-        assertEq(newProxy.testFunction(), true);
+        assertEq(NewLeverageToken(address(newProxy)).testFunction(), true);
         assertEq(newProxy.balanceOf(user), 0);
         assertEq(newProxy.name(), "Test name 2");
         assertEq(newProxy.symbol(), "Test symbol 2");
@@ -69,7 +69,7 @@ contract BeaconUpgradeToTest is Test {
     function testFuzz_upgradeTo_RevertIf_NonUpgraderUpgrades(address nonUpgrader) public {
         vm.assume(nonUpgrader != upgrader);
 
-        Strategy newImplementation = new Strategy();
+        LeverageToken newImplementation = new LeverageToken();
 
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, nonUpgrader));
         vm.prank(nonUpgrader);
@@ -77,7 +77,7 @@ contract BeaconUpgradeToTest is Test {
     }
 }
 
-contract NewStrategy is Strategy {
+contract NewLeverageToken is LeverageToken {
     function testFunction() public pure returns (bool) {
         return true;
     }

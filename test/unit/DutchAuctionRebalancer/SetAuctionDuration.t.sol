@@ -10,9 +10,9 @@ contract SetAuctionDurationTest is DutchAuctionRebalancerBaseTest {
         uint256 newDuration = 1 hours;
 
         vm.prank(owner);
-        auctionRebalancer.setAuctionDuration(strategy, newDuration);
+        auctionRebalancer.setAuctionDuration(leverageToken, newDuration);
 
-        assertEq(auctionRebalancer.auctionDuration(strategy), newDuration);
+        assertEq(auctionRebalancer.auctionDuration(leverageToken), newDuration);
     }
 
     /// forge-config: default.fuzz.runs = 1
@@ -20,9 +20,9 @@ contract SetAuctionDurationTest is DutchAuctionRebalancerBaseTest {
         vm.assume(newDuration > 0);
 
         vm.prank(owner);
-        auctionRebalancer.setAuctionDuration(strategy, newDuration);
+        auctionRebalancer.setAuctionDuration(leverageToken, newDuration);
 
-        assertEq(auctionRebalancer.auctionDuration(strategy), newDuration);
+        assertEq(auctionRebalancer.auctionDuration(leverageToken), newDuration);
     }
 
     /// forge-config: default.fuzz.runs = 1
@@ -31,7 +31,7 @@ contract SetAuctionDurationTest is DutchAuctionRebalancerBaseTest {
 
         vm.prank(notOwner);
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, notOwner));
-        auctionRebalancer.setAuctionDuration(strategy, newDuration);
+        auctionRebalancer.setAuctionDuration(leverageToken, newDuration);
     }
 
     function test_setAuctionDuration_RevertIf_ZeroDuration() public {
@@ -39,6 +39,6 @@ contract SetAuctionDurationTest is DutchAuctionRebalancerBaseTest {
 
         vm.prank(owner);
         vm.expectRevert(IDutchAuctionRebalancer.InvalidAuctionDuration.selector);
-        auctionRebalancer.setAuctionDuration(strategy, newDuration);
+        auctionRebalancer.setAuctionDuration(leverageToken, newDuration);
     }
 }

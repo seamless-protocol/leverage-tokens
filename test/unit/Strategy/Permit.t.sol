@@ -2,10 +2,10 @@
 pragma solidity ^0.8.26;
 
 // Internal imports
-import {StrategyBaseTest} from "./StrategyBase.t.sol";
+import {LeverageTokenBaseTest} from "./LeverageTokenBase.t.sol";
 import {PermitLib} from "../../utils/PermitLib.sol";
 
-contract PermitTest is StrategyBaseTest {
+contract PermitTest is LeverageTokenBaseTest {
     using PermitLib for PermitLib.Permit;
 
     /// @dev Sanity test to ensure that token supports permit
@@ -17,15 +17,15 @@ contract PermitTest is StrategyBaseTest {
         permit.owner = vm.addr(privateKey);
 
         permit.deadline = bound(permit.deadline, block.timestamp, type(uint256).max);
-        permit.nonce = strategyToken.nonces(permit.owner);
+        permit.nonce = leverageToken.nonces(permit.owner);
 
         PermitLib.Signature memory sig;
-        bytes32 digest = PermitLib.getPermitTypedDataHash(permit, address(strategyToken));
+        bytes32 digest = PermitLib.getPermitTypedDataHash(permit, address(leverageToken));
         (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
 
-        strategyToken.permit(permit.owner, permit.spender, permit.value, permit.deadline, sig.v, sig.r, sig.s);
+        leverageToken.permit(permit.owner, permit.spender, permit.value, permit.deadline, sig.v, sig.r, sig.s);
 
-        assertEq(strategyToken.nonces(permit.owner), permit.nonce + 1);
-        assertEq(strategyToken.allowance(permit.owner, permit.spender), permit.value);
+        assertEq(leverageToken.nonces(permit.owner), permit.nonce + 1);
+        assertEq(leverageToken.allowance(permit.owner, permit.spender), permit.value);
     }
 }

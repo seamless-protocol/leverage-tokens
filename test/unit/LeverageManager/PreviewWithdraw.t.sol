@@ -32,11 +32,12 @@ contract PreviewWithdrawTest is PreviewActionTest {
             })
         );
 
-        ActionData memory previewActionData =
-            leverageManager.exposed_previewAction(strategy, equityToWithdrawInCollateralAsset, ExternalAction.Withdraw);
+        ActionData memory previewActionData = leverageManager.exposed_previewAction(
+            leverageToken, equityToWithdrawInCollateralAsset, ExternalAction.Withdraw
+        );
 
         ActionData memory actualPreviewData =
-            leverageManager.previewWithdraw(strategy, equityToWithdrawInCollateralAsset);
+            leverageManager.previewWithdraw(leverageToken, equityToWithdrawInCollateralAsset);
 
         assertEq(
             actualPreviewData.collateral,
@@ -47,7 +48,7 @@ contract PreviewWithdrawTest is PreviewActionTest {
         );
         assertEq(actualPreviewData.debt, previewActionData.debt, "Debt to repay mismatch");
         assertEq(actualPreviewData.shares, previewActionData.shares, "Shares after fee mismatch");
-        assertEq(actualPreviewData.strategyFee, previewActionData.strategyFee, "Shares fee mismatch");
+        assertEq(actualPreviewData.tokenFee, previewActionData.tokenFee, "Shares fee mismatch");
         assertEq(
             actualPreviewData.treasuryFee,
             previewActionData.collateral <= previewActionData.treasuryFee
@@ -75,7 +76,7 @@ contract PreviewWithdrawTest is PreviewActionTest {
             })
         );
 
-        uint256 expectedSharesBeforeFees = leverageManager.exposed_convertToShares(strategy, equityToPreview);
+        uint256 expectedSharesBeforeFees = leverageManager.exposed_convertToShares(leverageToken, equityToPreview);
         assertEq(expectedSharesBeforeFees, 1338908411);
 
         uint256 collateralToRemove = initialCollateral * expectedSharesBeforeFees / sharesTotalSupply;
@@ -86,10 +87,10 @@ contract PreviewWithdrawTest is PreviewActionTest {
         uint256 expectedTreasuryFeeBeforeAdjustment = Math.mulDiv(equityToPreview, treasuryFee, 1e4, Math.Rounding.Ceil);
         assertEq(expectedTreasuryFeeBeforeAdjustment, 3);
 
-        ActionData memory previewData = leverageManager.previewWithdraw(strategy, equityToPreview);
+        ActionData memory previewData = leverageManager.previewWithdraw(leverageToken, equityToPreview);
 
         // The treasury fee is capped to the collateral amount if it is larger than the collateral to be removed from
-        // the strategy
+        // the leverage token
         assertEq(previewData.collateral, 0);
         assertEq(previewData.treasuryFee, collateralToRemove);
     }
