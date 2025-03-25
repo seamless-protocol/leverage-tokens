@@ -21,8 +21,8 @@ contract BeaconUpgradeToTest is Test {
 
     function setUp() public {
         address strategyTokenImplementation = address(new Strategy());
-        beacon = new UpgradeableBeacon(strategyTokenImplementation, upgrader);
-        factory = new BeaconProxyFactory(beacon);
+        factory = new BeaconProxyFactory(strategyTokenImplementation, upgrader);
+        beacon = UpgradeableBeacon(address(factory));
         strategyToken = Strategy(
             factory.createProxy(
                 abi.encodeWithSelector(Strategy.initialize.selector, address(this), "Test name", "Test symbol"),

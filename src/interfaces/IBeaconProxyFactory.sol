@@ -11,10 +11,6 @@ interface IBeaconProxyFactory {
     /// @param baseSalt The base salt used for deterministic deployment
     event BeaconProxyCreated(address indexed proxy, bytes data, bytes32 baseSalt);
 
-    /// @notice The beacon contract
-    /// @return beacon The address of the beacon contract
-    function beacon() external view returns (address beacon);
-
     /// @notice Computes the address of a beacon proxy before deployment
     /// @param sender The address that will deploy the beacon proxy using the factory
     /// @param data The initialization data passed to the proxy

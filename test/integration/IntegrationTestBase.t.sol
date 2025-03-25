@@ -9,7 +9,6 @@ import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IMorpho, Id} from "@morpho-blue/interfaces/IMorpho.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
@@ -58,10 +57,8 @@ contract IntegrationTestBase is Test {
 
         MorphoLendingAdapter morphoLendingAdapterImplementation =
             new MorphoLendingAdapter(ILeverageManager(leverageManager), MORPHO);
-        UpgradeableBeacon morphoLendingAdapterBeacon =
-            new UpgradeableBeacon(address(morphoLendingAdapterImplementation), address(this));
 
-        morphoLendingAdapterFactory = new BeaconProxyFactory(morphoLendingAdapterBeacon);
+        morphoLendingAdapterFactory = new BeaconProxyFactory(address(morphoLendingAdapterImplementation), address(this));
 
         morphoLendingAdapter = MorphoLendingAdapter(
             morphoLendingAdapterFactory.createProxy(
@@ -72,8 +69,7 @@ contract IntegrationTestBase is Test {
         BASE_RATIO = LeverageManager(address(leverageManager)).BASE_RATIO();
 
         Strategy strategyImplementation = new Strategy();
-        UpgradeableBeacon strategyBeacon = new UpgradeableBeacon(address(strategyImplementation), address(this));
-        BeaconProxyFactory strategyFactory = new BeaconProxyFactory(strategyBeacon);
+        BeaconProxyFactory strategyFactory = new BeaconProxyFactory(address(strategyImplementation), address(this));
 
         leverageManager.setStrategyTokenFactory(address(strategyFactory));
 

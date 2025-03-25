@@ -9,18 +9,15 @@ import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/Upgradeabl
 // Internal imports
 import {IBeaconProxyFactory} from "src/interfaces/IBeaconProxyFactory.sol";
 
-contract BeaconProxyFactory is IBeaconProxyFactory {
-    /// @inheritdoc IBeaconProxyFactory
-    address public immutable beacon;
-
+contract BeaconProxyFactory is IBeaconProxyFactory, UpgradeableBeacon {
     /// @inheritdoc IBeaconProxyFactory
     address[] public proxies;
 
     /// @notice Creates a new beacon proxy factory using an upgradeable beacon
-    /// @param _beacon The upgradeable beacon
-    constructor(UpgradeableBeacon _beacon) {
-        beacon = address(_beacon);
-    }
+    /// @param _implementation The implementation contract for the beacon that will be used by beacon proxies created
+    /// by this factory
+    /// @param _owner The owner of this factory, allowed to update the beacon implementation
+    constructor(address _implementation, address _owner) UpgradeableBeacon(_implementation, _owner) {}
 
     /// @inheritdoc IBeaconProxyFactory
     function computeProxyAddress(address sender, bytes memory data, bytes32 baseSalt)
@@ -61,7 +58,7 @@ contract BeaconProxyFactory is IBeaconProxyFactory {
     function _getCreationCode(bytes memory data) internal view returns (bytes memory bytecode) {
         bytecode = abi.encodePacked(
             type(BeaconProxy).creationCode, // BeaconProxy's runtime bytecode
-            abi.encode(beacon, data) // Constructor arguments: beacon address and initialization data
+            abi.encode(address(this), data) // Constructor arguments: beacon address and initialization data
         );
     }
 }

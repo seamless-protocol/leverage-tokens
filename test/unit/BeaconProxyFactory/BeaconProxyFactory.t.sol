@@ -22,13 +22,13 @@ contract BeaconProxyFactoryTest is Test {
 
     function setUp() public {
         implementation = address(new MockValue());
-        beacon = new UpgradeableBeacon(implementation, owner);
-        factory = new BeaconProxyFactory(beacon);
+        factory = new BeaconProxyFactory(implementation, owner);
+        beacon = UpgradeableBeacon(address(factory));
     }
 
     function test_constructor() public view {
-        assertEq(UpgradeableBeacon(factory.beacon()).implementation(), implementation);
-        assertEq(UpgradeableBeacon(factory.beacon()).owner(), owner);
+        assertEq(factory.implementation(), implementation);
+        assertEq(factory.owner(), owner);
     }
 
     /// forge-config: default.fuzz.runs = 1
