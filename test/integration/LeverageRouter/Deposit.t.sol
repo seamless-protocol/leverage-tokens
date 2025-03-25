@@ -45,7 +45,7 @@ contract LeverageRouterDepositTest is LeverageRouterBase {
         );
 
         // Initial deposit results in 1:1 shares to equity
-        assertEq(strategy.balanceOf(user), equityInCollateralAsset);
+        assertEq(leverageToken.balanceOf(user), equityInCollateralAsset);
         // Collateral is taken from the user for the deposit
         assertEq(
             WETH.balanceOf(user),
@@ -95,7 +95,7 @@ contract LeverageRouterDepositTest is LeverageRouterBase {
         );
 
         // Initial deposit results in 1:1 shares to equity
-        assertEq(strategy.balanceOf(user), equityInCollateralAsset);
+        assertEq(leverageToken.balanceOf(user), equityInCollateralAsset);
         // Collateral is taken from the user for the deposit
         assertEq(
             WETH.balanceOf(user),
@@ -140,7 +140,7 @@ contract LeverageRouterDepositTest is LeverageRouterBase {
         );
 
         // Initial deposit results in 1:1 shares to equity
-        assertEq(strategy.balanceOf(user), equityInCollateralAsset);
+        assertEq(leverageToken.balanceOf(user), equityInCollateralAsset);
         // Collateral is taken from the user for the deposit
         assertEq(
             WETH.balanceOf(user),
@@ -187,7 +187,7 @@ contract LeverageRouterDepositTest is LeverageRouterBase {
         _dealAndDeposit(WETH, USDC, userBalanceOfCollateralAsset, equityInCollateralAsset, 0, swapContext);
 
         // Initial deposit results in 1:1 shares to equity
-        assertEq(strategy.balanceOf(user), equityInCollateralAsset);
+        assertEq(leverageToken.balanceOf(user), equityInCollateralAsset);
         // Collateral is taken from the user for the deposit and the user receives surplus collateral
         assertEq(
             WETH.balanceOf(user),
@@ -233,7 +233,7 @@ contract LeverageRouterDepositTest is LeverageRouterBase {
         );
 
         // Initial deposit results in 1:1 shares to equity
-        assertEq(strategy.balanceOf(user), equityInCollateralAsset);
+        assertEq(leverageToken.balanceOf(user), equityInCollateralAsset);
         // Collateral is taken from the user for the deposit
         assertEq(
             WETH.balanceOf(user),
@@ -284,7 +284,7 @@ contract LeverageRouterDepositTest is LeverageRouterBase {
         );
 
         // Initial deposit results in 1:1 shares to equity
-        assertEq(strategy.balanceOf(user), equityInCollateralAsset);
+        assertEq(leverageToken.balanceOf(user), equityInCollateralAsset);
         // Collateral is taken from the user for the deposit
         assertEq(
             WETH.balanceOf(user),
@@ -330,7 +330,7 @@ contract LeverageRouterDepositTest is LeverageRouterBase {
         );
 
         // Initial deposit results in 1:1 shares to equity
-        assertEq(strategy.balanceOf(user), equityInCollateralAsset);
+        assertEq(leverageToken.balanceOf(user), equityInCollateralAsset);
         // Collateral is taken from the user for the deposit
         assertEq(
             WETH.balanceOf(user),
@@ -381,7 +381,7 @@ contract LeverageRouterDepositTest is LeverageRouterBase {
         );
 
         // Initial deposit results in 1:1 shares to equity
-        assertEq(strategy.balanceOf(user), equityInCollateralAsset);
+        assertEq(leverageToken.balanceOf(user), equityInCollateralAsset);
         // Collateral is taken from the user for the deposit
         assertEq(
             WETH.balanceOf(user),
@@ -418,7 +418,7 @@ contract LeverageRouterDepositTest is LeverageRouterBase {
 
         // Transfering the collateral assets from the user to the LeverageRouter reverts if the transfer fails (`SafeERC20.safeTransferFrom` reverts with generic `EvmError: Revert`)
         vm.expectRevert(address(WETH));
-        leverageRouter.deposit(strategy, equityInCollateralAsset, 0, 0, swapContext);
+        leverageRouter.deposit(leverageToken, equityInCollateralAsset, 0, 0, swapContext);
         vm.stopPrank();
     }
 
@@ -450,7 +450,7 @@ contract LeverageRouterDepositTest is LeverageRouterBase {
 
         // Transfering the collateral assets from the user to the LeverageRouter reverts if the transfer fails (`SafeERC20.safeTransferFrom` reverts with generic `EvmError: Revert`)
         vm.expectRevert(address(WETH));
-        leverageRouter.deposit(strategy, equityInCollateralAsset, 0, maxSwapCostInCollateralAsset, swapContext);
+        leverageRouter.deposit(leverageToken, equityInCollateralAsset, 0, maxSwapCostInCollateralAsset, swapContext);
         vm.stopPrank();
     }
 }

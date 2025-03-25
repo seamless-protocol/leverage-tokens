@@ -6,12 +6,12 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // Internal imports
 import {ExternalAction} from "src/types/DataTypes.sol";
-import {IStrategy} from "src/interfaces/IStrategy.sol";
+import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {FeeManagerBaseTest} from "test/unit/FeeManager/FeeManagerBase.t.sol";
 
 contract ComputeEquityFeesTest is FeeManagerBaseTest {
     address public treasury = makeAddr("treasury");
-    IStrategy public strategy = IStrategy(makeAddr("strategy"));
+    ILeverageToken public leverageToken = ILeverageToken(makeAddr("leverageToken"));
 
     function setUp() public override {
         super.setUp();
@@ -24,62 +24,74 @@ contract ComputeEquityFeesTest is FeeManagerBaseTest {
         ExternalAction action = ExternalAction.Deposit;
         uint256 equity = 1 ether;
         uint256 depositTreasuryFee = 100;
-        uint256 depositStrategyFee = 200;
+        uint256 depositTokenFee = 200;
         uint256 withdrawTreasuryFee = 300;
-        uint256 withdrawStrategyFee = 400;
-        _setFees(depositTreasuryFee, depositStrategyFee, withdrawTreasuryFee, withdrawStrategyFee);
+        uint256 withdrawTokenFee = 400;
+        _setFees(depositTreasuryFee, depositTokenFee, withdrawTreasuryFee, withdrawTokenFee);
 
-        (uint256 equityForStrategyAfterFees, uint256 equityForSharesAfterFees, uint256 strategyFee, uint256 treasuryFee)
-        = feeManager.exposed_computeEquityFees(strategy, equity, action);
+        (
+            uint256 equityForLeverageTokenAfterFees,
+            uint256 equityForSharesAfterFees,
+            uint256 tokenFee,
+            uint256 treasuryFee
+        ) = feeManager.exposed_computeEquityFees(leverageToken, equity, action);
 
-        uint256 expectedStrategyFee = Math.mulDiv(equity, depositStrategyFee, feeManager.MAX_FEE(), Math.Rounding.Ceil);
+        uint256 expectedTokenFee = Math.mulDiv(equity, depositTokenFee, feeManager.MAX_FEE(), Math.Rounding.Ceil);
         uint256 expectedTreasuryFee = Math.mulDiv(equity, depositTreasuryFee, feeManager.MAX_FEE(), Math.Rounding.Ceil);
-        assertEq(strategyFee, expectedStrategyFee);
+        assertEq(tokenFee, expectedTokenFee);
         assertEq(treasuryFee, expectedTreasuryFee);
 
-        assertEq(equityForStrategyAfterFees, equity - expectedTreasuryFee);
-        assertEq(equityForSharesAfterFees, equity - (expectedTreasuryFee + expectedStrategyFee));
+        assertEq(equityForLeverageTokenAfterFees, equity - expectedTreasuryFee);
+        assertEq(equityForSharesAfterFees, equity - (expectedTreasuryFee + expectedTokenFee));
     }
 
     function test_computeEquityFees_Withdraw() public {
         ExternalAction action = ExternalAction.Withdraw;
         uint256 equity = 1 ether;
         uint256 depositTreasuryFee = 100;
-        uint256 depositStrategyFee = 200;
+        uint256 depositTokenFee = 200;
         uint256 withdrawTreasuryFee = 300;
-        uint256 withdrawStrategyFee = 400;
-        _setFees(depositTreasuryFee, depositStrategyFee, withdrawTreasuryFee, withdrawStrategyFee);
+        uint256 withdrawTokenFee = 400;
+        _setFees(depositTreasuryFee, depositTokenFee, withdrawTreasuryFee, withdrawTokenFee);
 
-        (uint256 equityForStrategyAfterFees, uint256 equityForSharesAfterFees, uint256 strategyFee, uint256 treasuryFee)
-        = feeManager.exposed_computeEquityFees(strategy, equity, action);
+        (
+            uint256 equityForLeverageTokenAfterFees,
+            uint256 equityForSharesAfterFees,
+            uint256 tokenFee,
+            uint256 treasuryFee
+        ) = feeManager.exposed_computeEquityFees(leverageToken, equity, action);
 
-        uint256 expectedStrategyFee = Math.mulDiv(equity, withdrawStrategyFee, feeManager.MAX_FEE(), Math.Rounding.Ceil);
+        uint256 expectedTokenFee = Math.mulDiv(equity, withdrawTokenFee, feeManager.MAX_FEE(), Math.Rounding.Ceil);
         uint256 expectedTreasuryFee = Math.mulDiv(equity, withdrawTreasuryFee, feeManager.MAX_FEE(), Math.Rounding.Ceil);
-        assertEq(strategyFee, expectedStrategyFee);
+        assertEq(tokenFee, expectedTokenFee);
         assertEq(treasuryFee, expectedTreasuryFee);
 
-        assertEq(equityForStrategyAfterFees, equity);
-        assertEq(equityForSharesAfterFees, equity + expectedStrategyFee);
+        assertEq(equityForLeverageTokenAfterFees, equity);
+        assertEq(equityForSharesAfterFees, equity + expectedTokenFee);
     }
 
     function test_computeEquityFees_SumOfFeesGreaterThanEquity() public {
         ExternalAction action = ExternalAction.Deposit;
         uint256 equity = 1 ether;
         uint256 depositTreasuryFee = 6000;
-        uint256 depositStrategyFee = 5000;
-        _setFees(depositTreasuryFee, depositStrategyFee, 0, 0);
+        uint256 depositTokenFee = 5000;
+        _setFees(depositTreasuryFee, depositTokenFee, 0, 0);
 
-        (uint256 equityForStrategyAfterFees, uint256 equityForSharesAfterFees, uint256 strategyFee, uint256 treasuryFee)
-        = feeManager.exposed_computeEquityFees(strategy, equity, action);
+        (
+            uint256 equityForLeverageTokenAfterFees,
+            uint256 equityForSharesAfterFees,
+            uint256 tokenFee,
+            uint256 treasuryFee
+        ) = feeManager.exposed_computeEquityFees(leverageToken, equity, action);
 
         uint256 expectedTreasuryFee = Math.mulDiv(equity, depositTreasuryFee, feeManager.MAX_FEE(), Math.Rounding.Ceil);
         assertEq(treasuryFee, expectedTreasuryFee);
 
-        uint256 expectedStrategyFee = equity - expectedTreasuryFee;
-        assertEq(strategyFee, expectedStrategyFee);
+        uint256 expectedTokenFee = equity - expectedTreasuryFee;
+        assertEq(tokenFee, expectedTokenFee);
 
-        assertEq(equityForStrategyAfterFees, equity - expectedTreasuryFee);
-        assertEq(equityForSharesAfterFees, equity - (expectedTreasuryFee + expectedStrategyFee));
+        assertEq(equityForLeverageTokenAfterFees, equity - expectedTreasuryFee);
+        assertEq(equityForSharesAfterFees, equity - (expectedTreasuryFee + expectedTokenFee));
     }
 
     function test_computeEquityFees_TreasuryNotSet() public {
@@ -87,35 +99,39 @@ contract ComputeEquityFeesTest is FeeManagerBaseTest {
         ExternalAction action = ExternalAction.Deposit;
         uint256 equity = 1 ether;
         uint256 depositTreasuryFee = 100;
-        uint256 depositStrategyFee = 200;
+        uint256 depositTokenFee = 200;
         uint256 withdrawTreasuryFee = 300;
-        uint256 withdrawStrategyFee = 400;
-        _setFees(depositTreasuryFee, depositStrategyFee, withdrawTreasuryFee, withdrawStrategyFee);
+        uint256 withdrawTokenFee = 400;
+        _setFees(depositTreasuryFee, depositTokenFee, withdrawTreasuryFee, withdrawTokenFee);
 
         _setTreasury(feeManagerRole, address(0));
 
-        (uint256 equityForStrategyAfterFees,,, uint256 treasuryFee) =
-            feeManager.exposed_computeEquityFees(strategy, equity, action);
-        assertEq(equityForStrategyAfterFees, equity);
+        (uint256 equityForLeverageTokenAfterFees,,, uint256 treasuryFee) =
+            feeManager.exposed_computeEquityFees(leverageToken, equity, action);
+        assertEq(equityForLeverageTokenAfterFees, equity);
         assertEq(treasuryFee, 0);
     }
 
     function testFuzz_computeEquityFees(
         uint128 equity,
         uint256 depositTreasuryFee,
-        uint256 depositStrategyFee,
+        uint256 depositTokenFee,
         uint256 withdrawTreasuryFee,
-        uint256 withdrawStrategyFee
+        uint256 withdrawTokenFee
     ) public {
         ExternalAction action = ExternalAction.Deposit;
         depositTreasuryFee = bound(depositTreasuryFee, 0, feeManager.MAX_FEE());
-        depositStrategyFee = bound(depositStrategyFee, 0, feeManager.MAX_FEE());
+        depositTokenFee = bound(depositTokenFee, 0, feeManager.MAX_FEE());
         withdrawTreasuryFee = bound(withdrawTreasuryFee, 0, feeManager.MAX_FEE());
-        withdrawStrategyFee = bound(withdrawStrategyFee, 0, feeManager.MAX_FEE());
-        _setFees(depositTreasuryFee, depositStrategyFee, withdrawTreasuryFee, withdrawStrategyFee);
+        withdrawTokenFee = bound(withdrawTokenFee, 0, feeManager.MAX_FEE());
+        _setFees(depositTreasuryFee, depositTokenFee, withdrawTreasuryFee, withdrawTokenFee);
 
-        (uint256 equityForStrategyAfterFees, uint256 equityForSharesAfterFees, uint256 strategyFee, uint256 treasuryFee)
-        = feeManager.exposed_computeEquityFees(strategy, equity, action);
+        (
+            uint256 equityForLeverageTokenAfterFees,
+            uint256 equityForSharesAfterFees,
+            uint256 tokenFee,
+            uint256 treasuryFee
+        ) = feeManager.exposed_computeEquityFees(leverageToken, equity, action);
 
         uint256 expectedTreasuryFee = Math.mulDiv(
             equity,
@@ -125,42 +141,42 @@ contract ComputeEquityFeesTest is FeeManagerBaseTest {
         );
         assertEq(treasuryFee, expectedTreasuryFee);
 
-        uint256 expectedStrategyFee = Math.mulDiv(
+        uint256 expectedTokenFee = Math.mulDiv(
             equity,
-            action == ExternalAction.Deposit ? depositStrategyFee : withdrawStrategyFee,
+            action == ExternalAction.Deposit ? depositTokenFee : withdrawTokenFee,
             feeManager.MAX_FEE(),
             Math.Rounding.Ceil
         );
-        if (expectedStrategyFee + expectedTreasuryFee > equity) {
-            expectedStrategyFee = equity - expectedTreasuryFee;
+        if (expectedTokenFee + expectedTreasuryFee > equity) {
+            expectedTokenFee = equity - expectedTreasuryFee;
         }
-        assertEq(strategyFee, expectedStrategyFee);
+        assertEq(tokenFee, expectedTokenFee);
 
-        uint256 expectedEquityForStrategyAfterFees =
+        uint256 expectedEquityForLeverageTokenAfterFees =
             action == ExternalAction.Deposit ? equity - expectedTreasuryFee : equity;
-        assertEq(equityForStrategyAfterFees, expectedEquityForStrategyAfterFees);
+        assertEq(equityForLeverageTokenAfterFees, expectedEquityForLeverageTokenAfterFees);
 
         uint256 expectedEquityForSharesAfterFees = action == ExternalAction.Deposit
-            ? expectedEquityForStrategyAfterFees - expectedStrategyFee
-            : expectedEquityForStrategyAfterFees + expectedStrategyFee;
+            ? expectedEquityForLeverageTokenAfterFees - expectedTokenFee
+            : expectedEquityForLeverageTokenAfterFees + expectedTokenFee;
         assertEq(equityForSharesAfterFees, expectedEquityForSharesAfterFees);
 
-        assertLe(strategyFee + treasuryFee, equity);
+        assertLe(tokenFee + treasuryFee, equity);
         assertLe(expectedEquityForSharesAfterFees, equity);
-        assertLe(expectedEquityForStrategyAfterFees, equity);
+        assertLe(expectedEquityForLeverageTokenAfterFees, equity);
     }
 
     function _setFees(
         uint256 depositTreasuryFee,
-        uint256 depositStrategyFee,
+        uint256 depositTokenFee,
         uint256 withdrawTreasuryFee,
-        uint256 withdrawStrategyFee
+        uint256 withdrawTokenFee
     ) internal {
         vm.startPrank(feeManagerRole);
         feeManager.setTreasuryActionFee(ExternalAction.Deposit, depositTreasuryFee);
         feeManager.setTreasuryActionFee(ExternalAction.Withdraw, withdrawTreasuryFee);
-        feeManager.exposed_setStrategyActionFee(strategy, ExternalAction.Deposit, depositStrategyFee);
-        feeManager.exposed_setStrategyActionFee(strategy, ExternalAction.Withdraw, withdrawStrategyFee);
+        feeManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Deposit, depositTokenFee);
+        feeManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Withdraw, withdrawTokenFee);
         vm.stopPrank();
     }
 }

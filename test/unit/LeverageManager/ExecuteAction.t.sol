@@ -11,20 +11,20 @@ import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageManagerBaseTest} from "./LeverageManagerBase.t.sol";
 import {MockLendingAdapter} from "test/unit/mock/MockLendingAdapter.sol";
 import {IRebalanceModule} from "src/interfaces/IRebalanceModule.sol";
-import {ActionType, StrategyConfig} from "src/types/DataTypes.sol";
+import {ActionType, LeverageTokenConfig} from "src/types/DataTypes.sol";
 
 contract ExecuteActionTest is LeverageManagerBaseTest {
     function setUp() public override {
         super.setUp();
 
-        _createNewStrategy(
+        _createNewLeverageToken(
             manager,
-            StrategyConfig({
+            LeverageTokenConfig({
                 lendingAdapter: ILendingAdapter(address(lendingAdapter)),
                 targetCollateralRatio: _BASE_RATIO() + 1, // 1.00000001x
                 rebalanceModule: IRebalanceModule(address(0)),
-                strategyDepositFee: 0,
-                strategyWithdrawFee: 0
+                depositTokenFee: 0,
+                withdrawTokenFee: 0
             }),
             address(collateralToken),
             address(debtToken),
@@ -36,18 +36,20 @@ contract ExecuteActionTest is LeverageManagerBaseTest {
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_executeLendingAdapterAction_AddCollateral(uint256 amount) public {
         collateralToken.mint(address(leverageManager), amount);
-        leverageManager.exposed_executeLendingAdapterAction(strategy, ActionType.AddCollateral, amount);
+        leverageManager.exposed_executeLendingAdapterAction(leverageToken, ActionType.AddCollateral, amount);
 
         assertEq(collateralToken.balanceOf(address(leverageManager)), 0);
-        assertEq(collateralToken.balanceOf(address(leverageManager.getStrategyLendingAdapter(strategy))), amount);
+        assertEq(
+            collateralToken.balanceOf(address(leverageManager.getLeverageTokenLendingAdapter(leverageToken))), amount
+        );
     }
 
     /// forge-config: default.fuzz.runs = 1
     function tesFuzz_executeLendingAdapterAction_RemoveCollateral(uint256 amount) public {
-        leverageManager.exposed_executeLendingAdapterAction(strategy, ActionType.RemoveCollateral, amount);
+        leverageManager.exposed_executeLendingAdapterAction(leverageToken, ActionType.RemoveCollateral, amount);
 
         assertEq(collateralToken.balanceOf(address(leverageManager)), amount);
-        assertEq(collateralToken.balanceOf(address(leverageManager.getStrategyLendingAdapter(strategy))), 0);
+        assertEq(collateralToken.balanceOf(address(leverageManager.getLeverageTokenLendingAdapter(leverageToken))), 0);
     }
 
     /// forge-config: default.fuzz.runs = 1
@@ -55,17 +57,17 @@ contract ExecuteActionTest is LeverageManagerBaseTest {
         vm.prank(address(leverageManager));
         lendingAdapter.borrow(amount);
 
-        leverageManager.exposed_executeLendingAdapterAction(strategy, ActionType.Repay, amount);
+        leverageManager.exposed_executeLendingAdapterAction(leverageToken, ActionType.Repay, amount);
 
         assertEq(debtToken.balanceOf(address(leverageManager)), 0);
-        assertEq(debtToken.balanceOf(address(leverageManager.getStrategyLendingAdapter(strategy))), amount);
+        assertEq(debtToken.balanceOf(address(leverageManager.getLeverageTokenLendingAdapter(leverageToken))), amount);
     }
 
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_executeLendingAdapterAction_Borrow(uint256 amount) public {
-        leverageManager.exposed_executeLendingAdapterAction(strategy, ActionType.Borrow, amount);
+        leverageManager.exposed_executeLendingAdapterAction(leverageToken, ActionType.Borrow, amount);
 
         assertEq(debtToken.balanceOf(address(leverageManager)), amount);
-        assertEq(debtToken.balanceOf(address(leverageManager.getStrategyLendingAdapter(strategy))), 0);
+        assertEq(debtToken.balanceOf(address(leverageManager.getLeverageTokenLendingAdapter(leverageToken))), 0);
     }
 }

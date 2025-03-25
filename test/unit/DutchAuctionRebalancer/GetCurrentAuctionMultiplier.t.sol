@@ -2,26 +2,24 @@
 pragma solidity ^0.8.26;
 
 import {DutchAuctionRebalancerBaseTest} from "./DutchAuctionRebalancerBase.t.sol";
-import {IDutchAuctionRebalancer} from "src/interfaces/IDutchAuctionRebalancer.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract GetCurrentAuctionMultiplierTest is DutchAuctionRebalancerBaseTest {
-    function test_getCurrentAuctionMultiplier_NoAuction() public {
-        assertEq(auctionRebalancer.getCurrentAuctionMultiplier(strategy), 0);
+    function test_getCurrentAuctionMultiplier_NoAuction() public view {
+        assertEq(auctionRebalancer.getCurrentAuctionMultiplier(leverageToken), 0);
     }
 
     function test_getCurrentAuctionMultiplier_AtStart() public {
         // Create auction
-        _setStrategyCollateralRatio(3.1e8); // Over-collateralized
+        _setLeverageTokenCollateralRatio(3.1e8); // Over-collateralized
         _createAuction();
 
         // Check multiplier at start
-        assertEq(auctionRebalancer.getCurrentAuctionMultiplier(strategy), DEFAULT_INITIAL_PRICE_MULTIPLIER);
+        assertEq(auctionRebalancer.getCurrentAuctionMultiplier(leverageToken), DEFAULT_INITIAL_PRICE_MULTIPLIER);
     }
 
     function test_getCurrentAuctionMultiplier_AtEnd() public {
         // Create auction
-        _setStrategyCollateralRatio(3.1e8); // Over-collateralized
+        _setLeverageTokenCollateralRatio(3.1e8); // Over-collateralized
         _setAuctionParameters(DEFAULT_INITIAL_PRICE_MULTIPLIER, DEFAULT_MIN_PRICE_MULTIPLIER);
         _createAuction();
 
@@ -29,18 +27,18 @@ contract GetCurrentAuctionMultiplierTest is DutchAuctionRebalancerBaseTest {
         vm.warp(AUCTION_START_TIME + DEFAULT_DURATION);
 
         // At end, should be at minimum multiplier
-        assertEq(auctionRebalancer.getCurrentAuctionMultiplier(strategy), DEFAULT_MIN_PRICE_MULTIPLIER);
+        assertEq(auctionRebalancer.getCurrentAuctionMultiplier(leverageToken), DEFAULT_MIN_PRICE_MULTIPLIER);
     }
 
     function test_getCurrentAuctionMultiplier_AtQuarter() public {
         // Create auction
-        _setStrategyCollateralRatio(3.1e8);
+        _setLeverageTokenCollateralRatio(3.1e8);
         _createAuction();
 
         // Warp to 25% of auction duration
         vm.warp(AUCTION_START_TIME + DEFAULT_DURATION / 4);
 
-        uint256 multiplier = auctionRebalancer.getCurrentAuctionMultiplier(strategy);
+        uint256 multiplier = auctionRebalancer.getCurrentAuctionMultiplier(leverageToken);
 
         // At t=0.25:
         // progress = 0.25
@@ -58,13 +56,13 @@ contract GetCurrentAuctionMultiplierTest is DutchAuctionRebalancerBaseTest {
 
     function test_getCurrentAuctionMultiplier_AtHalf() public {
         // Create auction
-        _setStrategyCollateralRatio(3.1e8);
+        _setLeverageTokenCollateralRatio(3.1e8);
         _createAuction();
 
         // Warp to 50% of auction duration
         vm.warp(AUCTION_START_TIME + DEFAULT_DURATION / 2);
 
-        uint256 multiplier = auctionRebalancer.getCurrentAuctionMultiplier(strategy);
+        uint256 multiplier = auctionRebalancer.getCurrentAuctionMultiplier(leverageToken);
 
         // At t=0.5:
         // progress = 0.5
@@ -82,13 +80,13 @@ contract GetCurrentAuctionMultiplierTest is DutchAuctionRebalancerBaseTest {
 
     function test_getCurrentAuctionMultiplier_AtThreeQuarters() public {
         // Create auction
-        _setStrategyCollateralRatio(3.1e8);
+        _setLeverageTokenCollateralRatio(3.1e8);
         _createAuction();
 
         // Warp to 75% of auction duration
         vm.warp(AUCTION_START_TIME + (DEFAULT_DURATION * 3) / 4);
 
-        uint256 multiplier = auctionRebalancer.getCurrentAuctionMultiplier(strategy);
+        uint256 multiplier = auctionRebalancer.getCurrentAuctionMultiplier(leverageToken);
 
         // At t=0.75:
         // progress = 0.75
@@ -113,16 +111,16 @@ contract GetCurrentAuctionMultiplierTest is DutchAuctionRebalancerBaseTest {
         vm.assume(timeElapsed2 - timeElapsed1 > 3);
 
         // Create auction
-        _setStrategyCollateralRatio(3.1e8);
+        _setLeverageTokenCollateralRatio(3.1e8);
         _createAuction();
 
         // Warp to first timestamp
         vm.warp(AUCTION_START_TIME + timeElapsed1);
-        uint256 multiplier1 = auctionRebalancer.getCurrentAuctionMultiplier(strategy);
+        uint256 multiplier1 = auctionRebalancer.getCurrentAuctionMultiplier(leverageToken);
 
         // Warp to second timestamp
         vm.warp(AUCTION_START_TIME + timeElapsed2);
-        uint256 multiplier2 = auctionRebalancer.getCurrentAuctionMultiplier(strategy);
+        uint256 multiplier2 = auctionRebalancer.getCurrentAuctionMultiplier(leverageToken);
 
         assertTrue(multiplier1 > multiplier2);
     }

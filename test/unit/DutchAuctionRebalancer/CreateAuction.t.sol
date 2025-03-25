@@ -3,14 +3,15 @@ pragma solidity ^0.8.26;
 
 import {DutchAuctionRebalancerBaseTest} from "./DutchAuctionRebalancerBase.t.sol";
 import {IDutchAuctionRebalancer} from "src/interfaces/IDutchAuctionRebalancer.sol";
+import {Auction} from "src/types/DataTypes.sol";
 
 contract CreateAuctionTest is DutchAuctionRebalancerBaseTest {
     function test_createAuction_UnderCollateralized() public {
         // Set higher min ratio for this test
-        _mockStrategyCollateralRatios(1.5e8, MAX_RATIO);
+        _mockLeverageTokenCollateralRatios(1.5e8, MAX_RATIO);
 
         // Set current ratio to be below min (under-collateralized)
-        _setStrategyCollateralRatio(1.4e8);
+        _setLeverageTokenCollateralRatio(1.4e8);
 
         // Set block timestamp
         vm.warp(AUCTION_START_TIME);
@@ -18,17 +19,17 @@ contract CreateAuctionTest is DutchAuctionRebalancerBaseTest {
         // Create auction
         vm.expectEmit(true, true, true, true);
         emit IDutchAuctionRebalancer.AuctionCreated(
-            strategy,
-            IDutchAuctionRebalancer.Auction({
+            leverageToken,
+            Auction({
                 isOverCollateralized: false,
-                initialPriceMultiplier: auctionRebalancer.initialPriceMultiplier(strategy),
-                minPriceMultiplier: auctionRebalancer.minPriceMultiplier(strategy),
+                initialPriceMultiplier: auctionRebalancer.initialPriceMultiplier(leverageToken),
+                minPriceMultiplier: auctionRebalancer.minPriceMultiplier(leverageToken),
                 startTimestamp: AUCTION_START_TIME,
-                endTimestamp: AUCTION_START_TIME + auctionRebalancer.auctionDuration(strategy)
+                endTimestamp: AUCTION_START_TIME + auctionRebalancer.auctionDuration(leverageToken)
             })
         );
         vm.prank(owner);
-        auctionRebalancer.createAuction(strategy);
+        auctionRebalancer.createAuction(leverageToken);
 
         // Verify auction details
         (
@@ -37,18 +38,18 @@ contract CreateAuctionTest is DutchAuctionRebalancerBaseTest {
             uint256 minPriceMultiplier,
             uint256 startTimestamp,
             uint256 endTimestamp
-        ) = auctionRebalancer.auctions(strategy);
+        ) = auctionRebalancer.auctions(leverageToken);
 
         assertFalse(isOverCollateralized);
-        assertEq(initialPriceMultiplier, auctionRebalancer.initialPriceMultiplier(strategy));
-        assertEq(minPriceMultiplier, auctionRebalancer.minPriceMultiplier(strategy));
+        assertEq(initialPriceMultiplier, auctionRebalancer.initialPriceMultiplier(leverageToken));
+        assertEq(minPriceMultiplier, auctionRebalancer.minPriceMultiplier(leverageToken));
         assertEq(startTimestamp, AUCTION_START_TIME);
-        assertEq(endTimestamp, AUCTION_START_TIME + auctionRebalancer.auctionDuration(strategy));
+        assertEq(endTimestamp, AUCTION_START_TIME + auctionRebalancer.auctionDuration(leverageToken));
     }
 
     function test_createAuction_OverCollateralized() public {
         // Set current ratio to be above max (over-collateralized)
-        _setStrategyCollateralRatio(3.1e8);
+        _setLeverageTokenCollateralRatio(3.1e8);
 
         // Set block timestamp
         vm.warp(AUCTION_START_TIME);
@@ -56,17 +57,17 @@ contract CreateAuctionTest is DutchAuctionRebalancerBaseTest {
         // Create auction
         vm.expectEmit(true, true, true, true);
         emit IDutchAuctionRebalancer.AuctionCreated(
-            strategy,
-            IDutchAuctionRebalancer.Auction({
+            leverageToken,
+            Auction({
                 isOverCollateralized: true,
-                initialPriceMultiplier: auctionRebalancer.initialPriceMultiplier(strategy),
-                minPriceMultiplier: auctionRebalancer.minPriceMultiplier(strategy),
+                initialPriceMultiplier: auctionRebalancer.initialPriceMultiplier(leverageToken),
+                minPriceMultiplier: auctionRebalancer.minPriceMultiplier(leverageToken),
                 startTimestamp: AUCTION_START_TIME,
-                endTimestamp: AUCTION_START_TIME + auctionRebalancer.auctionDuration(strategy)
+                endTimestamp: AUCTION_START_TIME + auctionRebalancer.auctionDuration(leverageToken)
             })
         );
         vm.prank(owner);
-        auctionRebalancer.createAuction(strategy);
+        auctionRebalancer.createAuction(leverageToken);
 
         // Verify auction details
         (
@@ -75,36 +76,36 @@ contract CreateAuctionTest is DutchAuctionRebalancerBaseTest {
             uint256 minPriceMultiplier,
             uint256 startTimestamp,
             uint256 endTimestamp
-        ) = auctionRebalancer.auctions(strategy);
+        ) = auctionRebalancer.auctions(leverageToken);
 
         assertTrue(isOverCollateralized);
-        assertEq(initialPriceMultiplier, auctionRebalancer.initialPriceMultiplier(strategy));
-        assertEq(minPriceMultiplier, auctionRebalancer.minPriceMultiplier(strategy));
+        assertEq(initialPriceMultiplier, auctionRebalancer.initialPriceMultiplier(leverageToken));
+        assertEq(minPriceMultiplier, auctionRebalancer.minPriceMultiplier(leverageToken));
         assertEq(startTimestamp, AUCTION_START_TIME);
-        assertEq(endTimestamp, AUCTION_START_TIME + auctionRebalancer.auctionDuration(strategy));
+        assertEq(endTimestamp, AUCTION_START_TIME + auctionRebalancer.auctionDuration(leverageToken));
     }
 
-    function test_createAuction_RevertIf_StrategyNotEligible() public {
+    function test_createAuction_RevertIf_LeverageTokenNotEligible() public {
         // Set current ratio to be within bounds (not eligible)
-        _setStrategyCollateralRatio(1.5e8);
+        _setLeverageTokenCollateralRatio(1.5e8);
 
         // Try to create auction
         vm.prank(owner);
-        vm.expectRevert(IDutchAuctionRebalancer.StrategyNotEligibleForRebalance.selector);
-        auctionRebalancer.createAuction(strategy);
+        vm.expectRevert(IDutchAuctionRebalancer.LeverageTokenNotEligibleForRebalance.selector);
+        auctionRebalancer.createAuction(leverageToken);
     }
 
     function test_createAuction_RevertIf_AuctionStillValid() public {
         // Set current ratio to be above max (eligible)
-        _setStrategyCollateralRatio(3.1e8);
+        _setLeverageTokenCollateralRatio(3.1e8);
 
         // Create first auction
         _createAuction();
 
         // Try to create another auction while first is still valid
-        vm.warp(AUCTION_START_TIME + auctionRebalancer.auctionDuration(strategy) - 1);
+        vm.warp(AUCTION_START_TIME + auctionRebalancer.auctionDuration(leverageToken) - 1);
         vm.prank(owner);
         vm.expectRevert(IDutchAuctionRebalancer.AuctionStillValid.selector);
-        auctionRebalancer.createAuction(strategy);
+        auctionRebalancer.createAuction(leverageToken);
     }
 }
