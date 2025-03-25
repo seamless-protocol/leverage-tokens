@@ -32,13 +32,7 @@ contract LeverageRouterBase is IntegrationTestBase {
     function setUp() public virtual override {
         super.setUp();
 
-        address swapAdapterImplementation = address(new SwapAdapter());
-        swapAdapter = ISwapAdapter(
-            UnsafeUpgrades.deployUUPSProxy(
-                swapAdapterImplementation, abi.encodeWithSelector(SwapAdapter.initialize.selector, address(this))
-            )
-        );
-
+        swapAdapter = new SwapAdapter();
         leverageRouter = new LeverageRouter(leverageManager, MORPHO, swapAdapter);
 
         vm.label(address(leverageRouter), "leverageRouter");
