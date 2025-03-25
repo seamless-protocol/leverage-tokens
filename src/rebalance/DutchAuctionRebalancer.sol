@@ -18,7 +18,6 @@ import {RebalanceAction, TokenTransfer, ActionType, StrategyState, Auction} from
 contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
     using SafeERC20 for IERC20;
 
-    bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     uint256 public constant PRICE_MULTIPLIER_PRECISION = 1e18;
 
     ///@notice Leverage manager contract
