@@ -104,8 +104,4 @@ contract MockLendingAdapter {
     function mockConvertCollateralToDebtAssetExchangeRate(uint256 exchangeRate) external {
         collateralToDebtAssetExchangeRate = exchangeRate;
     }
-
-    function mockSetOwner(address newOwner) external {
-        owner = newOwner;
-    }
 }
