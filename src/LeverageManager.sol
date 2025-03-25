@@ -7,12 +7,9 @@ import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/acce
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 // Internal imports
 import {IBeaconProxyFactory} from "src/interfaces/IBeaconProxyFactory.sol";
-import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
