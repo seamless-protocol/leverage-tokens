@@ -21,14 +21,9 @@ interface IBeaconProxyFactory {
         view
         returns (address proxy);
 
-    /// @notice The list of beacon proxies deployed by the factory
-    /// @return proxies The list of beacon proxies
-    function getProxies() external view returns (address[] memory proxies);
-
-    /// @notice Returns the address of a beacon proxy by index in the stored list of beacon proxies deployed by the factory
-    /// @param index The index of the beacon proxy in the stored list of beacon proxies
-    /// @return proxy The address of the beacon proxy
-    function proxies(uint256 index) external view returns (address proxy);
+    /// @notice Returns the number of beacon proxies deployed by the factory
+    /// @return numProxies The number of beacon proxies deployed by the factory
+    function numProxies() external view returns (uint256 numProxies);
 
     /// @notice Creates a new beacon proxy
     /// @param data The initialization data passed to the proxy

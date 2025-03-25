@@ -11,7 +11,7 @@ import {IBeaconProxyFactory} from "src/interfaces/IBeaconProxyFactory.sol";
 
 contract BeaconProxyFactory is IBeaconProxyFactory, UpgradeableBeacon {
     /// @inheritdoc IBeaconProxyFactory
-    address[] public proxies;
+    uint256 public numProxies;
 
     /// @notice Creates a new beacon proxy factory using an upgradeable beacon
     /// @param _implementation The implementation contract for the beacon that will be used by beacon proxies created
@@ -30,15 +30,10 @@ contract BeaconProxyFactory is IBeaconProxyFactory, UpgradeableBeacon {
     }
 
     /// @inheritdoc IBeaconProxyFactory
-    function getProxies() external view returns (address[] memory _proxies) {
-        return proxies;
-    }
-
-    /// @inheritdoc IBeaconProxyFactory
     function createProxy(bytes memory data, bytes32 baseSalt) external returns (address proxy) {
         proxy = Create2.deploy(0, _getDeploySalt(msg.sender, baseSalt), _getCreationCode(data));
 
-        proxies.push(proxy);
+        numProxies++;
 
         // Emit an event for the newly created proxy
         emit BeaconProxyCreated(proxy, data, baseSalt);

@@ -41,8 +41,7 @@ contract BeaconProxyFactoryTest is Test {
         address proxy = factory.createProxy(data, salt);
 
         assertEq(proxy, expectedProxyAddress);
-        assertEq(factory.getProxies().length, 1);
-        assertEq(factory.getProxies()[0], proxy);
+        assertEq(factory.numProxies(), 1);
         assertEq(MockValue(proxy).mockFunction(), 0); // Zero because it was not initialized
     }
 
@@ -59,8 +58,7 @@ contract BeaconProxyFactoryTest is Test {
 
         assertEq(MockValue(proxy).mockFunction(), value);
         assertEq(MockValue(proxy).initialized(), true);
-        assertEq(factory.getProxies().length, 1);
-        assertEq(factory.getProxies()[0], proxy);
+        assertEq(factory.numProxies(), 1);
         assertEq(proxy, expectedProxyAddress);
     }
 

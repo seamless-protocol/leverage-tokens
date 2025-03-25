@@ -151,7 +151,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         strategy = IStrategy(
             strategyTokenFactory.createProxy(
                 abi.encodeWithSelector(Strategy.initialize.selector, address(this), name, symbol),
-                bytes32(strategyTokenFactory.getProxies().length)
+                bytes32(strategyTokenFactory.numProxies())
             )
         );
 
