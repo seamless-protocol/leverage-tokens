@@ -8,7 +8,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {BeaconProxyFactory} from "src/BeaconProxyFactory.sol";
 import {LeverageManager} from "src/LeverageManager.sol";
 import {LeverageRouter} from "src/periphery/LeverageRouter.sol";
-import {Strategy} from "src/Strategy.sol";
+import {LeverageToken} from "src/LeverageToken.sol";
 import {SwapAdapter} from "src/periphery/SwapAdapter.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
@@ -46,8 +46,8 @@ contract LeverageRouterBase is IntegrationTestBase {
     }
 
     function testFork_setUp() public view virtual override {
-        assertEq(address(leverageManager.getStrategyCollateralAsset(strategy)), address(WETH));
-        assertEq(address(leverageManager.getStrategyDebtAsset(strategy)), address(USDC));
+        assertEq(address(leverageManager.getLeverageTokenCollateralAsset(leverageToken)), address(WETH));
+        assertEq(address(leverageManager.getLeverageTokenDebtAsset(leverageToken)), address(USDC));
 
         assertEq(address(leverageRouter.leverageManager()), address(leverageManager));
         assertEq(address(leverageRouter.morpho()), address(MORPHO));
@@ -66,7 +66,7 @@ contract LeverageRouterBase is IntegrationTestBase {
 
         vm.startPrank(user);
         collateralAsset.approve(address(leverageRouter), equityInCollateralAsset + maxSwapCostInCollateralAsset);
-        leverageRouter.deposit(strategy, equityInCollateralAsset, 0, maxSwapCostInCollateralAsset, swapContext);
+        leverageRouter.deposit(leverageToken, equityInCollateralAsset, 0, maxSwapCostInCollateralAsset, swapContext);
         vm.stopPrank();
 
         // No leftover assets in the LeverageRouter or the SwapAdapter

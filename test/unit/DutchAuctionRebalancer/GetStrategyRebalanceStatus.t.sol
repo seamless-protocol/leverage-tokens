@@ -3,38 +3,38 @@ pragma solidity ^0.8.26;
 
 import {DutchAuctionRebalancerBaseTest} from "./DutchAuctionRebalancerBase.t.sol";
 
-contract GetStrategyRebalanceStatusTest is DutchAuctionRebalancerBaseTest {
-    function test_getStrategyRebalanceStatus_NotEligible_WithinBounds() public {
+contract GetLeverageTokenRebalanceStatusTest is DutchAuctionRebalancerBaseTest {
+    function test_getLeverageTokenRebalanceStatus_NotEligible_WithinBounds() public {
         // Set current ratio to be within bounds (e.g., 1.5x)
-        _setStrategyCollateralRatio(1.5e8);
+        _setLeverageTokenCollateralRatio(1.5e8);
 
-        (bool isEligible, bool isOverCollateralized) = auctionRebalancer.getStrategyRebalanceStatus(strategy);
+        (bool isEligible, bool isOverCollateralized) = auctionRebalancer.getLeverageTokenRebalanceStatus(leverageToken);
         assertFalse(isEligible);
         assertFalse(isOverCollateralized); // Not relevant when not eligible
     }
 
-    function test_getStrategyRebalanceStatus_Eligible_UnderCollateralized() public {
+    function test_getLeverageTokenRebalanceStatus_Eligible_UnderCollateralized() public {
         // Set higher min ratio for this test
-        _mockStrategyCollateralRatios(1.5e8, MAX_RATIO);
+        _mockLeverageTokenCollateralRatios(1.5e8, MAX_RATIO);
 
         // Set current ratio to be below min (e.g., 1.4x)
-        _setStrategyCollateralRatio(1.4e8);
+        _setLeverageTokenCollateralRatio(1.4e8);
 
-        (bool isEligible, bool isOverCollateralized) = auctionRebalancer.getStrategyRebalanceStatus(strategy);
+        (bool isEligible, bool isOverCollateralized) = auctionRebalancer.getLeverageTokenRebalanceStatus(leverageToken);
         assertTrue(isEligible);
         assertFalse(isOverCollateralized);
     }
 
-    function test_getStrategyRebalanceStatus_Eligible_OverCollateralized() public {
+    function test_getLeverageTokenRebalanceStatus_Eligible_OverCollateralized() public {
         // Set current ratio to be above max (e.g., 3.1x)
-        _setStrategyCollateralRatio(3.1e8);
+        _setLeverageTokenCollateralRatio(3.1e8);
 
-        (bool isEligible, bool isOverCollateralized) = auctionRebalancer.getStrategyRebalanceStatus(strategy);
+        (bool isEligible, bool isOverCollateralized) = auctionRebalancer.getLeverageTokenRebalanceStatus(leverageToken);
         assertTrue(isEligible);
         assertTrue(isOverCollateralized);
     }
 
-    function testFuzz_getStrategyRebalanceStatus(
+    function testFuzz_getLeverageTokenRebalanceStatus(
         uint256 minRatio,
         uint256 maxRatio,
         uint256 targetRatio,
@@ -45,10 +45,10 @@ contract GetStrategyRebalanceStatusTest is DutchAuctionRebalancerBaseTest {
         vm.assume(maxRatio > minRatio);
         vm.assume(targetRatio >= minRatio && targetRatio <= maxRatio);
 
-        _mockStrategyCollateralRatios(minRatio, maxRatio);
-        _setStrategyCollateralRatio(currentRatio);
+        _mockLeverageTokenCollateralRatios(minRatio, maxRatio);
+        _setLeverageTokenCollateralRatio(currentRatio);
 
-        (bool isEligible, bool isOverCollateralized) = auctionRebalancer.getStrategyRebalanceStatus(strategy);
+        (bool isEligible, bool isOverCollateralized) = auctionRebalancer.getLeverageTokenRebalanceStatus(leverageToken);
 
         if (currentRatio < minRatio) {
             assertTrue(isEligible);

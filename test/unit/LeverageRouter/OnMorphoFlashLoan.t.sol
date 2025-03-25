@@ -22,7 +22,7 @@ contract OnMorphoFlashLoanTest is LeverageRouterBaseTest {
 
         bytes memory depositData = abi.encode(
             LeverageRouter.DepositParams({
-                strategy: strategy,
+                token: leverageToken,
                 equityInCollateralAsset: equityInCollateralAsset,
                 minShares: shares,
                 maxSwapCostInCollateralAsset: 0,
@@ -56,7 +56,7 @@ contract OnMorphoFlashLoanTest is LeverageRouterBaseTest {
             flashLoanAmount,
             abi.encode(LeverageRouter.MorphoCallbackData({action: ExternalAction.Deposit, data: depositData}))
         );
-        assertEq(strategy.balanceOf(address(this)), shares);
+        assertEq(leverageToken.balanceOf(address(this)), shares);
     }
 
     function test_onMorphoFlashLoan_Withdraw() public {
@@ -78,7 +78,7 @@ contract OnMorphoFlashLoanTest is LeverageRouterBaseTest {
 
         bytes memory withdrawData = abi.encode(
             LeverageRouter.WithdrawParams({
-                strategy: strategy,
+                token: leverageToken,
                 equityInCollateralAsset: equityInCollateralAsset,
                 maxShares: shares,
                 maxSwapCostInCollateralAsset: 0,
@@ -100,7 +100,7 @@ contract OnMorphoFlashLoanTest is LeverageRouterBaseTest {
             })
         );
 
-        strategy.approve(address(leverageRouter), shares);
+        leverageToken.approve(address(leverageRouter), shares);
 
         // Mock morpho flash loaning the debt required for the withdraw
         uint256 flashLoanAmount = requiredDebt;
@@ -111,7 +111,7 @@ contract OnMorphoFlashLoanTest is LeverageRouterBaseTest {
             flashLoanAmount,
             abi.encode(LeverageRouter.MorphoCallbackData({action: ExternalAction.Withdraw, data: withdrawData}))
         );
-        assertEq(strategy.balanceOf(address(this)), 0);
+        assertEq(leverageToken.balanceOf(address(this)), 0);
         assertEq(collateralToken.balanceOf(address(this)), equityInCollateralAsset);
     }
 
