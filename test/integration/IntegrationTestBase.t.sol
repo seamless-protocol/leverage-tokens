@@ -62,7 +62,8 @@ contract IntegrationTestBase is Test {
 
         morphoLendingAdapter = MorphoLendingAdapter(
             morphoLendingAdapterFactory.createProxy(
-                abi.encodeWithSelector(MorphoLendingAdapter.initialize.selector, WETH_USDC_MARKET_ID), bytes32(0)
+                abi.encodeWithSelector(MorphoLendingAdapter.initialize.selector, WETH_USDC_MARKET_ID, address(this)),
+                bytes32(0)
             )
         );
 
@@ -138,7 +139,7 @@ contract IntegrationTestBase is Test {
     ) internal returns (IStrategy) {
         ILendingAdapter lendingAdapter = ILendingAdapter(
             morphoLendingAdapterFactory.createProxy(
-                abi.encodeWithSelector(MorphoLendingAdapter.initialize.selector, WETH_USDC_MARKET_ID),
+                abi.encodeWithSelector(MorphoLendingAdapter.initialize.selector, WETH_USDC_MARKET_ID, address(this)),
                 keccak256(abi.encode(vm.randomUint()))
             )
         );

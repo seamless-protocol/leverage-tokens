@@ -47,6 +47,11 @@ interface ILendingAdapter {
     /// @dev Equity is calculated as collateral - debt
     function getEquityInDebtAsset() external view returns (uint256 equity);
 
+    /// @notice The owner of the lending adapter
+    /// @return owner The owner of the lending adapter
+    /// @dev Only the owner can create a new leverage token using this adapter on the LeverageManager
+    function owner() external view returns (address owner);
+
     /// @notice Supplies collateral assets to the lending pool
     /// @param amount Amount of assets to supply
     function addCollateral(uint256 amount) external;

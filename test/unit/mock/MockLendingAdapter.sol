@@ -20,9 +20,12 @@ contract MockLendingAdapter {
 
     uint256 public debt;
 
-    constructor(address _collateralAsset, address _debtAsset) {
+    address public owner;
+
+    constructor(address _collateralAsset, address _debtAsset, address _owner) {
         collateralAsset = ERC20Mock(_collateralAsset);
         debtAsset = ERC20Mock(_debtAsset);
+        owner = _owner;
 
         // collateral:debt is 1:1 by default
         collateralToDebtAssetExchangeRate = BASE_EXCHANGE_RATE;
@@ -100,5 +103,9 @@ contract MockLendingAdapter {
 
     function mockConvertCollateralToDebtAssetExchangeRate(uint256 exchangeRate) external {
         collateralToDebtAssetExchangeRate = exchangeRate;
+    }
+
+    function mockSetOwner(address newOwner) external {
+        owner = newOwner;
     }
 }

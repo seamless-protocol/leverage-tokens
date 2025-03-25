@@ -52,7 +52,7 @@ contract LeverageRouterBaseTest is Test {
         // Setup mocked contracts
         defaultMarketId = MarketParamsLib.id(defaultMarketParams);
         morpho = new MockMorpho(defaultMarketId, defaultMarketParams);
-        lendingAdapter = new MockLendingAdapter(address(collateralToken), address(debtToken));
+        lendingAdapter = new MockLendingAdapter(address(collateralToken), address(debtToken), address(this));
         leverageManager = new MockLeverageManager();
         leverageManager.setStrategyData(
             strategy,

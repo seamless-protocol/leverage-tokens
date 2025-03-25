@@ -16,6 +16,7 @@ import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageManagerBaseTest} from "./LeverageManagerBase.t.sol";
 import {StrategyConfig} from "src/types/DataTypes.sol";
 import {Strategy} from "src/Strategy.sol";
+import {MockLendingAdapter} from "../mock/MockLendingAdapter.sol";
 
 contract CreateNewStrategyTest is LeverageManagerBaseTest {
     function testFuzz_CreateNewStrategy(
@@ -78,5 +79,31 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
             abi.encodeWithSelector(ILeverageManager.LendingAdapterAlreadyInUse.selector, address(config.lendingAdapter))
         );
         _createNewStrategy(manager, config, collateralAsset, debtAsset, name, symbol);
+    }
+
+    function test_CreateNewStrategy_RevertIf_LendingAdapterUnauthorized(
+        address authorizedCaller,
+        address unauthorizedCaller,
+        StrategyConfig memory config,
+        string memory name,
+        string memory symbol
+    ) public {
+        vm.assume(authorizedCaller != unauthorizedCaller);
+
+        vm.mockCall(
+            address(config.lendingAdapter),
+            abi.encodeWithSelector(ILendingAdapter.owner.selector),
+            abi.encode(authorizedCaller)
+        );
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ILeverageManager.LendingAdapterSenderUnauthorized.selector,
+                address(config.lendingAdapter),
+                unauthorizedCaller
+            )
+        );
+        vm.prank(unauthorizedCaller);
+        leverageManager.createNewStrategy(config, name, symbol);
     }
 }

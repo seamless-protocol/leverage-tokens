@@ -31,6 +31,9 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     /// @inheritdoc IMorphoLendingAdapter
     MarketParams public marketParams;
 
+    /// @inheritdoc ILendingAdapter
+    address public owner;
+
     /// @dev Reverts if the caller is not the stored leverageManager address
     modifier onlyLeverageManager() {
         if (msg.sender != address(leverageManager)) revert Unauthorized();
@@ -47,9 +50,11 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
 
     /// @notice Initializes the Morpho lending adapter
     /// @param _morphoMarketId The Morpho market ID
-    function initialize(Id _morphoMarketId) external initializer {
+    function initialize(Id _morphoMarketId, address _owner) external initializer {
         morphoMarketId = _morphoMarketId;
         marketParams = morpho.idToMarketParams(_morphoMarketId);
+
+        owner = _owner;
     }
 
     /// @inheritdoc ILendingAdapter

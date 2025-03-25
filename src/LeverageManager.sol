@@ -159,6 +159,10 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             revert LendingAdapterAlreadyInUse(address(strategyConfig.lendingAdapter));
         }
 
+        if (strategyConfig.lendingAdapter.owner() != msg.sender) {
+            revert LendingAdapterSenderUnauthorized(address(strategyConfig.lendingAdapter), msg.sender);
+        }
+
         _getLeverageManagerStorage().config[strategy] = BaseStrategyConfig({
             lendingAdapter: strategyConfig.lendingAdapter,
             rebalanceModule: strategyConfig.rebalanceModule,

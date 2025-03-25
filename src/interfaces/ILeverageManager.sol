@@ -16,6 +16,9 @@ interface ILeverageManager is IFeeManager {
     /// @notice Error thrown when someone tries to create strategy with lending adapter that already exists
     error LendingAdapterAlreadyInUse(address adapter);
 
+    /// @notice Error thrown when someone tries to create strategy with lending adapter that is not owned by the sender
+    error LendingAdapterSenderUnauthorized(address adapter, address sender);
+
     /// @notice Error thrown when someone tries to set zero address for collateral or debt asset when creating strategy
     error InvalidStrategyAssets();
 
