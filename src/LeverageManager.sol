@@ -45,11 +45,11 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     /// @dev Struct containing all state for the LeverageManager contract
     /// @custom:storage-location erc7201:seamless.contracts.storage.LeverageManager
     struct LeverageManagerStorage {
-        /// @dev Factory for deploying new leverage tokens when creating new leverage tokens
+        /// @dev Factory for deploying new leverage tokens
         IBeaconProxyFactory tokenFactory;
         /// @dev Leverage token address => Base config for leverage token
         mapping(ILeverageToken token => BaseLeverageTokenConfig) config;
-        /// @dev Lending adapter address => Is lending adapter registered. Two leverage tokens can't have same lending adapter
+        /// @dev Lending adapter address => Is lending adapter registered. Multiple leverage tokens can't have same lending adapter
         mapping(address lendingAdapter => bool) isLendingAdapterUsed;
     }
 
