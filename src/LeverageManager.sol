@@ -150,7 +150,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         token = ILeverageToken(
             tokenFactory.createProxy(
                 abi.encodeWithSelector(LeverageToken.initialize.selector, address(this), name, symbol),
-                bytes32(tokenFactory.getProxies().length)
+                bytes32(tokenFactory.numProxies())
             )
         );
 

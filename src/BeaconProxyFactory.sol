@@ -9,20 +9,15 @@ import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/Upgradeabl
 // Internal imports
 import {IBeaconProxyFactory} from "src/interfaces/IBeaconProxyFactory.sol";
 
-contract BeaconProxyFactory is IBeaconProxyFactory {
+contract BeaconProxyFactory is IBeaconProxyFactory, UpgradeableBeacon {
     /// @inheritdoc IBeaconProxyFactory
-    address public immutable beacon;
-
-    /// @inheritdoc IBeaconProxyFactory
-    address[] public proxies;
+    uint256 public numProxies;
 
     /// @notice Creates a new beacon proxy factory using an upgradeable beacon
-    /// @param implementation The implementation contract
-    /// @param beaconOwner The owner of the upgradeable beacon
-    constructor(address implementation, address beaconOwner) {
-        if (implementation == address(0) || beaconOwner == address(0)) revert InvalidAddress();
-        beacon = address(new UpgradeableBeacon(implementation, beaconOwner));
-    }
+    /// @param _implementation The implementation contract for the beacon that will be used by beacon proxies created
+    /// by this factory
+    /// @param _owner The owner of this factory, allowed to update the beacon implementation
+    constructor(address _implementation, address _owner) UpgradeableBeacon(_implementation, _owner) {}
 
     /// @inheritdoc IBeaconProxyFactory
     function computeProxyAddress(address sender, bytes memory data, bytes32 baseSalt)
@@ -35,15 +30,10 @@ contract BeaconProxyFactory is IBeaconProxyFactory {
     }
 
     /// @inheritdoc IBeaconProxyFactory
-    function getProxies() external view returns (address[] memory _proxies) {
-        return proxies;
-    }
-
-    /// @inheritdoc IBeaconProxyFactory
     function createProxy(bytes memory data, bytes32 baseSalt) external returns (address proxy) {
         proxy = Create2.deploy(0, _getDeploySalt(msg.sender, baseSalt), _getCreationCode(data));
 
-        proxies.push(proxy);
+        numProxies++;
 
         // Emit an event for the newly created proxy
         emit BeaconProxyCreated(proxy, data, baseSalt);
@@ -63,7 +53,7 @@ contract BeaconProxyFactory is IBeaconProxyFactory {
     function _getCreationCode(bytes memory data) internal view returns (bytes memory bytecode) {
         bytecode = abi.encodePacked(
             type(BeaconProxy).creationCode, // BeaconProxy's runtime bytecode
-            abi.encode(beacon, data) // Constructor arguments: beacon address and initialization data
+            abi.encode(address(this), data) // Constructor arguments: beacon address and initialization data
         );
     }
 }
