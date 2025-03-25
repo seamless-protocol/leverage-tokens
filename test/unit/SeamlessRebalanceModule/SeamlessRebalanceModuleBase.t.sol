@@ -8,16 +8,16 @@ import {Test} from "forge-std/Test.sol";
 import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 
 // Internal imports
-import {IStrategy} from "src/interfaces/IStrategy.sol";
+import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {MockLeverageManager} from "../mock/MockLeverageManager.sol";
 import {SeamlessRebalanceModule} from "src/rebalance/SeamlessRebalanceModule.sol";
 import {SeamlessRebalanceModuleHarness} from "./harness/SeamlessRebalanceModuleHarness.sol";
-import {StrategyState} from "src/types/DataTypes.sol";
+import {LeverageTokenState} from "src/types/DataTypes.sol";
 
 contract SeamlessRebalanceModuleBaseTest is Test {
     uint256 public constant TARGET_RATIO = 2e8; // 2x
 
-    IStrategy public strategy = IStrategy(makeAddr("strategy"));
+    ILeverageToken public leverageToken = ILeverageToken(makeAddr("leverageToken"));
     address public defaultAdmin = makeAddr("defaultAdmin");
     address public dutchAuctionModule = makeAddr("dutchAuctionModule");
 
@@ -43,8 +43,9 @@ contract SeamlessRebalanceModuleBaseTest is Test {
     }
 
     function _mockCollateralRatio(uint256 collateralRatio) internal {
-        leverageManager.setStrategyState(
-            strategy, StrategyState({collateralInDebtAsset: 0, debt: 0, equity: 0, collateralRatio: collateralRatio})
+        leverageManager.setLeverageTokenState(
+            leverageToken,
+            LeverageTokenState({collateralInDebtAsset: 0, debt: 0, equity: 0, collateralRatio: collateralRatio})
         );
     }
 }

@@ -3,7 +3,7 @@ pragma solidity ^0.8.26;
 
 import {RebalanceTest} from "test/integration/LeverageManager/Rebalance.t.sol";
 import {DutchAuctionRebalancer} from "src/rebalance/DutchAuctionRebalancer.sol";
-import {Auction, StrategyState} from "src/types/DataTypes.sol";
+import {Auction, LeverageTokenState} from "src/types/DataTypes.sol";
 import {IDutchAuctionRebalancer} from "src/interfaces/IDutchAuctionRebalancer.sol";
 
 contract DutchAuctionBase is RebalanceTest {
@@ -110,7 +110,7 @@ contract DutchAuctionBase is RebalanceTest {
         _moveEthPrice(-20_00);
 
         // Create auction again
-        vm.expectRevert(IDutchAuctionRebalancer.StrategyNotEligibleForRebalance.selector);
+        vm.expectRevert(IDutchAuctionRebalancer.LeverageTokenNotEligibleForRebalance.selector);
         DutchAuctionRebalancer(dutchAuctionModule).createAuction(ethLong2x);
     }
 
@@ -141,12 +141,12 @@ contract DutchAuctionBase is RebalanceTest {
         assertEq(minPriceMultiplier, 0.9 * 1e18);
     }
 
-    function testFork_createAuction_RevertIf_StrategyNotEligibleForRebalance() public {
+    function testFork_createAuction_RevertIf_LeverageTokenNotEligibleForRebalance() public {
         uint256 equityToDeposit = 10 * 1e18;
         uint256 collateralToAdd = leverageManager.previewDeposit(ethLong2x, equityToDeposit).collateral;
         _deposit(ethLong2x, user, equityToDeposit, collateralToAdd);
 
-        vm.expectRevert(IDutchAuctionRebalancer.StrategyNotEligibleForRebalance.selector);
+        vm.expectRevert(IDutchAuctionRebalancer.LeverageTokenNotEligibleForRebalance.selector);
         DutchAuctionRebalancer(dutchAuctionModule).createAuction(ethLong2x);
     }
 

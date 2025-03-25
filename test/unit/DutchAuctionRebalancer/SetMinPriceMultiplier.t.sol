@@ -10,9 +10,9 @@ contract SetMinPriceMultiplierTest is DutchAuctionRebalancerBaseTest {
         uint256 newMultiplier = 11000; // 110%
 
         vm.prank(owner);
-        auctionRebalancer.setMinPriceMultiplier(strategy, newMultiplier);
+        auctionRebalancer.setMinPriceMultiplier(leverageToken, newMultiplier);
 
-        assertEq(auctionRebalancer.minPriceMultiplier(strategy), newMultiplier);
+        assertEq(auctionRebalancer.minPriceMultiplier(leverageToken), newMultiplier);
     }
 
     /// forge-config: default.fuzz.runs = 1
@@ -20,9 +20,9 @@ contract SetMinPriceMultiplierTest is DutchAuctionRebalancerBaseTest {
         vm.assume(newMultiplier < DEFAULT_INITIAL_PRICE_MULTIPLIER);
 
         vm.prank(owner);
-        auctionRebalancer.setMinPriceMultiplier(strategy, newMultiplier);
+        auctionRebalancer.setMinPriceMultiplier(leverageToken, newMultiplier);
 
-        assertEq(auctionRebalancer.minPriceMultiplier(strategy), newMultiplier);
+        assertEq(auctionRebalancer.minPriceMultiplier(leverageToken), newMultiplier);
     }
 
     /// forge-config: default.fuzz.runs = 1
@@ -31,7 +31,7 @@ contract SetMinPriceMultiplierTest is DutchAuctionRebalancerBaseTest {
 
         vm.prank(notOwner);
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, notOwner));
-        auctionRebalancer.setMinPriceMultiplier(strategy, newMultiplier);
+        auctionRebalancer.setMinPriceMultiplier(leverageToken, newMultiplier);
     }
 
     /// forge-config: default.fuzz.runs = 1
@@ -43,10 +43,10 @@ contract SetMinPriceMultiplierTest is DutchAuctionRebalancerBaseTest {
         vm.assume(initialPriceMultiplier >= DEFAULT_MIN_PRICE_MULTIPLIER);
 
         vm.startPrank(owner);
-        auctionRebalancer.setInitialPriceMultiplier(strategy, initialPriceMultiplier);
+        auctionRebalancer.setInitialPriceMultiplier(leverageToken, initialPriceMultiplier);
 
         vm.expectRevert(IDutchAuctionRebalancer.MinPriceMultiplierTooHigh.selector);
-        auctionRebalancer.setMinPriceMultiplier(strategy, minMultiplier);
+        auctionRebalancer.setMinPriceMultiplier(leverageToken, minMultiplier);
 
         vm.stopPrank();
     }

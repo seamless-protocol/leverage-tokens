@@ -5,10 +5,10 @@ pragma solidity ^0.8.26;
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 // Internal imports
-import {StrategyBaseTest} from "./StrategyBase.t.sol";
-import {Strategy} from "src/Strategy.sol";
+import {LeverageTokenBaseTest} from "./LeverageTokenBase.t.sol";
+import {LeverageToken} from "src/LeverageToken.sol";
 
-contract BurnTest is StrategyBaseTest {
+contract BurnTest is LeverageTokenBaseTest {
     function setUp() public override {
         super.setUp();
     }
@@ -18,10 +18,10 @@ contract BurnTest is StrategyBaseTest {
         vm.assume(from != address(0));
         vm.assume(prevBalance >= amount);
 
-        strategyToken.mint(from, prevBalance);
-        strategyToken.burn(from, amount);
+        leverageToken.mint(from, prevBalance);
+        leverageToken.burn(from, amount);
 
-        assertEq(strategyToken.balanceOf(from), prevBalance - amount);
+        assertEq(leverageToken.balanceOf(from), prevBalance - amount);
     }
 
     /// forge-config: default.fuzz.runs = 1
@@ -30,7 +30,7 @@ contract BurnTest is StrategyBaseTest {
 
         vm.startPrank(caller);
         vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, caller));
-        strategyToken.burn(from, amount);
+        leverageToken.burn(from, amount);
         vm.stopPrank();
     }
 }

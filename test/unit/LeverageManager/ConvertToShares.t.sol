@@ -8,7 +8,7 @@ contract ConvertToSharesTest is LeverageManagerBaseTest {
     function setUp() public override {
         super.setUp();
 
-        _createDummyStrategy();
+        _createDummyLeverageToken();
     }
 
     function test_convertToShares_RoundedDown() public {
@@ -20,7 +20,7 @@ contract ConvertToSharesTest is LeverageManagerBaseTest {
             ConvertToSharesState({totalEquity: totalEquity, sharesTotalSupply: sharesTotalSupply})
         );
 
-        uint256 shares = leverageManager.exposed_convertToShares(strategy, equity);
+        uint256 shares = leverageManager.exposed_convertToShares(leverageToken, equity);
         assertEq(shares, 0);
     }
 
@@ -29,7 +29,7 @@ contract ConvertToSharesTest is LeverageManagerBaseTest {
             ConvertToSharesState({totalEquity: totalEquity, sharesTotalSupply: sharesTotalSupply})
         );
 
-        uint256 shares = leverageManager.exposed_convertToShares(strategy, equity);
+        uint256 shares = leverageManager.exposed_convertToShares(leverageToken, equity);
         uint256 expectedShares = equity * (uint256(sharesTotalSupply) + 1) / (uint256(totalEquity) + 1);
 
         assertEq(shares, expectedShares);

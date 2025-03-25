@@ -14,12 +14,12 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IRebalanceModule} from "src/interfaces/IRebalanceModule.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {IStrategy} from "src/interfaces/IStrategy.sol";
+import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
 import {BeaconProxyFactory} from "src/BeaconProxyFactory.sol";
 import {LeverageManager} from "src/LeverageManager.sol";
-import {Strategy} from "src/Strategy.sol";
-import {StrategyConfig} from "src/types/DataTypes.sol";
+import {LeverageToken} from "src/LeverageToken.sol";
+import {LeverageTokenConfig} from "src/types/DataTypes.sol";
 import {LeverageManagerHarness} from "test/unit/LeverageManager/harness/LeverageManagerHarness.t.sol";
 import {DutchAuctionRebalancer} from "src/rebalance/DutchAuctionRebalancer.sol";
 import {SeamlessRebalanceModule} from "src/rebalance/SeamlessRebalanceModule.sol";
@@ -36,7 +36,7 @@ contract IntegrationTestBase is Test {
     address public dutchAuctionModule = makeAddr("dutchAuctionModule");
     address public user = makeAddr("user");
     address public treasury = makeAddr("treasury");
-    IStrategy public strategy;
+    ILeverageToken public leverageToken;
 
     BeaconProxyFactory public morphoLendingAdapterFactory;
     ILeverageManager public leverageManager = ILeverageManager(makeAddr("leverageManager"));
@@ -68,10 +68,11 @@ contract IntegrationTestBase is Test {
 
         BASE_RATIO = LeverageManager(address(leverageManager)).BASE_RATIO();
 
-        Strategy strategyImplementation = new Strategy();
-        BeaconProxyFactory strategyFactory = new BeaconProxyFactory(address(strategyImplementation), address(this));
+        LeverageToken leverageTokenImplementation = new LeverageToken();
+        BeaconProxyFactory leverageTokenFactory =
+            new BeaconProxyFactory(address(leverageTokenImplementation), address(this));
 
-        leverageManager.setStrategyTokenFactory(address(strategyFactory));
+        leverageManager.setLeverageTokenFactory(address(leverageTokenFactory));
 
         dutchAuctionModule = address(new DutchAuctionRebalancer(address(this), leverageManager));
 
@@ -84,13 +85,13 @@ contract IntegrationTestBase is Test {
         );
         seamlessRebalanceModule.setIsRebalancer(dutchAuctionModule, true);
 
-        strategy = leverageManager.createNewStrategy(
-            StrategyConfig({
+        leverageToken = leverageManager.createNewLeverageToken(
+            LeverageTokenConfig({
                 lendingAdapter: ILendingAdapter(address(morphoLendingAdapter)),
                 targetCollateralRatio: 2 * BASE_RATIO,
                 rebalanceModule: IRebalanceModule(address(seamlessRebalanceModule)),
-                strategyDepositFee: 0,
-                strategyWithdrawFee: 0
+                depositTokenFee: 0,
+                withdrawTokenFee: 0
             }),
             "Seamless ETH/USDC 2x leverage token",
             "ltETH/USDC-2x"
@@ -100,7 +101,7 @@ contract IntegrationTestBase is Test {
 
         vm.label(address(user), "user");
         vm.label(address(treasury), "treasury");
-        vm.label(address(strategy), "strategy");
+        vm.label(address(leverageToken), "leverageToken");
         vm.label(address(morphoLendingAdapter), "morphoLendingAdapter");
         vm.label(address(MORPHO), "MORPHO");
         vm.label(address(leverageManager), "leverageManager");
@@ -124,38 +125,38 @@ contract IntegrationTestBase is Test {
         return Math.mulDiv(
             shares,
             morphoLendingAdapter.getEquityInCollateralAsset() + 1,
-            strategy.totalSupply() + 1,
+            leverageToken.totalSupply() + 1,
             Math.Rounding.Floor
         );
     }
 
-    function _createNewStrategy(
+    function _createNewLeverageToken(
         uint256 minColRatio,
         uint256 targetCollateralRatio,
         uint256 maxColRatio,
         uint256 depositFee,
         uint256 withdrawFee
-    ) internal returns (IStrategy) {
+    ) internal returns (ILeverageToken) {
         ILendingAdapter lendingAdapter = ILendingAdapter(
             morphoLendingAdapterFactory.createProxy(
                 abi.encodeWithSelector(MorphoLendingAdapter.initialize.selector, WETH_USDC_MARKET_ID),
                 keccak256(abi.encode(vm.randomUint()))
             )
         );
-        IStrategy _strategy = leverageManager.createNewStrategy(
-            StrategyConfig({
+        ILeverageToken _leverageToken = leverageManager.createNewLeverageToken(
+            LeverageTokenConfig({
                 lendingAdapter: lendingAdapter,
                 targetCollateralRatio: targetCollateralRatio,
                 rebalanceModule: IRebalanceModule(address(0)),
-                strategyDepositFee: depositFee,
-                strategyWithdrawFee: withdrawFee
+                depositTokenFee: depositFee,
+                withdrawTokenFee: withdrawFee
             }),
             "dummy name",
             "dummy symbol"
         );
 
-        seamlessRebalanceModule.setStrategyCollateralRatios(_strategy, minColRatio, maxColRatio);
+        seamlessRebalanceModule.setLeverageTokenCollateralRatios(_leverageToken, minColRatio, maxColRatio);
 
-        return _strategy;
+        return _leverageToken;
     }
 }
