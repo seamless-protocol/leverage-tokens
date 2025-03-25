@@ -4,6 +4,7 @@ pragma solidity ^0.8.26;
 // Dependency imports
 import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 // Internal imports
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
@@ -38,7 +39,8 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
 
     function setUp() public virtual override {
         strategyTokenImplementation = address(new Strategy());
-        strategyTokenFactory = new BeaconProxyFactory(strategyTokenImplementation, address(this));
+        UpgradeableBeacon strategyTokenBeacon = new UpgradeableBeacon(strategyTokenImplementation, address(this));
+        strategyTokenFactory = new BeaconProxyFactory(strategyTokenBeacon);
         lendingAdapter = new MockLendingAdapter(address(collateralToken), address(debtToken));
         address leverageManagerImplementation = address(new LeverageManagerHarness());
         address leverageManagerProxy = UnsafeUpgrades.deployUUPSProxy(

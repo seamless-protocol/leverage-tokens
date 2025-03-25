@@ -17,11 +17,9 @@ contract BeaconProxyFactory is IBeaconProxyFactory {
     address[] public proxies;
 
     /// @notice Creates a new beacon proxy factory using an upgradeable beacon
-    /// @param implementation The implementation contract
-    /// @param beaconOwner The owner of the upgradeable beacon
-    constructor(address implementation, address beaconOwner) {
-        if (implementation == address(0) || beaconOwner == address(0)) revert InvalidAddress();
-        beacon = address(new UpgradeableBeacon(implementation, beaconOwner));
+    /// @param _beacon The upgradeable beacon
+    constructor(UpgradeableBeacon _beacon) {
+        beacon = address(_beacon);
     }
 
     /// @inheritdoc IBeaconProxyFactory

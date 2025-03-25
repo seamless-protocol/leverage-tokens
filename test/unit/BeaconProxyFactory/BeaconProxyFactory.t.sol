@@ -18,25 +18,17 @@ contract BeaconProxyFactoryTest is Test {
 
     address public implementation;
     address public owner = makeAddr("owner");
+    UpgradeableBeacon public beacon;
 
     function setUp() public {
         implementation = address(new MockValue());
-        factory = new BeaconProxyFactory(implementation, owner);
+        beacon = new UpgradeableBeacon(implementation, owner);
+        factory = new BeaconProxyFactory(beacon);
     }
 
     function test_constructor() public view {
         assertEq(UpgradeableBeacon(factory.beacon()).implementation(), implementation);
         assertEq(UpgradeableBeacon(factory.beacon()).owner(), owner);
-    }
-
-    function test_constructor_RevertIf_ImplementationIsZeroAddress() public {
-        vm.expectRevert(IBeaconProxyFactory.InvalidAddress.selector);
-        new BeaconProxyFactory(address(0), owner);
-    }
-
-    function test_constructor_RevertIf_OwnerIsZeroAddress() public {
-        vm.expectRevert(IBeaconProxyFactory.InvalidAddress.selector);
-        new BeaconProxyFactory(implementation, address(0));
     }
 
     /// forge-config: default.fuzz.runs = 1
