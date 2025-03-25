@@ -22,7 +22,7 @@ contract BeaconUpgradeToTest is Test {
     function setUp() public {
         address leverageTokenImplementation = address(new LeverageToken());
         factory = new BeaconProxyFactory(leverageTokenImplementation, upgrader);
-        beacon = UpgradeableBeacon(factory.beacon());
+        beacon = UpgradeableBeacon(address(factory));
         leverageToken = LeverageToken(
             factory.createProxy(
                 abi.encodeWithSelector(LeverageToken.initialize.selector, address(this), "Test name", "Test symbol"),

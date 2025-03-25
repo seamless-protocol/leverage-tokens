@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
+// Dependency imports
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -8,8 +9,6 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {SignedMath} from "@openzeppelin/contracts/utils/math/SignedMath.sol";
 
 // Internal imports
 import {IBeaconProxyFactory} from "src/interfaces/IBeaconProxyFactory.sol";
@@ -32,10 +31,6 @@ import {
 import {IRebalanceModule} from "src/interfaces/IRebalanceModule.sol";
 
 contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManager, UUPSUpgradeable {
-    using SafeCast for uint256;
-    using SafeCast for int256;
-    using SignedMath for int256;
-
     // Base collateral ratio constant, 1e8 means that collateral / debt ratio is 1:1
     uint256 public constant BASE_RATIO = 1e8;
     uint256 public constant DECIMALS_OFFSET = 0;
@@ -157,7 +152,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         token = ILeverageToken(
             tokenFactory.createProxy(
                 abi.encodeWithSelector(LeverageToken.initialize.selector, address(this), name, symbol),
-                bytes32(tokenFactory.getProxies().length)
+                bytes32(tokenFactory.numProxies())
             )
         );
 
