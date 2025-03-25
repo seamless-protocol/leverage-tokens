@@ -150,15 +150,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         external
         returns (ILeverageToken token)
     {
-        IBeaconProxyFactory tokenFactory = getLeverageTokenFactory();
-
-        token = ILeverageToken(
-            tokenFactory.createProxy(
-                abi.encodeWithSelector(LeverageToken.initialize.selector, address(this), name, symbol),
-                bytes32(tokenFactory.getProxies().length)
-            )
-        );
-
         if (getIsLendingAdapterUsed(address(tokenConfig.lendingAdapter))) {
             revert LendingAdapterAlreadyInUse(address(tokenConfig.lendingAdapter));
         }
@@ -166,6 +157,14 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         if (tokenConfig.lendingAdapter.owner() != msg.sender) {
             revert LendingAdapterSenderUnauthorized(address(tokenConfig.lendingAdapter), msg.sender);
         }
+
+        IBeaconProxyFactory tokenFactory = getLeverageTokenFactory();
+        token = ILeverageToken(
+            tokenFactory.createProxy(
+                abi.encodeWithSelector(LeverageToken.initialize.selector, address(this), name, symbol),
+                bytes32(tokenFactory.getProxies().length)
+            )
+        );
 
         _getLeverageManagerStorage().config[token] = BaseLeverageTokenConfig({
             lendingAdapter: tokenConfig.lendingAdapter,
