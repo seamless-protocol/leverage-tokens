@@ -6,33 +6,35 @@ import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol"
 
 // Internal imports
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
-import {IStrategy} from "src/interfaces/IStrategy.sol";
+import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {ExternalAction} from "src/types/DataTypes.sol";
 import {FeeManagerBaseTest} from "test/unit/FeeManager/FeeManagerBase.t.sol";
 import {FeeManager} from "src/FeeManager.sol";
 
-contract SetStrategyActionFeeTest is FeeManagerBaseTest {
+contract SetLeverageTokenActionFeeTest is FeeManagerBaseTest {
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_setStrategyActionFee(IStrategy strategy, uint256 actionNum, uint256 fee) public {
+    function testFuzz_setLeverageTokenActionFee(ILeverageToken leverageToken, uint256 actionNum, uint256 fee) public {
         ExternalAction action = ExternalAction(actionNum % 2);
         fee = bound(fee, 0, feeManager.MAX_FEE());
 
         vm.expectEmit(true, true, true, true);
-        emit IFeeManager.StrategyActionFeeSet(strategy, action, fee);
+        emit IFeeManager.LeverageTokenActionFeeSet(leverageToken, action, fee);
 
-        feeManager.exposed_setStrategyActionFee(strategy, action, fee);
+        feeManager.exposed_setLeverageTokenActionFee(leverageToken, action, fee);
 
-        assertEq(feeManager.getStrategyActionFee(strategy, action), fee);
+        assertEq(feeManager.getLeverageTokenActionFee(leverageToken, action), fee);
     }
 
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_setStrategyActionFee_RevertIfFeeTooHigh(IStrategy strategy, uint256 actionNum, uint256 fee)
-        public
-    {
+    function testFuzz_setLeverageTokenActionFee_RevertIfFeeTooHigh(
+        ILeverageToken leverageToken,
+        uint256 actionNum,
+        uint256 fee
+    ) public {
         ExternalAction action = ExternalAction(actionNum % 2);
         fee = bound(fee, feeManager.MAX_FEE() + 1, type(uint256).max);
 
         vm.expectRevert(abi.encodeWithSelector(IFeeManager.FeeTooHigh.selector, fee, feeManager.MAX_FEE()));
-        feeManager.exposed_setStrategyActionFee(strategy, action, fee);
+        feeManager.exposed_setLeverageTokenActionFee(leverageToken, action, fee);
     }
 }

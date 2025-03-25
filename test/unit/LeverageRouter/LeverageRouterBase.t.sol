@@ -13,7 +13,7 @@ import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
-import {IStrategy} from "src/interfaces/IStrategy.sol";
+import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {LeverageRouter} from "src/periphery/LeverageRouter.sol";
 import {ExternalAction} from "src/types/DataTypes.sol";
@@ -26,7 +26,7 @@ import {MockSwapper} from "../mock/MockSwapper.sol";
 contract LeverageRouterBaseTest is Test {
     MockERC20 public collateralToken = new MockERC20();
     MockERC20 public debtToken = new MockERC20();
-    IStrategy public strategy = IStrategy(address(new MockERC20()));
+    ILeverageToken public leverageToken = ILeverageToken(address(new MockERC20()));
 
     MockMorpho public morpho;
 
@@ -54,10 +54,10 @@ contract LeverageRouterBaseTest is Test {
         morpho = new MockMorpho(defaultMarketId, defaultMarketParams);
         lendingAdapter = new MockLendingAdapter(address(collateralToken), address(debtToken), address(this));
         leverageManager = new MockLeverageManager();
-        leverageManager.setStrategyData(
-            strategy,
-            MockLeverageManager.StrategyData({
-                strategyToken: strategy,
+        leverageManager.setLeverageTokenData(
+            leverageToken,
+            MockLeverageManager.LeverageTokenData({
+                leverageToken: leverageToken,
                 lendingAdapter: ILendingAdapter(address(lendingAdapter)),
                 collateralAsset: collateralToken,
                 debtAsset: debtToken,
@@ -77,7 +77,7 @@ contract LeverageRouterBaseTest is Test {
 
         vm.label(address(collateralToken), "CollateralToken");
         vm.label(address(debtToken), "DebtToken");
-        vm.label(address(strategy), "StrategyToken");
+        vm.label(address(leverageToken), "LeverageTokenToken");
     }
 
     function test_setUp() public view {
@@ -102,12 +102,15 @@ contract LeverageRouterBaseTest is Test {
 
         // Mock the deposit preview
         leverageManager.setMockPreviewDepositData(
-            MockLeverageManager.PreviewParams({strategy: strategy, equityInCollateralAsset: equityInCollateralAsset}),
+            MockLeverageManager.PreviewParams({
+                leverageToken: leverageToken,
+                equityInCollateralAsset: equityInCollateralAsset
+            }),
             MockLeverageManager.MockPreviewDepositData({
                 collateralToAdd: requiredCollateral,
                 debtToBorrow: requiredDebt,
                 shares: shares,
-                strategyFee: 0,
+                tokenFee: 0,
                 treasuryFee: 0
             })
         );
@@ -115,7 +118,7 @@ contract LeverageRouterBaseTest is Test {
         // Mock the LeverageManager deposit
         leverageManager.setMockDepositData(
             MockLeverageManager.DepositParams({
-                strategy: strategy,
+                leverageToken: leverageToken,
                 equityInCollateralAsset: equityInCollateralAsset,
                 minShares: shares
             }),
@@ -139,12 +142,15 @@ contract LeverageRouterBaseTest is Test {
 
         // Mock the withdraw preview
         leverageManager.setMockPreviewWithdrawData(
-            MockLeverageManager.PreviewParams({strategy: strategy, equityInCollateralAsset: equityInCollateralAsset}),
+            MockLeverageManager.PreviewParams({
+                leverageToken: leverageToken,
+                equityInCollateralAsset: equityInCollateralAsset
+            }),
             MockLeverageManager.MockPreviewWithdrawData({
                 collateralToRemove: requiredCollateral,
                 debtToRepay: requiredDebt,
                 shares: shares,
-                strategyFee: 0,
+                tokenFee: 0,
                 treasuryFee: 0
             })
         );
@@ -152,7 +158,7 @@ contract LeverageRouterBaseTest is Test {
         // Mock the LeverageManager withdraw
         leverageManager.setMockWithdrawData(
             MockLeverageManager.WithdrawParams({
-                strategy: strategy,
+                leverageToken: leverageToken,
                 equityInCollateralAsset: equityInCollateralAsset,
                 maxShares: shares
             }),
@@ -178,7 +184,7 @@ contract LeverageRouterBaseTest is Test {
 
         bytes memory depositData = abi.encode(
             LeverageRouter.DepositParams({
-                strategy: strategy,
+                token: leverageToken,
                 equityInCollateralAsset: equityInCollateralAsset,
                 minShares: shares,
                 maxSwapCostInCollateralAsset: 0,

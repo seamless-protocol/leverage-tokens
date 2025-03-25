@@ -8,21 +8,21 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 // Internal imports
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
-import {IStrategy} from "src/interfaces/IStrategy.sol";
+import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {LeverageManager} from "src/LeverageManager.sol";
 import {LeverageManagerHarness} from "test/unit/LeverageManager/harness/LeverageManagerHarness.t.sol";
 import {FeeManagerBaseTest} from "test/unit/FeeManager/FeeManagerBase.t.sol";
 import {FeeManagerHarness} from "test/unit/FeeManager/harness/FeeManagerHarness.sol";
 import {BeaconProxyFactory} from "src/BeaconProxyFactory.sol";
-import {Strategy} from "src/Strategy.sol";
+import {LeverageToken} from "src/LeverageToken.sol";
 import {MockERC20} from "test/unit/mock/MockERC20.sol";
 import {MockLendingAdapter} from "test/unit/mock/MockLendingAdapter.sol";
-import {ExternalAction, StrategyConfig} from "src/types/DataTypes.sol";
+import {ExternalAction, LeverageTokenConfig} from "src/types/DataTypes.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IRebalanceModule} from "src/interfaces/IRebalanceModule.sol";
 
 contract LeverageManagerBaseTest is FeeManagerBaseTest {
-    IStrategy public strategy;
+    ILeverageToken public leverageToken;
     address public defaultAdmin = makeAddr("defaultAdmin");
     address public manager = makeAddr("manager");
     address public treasury = makeAddr("treasury");
@@ -32,13 +32,13 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
 
     MockLendingAdapter public lendingAdapter;
 
-    address public strategyTokenImplementation;
-    BeaconProxyFactory public strategyTokenFactory;
+    address public leverageTokenImplementation;
+    BeaconProxyFactory public leverageTokenFactory;
     LeverageManagerHarness public leverageManager;
 
     function setUp() public virtual override {
-        strategyTokenImplementation = address(new Strategy());
-        strategyTokenFactory = new BeaconProxyFactory(strategyTokenImplementation, address(this));
+        leverageTokenImplementation = address(new LeverageToken());
+        leverageTokenFactory = new BeaconProxyFactory(leverageTokenImplementation, address(this));
         lendingAdapter = new MockLendingAdapter(address(collateralToken), address(debtToken), address(this));
         address leverageManagerImplementation = address(new LeverageManagerHarness());
         address leverageManagerProxy = UnsafeUpgrades.deployUUPSProxy(
@@ -47,7 +47,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         leverageManager = LeverageManagerHarness(leverageManagerProxy);
 
         vm.startPrank(defaultAdmin);
-        leverageManager.setStrategyTokenFactory(address(strategyTokenFactory));
+        leverageManager.setLeverageTokenFactory(address(leverageTokenFactory));
         leverageManager.grantRole(leverageManager.MANAGER_ROLE(), manager);
         leverageManager.grantRole(leverageManager.FEE_MANAGER_ROLE(), feeManagerRole);
         feeManager = FeeManagerHarness(address(leverageManager));
@@ -78,19 +78,19 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     }
 
     function _getLendingAdapter() internal view returns (ILendingAdapter) {
-        return leverageManager.getStrategyLendingAdapter(strategy);
+        return leverageManager.getLeverageTokenLendingAdapter(leverageToken);
     }
 
-    function _createDummyStrategy() internal {
-        strategy = IStrategy(
-            _createNewStrategy(
+    function _createDummyLeverageToken() internal {
+        leverageToken = ILeverageToken(
+            _createNewLeverageToken(
                 manager,
-                StrategyConfig({
+                LeverageTokenConfig({
                     lendingAdapter: ILendingAdapter(address(lendingAdapter)),
                     targetCollateralRatio: _BASE_RATIO() + 1,
                     rebalanceModule: IRebalanceModule(address(0)),
-                    strategyDepositFee: 0,
-                    strategyWithdrawFee: 0
+                    depositTokenFee: 0,
+                    withdrawTokenFee: 0
                 }),
                 address(0),
                 address(0),
@@ -100,14 +100,14 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         );
     }
 
-    function _createNewStrategy(
+    function _createNewLeverageToken(
         address caller,
-        StrategyConfig memory config,
+        LeverageTokenConfig memory config,
         address collateralAsset,
         address debtAsset,
         string memory name,
         string memory symbol
-    ) internal returns (IStrategy) {
+    ) internal returns (ILeverageToken) {
         vm.mockCall(
             address(config.lendingAdapter),
             abi.encodeWithSelector(ILendingAdapter.getCollateralAsset.selector),
@@ -123,15 +123,15 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         );
 
         vm.startPrank(caller);
-        strategy = leverageManager.createNewStrategy(config, name, symbol);
+        leverageToken = leverageManager.createNewLeverageToken(config, name, symbol);
         vm.stopPrank();
 
-        return strategy;
+        return leverageToken;
     }
 
     function _mintShares(address recipient, uint256 amount) internal {
         vm.prank(address(leverageManager));
-        strategy.mint(recipient, amount);
+        leverageToken.mint(recipient, amount);
     }
 
     struct ConvertToSharesState {
@@ -141,12 +141,12 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
 
     function _mockState_ConvertToShares(ConvertToSharesState memory state) internal {
         _mintShares(address(1), state.sharesTotalSupply);
-        _mockStrategyTotalEquityInCollateralAsset(state.totalEquity);
+        _mockLeverageTokenTotalEquityInCollateralAsset(state.totalEquity);
     }
 
-    function _mockStrategyTotalEquityInCollateralAsset(uint256 equity) internal {
+    function _mockLeverageTokenTotalEquityInCollateralAsset(uint256 equity) internal {
         vm.mockCall(
-            address(leverageManager.getStrategyLendingAdapter(strategy)),
+            address(leverageManager.getLeverageTokenLendingAdapter(leverageToken)),
             abi.encodeWithSelector(ILendingAdapter.getEquityInCollateralAsset.selector),
             abi.encode(equity)
         );
@@ -157,17 +157,17 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
         leverageManager.setTreasuryActionFee(action, fee);
     }
 
-    function _mockStrategyDebt(uint256 debt) internal {
+    function _mockLeverageTokenDebt(uint256 debt) internal {
         vm.mockCall(
-            address(leverageManager.getStrategyLendingAdapter(strategy)),
+            address(leverageManager.getLeverageTokenLendingAdapter(leverageToken)),
             abi.encodeWithSelector(ILendingAdapter.getDebt.selector),
             abi.encode(debt)
         );
     }
 
-    function _mockStrategyCollateralInDebtAsset(uint256 collateral) internal {
+    function _mockLeverageTokenCollateralInDebtAsset(uint256 collateral) internal {
         vm.mockCall(
-            address(leverageManager.getStrategyLendingAdapter(strategy)),
+            address(leverageManager.getLeverageTokenLendingAdapter(leverageToken)),
             abi.encodeWithSelector(ILendingAdapter.getCollateralInDebtAsset.selector),
             abi.encode(collateral)
         );

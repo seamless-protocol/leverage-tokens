@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-import {IStrategy} from "./IStrategy.sol";
+import {ILeverageToken} from "./ILeverageToken.sol";
 import {ExternalAction} from "src/types/DataTypes.sol";
 
 interface IFeeManager {
@@ -12,7 +12,7 @@ interface IFeeManager {
     error TreasuryNotSet();
 
     /// @notice Emitted when fee is set for specific action
-    event StrategyActionFeeSet(IStrategy strategy, ExternalAction action, uint256 fee);
+    event LeverageTokenActionFeeSet(ILeverageToken leverageToken, ExternalAction action, uint256 fee);
 
     /// @notice Emitted when treasury fee is set for specific action
     event TreasuryActionFeeSet(ExternalAction indexed action, uint256 fee);
@@ -20,11 +20,14 @@ interface IFeeManager {
     /// @notice Emitted when treasury is set
     event TreasurySet(address treasury);
 
-    /// @notice Returns strategy fee for specific action
-    /// @param strategy Strategy to get fee for
+    /// @notice Returns leverage token fee for specific action
+    /// @param leverageToken Leverage token to get fee for
     /// @param action Action to get fee for
     /// @return fee Fee for action, 100_00 is 100%
-    function getStrategyActionFee(IStrategy strategy, ExternalAction action) external view returns (uint256 fee);
+    function getLeverageTokenActionFee(ILeverageToken leverageToken, ExternalAction action)
+        external
+        view
+        returns (uint256 fee);
 
     /// @notice Returns address of the treasury
     /// @return treasury Address of the treasury

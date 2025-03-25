@@ -15,7 +15,7 @@ contract ExecuteRebalanceUpTest is DutchAuctionRebalancerBaseTest {
 
         // Execute rebalance up
         debtToken.approve(address(auctionRebalancer), debt);
-        auctionRebalancer.exposed_executeRebalanceUp(strategy, collateral, debt);
+        auctionRebalancer.exposed_executeRebalanceUp(leverageToken, collateral, debt);
 
         // Verify caller's token balances changed correctly
         assertEq(collateralToken.balanceOf(address(this)), callerCollateralBefore + collateral);

@@ -10,81 +10,82 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
 
 // Internal imports
-import {IStrategy} from "src/interfaces/IStrategy.sol";
+import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageManagerBaseTest} from "./LeverageManagerBase.t.sol";
-import {StrategyConfig} from "src/types/DataTypes.sol";
-import {Strategy} from "src/Strategy.sol";
-import {MockLendingAdapter} from "../mock/MockLendingAdapter.sol";
+import {LeverageTokenConfig} from "src/types/DataTypes.sol";
+import {LeverageToken} from "src/LeverageToken.sol";
 
-contract CreateNewStrategyTest is LeverageManagerBaseTest {
-    function testFuzz_CreateNewStrategy(
-        StrategyConfig memory config,
+contract CreateNewLeverageTokenTest is LeverageManagerBaseTest {
+    function testFuzz_CreateNewLeverageToken(
+        LeverageTokenConfig memory config,
         address collateralAsset,
         address debtAsset,
         string memory name,
         string memory symbol
     ) public {
-        config.strategyDepositFee = bound(config.strategyDepositFee, 0, _MAX_FEE());
-        config.strategyWithdrawFee = bound(config.strategyWithdrawFee, 0, _MAX_FEE());
+        config.depositTokenFee = bound(config.depositTokenFee, 0, _MAX_FEE());
+        config.withdrawTokenFee = bound(config.withdrawTokenFee, 0, _MAX_FEE());
 
-        address expectedStrategyAddress = strategyTokenFactory.computeProxyAddress(
+        address expectedLeverageTokenAddress = leverageTokenFactory.computeProxyAddress(
             address(leverageManager),
-            abi.encodeWithSelector(Strategy.initialize.selector, address(leverageManager), name, symbol),
+            abi.encodeWithSelector(LeverageToken.initialize.selector, address(leverageManager), name, symbol),
             0
         );
 
         // Check if event is emitted properly
         vm.expectEmit(true, true, true, true);
-        emit ILeverageManager.StrategyCreated(
-            IStrategy(expectedStrategyAddress), IERC20(collateralAsset), IERC20(debtAsset), config
+        emit ILeverageManager.LeverageTokenCreated(
+            ILeverageToken(expectedLeverageTokenAddress), IERC20(collateralAsset), IERC20(debtAsset), config
         );
 
-        _createNewStrategy(manager, config, collateralAsset, debtAsset, name, symbol);
+        _createNewLeverageToken(manager, config, collateralAsset, debtAsset, name, symbol);
 
-        // Check name of the strategy token
-        assertEq(IERC20Metadata(expectedStrategyAddress).name(), name);
-        assertEq(IERC20Metadata(expectedStrategyAddress).symbol(), symbol);
+        // Check name of the leverage token
+        assertEq(IERC20Metadata(expectedLeverageTokenAddress).name(), name);
+        assertEq(IERC20Metadata(expectedLeverageTokenAddress).symbol(), symbol);
 
-        // Check if the strategy core is set correctly
-        StrategyConfig memory configAfter = leverageManager.getStrategyConfig(strategy);
+        // Check if the leverage token core is set correctly
+        LeverageTokenConfig memory configAfter = leverageManager.getLeverageTokenConfig(leverageToken);
         assertEq(address(configAfter.lendingAdapter), address(config.lendingAdapter));
         assertEq(address(configAfter.rebalanceModule), address(config.rebalanceModule));
 
-        assertEq(configAfter.strategyDepositFee, config.strategyDepositFee);
-        assertEq(configAfter.strategyWithdrawFee, config.strategyWithdrawFee);
+        assertEq(configAfter.depositTokenFee, config.depositTokenFee);
+        assertEq(configAfter.withdrawTokenFee, config.withdrawTokenFee);
 
-        assertEq(address(leverageManager.getStrategyCollateralAsset(strategy)), collateralAsset);
-        assertEq(address(leverageManager.getStrategyDebtAsset(strategy)), debtAsset);
+        assertEq(address(leverageManager.getLeverageTokenCollateralAsset(leverageToken)), collateralAsset);
+        assertEq(address(leverageManager.getLeverageTokenDebtAsset(leverageToken)), debtAsset);
 
         assertEq(leverageManager.getIsLendingAdapterUsed(address(config.lendingAdapter)), true);
-        assertEq(leverageManager.getStrategyTargetCollateralRatio(strategy), config.targetCollateralRatio);
-        assertEq(address(leverageManager.getStrategyRebalanceModule(strategy)), address(config.rebalanceModule));
+        assertEq(leverageManager.getLeverageTokenTargetCollateralRatio(leverageToken), config.targetCollateralRatio);
+        assertEq(
+            address(leverageManager.getLeverageTokenRebalanceModule(leverageToken)), address(config.rebalanceModule)
+        );
     }
 
-    function test_CreateNewStrategy_RevertIf_LendingAdapterAlreadyInUse(
-        StrategyConfig memory config,
+    function test_CreateNewLeverageToken_RevertIf_LendingAdapterAlreadyInUse(
+        LeverageTokenConfig memory config,
         address collateralAsset,
         address debtAsset,
         string memory name,
         string memory symbol
     ) public {
-        config.strategyDepositFee = bound(config.strategyDepositFee, 0, _MAX_FEE());
-        config.strategyWithdrawFee = bound(config.strategyWithdrawFee, 0, _MAX_FEE());
+        config.depositTokenFee = bound(config.depositTokenFee, 0, _MAX_FEE());
+        config.withdrawTokenFee = bound(config.withdrawTokenFee, 0, _MAX_FEE());
 
-        _createNewStrategy(manager, config, collateralAsset, debtAsset, name, symbol);
+        _createNewLeverageToken(manager, config, collateralAsset, debtAsset, name, symbol);
 
         vm.expectRevert(
             abi.encodeWithSelector(ILeverageManager.LendingAdapterAlreadyInUse.selector, address(config.lendingAdapter))
         );
-        _createNewStrategy(manager, config, collateralAsset, debtAsset, name, symbol);
+        _createNewLeverageToken(manager, config, collateralAsset, debtAsset, name, symbol);
     }
 
-    function test_CreateNewStrategy_RevertIf_LendingAdapterUnauthorized(
+    function test_CreateNewLeverageToken_RevertIf_LendingAdapterUnauthorized(
         address authorizedCaller,
         address unauthorizedCaller,
-        StrategyConfig memory config,
+        LeverageTokenConfig memory config,
         string memory name,
         string memory symbol
     ) public {
@@ -104,6 +105,6 @@ contract CreateNewStrategyTest is LeverageManagerBaseTest {
             )
         );
         vm.prank(unauthorizedCaller);
-        leverageManager.createNewStrategy(config, name, symbol);
+        leverageManager.createNewLeverageToken(config, name, symbol);
     }
 }

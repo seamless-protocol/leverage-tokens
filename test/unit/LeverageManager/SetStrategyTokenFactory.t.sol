@@ -11,21 +11,21 @@ import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol"
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {LeverageManagerBaseTest} from "./LeverageManagerBase.t.sol";
 
-contract SetStrategyTokenFactoryTest is LeverageManagerBaseTest {
+contract SetLeverageTokenFactoryTest is LeverageManagerBaseTest {
     function setUp() public override {
         super.setUp();
     }
 
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_setStrategyTokenFactory(address factory) public {
+    function testFuzz_setLeverageTokenFactory(address factory) public {
         vm.prank(defaultAdmin);
-        leverageManager.setStrategyTokenFactory(factory);
+        leverageManager.setLeverageTokenFactory(factory);
 
-        assertEq(address(leverageManager.getStrategyTokenFactory()), address(factory));
+        assertEq(address(leverageManager.getLeverageTokenFactory()), address(factory));
     }
 
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_setStrategyTokenFactory_RevertIf_CallerIsNotDefaultAdmin(address caller, address factory)
+    function testFuzz_setLeverageTokenFactory_RevertIf_CallerIsNotDefaultAdmin(address caller, address factory)
         public
     {
         vm.assume(caller != defaultAdmin);
@@ -36,6 +36,6 @@ contract SetStrategyTokenFactoryTest is LeverageManagerBaseTest {
             )
         );
         vm.prank(caller);
-        leverageManager.setStrategyTokenFactory(factory);
+        leverageManager.setLeverageTokenFactory(factory);
     }
 }

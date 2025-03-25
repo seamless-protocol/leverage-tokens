@@ -9,7 +9,7 @@ import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 import {ExternalAction} from "src/types/DataTypes.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {ActionData, StrategyState} from "src/types/DataTypes.sol";
+import {ActionData, LeverageTokenState} from "src/types/DataTypes.sol";
 import {PreviewActionTest} from "./PreviewAction.t.sol";
 
 contract DepositTest is PreviewActionTest {
@@ -27,7 +27,7 @@ contract DepositTest is PreviewActionTest {
     }
 
     function test_deposit_WithFees() public {
-        leverageManager.exposed_setStrategyActionFee(strategy, ExternalAction.Deposit, 0.05e4); // 5% fee
+        leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Deposit, 0.05e4); // 5% fee
         _setTreasuryActionFee(ExternalAction.Deposit, 0.1e4); // 10% fee
 
         MockLeverageManagerStateForAction memory beforeState =
@@ -72,7 +72,7 @@ contract DepositTest is PreviewActionTest {
         );
 
         uint256 equityToAddInCollateralAsset = 0;
-        ActionData memory previewData = leverageManager.previewDeposit(strategy, equityToAddInCollateralAsset);
+        ActionData memory previewData = leverageManager.previewDeposit(leverageToken, equityToAddInCollateralAsset);
 
         assertEq(previewData.collateral, 0);
         assertEq(previewData.debt, 0);
@@ -80,7 +80,7 @@ contract DepositTest is PreviewActionTest {
         _testDeposit(equityToAddInCollateralAsset, 0);
     }
 
-    function test_deposit_IsEmptyStrategy() public {
+    function test_deposit_IsEmptyLeverageToken() public {
         MockLeverageManagerStateForAction memory beforeState =
             MockLeverageManagerStateForAction({collateral: 0, debt: 0, sharesTotalSupply: 0});
 
@@ -93,9 +93,9 @@ contract DepositTest is PreviewActionTest {
         collateralToken.approve(address(leverageManager), collateralToAdd);
 
         // Does not revert
-        leverageManager.deposit(strategy, equityToAddInCollateralAsset, equityToAddInCollateralAsset - 1);
+        leverageManager.deposit(leverageToken, equityToAddInCollateralAsset, equityToAddInCollateralAsset - 1);
 
-        StrategyState memory afterState = leverageManager.getStrategyState(strategy);
+        LeverageTokenState memory afterState = leverageManager.getLeverageTokenState(leverageToken);
         assertEq(afterState.collateralInDebtAsset, 20 ether); // 1:1 exchange rate, 2x CR
         assertEq(afterState.debt, 10 ether);
         assertEq(afterState.collateralRatio, 2 * _BASE_RATIO());
@@ -120,15 +120,16 @@ contract DepositTest is PreviewActionTest {
         deal(address(collateralToken), address(this), expectedCollateralToAdd);
         collateralToken.approve(address(leverageManager), expectedCollateralToAdd);
 
-        ActionData memory depositData = leverageManager.deposit(strategy, equityToAddInCollateralAsset, expectedShares);
+        ActionData memory depositData =
+            leverageManager.deposit(leverageToken, equityToAddInCollateralAsset, expectedShares);
 
         assertEq(depositData.collateral, expectedCollateralToAdd);
         assertEq(depositData.debt, expectedDebtToBorrow);
         assertEq(depositData.shares, expectedShares);
-        assertEq(depositData.strategyFee, 0);
+        assertEq(depositData.tokenFee, 0);
         assertEq(depositData.treasuryFee, 0);
 
-        StrategyState memory afterState = leverageManager.getStrategyState(strategy);
+        LeverageTokenState memory afterState = leverageManager.getLeverageTokenState(leverageToken);
         assertEq(afterState.collateralInDebtAsset, expectedCollateralToAdd + beforeState.collateral);
         assertEq(afterState.debt, expectedDebtToBorrow + beforeState.debt); // 1:1 collateral to debt exchange rate, 2x target CR
         assertEq(
@@ -151,7 +152,7 @@ contract DepositTest is PreviewActionTest {
         );
 
         uint256 equityToAddInCollateralAsset = 10 ether;
-        ActionData memory previewData = leverageManager.previewDeposit(strategy, equityToAddInCollateralAsset);
+        ActionData memory previewData = leverageManager.previewDeposit(leverageToken, equityToAddInCollateralAsset);
 
         deal(address(collateralToken), address(this), previewData.collateral);
         collateralToken.approve(address(leverageManager), previewData.collateral);
@@ -161,21 +162,21 @@ contract DepositTest is PreviewActionTest {
         vm.expectRevert(
             abi.encodeWithSelector(ILeverageManager.SlippageTooHigh.selector, previewData.shares, minShares)
         );
-        leverageManager.deposit(strategy, equityToAddInCollateralAsset, minShares);
+        leverageManager.deposit(leverageToken, equityToAddInCollateralAsset, minShares);
     }
 
     function _testDeposit(uint256 equityToAddInCollateralAsset, uint256 collateralRatioDeltaRelative) internal {
-        StrategyState memory beforeState = leverageManager.getStrategyState(strategy);
-        uint256 beforeSharesTotalSupply = strategy.totalSupply();
+        LeverageTokenState memory beforeState = leverageManager.getLeverageTokenState(leverageToken);
+        uint256 beforeSharesTotalSupply = leverageToken.totalSupply();
 
         // The assertion for collateral ratio before and after the deposit in this helper only makes sense to use
-        // if the strategy has totalSupply > 0 before deposit, as a deposit of equity into a strategy with totalSupply = 0
-        // will not respect the current collateral ratio of the strategy, it just uses the target collateral ratio
+        // if the leverage token has totalSupply > 0 before deposit, as a deposit of equity into a leverage token with totalSupply = 0
+        // will not respect the current collateral ratio of the leverage token, it just uses the target collateral ratio
         require(
             beforeSharesTotalSupply != 0, "Shares total supply must be non-zero to use _testDeposit helper function"
         );
 
-        ActionData memory previewData = leverageManager.previewDeposit(strategy, equityToAddInCollateralAsset);
+        ActionData memory previewData = leverageManager.previewDeposit(leverageToken, equityToAddInCollateralAsset);
 
         deal(address(collateralToken), address(this), previewData.collateral);
         collateralToken.approve(address(leverageManager), previewData.collateral);
@@ -185,40 +186,44 @@ contract DepositTest is PreviewActionTest {
             collateral: previewData.collateral,
             debt: previewData.debt,
             shares: previewData.shares,
-            strategyFee: previewData.strategyFee,
+            tokenFee: previewData.tokenFee,
             treasuryFee: previewData.treasuryFee
         });
 
         vm.expectEmit(true, true, true, true);
-        emit ILeverageManager.Deposit(strategy, address(this), expectedDepositData);
+        emit ILeverageManager.Deposit(leverageToken, address(this), expectedDepositData);
         ActionData memory actualDepositData =
-            leverageManager.deposit(strategy, equityToAddInCollateralAsset, previewData.shares);
+            leverageManager.deposit(leverageToken, equityToAddInCollateralAsset, previewData.shares);
 
         assertEq(actualDepositData.shares, expectedDepositData.shares, "Shares received mismatch with preview");
         assertEq(
-            strategy.balanceOf(address(this)), actualDepositData.shares, "Shares received mismatch with returned data"
+            leverageToken.balanceOf(address(this)),
+            actualDepositData.shares,
+            "Shares received mismatch with returned data"
         );
-        assertEq(actualDepositData.strategyFee, expectedDepositData.strategyFee, "Strategy fee mismatch");
+        assertEq(actualDepositData.tokenFee, expectedDepositData.tokenFee, "LeverageToken fee mismatch");
         assertEq(actualDepositData.treasuryFee, expectedDepositData.treasuryFee, "Treasury fee mismatch");
 
-        StrategyState memory afterState = leverageManager.getStrategyState(strategy);
+        LeverageTokenState memory afterState = leverageManager.getLeverageTokenState(leverageToken);
         assertEq(
             afterState.collateralInDebtAsset,
             beforeState.collateralInDebtAsset
                 + lendingAdapter.convertCollateralToDebtAsset(expectedDepositData.collateral)
                 - expectedDepositData.treasuryFee,
-            "Collateral in strategy after deposit mismatch"
+            "Collateral in leverage token after deposit mismatch"
         );
         assertEq(actualDepositData.collateral, expectedDepositData.collateral, "Collateral added mismatch");
         assertEq(
-            afterState.debt, beforeState.debt + expectedDepositData.debt, "Debt in strategy after deposit mismatch"
+            afterState.debt,
+            beforeState.debt + expectedDepositData.debt,
+            "Debt in leverage token after deposit mismatch"
         );
         assertEq(actualDepositData.debt, expectedDepositData.debt, "Debt borrowed mismatch");
         assertEq(debtToken.balanceOf(address(this)), expectedDepositData.debt, "Debt tokens received mismatch");
 
         assertEq(collateralToken.balanceOf(treasury), expectedDepositData.treasuryFee, "Treasury fee not received");
 
-        assertLe(expectedDepositData.strategyFee + expectedDepositData.treasuryFee, equityToAddInCollateralAsset);
+        assertLe(expectedDepositData.tokenFee + expectedDepositData.treasuryFee, equityToAddInCollateralAsset);
 
         if (beforeState.collateralRatio == type(uint256).max) {
             assertLe(afterState.collateralRatio, beforeState.collateralRatio);
