@@ -19,9 +19,6 @@ import {
 import {IRebalanceModule} from "./IRebalanceModule.sol";
 
 interface ILeverageManager is IFeeManager {
-    /// @notice Error thrown when someone tries to create leverage token with lending adapter that is not owned by the sender
-    error LendingAdapterSenderUnauthorized(address adapter, address sender);
-
     /// @notice Error thrown when someone tries to set zero address for collateral or debt asset when creating leverage token
     error InvalidLeverageTokenAssets();
 

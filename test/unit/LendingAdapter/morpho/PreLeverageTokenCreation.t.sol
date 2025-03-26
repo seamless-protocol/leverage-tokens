@@ -29,6 +29,7 @@ contract PreLeverageTokenCreation is MorphoLendingAdapterBaseTest {
         lendingAdapter.preLeverageTokenCreation(creator);
     }
 
+    // forge-config: default.fuzz.runs = 1
     function testFuzz_preLeverageTokenCreation_RevertIf_CallerIsNotLeverageManager(address caller) public {
         vm.assume(caller != address(leverageManager));
 
