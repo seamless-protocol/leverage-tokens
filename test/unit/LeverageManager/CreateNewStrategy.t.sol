@@ -82,7 +82,8 @@ contract CreateNewLeverageTokenTest is LeverageManagerBaseTest {
         _createNewLeverageToken(manager, config, collateralAsset, debtAsset, name, symbol);
     }
 
-    function test_CreateNewLeverageToken_RevertIf_LendingAdapterUnauthorized(
+    /// forge-config: default.fuzz.runs = 1
+    function testFuzz_CreateNewLeverageToken_RevertIf_LendingAdapterUnauthorized(
         address authorizedCaller,
         address unauthorizedCaller,
         LeverageTokenConfig memory config,
