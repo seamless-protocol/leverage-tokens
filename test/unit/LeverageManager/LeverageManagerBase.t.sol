@@ -119,7 +119,9 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
             abi.encode(IERC20(debtAsset))
         );
         vm.mockCall(
-            address(config.lendingAdapter), abi.encodeWithSelector(ILendingAdapter.owner.selector), abi.encode(caller)
+            address(config.lendingAdapter),
+            abi.encodeWithSelector(ILendingAdapter.preLeverageTokenCreation.selector, caller),
+            abi.encode(true)
         );
 
         vm.startPrank(caller);

@@ -40,8 +40,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         IBeaconProxyFactory tokenFactory;
         /// @dev Leverage token address => Base config for leverage token
         mapping(ILeverageToken token => BaseLeverageTokenConfig) config;
-        /// @dev Lending adapter address => Is lending adapter registered. Multiple leverage tokens can't have same lending adapter
-        mapping(address lendingAdapter => bool) isLendingAdapterUsed;
     }
 
     function _getLeverageManagerStorage() internal pure returns (LeverageManagerStorage storage $) {
@@ -62,11 +60,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     /// @inheritdoc ILeverageManager
     function getLeverageTokenFactory() public view returns (IBeaconProxyFactory factory) {
         return _getLeverageManagerStorage().tokenFactory;
-    }
-
-    /// @inheritdoc ILeverageManager
-    function getIsLendingAdapterUsed(address lendingAdapter) public view returns (bool isUsed) {
-        return _getLeverageManagerStorage().isLendingAdapterUsed[lendingAdapter];
     }
 
     /// @inheritdoc ILeverageManager
@@ -137,13 +130,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         external
         returns (ILeverageToken token)
     {
-        if (getIsLendingAdapterUsed(address(tokenConfig.lendingAdapter))) {
-            revert LendingAdapterAlreadyInUse(address(tokenConfig.lendingAdapter));
-        }
-
-        if (tokenConfig.lendingAdapter.owner() != msg.sender) {
-            revert LendingAdapterSenderUnauthorized(address(tokenConfig.lendingAdapter), msg.sender);
-        }
+        tokenConfig.lendingAdapter.preLeverageTokenCreation(msg.sender);
 
         IBeaconProxyFactory tokenFactory = getLeverageTokenFactory();
         token = ILeverageToken(
@@ -158,7 +145,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             rebalanceModule: tokenConfig.rebalanceModule,
             targetCollateralRatio: tokenConfig.targetCollateralRatio
         });
-        _getLeverageManagerStorage().isLendingAdapterUsed[address(tokenConfig.lendingAdapter)] = true;
         _setLeverageTokenActionFee(token, ExternalAction.Deposit, tokenConfig.depositTokenFee);
         _setLeverageTokenActionFee(token, ExternalAction.Withdraw, tokenConfig.withdrawTokenFee);
 

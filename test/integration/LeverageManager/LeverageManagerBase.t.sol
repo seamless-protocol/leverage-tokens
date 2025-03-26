@@ -21,7 +21,6 @@ contract LeverageManagerBase is IntegrationTestBase {
         assertEq(address(leverageManager.getLeverageTokenCollateralAsset(leverageToken)), address(WETH));
         assertEq(address(leverageManager.getLeverageTokenDebtAsset(leverageToken)), address(USDC));
 
-        assertEq(leverageManager.getIsLendingAdapterUsed(address(morphoLendingAdapter)), true);
         assertEq(leverageManager.getLeverageTokenTargetCollateralRatio(leverageToken), 2 * BASE_RATIO);
     }
 

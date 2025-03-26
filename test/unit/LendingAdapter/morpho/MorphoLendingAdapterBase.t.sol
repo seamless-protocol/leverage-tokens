@@ -23,7 +23,7 @@ contract MorphoLendingAdapterBaseTest is Test {
     /// @dev Virtual assets used by Morpho for exchange rate computations. See Morpho's SharesMathLib for more details
     uint256 internal constant MORPHO_VIRTUAL_ASSETS = 1;
 
-    address public owner = makeAddr("owner");
+    address public authorizedCreator = makeAddr("authorizedCreator");
 
     MockMorpho public morpho;
     IMorphoLendingAdapter public lendingAdapter;
@@ -48,14 +48,14 @@ contract MorphoLendingAdapterBaseTest is Test {
         defaultMarketId = MarketParamsLib.id(defaultMarketParams);
         morpho = new MockMorpho(defaultMarketId, defaultMarketParams);
         lendingAdapter = new MorphoLendingAdapter(leverageManager, IMorpho(address(morpho)));
-        MorphoLendingAdapter(address(lendingAdapter)).initialize(defaultMarketId, owner);
+        MorphoLendingAdapter(address(lendingAdapter)).initialize(defaultMarketId, authorizedCreator);
 
         vm.label(address(lendingAdapter), "lendingAdapter");
         vm.label(address(morpho), "morpho");
         vm.label(address(leverageManager), "leverageManager");
         vm.label(address(collateralToken), "collateralToken");
         vm.label(address(debtToken), "debtToken");
-        vm.label(owner, "owner");
+        vm.label(authorizedCreator, "authorizedCreator");
     }
 
     function test_setUp() public view {
@@ -63,6 +63,6 @@ contract MorphoLendingAdapterBaseTest is Test {
         assertEq(address(lendingAdapter.morpho()), address(morpho));
         assertEq(address(lendingAdapter.getCollateralAsset()), address(collateralToken));
         assertEq(address(lendingAdapter.getDebtAsset()), address(debtToken));
-        assertEq(lendingAdapter.owner(), owner);
+        assertEq(lendingAdapter.authorizedCreator(), authorizedCreator);
     }
 }

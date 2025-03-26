@@ -47,14 +47,15 @@ interface ILendingAdapter {
     /// @dev Equity is calculated as collateral - debt
     function getEquityInDebtAsset() external view returns (uint256 equity);
 
-    /// @notice The owner of the lending adapter
-    /// @return owner The owner of the lending adapter
-    /// @dev Only the owner can create a new leverage token using this adapter on the LeverageManager
-    function owner() external view returns (address owner);
-
     /// @notice Supplies collateral assets to the lending pool
     /// @param amount Amount of assets to supply
     function addCollateral(uint256 amount) external;
+
+    /// @notice Pre-LeverageToken creation hook. Used for any validation logic or initialization before a LeverageToken
+    /// is created using this adapter
+    /// @param creator The address of the creator of the LeverageToken
+    /// @dev This function is called in `LeverageManager.createNewLeverageToken` before the new LeverageToken is created
+    function preLeverageTokenCreation(address creator) external;
 
     /// @notice Withdraws collateral assets from the lending pool
     /// @param amount Amount of assets to withdraw
