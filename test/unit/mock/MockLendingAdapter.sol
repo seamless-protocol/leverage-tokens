@@ -22,8 +22,6 @@ contract MockLendingAdapter {
 
     address public authorizedCreator;
 
-    bool public isUsed;
-
     constructor(address _collateralAsset, address _debtAsset, address _authorizedCreator) {
         collateralAsset = ERC20Mock(_collateralAsset);
         debtAsset = ERC20Mock(_debtAsset);
@@ -77,7 +75,7 @@ contract MockLendingAdapter {
         return debt;
     }
 
-    function preLeverageTokenCreation(address creator) external {}
+    function preLeverageTokenCreation(address /* creator */ ) external {}
 
     function addCollateral(uint256 amount) external {
         SafeERC20.safeTransferFrom(collateralAsset, msg.sender, address(this), amount);
