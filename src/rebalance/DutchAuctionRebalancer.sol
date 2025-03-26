@@ -16,8 +16,6 @@ import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {RebalanceAction, TokenTransfer, ActionType, LeverageTokenState, Auction} from "src/types/DataTypes.sol";
 
 contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
-    using SafeERC20 for IERC20;
-
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     uint256 public constant PRICE_MULTIPLIER_PRECISION = 1e18;
 
@@ -231,7 +229,7 @@ contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
         TokenTransfer[] memory tokensOut = new TokenTransfer[](1);
         tokensOut[0] = TokenTransfer({token: address(debtAsset), amount: debtAmount});
 
-        collateralAsset.safeTransferFrom(msg.sender, address(this), collateralAmount);
+        SafeERC20.safeTransferFrom(collateralAsset, msg.sender, address(this), collateralAmount);
 
         // slither-disable-next-line reentrancy-no-eth,reentrancy-events
         SafeERC20.forceApprove(collateralAsset, address(leverageManager), collateralAmount);
@@ -239,7 +237,7 @@ contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
         // slither-disable-next-line reentrancy-no-eth,reentrancy-events
         leverageManager.rebalance(actions, tokensIn, tokensOut);
 
-        debtAsset.safeTransfer(msg.sender, debtAmount);
+        SafeERC20.safeTransfer(debtAsset, msg.sender, debtAmount);
     }
 
     /// @notice Executes the rebalance up operation, meaning increasing collateral ratio
@@ -265,7 +263,7 @@ contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
         TokenTransfer[] memory tokensOut = new TokenTransfer[](1);
         tokensOut[0] = TokenTransfer({token: address(collateralAsset), amount: collateralAmount});
 
-        debtAsset.safeTransferFrom(msg.sender, address(this), debtAmount);
+        SafeERC20.safeTransferFrom(debtAsset, msg.sender, address(this), debtAmount);
 
         // slither-disable-next-line reentrancy-no-eth,reentrancy-events
         SafeERC20.forceApprove(debtAsset, address(leverageManager), debtAmount);
@@ -273,6 +271,6 @@ contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
         // slither-disable-next-line reentrancy-no-eth,reentrancy-events
         leverageManager.rebalance(actions, tokensIn, tokensOut);
 
-        collateralAsset.safeTransfer(msg.sender, collateralAmount);
+        SafeERC20.safeTransfer(collateralAsset, msg.sender, collateralAmount);
     }
 }
