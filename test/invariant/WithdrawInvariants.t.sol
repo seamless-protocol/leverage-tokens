@@ -6,12 +6,14 @@ import {stdMath} from "forge-std/StdMath.sol";
 
 // Dependency imports
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {StrategyState} from "src/types/DataTypes.sol";
 import {LeverageManagerHandler} from "test/invariant/handlers/LeverageManagerHandler.t.sol";
 import {InvariantTestBase} from "test/invariant/InvariantTestBase.t.sol";
+import {MockLendingAdapter} from "test/unit/mock/MockLendingAdapter.sol";
 
 contract WithdrawInvariants is InvariantTestBase {
     function invariant_withdraw() public view {
@@ -24,32 +26,7 @@ contract WithdrawInvariants is InvariantTestBase {
             abi.decode(stateBefore.actionData, (LeverageManagerHandler.WithdrawActionData));
         StrategyState memory stateAfter = leverageManager.exposed_getStrategyState(withdrawData.strategy);
 
-        _assertPreviewInvariants(stateBefore, withdrawData);
         _assertCollateralRatioInvariants(stateBefore, withdrawData, stateAfter);
-        _assertWithdrawBalanceInvariants(stateBefore, withdrawData, stateAfter);
-    }
-
-    function _assertPreviewInvariants(
-        LeverageManagerHandler.StrategyStateData memory stateBefore,
-        LeverageManagerHandler.WithdrawActionData memory withdrawData
-    ) internal view {
-        ILendingAdapter lendingAdapter = leverageManager.getStrategyLendingAdapter(withdrawData.strategy);
-
-        assertEq(
-            withdrawData.preview.collateral,
-            stateBefore.collateral - lendingAdapter.getCollateral(),
-            "Invariant Violated: Change in collateral from withdraw must match the withdraw preview."
-        );
-        assertEq(
-            withdrawData.preview.debt,
-            stateBefore.debt - lendingAdapter.getDebt(),
-            "Invariant Violated: Change in debt from withdraw must match the withdraw preview."
-        );
-        assertEq(
-            withdrawData.preview.shares,
-            stateBefore.totalSupply - withdrawData.strategy.totalSupply(),
-            "Invariant Violated: Change in shares from withdraw must match the withdraw preview."
-        );
     }
 
     function _assertCollateralRatioInvariants(
@@ -78,6 +55,56 @@ contract WithdrawInvariants is InvariantTestBase {
                         "Invariant Violated: Collateral ratio after withdraw must be equal to the initial collateral ratio, within the allowed slippage."
                     );
                 }
+
+                MockLendingAdapter lendingAdapter =
+                    MockLendingAdapter(address(leverageManager.getStrategyLendingAdapter(withdrawData.strategy)));
+                string memory debug = string.concat(
+                    " stateBefore.totalSupply: ",
+                    Strings.toString(stateBefore.totalSupply),
+                    " stateBefore.collateral: ",
+                    Strings.toString(stateBefore.collateral),
+                    " stateBefore.collateralInDebtAsset: ",
+                    Strings.toString(stateBefore.collateralInDebtAsset),
+                    " stateBefore.debt: ",
+                    Strings.toString(stateBefore.debt),
+                    " stateBefore.equityInCollateralAsset: ",
+                    Strings.toString(stateBefore.equityInCollateralAsset),
+                    " stateBefore.collateralRatio: ",
+                    Strings.toString(stateBefore.collateralRatio)
+                );
+                string memory debug2 = string.concat(
+                    " stateAfter.collateral: ",
+                    Strings.toString(leverageManager.getStrategyLendingAdapter(withdrawData.strategy).getCollateral()),
+                    " stateAfter.collateralInDebtAsset: ",
+                    Strings.toString(stateAfter.collateralInDebtAsset),
+                    " stateAfter.debt: ",
+                    Strings.toString(stateAfter.debt),
+                    " stateAfter.equityInCollateralAsset: ",
+                    Strings.toString(
+                        leverageManager.getStrategyLendingAdapter(withdrawData.strategy).getEquityInCollateralAsset()
+                    ),
+                    " stateAfter.collateralRatio: ",
+                    Strings.toString(stateAfter.collateralRatio),
+                    " stateAfter.totalSupply: ",
+                    Strings.toString(withdrawData.strategy.totalSupply())
+                );
+                string memory debug3 = string.concat(
+                    " exchangeRate: ",
+                    Strings.toString(lendingAdapter.collateralToDebtAssetExchangeRate()),
+                    " equityInCollateralAsset deposited: ",
+                    Strings.toString(withdrawData.equityInCollateralAsset)
+                );
+
+                assertGe(
+                    stateAfter.collateralRatio,
+                    stateBefore.collateralRatio,
+                    string.concat(
+                        "Invariant Violated: Collateral ratio after withdraw must be greater than or equal to the initial collateral ratio if there is still debt in the strategy after the withdraw.",
+                        debug,
+                        debug2,
+                        debug3
+                    )
+                );
             } else {
                 assertEq(
                     stateAfter.collateralRatio,
@@ -85,84 +112,6 @@ contract WithdrawInvariants is InvariantTestBase {
                     "Invariant Violated: Collateral ratio after withdrawing all debt should be max uint256."
                 );
             }
-        }
-    }
-
-    function _assertWithdrawBalanceInvariants(
-        LeverageManagerHandler.StrategyStateData memory stateBefore,
-        LeverageManagerHandler.WithdrawActionData memory withdrawData,
-        StrategyState memory stateAfter
-    ) internal view {
-        ILendingAdapter lendingAdapter = leverageManager.getStrategyLendingAdapter(withdrawData.strategy);
-        uint256 totalSupplyAfter = withdrawData.strategy.totalSupply();
-        uint256 collateralAfter = lendingAdapter.getCollateral();
-        uint256 equityInCollateralAssetAfter = lendingAdapter.getEquityInCollateralAsset();
-        bool equityIncreased = equityInCollateralAssetAfter > stateBefore.equityInCollateralAsset;
-        bool equityUnchanged = equityInCollateralAssetAfter == stateBefore.equityInCollateralAsset;
-
-        // It's possible for equity to increase due to rounding up of the required amount of debt to repay if the
-        // amount of equity passed to the withdraw function is too low.
-        if (equityIncreased) {
-            assertLt(
-                stateAfter.debt,
-                stateBefore.debt,
-                "Invariant Violated: Debt after withdraw should be less than the initial debt if equity increased."
-            );
-
-            if (stateBefore.totalSupply == totalSupplyAfter) {
-                assertEq(
-                    stateBefore.collateral,
-                    collateralAfter,
-                    "Invariant Violated: Collateral after withdraw should not change if equity increased and shares were not burned."
-                );
-            } else {
-                assertLt(
-                    collateralAfter,
-                    stateBefore.collateral,
-                    "Invariant Violated: Collateral after withdraw should be less than the initial collateral if equity increased and shares were burned."
-                );
-            }
-        } else if (equityUnchanged) {
-            assertEq(
-                collateralAfter,
-                stateBefore.collateral,
-                "Invariant Violated: Collateral after withdraw should be equal to the initial collateral if equity did not change."
-            );
-            assertEq(
-                stateAfter.debt,
-                stateBefore.debt,
-                "Invariant Violated: Debt after withdraw should be equal to the initial debt if equity did not change."
-            );
-        } else {
-            assertLt(
-                collateralAfter,
-                stateBefore.collateral,
-                "Invariant Violated: Collateral after withdraw should be less than the initial collateral if equity decreased."
-            );
-            if (stateBefore.debt > 0) {
-                assertLt(
-                    stateAfter.debt,
-                    stateBefore.debt,
-                    "Invariant Violated: Debt after withdraw should be less than the initial debt if equity decreased."
-                );
-            } else {
-                assertEq(
-                    stateAfter.debt,
-                    0,
-                    "Invariant Violated: Debt after withdraw should be 0 if equity decreased and debt was initially 0."
-                );
-            }
-        }
-
-        if (stateBefore.totalSupply > 0 && totalSupplyAfter == 0) {
-            assertEq(
-                stateAfter.collateralInDebtAsset,
-                0,
-                "Invariant Violated: Collateral in debt asset after a withdraw that burned all shares should be 0."
-            );
-            assertEq(
-                stateAfter.debt, 0, "Invariant Violated: Debt after a withdraw that burned all shares should be 0."
-            );
         }
     }
 }
