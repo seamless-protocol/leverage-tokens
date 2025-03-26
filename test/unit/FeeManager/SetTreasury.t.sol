@@ -8,9 +8,9 @@ import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol"
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {ExternalAction} from "src/types/DataTypes.sol";
-import {FeeManagerBaseTest} from "test/unit/FeeManager/FeeManagerBase.t.sol";
+import {FeeManagerTest} from "test/unit/FeeManager/FeeManager.t.sol";
 
-contract SetTreasuryTest is FeeManagerBaseTest {
+contract SetTreasuryTest is FeeManagerTest {
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_setTreasury(address treasury) public {
         vm.expectEmit(true, true, true, true);

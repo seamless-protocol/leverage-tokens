@@ -9,13 +9,9 @@ import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol"
 
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
-import {LeverageManagerBaseTest} from "./LeverageManagerBase.t.sol";
+import {LeverageManagerTest} from "./LeverageManager.t.sol";
 
-contract SetLeverageTokenFactoryTest is LeverageManagerBaseTest {
-    function setUp() public override {
-        super.setUp();
-    }
-
+contract SetLeverageTokenFactoryTest is LeverageManagerTest {
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_setLeverageTokenFactory(address factory) public {
         vm.prank(defaultAdmin);

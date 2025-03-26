@@ -8,12 +8,12 @@ import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {LeverageManagerBaseTest} from "./LeverageManagerBase.t.sol";
+import {LeverageManagerTest} from "./LeverageManager.t.sol";
 import {MockLendingAdapter} from "test/unit/mock/MockLendingAdapter.sol";
-import {IRebalanceModule} from "src/interfaces/IRebalanceModule.sol";
+import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 import {ActionType, LeverageTokenConfig} from "src/types/DataTypes.sol";
 
-contract ExecuteActionTest is LeverageManagerBaseTest {
+contract ExecuteActionTest is LeverageManagerTest {
     function setUp() public override {
         super.setUp();
 
@@ -22,7 +22,7 @@ contract ExecuteActionTest is LeverageManagerBaseTest {
             LeverageTokenConfig({
                 lendingAdapter: ILendingAdapter(address(lendingAdapter)),
                 targetCollateralRatio: _BASE_RATIO() + 1, // 1.00000001x
-                rebalanceModule: IRebalanceModule(address(0)),
+                rebalanceModule: IRebalanceAdapter(address(0)),
                 depositTokenFee: 0,
                 withdrawTokenFee: 0
             }),

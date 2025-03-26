@@ -6,9 +6,9 @@ import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol"
 
 // Internal imports
 import {SwapAdapter} from "src/periphery/SwapAdapter.sol";
-import {SwapAdapterBaseTest} from "./SwapAdapterBase.t.sol";
+import {SwapAdapterTest} from "./SwapAdapter.t.sol";
 
-contract AuthorizeUpgradeTest is SwapAdapterBaseTest {
+contract AuthorizeUpgradeTest is SwapAdapterTest {
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_AuthorizeUpgrade(address caller, address newImplementation) public {
         vm.startPrank(defaultAdmin);

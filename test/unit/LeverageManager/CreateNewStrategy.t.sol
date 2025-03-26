@@ -13,11 +13,11 @@ import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol"
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {LeverageManagerBaseTest} from "./LeverageManagerBase.t.sol";
+import {LeverageManagerTest} from "./LeverageManager.t.sol";
 import {LeverageTokenConfig} from "src/types/DataTypes.sol";
 import {LeverageToken} from "src/LeverageToken.sol";
 
-contract CreateNewLeverageTokenTest is LeverageManagerBaseTest {
+contract CreateNewLeverageTokenTest is LeverageManagerTest {
     function testFuzz_CreateNewLeverageToken(
         LeverageTokenConfig memory config,
         address collateralAsset,

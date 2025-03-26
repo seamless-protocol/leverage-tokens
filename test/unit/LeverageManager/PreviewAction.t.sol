@@ -7,20 +7,21 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 // Internal imports
 import {ExternalAction} from "src/types/DataTypes.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
-import {IRebalanceModule} from "src/interfaces/IRebalanceModule.sol";
+import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 import {ActionData, LeverageTokenConfig, LeverageTokenState} from "src/types/DataTypes.sol";
-import {LeverageManagerBaseTest} from "../LeverageManager/LeverageManagerBase.t.sol";
+import {LeverageManagerTest} from "../LeverageManager/LeverageManager.t.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 
-contract PreviewActionTest is LeverageManagerBaseTest {
+contract PreviewActionTest is LeverageManagerTest {
     function setUp() public override {
         super.setUp();
+
         _createNewLeverageToken(
             manager,
             LeverageTokenConfig({
                 lendingAdapter: ILendingAdapter(address(lendingAdapter)),
                 targetCollateralRatio: 2 * _BASE_RATIO(), // 2x leverage
-                rebalanceModule: IRebalanceModule(address(0)),
+                rebalanceModule: IRebalanceAdapter(address(0)),
                 depositTokenFee: 0,
                 withdrawTokenFee: 0
             }),

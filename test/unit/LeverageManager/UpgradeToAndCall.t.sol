@@ -7,9 +7,9 @@ import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol"
 
 // Internal imports
 import {LeverageManager} from "src/LeverageManager.sol";
-import {LeverageManagerBaseTest} from "./LeverageManagerBase.t.sol";
+import {LeverageManagerTest} from "./LeverageManager.t.sol";
 
-contract UpgradeToAndCallTest is LeverageManagerBaseTest {
+contract UpgradeToAndCallTest is LeverageManagerTest {
     address public upgrader = makeAddr("upgrader");
 
     function setUp() public override {

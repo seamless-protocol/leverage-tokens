@@ -5,10 +5,10 @@ pragma solidity ^0.8.26;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
-import {FeeManagerBaseTest} from "test/unit/FeeManager/FeeManagerBase.t.sol";
+import {FeeManagerTest} from "test/unit/FeeManager/FeeManager.t.sol";
 import {MockERC20} from "test/unit/mock/MockERC20.sol";
 
-contract ChargeTreasuryFeeTest is FeeManagerBaseTest {
+contract ChargeTreasuryFeeTest is FeeManagerTest {
     function test_chargeTreasuryFee() public {
         IERC20 token = new MockERC20();
         uint256 treasuryFeeAmount = 100;

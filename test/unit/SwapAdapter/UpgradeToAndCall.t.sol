@@ -7,9 +7,9 @@ import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol"
 
 // Internal imports
 import {SwapAdapter} from "src/periphery/SwapAdapter.sol";
-import {SwapAdapterBaseTest} from "./SwapAdapterBase.t.sol";
+import {SwapAdapterTest} from "./SwapAdapter.t.sol";
 
-contract UpgradeToAndCallTest is SwapAdapterBaseTest {
+contract UpgradeToAndCallTest is SwapAdapterTest {
     address public upgrader = makeAddr("upgrader");
 
     function setUp() public override {

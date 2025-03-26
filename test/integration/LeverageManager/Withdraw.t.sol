@@ -11,10 +11,10 @@ import {ExternalAction} from "src/types/DataTypes.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
-import {LeverageManagerBase} from "./LeverageManagerBase.t.sol";
+import {LeverageManagerTest} from "./LeverageManager.t.sol";
 import {ActionData, LeverageTokenState} from "src/types/DataTypes.sol";
 
-contract LeverageManagerWithdrawTest is LeverageManagerBase {
+contract LeverageManagerWithdrawTest is LeverageManagerTest {
     /// @dev In this block price on oracle 3392.292471591441746049801068
     function testFork_withdraw_NoFee() public {
         uint256 equityInCollateralAsset = 10 ether;

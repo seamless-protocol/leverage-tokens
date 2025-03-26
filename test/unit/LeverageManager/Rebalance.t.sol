@@ -9,13 +9,13 @@ import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 // Internal imports
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
-import {LeverageManagerBaseTest} from "test/unit/LeverageManager/LeverageManagerBase.t.sol";
+import {LeverageManagerTest} from "test/unit/LeverageManager/LeverageManager.t.sol";
 import {MockLendingAdapter} from "test/unit/mock/MockLendingAdapter.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {RebalanceAction, ActionType, TokenTransfer, LeverageTokenState} from "src/types/DataTypes.sol";
 import {MockRebalanceModule} from "test/unit/mock/MockRebalanceModule.sol";
-import {IRebalanceModule} from "src/interfaces/IRebalanceModule.sol";
+import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 import {
     RebalanceAction,
     ActionType,
@@ -24,7 +24,7 @@ import {
     LeverageTokenState
 } from "src/types/DataTypes.sol";
 
-contract RebalanceTest is LeverageManagerBaseTest {
+contract RebalanceTest is LeverageManagerTest {
     ERC20Mock public WETH = new ERC20Mock();
     ERC20Mock public USDC = new ERC20Mock();
 
@@ -42,7 +42,7 @@ contract RebalanceTest is LeverageManagerBaseTest {
             LeverageTokenConfig({
                 lendingAdapter: ILendingAdapter(address(adapter)),
                 targetCollateralRatio: 2 * _BASE_RATIO(), // 2x leverage
-                rebalanceModule: IRebalanceModule(address(rebalanceModule)),
+                rebalanceModule: IRebalanceAdapter(address(rebalanceModule)),
                 depositTokenFee: 0,
                 withdrawTokenFee: 0
             }),
@@ -188,12 +188,13 @@ contract RebalanceTest is LeverageManagerBaseTest {
             LeverageTokenConfig({
                 lendingAdapter: ILendingAdapter(address(ethShortAdapter)),
                 targetCollateralRatio: 15 * _BASE_RATIO() / 10, // 3x leverage which means 2x price exposure
-                rebalanceModule: IRebalanceModule(address(rebalanceModule)),
+                rebalanceModule: IRebalanceAdapter(address(rebalanceModule)),
                 depositTokenFee: 0,
                 withdrawTokenFee: 0
             }),
             "ETH Short 2x",
-            "ETHS2x"
+            "ETHS2x",
+            ""
         );
 
         rebalanceModule.mockIsEligibleForRebalance(ethLong, true);

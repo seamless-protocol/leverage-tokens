@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
+import "forge-std/console.sol";
+
 // Dependency imports
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
@@ -31,7 +33,10 @@ contract BeaconProxyFactory is IBeaconProxyFactory, UpgradeableBeacon {
 
     /// @inheritdoc IBeaconProxyFactory
     function createProxy(bytes memory data, bytes32 baseSalt) external returns (address proxy) {
+        console.log("3");
         proxy = Create2.deploy(0, _getDeploySalt(msg.sender, baseSalt), _getCreationCode(data));
+
+        console.log("4");
 
         numProxies++;
 

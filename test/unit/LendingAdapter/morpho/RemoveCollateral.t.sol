@@ -7,9 +7,9 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
-import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
+import {MorphoLendingAdapterTest} from "./MorphoLendingAdapter.t.sol";
 
-contract MorphoLendingAdapterRemoveCollateralTest is MorphoLendingAdapterBaseTest {
+contract MorphoLendingAdapterRemoveCollateralTest is MorphoLendingAdapterTest {
     function testFuzz_removeCollateral(uint256 amount) public {
         vm.assume(amount > 0);
 

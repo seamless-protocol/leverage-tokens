@@ -9,6 +9,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 
 // Internal imports
+import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {LeverageTokenState, ActionData, RebalanceAction, TokenTransfer} from "src/types/DataTypes.sol";
@@ -93,7 +94,7 @@ contract MockLeverageManager is Test {
         return leverageTokens[leverageToken].lendingAdapter;
     }
 
-    function getLeverageTokenRebalanceModule(ILeverageToken leverageToken) external view returns (address) {
+    function getLeverageTokenRebalanceModule(ILeverageToken leverageToken) public view returns (address) {
         return leverageTokenRebalanceModule[leverageToken];
     }
 
@@ -287,13 +288,25 @@ contract MockLeverageManager is Test {
     }
 
     function rebalance(
-        RebalanceAction[] calldata,
+        RebalanceAction[] calldata actions,
         TokenTransfer[] calldata tokensIn,
         TokenTransfer[] calldata tokensOut
     ) external {
         // Transfer tokens in from caller to this contract
         for (uint256 i = 0; i < tokensIn.length; i++) {
             IERC20(tokensIn[i].token).transferFrom(msg.sender, address(this), tokensIn[i].amount);
+        }
+
+        for (uint256 i = 0; i < actions.length; i++) {
+            ILeverageToken leverageToken = actions[i].leverageToken;
+            address rebalanceAdapter = getLeverageTokenRebalanceModule(leverageToken);
+
+            bool isEligible = IRebalanceAdapter(rebalanceAdapter).isEligibleForRebalance(
+                leverageToken, leverageTokenStates[leverageToken], msg.sender
+            );
+            if (!isEligible) {
+                revert("RebalanceAdapter is not eligible for rebalance");
+            }
         }
 
         // Transfer tokens out from this contract to caller

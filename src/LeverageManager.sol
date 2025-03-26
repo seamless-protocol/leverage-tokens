@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
+import "forge-std/console.sol";
+
 // Dependency imports
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
@@ -25,7 +27,7 @@ import {
     RebalanceAction,
     TokenTransfer
 } from "src/types/DataTypes.sol";
-import {IRebalanceModule} from "src/interfaces/IRebalanceModule.sol";
+import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 
 contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManager, UUPSUpgradeable {
     // Base collateral ratio constant, 1e8 means that collateral / debt ratio is 1:1
@@ -79,7 +81,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function getLeverageTokenRebalanceModule(ILeverageToken token) public view returns (IRebalanceModule module) {
+    function getLeverageTokenRebalanceModule(ILeverageToken token) public view returns (IRebalanceAdapter module) {
         return _getLeverageManagerStorage().config[token].rebalanceModule;
     }
 
@@ -138,18 +140,24 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function createNewLeverageToken(LeverageTokenConfig calldata tokenConfig, string memory name, string memory symbol)
-        external
-        returns (ILeverageToken token)
-    {
+    function createNewLeverageToken(
+        LeverageTokenConfig calldata tokenConfig,
+        string memory name,
+        string memory symbol,
+        bytes memory rebalanceAdapterInitData
+    ) external returns (ILeverageToken token) {
         IBeaconProxyFactory tokenFactory = getLeverageTokenFactory();
+
+        console.log("1");
 
         token = ILeverageToken(
             tokenFactory.createProxy(
                 abi.encodeWithSelector(LeverageToken.initialize.selector, address(this), name, symbol),
-                bytes32(tokenFactory.numProxies())
+                bytes32(tokenFactory.numProxies() + 1)
             )
         );
+
+        console.log("2");
 
         if (getIsLendingAdapterUsed(address(tokenConfig.lendingAdapter))) {
             revert LendingAdapterAlreadyInUse(address(tokenConfig.lendingAdapter));
@@ -163,6 +171,10 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         _getLeverageManagerStorage().isLendingAdapterUsed[address(tokenConfig.lendingAdapter)] = true;
         _setLeverageTokenActionFee(token, ExternalAction.Deposit, tokenConfig.depositTokenFee);
         _setLeverageTokenActionFee(token, ExternalAction.Withdraw, tokenConfig.withdrawTokenFee);
+
+        if (rebalanceAdapterInitData.length > 0) {
+            tokenConfig.rebalanceModule.initialize(token, rebalanceAdapterInitData);
+        }
 
         emit LeverageTokenCreated(
             token,
@@ -296,7 +308,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
                 LeverageTokenState memory state = getLeverageTokenState(leverageToken);
                 leverageTokensStateBefore[i] = state;
 
-                IRebalanceModule rebalanceModule = getLeverageTokenRebalanceModule(leverageToken);
+                IRebalanceAdapter rebalanceModule = getLeverageTokenRebalanceModule(leverageToken);
                 if (!rebalanceModule.isEligibleForRebalance(leverageToken, state, msg.sender)) {
                     revert LeverageTokenNotEligibleForRebalance(leverageToken);
                 }
@@ -309,7 +321,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             // Validate the leverage token state after rebalancing if it has not been validated yet in a previous iteration of the loop
             if (!_isElementInSlice(actions, actions[i].leverageToken, i)) {
                 ILeverageToken leverageToken = actions[i].leverageToken;
-                IRebalanceModule rebalanceModule = getLeverageTokenRebalanceModule(leverageToken);
+                IRebalanceAdapter rebalanceModule = getLeverageTokenRebalanceModule(leverageToken);
 
                 if (!rebalanceModule.isStateAfterRebalanceValid(leverageToken, leverageTokensStateBefore[i])) {
                     revert InvalidLeverageTokenStateAfterRebalance(leverageToken);
