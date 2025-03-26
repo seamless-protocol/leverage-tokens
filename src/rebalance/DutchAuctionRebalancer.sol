@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
 // Dependency imports
@@ -16,8 +16,6 @@ import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {RebalanceAction, TokenTransfer, ActionType, LeverageTokenState, Auction} from "src/types/DataTypes.sol";
 
 contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
-    using SafeERC20 for IERC20;
-
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     uint256 public constant PRICE_MULTIPLIER_PRECISION = 1e18;
 
@@ -229,11 +227,11 @@ contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
         TokenTransfer[] memory tokensOut = new TokenTransfer[](1);
         tokensOut[0] = TokenTransfer({token: address(debtAsset), amount: debtAmount});
 
-        collateralAsset.safeTransferFrom(msg.sender, address(this), collateralAmount);
+        SafeERC20.safeTransferFrom(collateralAsset, msg.sender, address(this), collateralAmount);
         collateralAsset.approve(address(leverageManager), collateralAmount);
         leverageManager.rebalance(actions, tokensIn, tokensOut);
 
-        debtAsset.safeTransfer(msg.sender, debtAmount);
+        SafeERC20.safeTransfer(debtAsset, msg.sender, debtAmount);
     }
 
     /// @notice Executes the rebalance up operation, meaning increasing collateral ratio
@@ -259,10 +257,10 @@ contract DutchAuctionRebalancer is IDutchAuctionRebalancer, Ownable {
         TokenTransfer[] memory tokensOut = new TokenTransfer[](1);
         tokensOut[0] = TokenTransfer({token: address(collateralAsset), amount: collateralAmount});
 
-        debtAsset.safeTransferFrom(msg.sender, address(this), debtAmount);
+        SafeERC20.safeTransferFrom(debtAsset, msg.sender, address(this), debtAmount);
         debtAsset.approve(address(leverageManager), debtAmount);
         leverageManager.rebalance(actions, tokensIn, tokensOut);
 
-        collateralAsset.safeTransfer(msg.sender, collateralAmount);
+        SafeERC20.safeTransfer(collateralAsset, msg.sender, collateralAmount);
     }
 }

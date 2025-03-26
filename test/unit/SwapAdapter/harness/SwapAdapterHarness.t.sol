@@ -9,10 +9,6 @@ import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {SwapAdapter} from "src/periphery/SwapAdapter.sol";
 
 contract SwapAdapterHarness is SwapAdapter {
-    function exposed_authorizeUpgrade(address newImplementation) external {
-        _authorizeUpgrade(newImplementation);
-    }
-
     function exposed_swapExactInputAerodrome(
         uint256 inputAmount,
         uint256 minOutputAmount,

@@ -1,19 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
+// Dependency imports
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {SignedMath} from "@openzeppelin/contracts/utils/math/SignedMath.sol";
 
 // Internal imports
 import {IBeaconProxyFactory} from "src/interfaces/IBeaconProxyFactory.sol";
-import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
@@ -32,15 +28,10 @@ import {
 import {IRebalanceModule} from "src/interfaces/IRebalanceModule.sol";
 
 contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManager, UUPSUpgradeable {
-    using SafeCast for uint256;
-    using SafeCast for int256;
-    using SignedMath for int256;
-
     // Base collateral ratio constant, 1e8 means that collateral / debt ratio is 1:1
     uint256 public constant BASE_RATIO = 1e8;
     uint256 public constant DECIMALS_OFFSET = 0;
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
-    bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
 
     /// @dev Struct containing all state for the LeverageManager contract
     /// @custom:storage-location erc7201:seamless.contracts.storage.LeverageManager
@@ -60,8 +51,10 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         }
     }
 
-    function initialize(address initialAdmin) external initializer {
+    function initialize(address initialAdmin, IBeaconProxyFactory leverageTokenFactory) external initializer {
         _grantRole(DEFAULT_ADMIN_ROLE, initialAdmin);
+
+        _getLeverageManagerStorage().tokenFactory = leverageTokenFactory;
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}
@@ -140,12 +133,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function setLeverageTokenFactory(address factory) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _getLeverageManagerStorage().tokenFactory = IBeaconProxyFactory(factory);
-        emit LeverageTokenFactorySet(factory);
-    }
-
-    /// @inheritdoc ILeverageManager
     function createNewLeverageToken(LeverageTokenConfig calldata tokenConfig, string memory name, string memory symbol)
         external
         returns (ILeverageToken token)
@@ -162,7 +149,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         token = ILeverageToken(
             tokenFactory.createProxy(
                 abi.encodeWithSelector(LeverageToken.initialize.selector, address(this), name, symbol),
-                bytes32(tokenFactory.getProxies().length)
+                bytes32(tokenFactory.numProxies())
             )
         );
 

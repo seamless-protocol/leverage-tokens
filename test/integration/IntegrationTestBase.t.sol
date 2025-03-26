@@ -46,11 +46,15 @@ contract IntegrationTestBase is Test {
     function setUp() public virtual {
         vm.createSelectFork(vm.envString("BASE_RPC_URL"), FORK_BLOCK_NUMBER);
 
+        LeverageToken leverageTokenImplementation = new LeverageToken();
+        BeaconProxyFactory leverageTokenFactory =
+            new BeaconProxyFactory(address(leverageTokenImplementation), address(this));
+
         address leverageManagerImplementation = address(new LeverageManagerHarness());
         leverageManager = ILeverageManager(
             UnsafeUpgrades.deployUUPSProxy(
                 leverageManagerImplementation,
-                abi.encodeWithSelector(LeverageManager.initialize.selector, address(this))
+                abi.encodeWithSelector(LeverageManager.initialize.selector, address(this), leverageTokenFactory)
             )
         );
         LeverageManager(address(leverageManager)).grantRole(keccak256("FEE_MANAGER_ROLE"), address(this));
@@ -68,12 +72,6 @@ contract IntegrationTestBase is Test {
         );
 
         BASE_RATIO = LeverageManager(address(leverageManager)).BASE_RATIO();
-
-        LeverageToken leverageTokenImplementation = new LeverageToken();
-        BeaconProxyFactory leverageTokenFactory =
-            new BeaconProxyFactory(address(leverageTokenImplementation), address(this));
-
-        leverageManager.setLeverageTokenFactory(address(leverageTokenFactory));
 
         dutchAuctionModule = address(new DutchAuctionRebalancer(address(this), leverageManager));
 

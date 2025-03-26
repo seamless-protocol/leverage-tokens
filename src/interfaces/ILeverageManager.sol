@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
 // Dependency imports
@@ -42,9 +42,6 @@ interface ILeverageManager is IFeeManager {
 
     /// @notice Error thrown when leverage token state after rebalance is invalid
     error InvalidLeverageTokenStateAfterRebalance(ILeverageToken token);
-
-    /// @notice Event emitted when leverage token factory is set
-    event LeverageTokenFactorySet(address factory);
 
     /// @notice Event emitted when new leverage token is created
     event LeverageTokenCreated(
@@ -100,11 +97,6 @@ interface ILeverageManager is IFeeManager {
     /// @param token Leverage token to query state for
     /// @return state Leverage token state
     function getLeverageTokenState(ILeverageToken token) external view returns (LeverageTokenState memory state);
-
-    /// @notice Sets factory for creating new leverage tokens
-    /// @param factory Factory to set
-    /// @dev Only DEFAULT_ADMIN_ROLE can call this function
-    function setLeverageTokenFactory(address factory) external;
 
     /// @notice Creates new leverage token with given config
     /// @param config Configuration of the leverage token
