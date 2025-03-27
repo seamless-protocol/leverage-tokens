@@ -37,7 +37,7 @@ contract RebalanceAdapter is
         // slither-disable-next-line assembly
         assembly {
             // keccak256(abi.encode(uint256(keccak256("seamless.contracts.storage.RebalanceAdapter")) - 1)) & ~bytes32(uint256(0xff));
-            $.slot := 0x326e20d598a681eb69bc11b5176604d340fccf9864170f09484f3c317edf3600
+            $.slot := 0xb8978c109109e89ddaa83c20e08d73ed7aedae610788761a7cdcbd1d2ce42300
         }
     }
 

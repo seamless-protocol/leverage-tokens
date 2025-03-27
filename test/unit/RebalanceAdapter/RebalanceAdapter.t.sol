@@ -54,5 +54,10 @@ contract RebalanceAdapterTest is Test {
         assertEq(rebalanceAdapter.getAuctionDuration(), auctionDuration);
         assertEq(rebalanceAdapter.getInitialPriceMultiplier(), initialPriceMultiplier);
         assertEq(rebalanceAdapter.getMinPriceMultiplier(), minPriceMultiplier);
+
+        bytes32 expectedSlot = keccak256(
+            abi.encode(uint256(keccak256("seamless.contracts.storage.RebalanceAdapter")) - 1)
+        ) & ~bytes32(uint256(0xff));
+        assertEq(rebalanceAdapter.exposed_getRebalanceAdapterStorageSlot(), expectedSlot);
     }
 }
