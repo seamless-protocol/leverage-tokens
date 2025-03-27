@@ -38,7 +38,7 @@ contract MorphoLendingAdapterInitializeTest is MorphoLendingAdapterBaseTest {
 
         vm.expectEmit(true, true, true, true);
         emit Initializable.Initialized(1);
-        _lendingAdapter.initialize(marketId);
+        _lendingAdapter.initialize(marketId, authorizedCreator);
 
         assertEq(address(_lendingAdapter.leverageManager()), address(leverageManager));
         assertEq(address(_lendingAdapter.morpho()), address(morpho));
@@ -50,13 +50,14 @@ contract MorphoLendingAdapterInitializeTest is MorphoLendingAdapterBaseTest {
         assertEq(oracle, marketParams.oracle);
         assertEq(irm, marketParams.irm);
         assertEq(lltv, marketParams.lltv);
+        assertEq(_lendingAdapter.authorizedCreator(), authorizedCreator);
     }
 
     function test_initialize_RevertIf_Initialized() public {
         MorphoLendingAdapter _lendingAdapter = new MorphoLendingAdapter(leverageManager, IMorpho(address(morpho)));
-        _lendingAdapter.initialize(defaultMarketId);
+        _lendingAdapter.initialize(defaultMarketId, authorizedCreator);
 
         vm.expectRevert(abi.encodeWithSelector(Initializable.InvalidInitialization.selector));
-        _lendingAdapter.initialize(defaultMarketId);
+        _lendingAdapter.initialize(defaultMarketId, authorizedCreator);
     }
 }

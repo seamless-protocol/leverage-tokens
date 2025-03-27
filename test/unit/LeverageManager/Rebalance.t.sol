@@ -7,16 +7,22 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 
 // Internal imports
-import {IStrategy} from "src/interfaces/IStrategy.sol";
+import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {LeverageManagerBaseTest} from "test/unit/LeverageManager/LeverageManagerBase.t.sol";
 import {MockLendingAdapter} from "test/unit/mock/MockLendingAdapter.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {RebalanceAction, ActionType, TokenTransfer, StrategyState} from "src/types/DataTypes.sol";
+import {RebalanceAction, ActionType, TokenTransfer, LeverageTokenState} from "src/types/DataTypes.sol";
 import {MockRebalanceModule} from "test/unit/mock/MockRebalanceModule.sol";
 import {IRebalanceModule} from "src/interfaces/IRebalanceModule.sol";
-import {RebalanceAction, ActionType, TokenTransfer, StrategyConfig, StrategyState} from "src/types/DataTypes.sol";
+import {
+    RebalanceAction,
+    ActionType,
+    TokenTransfer,
+    LeverageTokenConfig,
+    LeverageTokenState
+} from "src/types/DataTypes.sol";
 
 contract RebalanceTest is LeverageManagerBaseTest {
     ERC20Mock public WETH = new ERC20Mock();
@@ -28,17 +34,17 @@ contract RebalanceTest is LeverageManagerBaseTest {
     function setUp() public override {
         super.setUp();
 
-        adapter = new MockLendingAdapter(address(WETH), address(USDC));
+        adapter = new MockLendingAdapter(address(WETH), address(USDC), manager);
         rebalanceModule = new MockRebalanceModule();
 
-        _createNewStrategy(
+        _createNewLeverageToken(
             manager,
-            StrategyConfig({
+            LeverageTokenConfig({
                 lendingAdapter: ILendingAdapter(address(adapter)),
                 targetCollateralRatio: 2 * _BASE_RATIO(), // 2x leverage
                 rebalanceModule: IRebalanceModule(address(rebalanceModule)),
-                strategyDepositFee: 0,
-                strategyWithdrawFee: 0
+                depositTokenFee: 0,
+                withdrawTokenFee: 0
             }),
             address(WETH),
             address(USDC),
@@ -47,15 +53,15 @@ contract RebalanceTest is LeverageManagerBaseTest {
         );
     }
 
-    function test_Rebalance_SimpleRebalanceSingleStrategy_Overcollateralized() public {
-        rebalanceModule.mockIsEligibleForRebalance(strategy, true);
-        rebalanceModule.mockIsValidStateAfterRebalance(strategy, true);
+    function test_Rebalance_SimpleRebalanceSingleLeverageToken_Overcollateralized() public {
+        rebalanceModule.mockIsEligibleForRebalance(leverageToken, true);
+        rebalanceModule.mockIsValidStateAfterRebalance(leverageToken, true);
 
         adapter.mockConvertCollateralToDebtAssetExchangeRate(2_000_00000000); // ETH = 2000 USDC
         adapter.mockCollateral(10 ether); // 10 ETH = 20,000 USDC
         adapter.mockDebt(5_000 ether); // 5,000 USDC
 
-        // Current leverage is 4x and strategy needs to be rebalanced, current equity is 15,000 USDC
+        // Current leverage is 4x and leverageToken needs to be rebalanced, current equity is 15,000 USDC
         uint256 amountToBorrow = 10_000 ether; // 10,000 USDC
         uint256 amountToSupply = 5 ether; // 5 ETH = 10,000 USDC
 
@@ -70,13 +76,18 @@ contract RebalanceTest is LeverageManagerBaseTest {
         transfersOut[0] = TokenTransfer({token: address(USDC), amount: amountToBorrow});
 
         RebalanceAction[] memory actions = new RebalanceAction[](2);
-        actions[0] = RebalanceAction({strategy: strategy, actionType: ActionType.AddCollateral, amount: amountToSupply});
-        actions[1] = RebalanceAction({strategy: strategy, actionType: ActionType.Borrow, amount: amountToBorrow});
+        actions[0] = RebalanceAction({
+            leverageToken: leverageToken,
+            actionType: ActionType.AddCollateral,
+            amount: amountToSupply
+        });
+        actions[1] =
+            RebalanceAction({leverageToken: leverageToken, actionType: ActionType.Borrow, amount: amountToBorrow});
 
         WETH.approve(address(leverageManager), amountToSupply);
         leverageManager.rebalance(actions, transfersIn, transfersOut);
 
-        StrategyState memory state = leverageManager.getStrategyState(strategy);
+        LeverageTokenState memory state = leverageManager.getLeverageTokenState(leverageToken);
         assertEq(state.collateralInDebtAsset, 30_000 ether); // 15 ETH = 30,000 USDC
         assertEq(state.debt, 15_000 ether); // 15,000 USDC
         assertEq(state.equity, 15_000 ether); // 15,000 USDC
@@ -84,15 +95,15 @@ contract RebalanceTest is LeverageManagerBaseTest {
         assertEq(USDC.balanceOf(address(this)), amountToBorrow); // Rebalancer took debt
     }
 
-    function test_Rebalance_SimpleRebalanceSingleStrategy_RebalancerTakesReward_Overcollateralized() public {
-        rebalanceModule.mockIsEligibleForRebalance(strategy, true);
-        rebalanceModule.mockIsValidStateAfterRebalance(strategy, true);
+    function test_Rebalance_SimpleRebalanceSingleLeverageToken_RebalancerTakesReward_Overcollateralized() public {
+        rebalanceModule.mockIsEligibleForRebalance(leverageToken, true);
+        rebalanceModule.mockIsValidStateAfterRebalance(leverageToken, true);
 
         adapter.mockConvertCollateralToDebtAssetExchangeRate(2_000_00000000); // ETH = 2000 USDC
         adapter.mockCollateral(10 ether); // 10 ETH = 20,000 USDC
         adapter.mockDebt(5_000 ether); // 5,000 USDC
 
-        // Current leverage is 4x and strategy needs to be rebalanced, current equity is 15,000 USDC
+        // Current leverage is 4x and leverageToken needs to be rebalanced, current equity is 15,000 USDC
         uint256 amountToBorrow = 5_000 ether; // 5,000 USDC
         uint256 amountToSupply = 2.25 ether; // 2,25 ETH = 4500 USDC
 
@@ -107,13 +118,18 @@ contract RebalanceTest is LeverageManagerBaseTest {
         transfersOut[0] = TokenTransfer({token: address(USDC), amount: amountToBorrow});
 
         RebalanceAction[] memory actions = new RebalanceAction[](2);
-        actions[0] = RebalanceAction({strategy: strategy, actionType: ActionType.AddCollateral, amount: amountToSupply});
-        actions[1] = RebalanceAction({strategy: strategy, actionType: ActionType.Borrow, amount: amountToBorrow});
+        actions[0] = RebalanceAction({
+            leverageToken: leverageToken,
+            actionType: ActionType.AddCollateral,
+            amount: amountToSupply
+        });
+        actions[1] =
+            RebalanceAction({leverageToken: leverageToken, actionType: ActionType.Borrow, amount: amountToBorrow});
 
         WETH.approve(address(leverageManager), amountToSupply);
         leverageManager.rebalance(actions, transfersIn, transfersOut);
 
-        StrategyState memory state = leverageManager.getStrategyState(strategy);
+        LeverageTokenState memory state = leverageManager.getLeverageTokenState(leverageToken);
         assertEq(state.collateralInDebtAsset, 24_500 ether); // 12,25 ETH = 24,500 USDC
         assertEq(state.debt, 10_000 ether); // 10,000 USDC
         assertEq(state.equity, 14_500 ether); // 14,500 USDC, 10% reward
@@ -121,15 +137,15 @@ contract RebalanceTest is LeverageManagerBaseTest {
         assertEq(USDC.balanceOf(address(this)), amountToBorrow); // Rebalancer took debt
     }
 
-    function test_Rebalance_SimpleRebalanceSingleStrategy_RebalancerTakesReward_Undercollateralized() public {
-        rebalanceModule.mockIsEligibleForRebalance(strategy, true);
-        rebalanceModule.mockIsValidStateAfterRebalance(strategy, true);
+    function test_Rebalance_SimpleRebalanceSingleLeverageToken_RebalancerTakesReward_Undercollateralized() public {
+        rebalanceModule.mockIsEligibleForRebalance(leverageToken, true);
+        rebalanceModule.mockIsValidStateAfterRebalance(leverageToken, true);
 
         adapter.mockConvertCollateralToDebtAssetExchangeRate(2_000_00000000); // ETH = 2000 USDC, mock ETH price
         adapter.mockCollateral(10 ether); // 10 ETH = 20,000 USDC
         adapter.mockDebt(15_000 ether); // 15,000 USDC
 
-        // Current leverage is 1,333x and strategy needs to be rebalanced, current equity is 5,000 USDC
+        // Current leverage is 1,333x and leverageToken needs to be rebalanced, current equity is 5,000 USDC
         uint256 amountToRepay = 10_000 ether; // 10,000 USDC
         uint256 amountToWithdraw = 5.5 ether; // 5,5 ETH = 11,000 USDC
 
@@ -144,14 +160,18 @@ contract RebalanceTest is LeverageManagerBaseTest {
         transfersOut[0] = TokenTransfer({token: address(WETH), amount: amountToWithdraw});
 
         RebalanceAction[] memory actions = new RebalanceAction[](2);
-        actions[0] = RebalanceAction({strategy: strategy, actionType: ActionType.Repay, amount: amountToRepay});
-        actions[1] =
-            RebalanceAction({strategy: strategy, actionType: ActionType.RemoveCollateral, amount: amountToWithdraw});
+        actions[0] =
+            RebalanceAction({leverageToken: leverageToken, actionType: ActionType.Repay, amount: amountToRepay});
+        actions[1] = RebalanceAction({
+            leverageToken: leverageToken,
+            actionType: ActionType.RemoveCollateral,
+            amount: amountToWithdraw
+        });
 
         USDC.approve(address(leverageManager), amountToRepay);
         leverageManager.rebalance(actions, transfersIn, transfersOut);
 
-        StrategyState memory state = leverageManager.getStrategyState(strategy);
+        LeverageTokenState memory state = leverageManager.getLeverageTokenState(leverageToken);
         assertEq(state.collateralInDebtAsset, 9_000 ether); // 4,5 ETH = 9,000 USDC
         assertEq(state.debt, 5_000 ether); // 5,000 USDC
         assertEq(state.equity, 4_000 ether); // 4,500 USDC, 10% reward
@@ -160,17 +180,17 @@ contract RebalanceTest is LeverageManagerBaseTest {
     }
 
     function test_Rebalance_MultipleStrategies_MoveFundsAcrossStrategies() public {
-        IStrategy ethLong = strategy;
+        ILeverageToken ethLong = leverageToken;
         MockLendingAdapter ethLongAdapter = adapter;
-        MockLendingAdapter ethShortAdapter = new MockLendingAdapter(address(USDC), address(WETH));
+        MockLendingAdapter ethShortAdapter = new MockLendingAdapter(address(USDC), address(WETH), address(this));
 
-        IStrategy ethShort = leverageManager.createNewStrategy(
-            StrategyConfig({
+        ILeverageToken ethShort = leverageManager.createNewLeverageToken(
+            LeverageTokenConfig({
                 lendingAdapter: ILendingAdapter(address(ethShortAdapter)),
                 targetCollateralRatio: 15 * _BASE_RATIO() / 10, // 3x leverage which means 2x price exposure
                 rebalanceModule: IRebalanceModule(address(rebalanceModule)),
-                strategyDepositFee: 0,
-                strategyWithdrawFee: 0
+                depositTokenFee: 0,
+                withdrawTokenFee: 0
             }),
             "ETH Short 2x",
             "ETHS2x"
@@ -202,12 +222,17 @@ contract RebalanceTest is LeverageManagerBaseTest {
         uint256 amountToSupplyShort = 4_500 ether; // 4,500 USDC
 
         RebalanceAction[] memory actions = new RebalanceAction[](4);
-        actions[0] = RebalanceAction({strategy: ethShort, actionType: ActionType.Borrow, amount: amountToBorrowShort});
-        actions[1] = RebalanceAction({strategy: ethLong, actionType: ActionType.Borrow, amount: amountToBorrowLong});
-        actions[2] =
-            RebalanceAction({strategy: ethShort, actionType: ActionType.AddCollateral, amount: amountToSupplyShort});
+        actions[0] =
+            RebalanceAction({leverageToken: ethShort, actionType: ActionType.Borrow, amount: amountToBorrowShort});
+        actions[1] =
+            RebalanceAction({leverageToken: ethLong, actionType: ActionType.Borrow, amount: amountToBorrowLong});
+        actions[2] = RebalanceAction({
+            leverageToken: ethShort,
+            actionType: ActionType.AddCollateral,
+            amount: amountToSupplyShort
+        });
         actions[3] =
-            RebalanceAction({strategy: ethLong, actionType: ActionType.AddCollateral, amount: amountToSupplyLong});
+            RebalanceAction({leverageToken: ethLong, actionType: ActionType.AddCollateral, amount: amountToSupplyLong});
 
         uint256 usdcToTake = 500 ether; // 500 USDC
         uint256 wethToTake = 0.25 ether; // 0,25 ETH = 500 USDC
@@ -218,13 +243,13 @@ contract RebalanceTest is LeverageManagerBaseTest {
 
         leverageManager.rebalance(actions, new TokenTransfer[](0), transfersOut);
 
-        StrategyState memory stateLong = leverageManager.getStrategyState(ethLong);
+        LeverageTokenState memory stateLong = leverageManager.getLeverageTokenState(ethLong);
         assertEq(stateLong.collateralInDebtAsset, 24_500 ether);
         assertEq(stateLong.debt, 10_000 ether);
         assertEq(stateLong.equity, 14_500 ether);
         assertEq(stateLong.collateralRatio, 2_45 * _BASE_RATIO() / 100); // 2,45 leverage
 
-        StrategyState memory stateShort = leverageManager.getStrategyState(ethShort);
+        LeverageTokenState memory stateShort = leverageManager.getLeverageTokenState(ethShort);
         assertEq(stateShort.collateralInDebtAsset, 9.75 ether); // 9,75 ETH = 19,500 USDC
         assertEq(stateShort.debt, 5 ether); // 5,000 ETH = 10,000 USDC
         assertEq(stateShort.equity, 4.75 ether); // 4,750 ETH = 9,500 USDC
@@ -235,13 +260,13 @@ contract RebalanceTest is LeverageManagerBaseTest {
     }
 
     function test_rebalance_RevertIf_NotEligibleForRebalance() external {
-        rebalanceModule.mockIsEligibleForRebalance(strategy, false);
+        rebalanceModule.mockIsEligibleForRebalance(leverageToken, false);
 
         adapter.mockConvertCollateralToDebtAssetExchangeRate(2_000_00000000); // ETH = 2000 USDC
         adapter.mockCollateral(10 ether); // 10 ETH = 20,000 USDC
         adapter.mockDebt(5_000 ether); // 5,000 USDC
 
-        // Current leverage is 4x and strategy needs to be rebalanced, current equity is 15,000 USDC
+        // Current leverage is 4x and leverageToken needs to be rebalanced, current equity is 15,000 USDC
         uint256 amountToBorrow = 10_000 ether; // 10,000 USDC
         uint256 amountToSupply = 4 ether; // 4 ETH = 8,000 USDC
 
@@ -256,24 +281,31 @@ contract RebalanceTest is LeverageManagerBaseTest {
         transfersOut[0] = TokenTransfer({token: address(USDC), amount: amountToBorrow});
 
         RebalanceAction[] memory actions = new RebalanceAction[](2);
-        actions[0] = RebalanceAction({strategy: strategy, actionType: ActionType.AddCollateral, amount: amountToSupply});
-        actions[1] = RebalanceAction({strategy: strategy, actionType: ActionType.Borrow, amount: amountToBorrow});
+        actions[0] = RebalanceAction({
+            leverageToken: leverageToken,
+            actionType: ActionType.AddCollateral,
+            amount: amountToSupply
+        });
+        actions[1] =
+            RebalanceAction({leverageToken: leverageToken, actionType: ActionType.Borrow, amount: amountToBorrow});
 
         WETH.approve(address(leverageManager), amountToSupply);
 
-        vm.expectRevert(abi.encodeWithSelector(ILeverageManager.StrategyNotEligibleForRebalance.selector, strategy));
+        vm.expectRevert(
+            abi.encodeWithSelector(ILeverageManager.LeverageTokenNotEligibleForRebalance.selector, leverageToken)
+        );
         leverageManager.rebalance(actions, transfersIn, transfersOut);
     }
 
     function test_rebalance_RevertIf_InvalidStateAfterRebalance() external {
-        rebalanceModule.mockIsEligibleForRebalance(strategy, true);
-        rebalanceModule.mockIsValidStateAfterRebalance(strategy, false);
+        rebalanceModule.mockIsEligibleForRebalance(leverageToken, true);
+        rebalanceModule.mockIsValidStateAfterRebalance(leverageToken, false);
 
         adapter.mockConvertCollateralToDebtAssetExchangeRate(2_000_00000000); // ETH = 2000 USDC
         adapter.mockCollateral(10 ether); // 10 ETH = 20,000 USDC
         adapter.mockDebt(5_000 ether); // 5,000 USDC
 
-        // Current leverage is 4x and strategy needs to be rebalanced, current equity is 15,000 USDC
+        // Current leverage is 4x and leverageToken needs to be rebalanced, current equity is 15,000 USDC
         uint256 amountToBorrow = 11_000 ether; // 11,000 USDC
         uint256 amountToSupply = 5.5 ether; // 5,5 ETH = 11,000 USDC
 
@@ -288,12 +320,19 @@ contract RebalanceTest is LeverageManagerBaseTest {
         transfersOut[0] = TokenTransfer({token: address(USDC), amount: amountToBorrow});
 
         RebalanceAction[] memory actions = new RebalanceAction[](2);
-        actions[0] = RebalanceAction({strategy: strategy, actionType: ActionType.AddCollateral, amount: amountToSupply});
-        actions[1] = RebalanceAction({strategy: strategy, actionType: ActionType.Borrow, amount: amountToBorrow});
+        actions[0] = RebalanceAction({
+            leverageToken: leverageToken,
+            actionType: ActionType.AddCollateral,
+            amount: amountToSupply
+        });
+        actions[1] =
+            RebalanceAction({leverageToken: leverageToken, actionType: ActionType.Borrow, amount: amountToBorrow});
 
         WETH.approve(address(leverageManager), amountToSupply);
 
-        vm.expectRevert(abi.encodeWithSelector(ILeverageManager.InvalidStrategyStateAfterRebalance.selector, strategy));
+        vm.expectRevert(
+            abi.encodeWithSelector(ILeverageManager.InvalidLeverageTokenStateAfterRebalance.selector, leverageToken)
+        );
         leverageManager.rebalance(actions, transfersIn, transfersOut);
     }
 }

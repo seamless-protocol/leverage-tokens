@@ -5,10 +5,10 @@ pragma solidity ^0.8.26;
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 // Internal imports
-import {StrategyBaseTest} from "./StrategyBase.t.sol";
-import {Strategy} from "src/Strategy.sol";
+import {LeverageTokenBaseTest} from "./LeverageTokenBase.t.sol";
+import {LeverageToken} from "src/LeverageToken.sol";
 
-contract MintTest is StrategyBaseTest {
+contract MintTest is LeverageTokenBaseTest {
     function setUp() public override {
         super.setUp();
     }
@@ -17,8 +17,8 @@ contract MintTest is StrategyBaseTest {
     function test_mint(address to, uint256 amount) public {
         vm.assume(to != address(0));
 
-        strategyToken.mint(to, amount);
-        assertEq(strategyToken.balanceOf(to), amount);
+        leverageToken.mint(to, amount);
+        assertEq(leverageToken.balanceOf(to), amount);
     }
 
     /// forge-config: default.fuzz.runs = 1
@@ -27,7 +27,7 @@ contract MintTest is StrategyBaseTest {
 
         vm.startPrank(caller);
         vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, caller));
-        strategyToken.mint(to, amount);
+        leverageToken.mint(to, amount);
         vm.stopPrank();
     }
 }

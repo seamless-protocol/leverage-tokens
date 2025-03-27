@@ -14,7 +14,7 @@ contract ComputeCollateralAndDebtForActionTest is PreviewActionTest {
         _prepareLeverageManagerStateForAction(beforeState);
 
         (uint256 computedCollateral, uint256 computedDebt) = leverageManager.exposed_computeCollateralAndDebtForAction(
-            strategy, equityInCollateralAsset, ExternalAction.Deposit
+            leverageToken, equityInCollateralAsset, ExternalAction.Deposit
         );
 
         assertEq(computedCollateral, 100 ether);
@@ -29,7 +29,7 @@ contract ComputeCollateralAndDebtForActionTest is PreviewActionTest {
         _prepareLeverageManagerStateForAction(beforeState);
 
         (uint256 computedCollateral, uint256 computedDebt) = leverageManager.exposed_computeCollateralAndDebtForAction(
-            strategy, equityInCollateralAsset, ExternalAction.Withdraw
+            leverageToken, equityInCollateralAsset, ExternalAction.Withdraw
         );
 
         assertEq(computedCollateral, 100 ether);
@@ -44,7 +44,7 @@ contract ComputeCollateralAndDebtForActionTest is PreviewActionTest {
         _prepareLeverageManagerStateForAction(beforeState);
 
         (uint256 computedCollateral, uint256 computedDebt) = leverageManager.exposed_computeCollateralAndDebtForAction(
-            strategy, equityInCollateralAsset, ExternalAction.Deposit
+            leverageToken, equityInCollateralAsset, ExternalAction.Deposit
         );
 
         // Follows 2x target ratio, not the current ratio
@@ -60,7 +60,7 @@ contract ComputeCollateralAndDebtForActionTest is PreviewActionTest {
         _prepareLeverageManagerStateForAction(beforeState);
 
         (uint256 computedCollateral, uint256 computedDebt) = leverageManager.exposed_computeCollateralAndDebtForAction(
-            strategy, equityInCollateralAsset, ExternalAction.Withdraw
+            leverageToken, equityInCollateralAsset, ExternalAction.Withdraw
         );
 
         // Follows 2x target ratio, not the current ratio
@@ -76,7 +76,7 @@ contract ComputeCollateralAndDebtForActionTest is PreviewActionTest {
         _prepareLeverageManagerStateForAction(beforeState);
 
         (uint256 computedCollateral, uint256 computedDebt) = leverageManager.exposed_computeCollateralAndDebtForAction(
-            strategy, equityInCollateralAsset, ExternalAction.Deposit
+            leverageToken, equityInCollateralAsset, ExternalAction.Deposit
         );
 
         assertEq(computedCollateral, 200 ether);

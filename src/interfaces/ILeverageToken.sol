@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 // Dependency imports
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-interface IStrategy is IERC20 {
+interface ILeverageToken is IERC20 {
     /// @notice Mints new tokens to the specified address
     /// @param to The address to mint tokens to
     /// @param amount The amount of tokens to mint

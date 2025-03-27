@@ -15,14 +15,15 @@ import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IMorphoLendingAdapterFactory} from "src/interfaces/IMorphoLendingAdapterFactory.sol";
 import {IRebalanceModule} from "src/interfaces/IRebalanceModule.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {IStrategy} from "src/interfaces/IStrategy.sol";
+import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
 import {BeaconProxyFactory} from "src/BeaconProxyFactory.sol";
 import {LeverageManager} from "src/LeverageManager.sol";
+import {LeverageToken} from "src/LeverageToken.sol";
+import {LeverageTokenConfig} from "src/types/DataTypes.sol";
 import {MorphoLendingAdapterFactory} from "src/adapters/MorphoLendingAdapterFactory.sol";
-import {Strategy} from "src/Strategy.sol";
-import {StrategyConfig} from "src/types/DataTypes.sol";
 import {LeverageManagerHarness} from "test/unit/LeverageManager/harness/LeverageManagerHarness.t.sol";
+import {DutchAuctionRebalancer} from "src/rebalance/DutchAuctionRebalancer.sol";
 import {SeamlessRebalanceModule} from "src/rebalance/SeamlessRebalanceModule.sol";
 
 contract IntegrationTestBase is Test {
@@ -37,7 +38,7 @@ contract IntegrationTestBase is Test {
     address public dutchAuctionModule = makeAddr("dutchAuctionModule");
     address public user = makeAddr("user");
     address public treasury = makeAddr("treasury");
-    IStrategy public strategy;
+    ILeverageToken public leverageToken;
 
     IMorphoLendingAdapterFactory public morphoLendingAdapterFactory;
     ILeverageManager public leverageManager = ILeverageManager(makeAddr("leverageManager"));
@@ -47,11 +48,15 @@ contract IntegrationTestBase is Test {
     function setUp() public virtual {
         vm.createSelectFork(vm.envString("BASE_RPC_URL"), FORK_BLOCK_NUMBER);
 
+        LeverageToken leverageTokenImplementation = new LeverageToken();
+        BeaconProxyFactory leverageTokenFactory =
+            new BeaconProxyFactory(address(leverageTokenImplementation), address(this));
+
         address leverageManagerImplementation = address(new LeverageManagerHarness());
         leverageManager = ILeverageManager(
             UnsafeUpgrades.deployUUPSProxy(
                 leverageManagerImplementation,
-                abi.encodeWithSelector(LeverageManager.initialize.selector, address(this))
+                abi.encodeWithSelector(LeverageManager.initialize.selector, address(this), leverageTokenFactory)
             )
         );
         LeverageManager(address(leverageManager)).grantRole(keccak256("FEE_MANAGER_ROLE"), address(this));
@@ -66,10 +71,7 @@ contract IntegrationTestBase is Test {
 
         BASE_RATIO = LeverageManager(address(leverageManager)).BASE_RATIO();
 
-        Strategy strategyImplementation = new Strategy();
-        BeaconProxyFactory strategyFactory = new BeaconProxyFactory(address(strategyImplementation), address(this));
-
-        leverageManager.setStrategyTokenFactory(address(strategyFactory));
+        dutchAuctionModule = address(new DutchAuctionRebalancer(address(this), leverageManager));
 
         SeamlessRebalanceModule seamlessRebalanceModuleImplementation = new SeamlessRebalanceModule();
         seamlessRebalanceModule = SeamlessRebalanceModule(
@@ -80,13 +82,13 @@ contract IntegrationTestBase is Test {
         );
         seamlessRebalanceModule.setIsRebalancer(dutchAuctionModule, true);
 
-        strategy = leverageManager.createNewStrategy(
-            StrategyConfig({
+        leverageToken = leverageManager.createNewLeverageToken(
+            LeverageTokenConfig({
                 lendingAdapter: ILendingAdapter(address(morphoLendingAdapter)),
                 targetCollateralRatio: 2 * BASE_RATIO,
                 rebalanceModule: IRebalanceModule(address(seamlessRebalanceModule)),
-                strategyDepositFee: 0,
-                strategyWithdrawFee: 0
+                depositTokenFee: 0,
+                withdrawTokenFee: 0
             }),
             "Seamless ETH/USDC 2x leverage token",
             "ltETH/USDC-2x"
@@ -96,7 +98,7 @@ contract IntegrationTestBase is Test {
 
         vm.label(address(user), "user");
         vm.label(address(treasury), "treasury");
-        vm.label(address(strategy), "strategy");
+        vm.label(address(leverageToken), "leverageToken");
         vm.label(address(morphoLendingAdapter), "morphoLendingAdapter");
         vm.label(address(MORPHO), "MORPHO");
         vm.label(address(leverageManager), "leverageManager");
@@ -120,34 +122,35 @@ contract IntegrationTestBase is Test {
         return Math.mulDiv(
             shares,
             morphoLendingAdapter.getEquityInCollateralAsset() + 1,
-            strategy.totalSupply() + 1,
+            leverageToken.totalSupply() + 1,
             Math.Rounding.Floor
         );
     }
 
-    function _createNewStrategy(
+    function _createNewLeverageToken(
         uint256 minColRatio,
         uint256 targetCollateralRatio,
         uint256 maxColRatio,
         uint256 depositFee,
         uint256 withdrawFee
-    ) internal returns (IStrategy) {
+    ) internal returns (ILeverageToken) {
         ILendingAdapter lendingAdapter =
             ILendingAdapter(morphoLendingAdapterFactory.deployAdapter(WETH_USDC_MARKET_ID, bytes32(vm.randomUint())));
-        IStrategy _strategy = leverageManager.createNewStrategy(
-            StrategyConfig({
+
+        ILeverageToken _leverageToken = leverageManager.createNewLeverageToken(
+            LeverageTokenConfig({
                 lendingAdapter: lendingAdapter,
                 targetCollateralRatio: targetCollateralRatio,
                 rebalanceModule: IRebalanceModule(address(0)),
-                strategyDepositFee: depositFee,
-                strategyWithdrawFee: withdrawFee
+                depositTokenFee: depositFee,
+                withdrawTokenFee: withdrawFee
             }),
             "dummy name",
             "dummy symbol"
         );
 
-        seamlessRebalanceModule.setStrategyCollateralRatios(_strategy, minColRatio, maxColRatio);
+        seamlessRebalanceModule.setLeverageTokenCollateralRatios(_leverageToken, minColRatio, maxColRatio);
 
-        return _strategy;
+        return _leverageToken;
     }
 }

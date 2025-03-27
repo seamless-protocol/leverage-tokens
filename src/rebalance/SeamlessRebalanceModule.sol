@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
 // Dependency imports
@@ -9,8 +9,8 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeab
 import {IRebalanceModule} from "src/interfaces/IRebalanceModule.sol";
 import {ISeamlessRebalanceModule} from "src/interfaces/ISeamlessRebalanceModule.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {IStrategy} from "src/interfaces/IStrategy.sol";
-import {StrategyState} from "src/types/DataTypes.sol";
+import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
+import {LeverageTokenState} from "src/types/DataTypes.sol";
 
 contract SeamlessRebalanceModule is UUPSUpgradeable, OwnableUpgradeable, ISeamlessRebalanceModule {
     /// @dev Struct containing all state for the SeamlessRebalanceModule contract
@@ -18,10 +18,10 @@ contract SeamlessRebalanceModule is UUPSUpgradeable, OwnableUpgradeable, ISeamle
     struct SeamlessRebalanceModuleStorage {
         /// @dev Whether the address is authorized to rebalance
         mapping(address rebalancer => bool) isRebalancer;
-        /// @dev Minimum collateral ratio for a strategy, immutable
-        mapping(IStrategy strategy => uint256) minCollateralRatio;
-        /// @dev Maximum collateral ratio for the strategy, immutable
-        mapping(IStrategy strategy => uint256) maxCollateralRatio;
+        /// @dev Minimum collateral ratio for a leverage token, immutable
+        mapping(ILeverageToken token => uint256) minCollateralRatio;
+        /// @dev Maximum collateral ratio for a leverage token, immutable
+        mapping(ILeverageToken token => uint256) maxCollateralRatio;
     }
 
     function _getSeamlessRebalanceModuleStorage() internal pure returns (SeamlessRebalanceModuleStorage storage $) {
@@ -44,17 +44,17 @@ contract SeamlessRebalanceModule is UUPSUpgradeable, OwnableUpgradeable, ISeamle
     }
 
     /// @inheritdoc ISeamlessRebalanceModule
-    function getStrategyMinCollateralRatio(IStrategy strategy) public view returns (uint256) {
-        return _getSeamlessRebalanceModuleStorage().minCollateralRatio[strategy];
+    function getLeverageTokenMinCollateralRatio(ILeverageToken token) public view returns (uint256) {
+        return _getSeamlessRebalanceModuleStorage().minCollateralRatio[token];
     }
 
     /// @inheritdoc ISeamlessRebalanceModule
-    function getStrategyMaxCollateralRatio(IStrategy strategy) public view returns (uint256) {
-        return _getSeamlessRebalanceModuleStorage().maxCollateralRatio[strategy];
+    function getLeverageTokenMaxCollateralRatio(ILeverageToken token) public view returns (uint256) {
+        return _getSeamlessRebalanceModuleStorage().maxCollateralRatio[token];
     }
 
     /// @inheritdoc IRebalanceModule
-    function isEligibleForRebalance(IStrategy strategy, StrategyState memory state, address caller)
+    function isEligibleForRebalance(ILeverageToken token, LeverageTokenState memory state, address caller)
         external
         view
         returns (bool isEligible)
@@ -63,8 +63,8 @@ contract SeamlessRebalanceModule is UUPSUpgradeable, OwnableUpgradeable, ISeamle
             return false;
         }
 
-        uint256 minCollateralRatio = getStrategyMinCollateralRatio(strategy);
-        uint256 maxCollateralRatio = getStrategyMaxCollateralRatio(strategy);
+        uint256 minCollateralRatio = getLeverageTokenMinCollateralRatio(token);
+        uint256 maxCollateralRatio = getLeverageTokenMaxCollateralRatio(token);
 
         if (state.collateralRatio >= minCollateralRatio && state.collateralRatio <= maxCollateralRatio) {
             return false;
@@ -74,13 +74,13 @@ contract SeamlessRebalanceModule is UUPSUpgradeable, OwnableUpgradeable, ISeamle
     }
 
     /// @inheritdoc IRebalanceModule
-    function isStateAfterRebalanceValid(IStrategy strategy, StrategyState memory stateBefore)
+    function isStateAfterRebalanceValid(ILeverageToken token, LeverageTokenState memory stateBefore)
         external
         view
         returns (bool isValid)
     {
-        uint256 targetRatio = ILeverageManager(msg.sender).getStrategyTargetCollateralRatio(strategy);
-        StrategyState memory stateAfter = ILeverageManager(msg.sender).getStrategyState(strategy);
+        uint256 targetRatio = ILeverageManager(msg.sender).getLeverageTokenTargetCollateralRatio(token);
+        LeverageTokenState memory stateAfter = ILeverageManager(msg.sender).getLeverageTokenState(token);
 
         uint256 ratioBefore = stateBefore.collateralRatio;
         uint256 ratioAfter = stateAfter.collateralRatio;
@@ -102,11 +102,12 @@ contract SeamlessRebalanceModule is UUPSUpgradeable, OwnableUpgradeable, ISeamle
     }
 
     /// @inheritdoc ISeamlessRebalanceModule
-    function setStrategyCollateralRatios(IStrategy strategy, uint256 minCollateralRatio, uint256 maxCollateralRatio)
-        external
-        onlyOwner
-    {
-        if (getStrategyMinCollateralRatio(strategy) != 0 || getStrategyMaxCollateralRatio(strategy) != 0) {
+    function setLeverageTokenCollateralRatios(
+        ILeverageToken token,
+        uint256 minCollateralRatio,
+        uint256 maxCollateralRatio
+    ) external onlyOwner {
+        if (getLeverageTokenMinCollateralRatio(token) != 0 || getLeverageTokenMaxCollateralRatio(token) != 0) {
             revert CollateralRatiosAlreadySet();
         }
 
@@ -114,9 +115,9 @@ contract SeamlessRebalanceModule is UUPSUpgradeable, OwnableUpgradeable, ISeamle
             revert MinCollateralRatioTooHigh();
         }
 
-        _getSeamlessRebalanceModuleStorage().minCollateralRatio[strategy] = minCollateralRatio;
-        _getSeamlessRebalanceModuleStorage().maxCollateralRatio[strategy] = maxCollateralRatio;
+        _getSeamlessRebalanceModuleStorage().minCollateralRatio[token] = minCollateralRatio;
+        _getSeamlessRebalanceModuleStorage().maxCollateralRatio[token] = maxCollateralRatio;
 
-        emit StrategyCollateralRatiosSet(strategy, minCollateralRatio, maxCollateralRatio);
+        emit LeverageTokenCollateralRatiosSet(token, minCollateralRatio, maxCollateralRatio);
     }
 }

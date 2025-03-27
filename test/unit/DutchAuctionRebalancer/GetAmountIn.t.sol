@@ -6,13 +6,13 @@ import {IDutchAuctionRebalancer} from "src/interfaces/IDutchAuctionRebalancer.so
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract GetAmountInTest is DutchAuctionRebalancerBaseTest {
-    function test_getAmountIn_NoAuction() public {
-        assertEq(auctionRebalancer.getAmountIn(strategy, 1000), 0);
+    function test_getAmountIn_NoAuction() public view {
+        assertEq(auctionRebalancer.getAmountIn(leverageToken, 1000), 0);
     }
 
     function test_getAmountIn_OverCollateralized_AtStart() public {
         // Create over-collateralized auction
-        _setStrategyCollateralRatio(MAX_RATIO + 1);
+        _setLeverageTokenCollateralRatio(MAX_RATIO + 1);
         _createAuction();
 
         // Mock exchange rate: 1 collateral = 0.5 debt (inverse of 1 debt = 2 collateral)
@@ -22,13 +22,13 @@ contract GetAmountInTest is DutchAuctionRebalancerBaseTest {
         // amountOut (debt) = 1000
         // baseAmountIn = 1000 * 2 = 2000 (collateral)
         // amountIn = 2000 * 1.1 = 2200
-        uint256 amountIn = auctionRebalancer.getAmountIn(strategy, 1000);
+        uint256 amountIn = auctionRebalancer.getAmountIn(leverageToken, 1000);
         assertEq(amountIn, 2200);
     }
 
     function test_getAmountIn_UnderCollateralized_AtStart() public {
         // Create under-collateralized auction
-        _setStrategyCollateralRatio(MIN_RATIO - 1);
+        _setLeverageTokenCollateralRatio(MIN_RATIO - 1);
         _createAuction();
 
         // Mock exchange rate: 1 collateral = 2 debt
@@ -38,13 +38,13 @@ contract GetAmountInTest is DutchAuctionRebalancerBaseTest {
         // amountOut (collateral) = 1000
         // baseAmountIn = 1000 * 2 = 2000 (debt)
         // amountIn = 2000 * 1.1 = 2200
-        uint256 amountIn = auctionRebalancer.getAmountIn(strategy, 1000);
+        uint256 amountIn = auctionRebalancer.getAmountIn(leverageToken, 1000);
         assertEq(amountIn, 2200);
     }
 
     function test_getAmountIn_OverCollateralized_AtHalf() public {
         // Create over-collateralized auction
-        _setStrategyCollateralRatio(3.1e8);
+        _setLeverageTokenCollateralRatio(3.1e8);
         _createAuction();
 
         // Warp to 50% of auction duration
@@ -57,13 +57,13 @@ contract GetAmountInTest is DutchAuctionRebalancerBaseTest {
         // amountOut (debt) = 1000
         // baseAmountIn = 1000 * 2 = 2000 (collateral)
         // amountIn = 2000 * 0.1625 = 325
-        uint256 amountIn = auctionRebalancer.getAmountIn(strategy, 1000);
+        uint256 amountIn = auctionRebalancer.getAmountIn(leverageToken, 1000);
         assertEq(amountIn, 325);
     }
 
     function test_getAmountIn_UnderCollateralized_AtHalf() public {
         // Create under-collateralized auction
-        _setStrategyCollateralRatio(MIN_RATIO - 1);
+        _setLeverageTokenCollateralRatio(MIN_RATIO - 1);
         _createAuction();
 
         // Warp to 50% of auction duration
@@ -76,13 +76,13 @@ contract GetAmountInTest is DutchAuctionRebalancerBaseTest {
         // amountOut (collateral) = 1000
         // baseAmountIn = 1000 * 2 = 2000 (debt)
         // amountIn = 2000 * 0.1625 = 325
-        uint256 amountIn = auctionRebalancer.getAmountIn(strategy, 1000);
+        uint256 amountIn = auctionRebalancer.getAmountIn(leverageToken, 1000);
         assertEq(amountIn, 325);
     }
 
     function test_getAmountIn_OverCollateralized_AtEnd() public {
         // Create over-collateralized auction
-        _setStrategyCollateralRatio(MAX_RATIO + 1);
+        _setLeverageTokenCollateralRatio(MAX_RATIO + 1);
         _createAuction();
 
         // Warp to end of auction
@@ -95,13 +95,13 @@ contract GetAmountInTest is DutchAuctionRebalancerBaseTest {
         // amountOut (debt) = 1000
         // baseAmountIn = 1000 * 2 = 2000 (collateral)
         // amountIn = 2000 * 0.1 = 2000
-        uint256 amountIn = auctionRebalancer.getAmountIn(strategy, 1000);
+        uint256 amountIn = auctionRebalancer.getAmountIn(leverageToken, 1000);
         assertEq(amountIn, 200);
     }
 
     function test_getAmountIn_UnderCollateralized_AtEnd() public {
         // Create under-collateralized auction
-        _setStrategyCollateralRatio(MIN_RATIO - 1);
+        _setLeverageTokenCollateralRatio(MIN_RATIO - 1);
         _createAuction();
 
         // Warp to end of auction
@@ -114,7 +114,7 @@ contract GetAmountInTest is DutchAuctionRebalancerBaseTest {
         // amountOut (collateral) = 1000
         // baseAmountIn = 1000 * 2 = 2000 (debt)
         // amountIn = 2000 * 0.1 = 200
-        uint256 amountIn = auctionRebalancer.getAmountIn(strategy, 1000);
+        uint256 amountIn = auctionRebalancer.getAmountIn(leverageToken, 1000);
         assertEq(amountIn, 200);
     }
 
@@ -125,7 +125,7 @@ contract GetAmountInTest is DutchAuctionRebalancerBaseTest {
         vm.assume(timeElapsed2 - timeElapsed1 > 3);
 
         // Create auction (over-collateralized)
-        _setStrategyCollateralRatio(MAX_RATIO + 1);
+        _setLeverageTokenCollateralRatio(MAX_RATIO + 1);
         _createAuction();
 
         // Mock exchange rate: 1 collateral = 0.5 debt (inverse of 1 debt = 2 collateral)
@@ -133,10 +133,10 @@ contract GetAmountInTest is DutchAuctionRebalancerBaseTest {
 
         // Check amounts at two different times
         vm.warp(AUCTION_START_TIME + timeElapsed1);
-        uint256 amountIn1 = auctionRebalancer.getAmountIn(strategy, 1e18);
+        uint256 amountIn1 = auctionRebalancer.getAmountIn(leverageToken, 1e18);
 
         vm.warp(AUCTION_START_TIME + timeElapsed2);
-        uint256 amountIn2 = auctionRebalancer.getAmountIn(strategy, 1e18);
+        uint256 amountIn2 = auctionRebalancer.getAmountIn(leverageToken, 1e18);
 
         // Amount should decrease as time passes
         assertTrue(amountIn1 > amountIn2);
@@ -146,15 +146,15 @@ contract GetAmountInTest is DutchAuctionRebalancerBaseTest {
         amountOut = bound(amountOut, 1, 1e30); // Reasonable bounds to avoid overflow
 
         // Create auction (over-collateralized)
-        _setStrategyCollateralRatio(MAX_RATIO + 1);
+        _setLeverageTokenCollateralRatio(MAX_RATIO + 1);
         _createAuction();
 
         // Mock exchange rate: 1 collateral = 0.5 debt (inverse of 1 debt = 2 collateral)
         lendingAdapter.mockConvertCollateralToDebtAssetExchangeRate(0.5e8);
 
         // Get amounts for 1x and 2x
-        uint256 amountIn1 = auctionRebalancer.getAmountIn(strategy, amountOut);
-        uint256 amountIn2 = auctionRebalancer.getAmountIn(strategy, amountOut * 2);
+        uint256 amountIn1 = auctionRebalancer.getAmountIn(leverageToken, amountOut);
+        uint256 amountIn2 = auctionRebalancer.getAmountIn(leverageToken, amountOut * 2);
 
         // Amount should scale linearly
         assertLe(amountIn2, amountIn1 * 2 + 1);

@@ -18,25 +18,17 @@ contract BeaconProxyFactoryTest is Test {
 
     address public implementation;
     address public owner = makeAddr("owner");
+    UpgradeableBeacon public beacon;
 
     function setUp() public {
         implementation = address(new MockValue());
         factory = new BeaconProxyFactory(implementation, owner);
+        beacon = UpgradeableBeacon(address(factory));
     }
 
     function test_constructor() public view {
-        assertEq(UpgradeableBeacon(factory.beacon()).implementation(), implementation);
-        assertEq(UpgradeableBeacon(factory.beacon()).owner(), owner);
-    }
-
-    function test_constructor_RevertIf_ImplementationIsZeroAddress() public {
-        vm.expectRevert(IBeaconProxyFactory.InvalidAddress.selector);
-        new BeaconProxyFactory(address(0), owner);
-    }
-
-    function test_constructor_RevertIf_OwnerIsZeroAddress() public {
-        vm.expectRevert(IBeaconProxyFactory.InvalidAddress.selector);
-        new BeaconProxyFactory(implementation, address(0));
+        assertEq(factory.implementation(), implementation);
+        assertEq(factory.owner(), owner);
     }
 
     /// forge-config: default.fuzz.runs = 1
@@ -49,8 +41,7 @@ contract BeaconProxyFactoryTest is Test {
         address proxy = factory.createProxy(data, salt);
 
         assertEq(proxy, expectedProxyAddress);
-        assertEq(factory.getProxies().length, 1);
-        assertEq(factory.getProxies()[0], proxy);
+        assertEq(factory.numProxies(), 1);
         assertEq(MockValue(proxy).mockFunction(), 0); // Zero because it was not initialized
     }
 
@@ -67,8 +58,7 @@ contract BeaconProxyFactoryTest is Test {
 
         assertEq(MockValue(proxy).mockFunction(), value);
         assertEq(MockValue(proxy).initialized(), true);
-        assertEq(factory.getProxies().length, 1);
-        assertEq(factory.getProxies()[0], proxy);
+        assertEq(factory.numProxies(), 1);
         assertEq(proxy, expectedProxyAddress);
     }
 
