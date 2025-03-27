@@ -2,7 +2,7 @@
 pragma solidity ^0.8.26;
 
 // Forge imports
-import {Test, console} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 
 // Dependency imports
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -49,7 +49,7 @@ contract CreateNewLeverageTokenTest is LeverageManagerTest {
         // Check if the leverage token core is set correctly
         LeverageTokenConfig memory configAfter = leverageManager.getLeverageTokenConfig(leverageToken);
         assertEq(address(configAfter.lendingAdapter), address(config.lendingAdapter));
-        assertEq(address(configAfter.rebalanceModule), address(config.rebalanceModule));
+        assertEq(address(configAfter.rebalanceAdapter), address(config.rebalanceAdapter));
 
         assertEq(configAfter.depositTokenFee, config.depositTokenFee);
         assertEq(configAfter.withdrawTokenFee, config.withdrawTokenFee);
@@ -60,7 +60,7 @@ contract CreateNewLeverageTokenTest is LeverageManagerTest {
         assertEq(leverageManager.getIsLendingAdapterUsed(address(config.lendingAdapter)), true);
         assertEq(leverageManager.getLeverageTokenTargetCollateralRatio(leverageToken), config.targetCollateralRatio);
         assertEq(
-            address(leverageManager.getLeverageTokenRebalanceModule(leverageToken)), address(config.rebalanceModule)
+            address(leverageManager.getLeverageTokenRebalanceAdapter(leverageToken)), address(config.rebalanceAdapter)
         );
     }
 

@@ -84,7 +84,7 @@ contract MockLeverageManager is Test {
 
     mapping(bytes32 => MockPreviewWithdrawData) public mockPreviewWithdrawData;
 
-    mapping(ILeverageToken => address) public leverageTokenRebalanceModule;
+    mapping(ILeverageToken => address) public leverageTokenRebalanceAdapter;
 
     function getLeverageTokenCollateralAsset(ILeverageToken leverageToken) external view returns (IERC20) {
         return leverageTokens[leverageToken].collateralAsset;
@@ -94,8 +94,8 @@ contract MockLeverageManager is Test {
         return leverageTokens[leverageToken].lendingAdapter;
     }
 
-    function getLeverageTokenRebalanceModule(ILeverageToken leverageToken) public view returns (address) {
-        return leverageTokenRebalanceModule[leverageToken];
+    function getLeverageTokenRebalanceAdapter(ILeverageToken leverageToken) public view returns (address) {
+        return leverageTokenRebalanceAdapter[leverageToken];
     }
 
     function getLeverageTokenState(ILeverageToken leverageToken) external view returns (LeverageTokenState memory) {
@@ -126,8 +126,8 @@ contract MockLeverageManager is Test {
         leverageTokenStates[leverageToken] = _leverageTokenState;
     }
 
-    function setLeverageTokenRebalanceModule(ILeverageToken leverageToken, address _rebalanceModule) external {
-        leverageTokenRebalanceModule[leverageToken] = _rebalanceModule;
+    function setLeverageTokenRebalanceAdapter(ILeverageToken leverageToken, address _rebalanceAdapter) external {
+        leverageTokenRebalanceAdapter[leverageToken] = _rebalanceAdapter;
     }
 
     function setMockPreviewDepositData(
@@ -299,7 +299,7 @@ contract MockLeverageManager is Test {
 
         for (uint256 i = 0; i < actions.length; i++) {
             ILeverageToken leverageToken = actions[i].leverageToken;
-            address rebalanceAdapter = getLeverageTokenRebalanceModule(leverageToken);
+            address rebalanceAdapter = getLeverageTokenRebalanceAdapter(leverageToken);
 
             bool isEligible = IRebalanceAdapter(rebalanceAdapter).isEligibleForRebalance(
                 leverageToken, leverageTokenStates[leverageToken], msg.sender

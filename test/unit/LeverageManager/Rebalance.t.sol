@@ -14,7 +14,7 @@ import {MockLendingAdapter} from "test/unit/mock/MockLendingAdapter.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {RebalanceAction, ActionType, TokenTransfer, LeverageTokenState} from "src/types/DataTypes.sol";
-import {MockRebalanceModule} from "test/unit/mock/MockRebalanceModule.sol";
+import {MockRebalanceAdapter} from "test/unit/mock/MockRebalanceAdapter.sol";
 import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 import {
     RebalanceAction,
@@ -28,21 +28,21 @@ contract RebalanceTest is LeverageManagerTest {
     ERC20Mock public WETH = new ERC20Mock();
     ERC20Mock public USDC = new ERC20Mock();
 
-    MockRebalanceModule public rebalanceModule;
+    MockRebalanceAdapter public rebalanceAdapter;
     MockLendingAdapter public adapter;
 
     function setUp() public override {
         super.setUp();
 
         adapter = new MockLendingAdapter(address(WETH), address(USDC));
-        rebalanceModule = new MockRebalanceModule();
+        rebalanceAdapter = new MockRebalanceAdapter();
 
         _createNewLeverageToken(
             manager,
             LeverageTokenConfig({
                 lendingAdapter: ILendingAdapter(address(adapter)),
                 targetCollateralRatio: 2 * _BASE_RATIO(), // 2x leverage
-                rebalanceModule: IRebalanceAdapter(address(rebalanceModule)),
+                rebalanceAdapter: IRebalanceAdapter(address(rebalanceAdapter)),
                 depositTokenFee: 0,
                 withdrawTokenFee: 0
             }),
@@ -54,8 +54,8 @@ contract RebalanceTest is LeverageManagerTest {
     }
 
     function test_Rebalance_SimpleRebalanceSingleLeverageToken_Overcollateralized() public {
-        rebalanceModule.mockIsEligibleForRebalance(leverageToken, true);
-        rebalanceModule.mockIsValidStateAfterRebalance(leverageToken, true);
+        rebalanceAdapter.mockIsEligibleForRebalance(leverageToken, true);
+        rebalanceAdapter.mockIsValidStateAfterRebalance(leverageToken, true);
 
         adapter.mockConvertCollateralToDebtAssetExchangeRate(2_000_00000000); // ETH = 2000 USDC
         adapter.mockCollateral(10 ether); // 10 ETH = 20,000 USDC
@@ -96,8 +96,8 @@ contract RebalanceTest is LeverageManagerTest {
     }
 
     function test_Rebalance_SimpleRebalanceSingleLeverageToken_RebalancerTakesReward_Overcollateralized() public {
-        rebalanceModule.mockIsEligibleForRebalance(leverageToken, true);
-        rebalanceModule.mockIsValidStateAfterRebalance(leverageToken, true);
+        rebalanceAdapter.mockIsEligibleForRebalance(leverageToken, true);
+        rebalanceAdapter.mockIsValidStateAfterRebalance(leverageToken, true);
 
         adapter.mockConvertCollateralToDebtAssetExchangeRate(2_000_00000000); // ETH = 2000 USDC
         adapter.mockCollateral(10 ether); // 10 ETH = 20,000 USDC
@@ -138,8 +138,8 @@ contract RebalanceTest is LeverageManagerTest {
     }
 
     function test_Rebalance_SimpleRebalanceSingleLeverageToken_RebalancerTakesReward_Undercollateralized() public {
-        rebalanceModule.mockIsEligibleForRebalance(leverageToken, true);
-        rebalanceModule.mockIsValidStateAfterRebalance(leverageToken, true);
+        rebalanceAdapter.mockIsEligibleForRebalance(leverageToken, true);
+        rebalanceAdapter.mockIsValidStateAfterRebalance(leverageToken, true);
 
         adapter.mockConvertCollateralToDebtAssetExchangeRate(2_000_00000000); // ETH = 2000 USDC, mock ETH price
         adapter.mockCollateral(10 ether); // 10 ETH = 20,000 USDC
@@ -188,7 +188,7 @@ contract RebalanceTest is LeverageManagerTest {
             LeverageTokenConfig({
                 lendingAdapter: ILendingAdapter(address(ethShortAdapter)),
                 targetCollateralRatio: 15 * _BASE_RATIO() / 10, // 3x leverage which means 2x price exposure
-                rebalanceModule: IRebalanceAdapter(address(rebalanceModule)),
+                rebalanceAdapter: IRebalanceAdapter(address(rebalanceAdapter)),
                 depositTokenFee: 0,
                 withdrawTokenFee: 0
             }),
@@ -197,10 +197,10 @@ contract RebalanceTest is LeverageManagerTest {
             ""
         );
 
-        rebalanceModule.mockIsEligibleForRebalance(ethLong, true);
-        rebalanceModule.mockIsValidStateAfterRebalance(ethLong, true);
-        rebalanceModule.mockIsEligibleForRebalance(ethShort, true);
-        rebalanceModule.mockIsValidStateAfterRebalance(ethShort, true);
+        rebalanceAdapter.mockIsEligibleForRebalance(ethLong, true);
+        rebalanceAdapter.mockIsValidStateAfterRebalance(ethLong, true);
+        rebalanceAdapter.mockIsEligibleForRebalance(ethShort, true);
+        rebalanceAdapter.mockIsValidStateAfterRebalance(ethShort, true);
 
         ethLongAdapter.mockConvertCollateralToDebtAssetExchangeRate(2_000_00000000); // ETH = 2000 USDC
         ethLongAdapter.mockCollateral(10 ether); // 10 ETH = 20,000 USDC
@@ -261,7 +261,7 @@ contract RebalanceTest is LeverageManagerTest {
     }
 
     function test_rebalance_RevertIf_NotEligibleForRebalance() external {
-        rebalanceModule.mockIsEligibleForRebalance(leverageToken, false);
+        rebalanceAdapter.mockIsEligibleForRebalance(leverageToken, false);
 
         adapter.mockConvertCollateralToDebtAssetExchangeRate(2_000_00000000); // ETH = 2000 USDC
         adapter.mockCollateral(10 ether); // 10 ETH = 20,000 USDC
@@ -299,8 +299,8 @@ contract RebalanceTest is LeverageManagerTest {
     }
 
     function test_rebalance_RevertIf_InvalidStateAfterRebalance() external {
-        rebalanceModule.mockIsEligibleForRebalance(leverageToken, true);
-        rebalanceModule.mockIsValidStateAfterRebalance(leverageToken, false);
+        rebalanceAdapter.mockIsEligibleForRebalance(leverageToken, true);
+        rebalanceAdapter.mockIsValidStateAfterRebalance(leverageToken, false);
 
         adapter.mockConvertCollateralToDebtAssetExchangeRate(2_000_00000000); // ETH = 2000 USDC
         adapter.mockCollateral(10 ether); // 10 ETH = 20,000 USDC

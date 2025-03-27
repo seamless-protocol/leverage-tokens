@@ -25,7 +25,7 @@ contract IsStateAfterRebalanceValidTest is MinMaxCollateralRatioRebalanceAdapter
         _mockCollateralRatio(2.5e8);
 
         vm.prank(address(leverageManager));
-        bool isValid = rebalanceModule.isStateAfterRebalanceValid(leverageToken, stateBefore);
+        bool isValid = rebalanceAdapter.isStateAfterRebalanceValid(leverageToken, stateBefore);
         assertTrue(isValid);
     }
 
@@ -41,7 +41,7 @@ contract IsStateAfterRebalanceValidTest is MinMaxCollateralRatioRebalanceAdapter
         _mockCollateralRatio(3e8);
 
         vm.prank(address(leverageManager));
-        bool isValid = rebalanceModule.isStateAfterRebalanceValid(leverageToken, stateBefore);
+        bool isValid = rebalanceAdapter.isStateAfterRebalanceValid(leverageToken, stateBefore);
         assertFalse(isValid);
     }
 
@@ -57,7 +57,7 @@ contract IsStateAfterRebalanceValidTest is MinMaxCollateralRatioRebalanceAdapter
         _mockCollateralRatio(1.4e8);
 
         vm.prank(address(leverageManager));
-        bool isValid = rebalanceModule.isStateAfterRebalanceValid(leverageToken, stateBefore);
+        bool isValid = rebalanceAdapter.isStateAfterRebalanceValid(leverageToken, stateBefore);
         assertFalse(isValid);
     }
 
@@ -81,7 +81,7 @@ contract IsStateAfterRebalanceValidTest is MinMaxCollateralRatioRebalanceAdapter
         _mockCollateralRatio(ratioAfter);
 
         vm.prank(address(leverageManager));
-        bool isValid = rebalanceModule.isStateAfterRebalanceValid(leverageToken, stateBefore);
+        bool isValid = rebalanceAdapter.isStateAfterRebalanceValid(leverageToken, stateBefore);
         assertTrue(isValid);
     }
 
@@ -107,7 +107,7 @@ contract IsStateAfterRebalanceValidTest is MinMaxCollateralRatioRebalanceAdapter
         _mockCollateralRatio(ratioAfter);
 
         vm.prank(address(leverageManager));
-        bool isValid = rebalanceModule.isStateAfterRebalanceValid(leverageToken, stateBefore);
+        bool isValid = rebalanceAdapter.isStateAfterRebalanceValid(leverageToken, stateBefore);
         assertFalse(isValid);
     }
 }

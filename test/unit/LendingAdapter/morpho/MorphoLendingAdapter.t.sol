@@ -2,7 +2,7 @@
 pragma solidity ^0.8.26;
 
 // Forge imports
-import {Test, console2} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 
 // Dependency imports
 import {Id, MarketParams, IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";

@@ -19,15 +19,15 @@ contract InitializeTest is MinMaxCollateralRatioRebalanceAdapterTest {
     function testFuzz_initialize(uint256 minCollateralRatio, uint256 maxCollateralRatio) public {
         vm.assume(minCollateralRatio < maxCollateralRatio);
 
-        address rebalanceModuleImplementation = address(new MinMaxCollateralRatioRebalanceAdapterHarness());
-        address rebalanceModuleProxy = UnsafeUpgrades.deployUUPSProxy(
-            rebalanceModuleImplementation,
+        address rebalanceAdapterImplementation = address(new MinMaxCollateralRatioRebalanceAdapterHarness());
+        address rebalanceAdapterProxy = UnsafeUpgrades.deployUUPSProxy(
+            rebalanceAdapterImplementation,
             abi.encodeWithSelector(
                 MinMaxCollateralRatioRebalanceAdapterHarness.initialize.selector, minCollateralRatio, maxCollateralRatio
             )
         );
         MinMaxCollateralRatioRebalanceAdapterHarness newModule =
-            MinMaxCollateralRatioRebalanceAdapterHarness(rebalanceModuleProxy);
+            MinMaxCollateralRatioRebalanceAdapterHarness(rebalanceAdapterProxy);
 
         assertEq(newModule.getLeverageTokenMinCollateralRatio(), minCollateralRatio);
         assertEq(newModule.getLeverageTokenMaxCollateralRatio(), maxCollateralRatio);
@@ -40,11 +40,11 @@ contract InitializeTest is MinMaxCollateralRatioRebalanceAdapterTest {
     ) public {
         vm.assume(minCollateralRatio > maxCollateralRatio);
 
-        address rebalanceModuleImplementation = address(new MinMaxCollateralRatioRebalanceAdapterHarness());
+        address rebalanceAdapterImplementation = address(new MinMaxCollateralRatioRebalanceAdapterHarness());
 
         vm.expectRevert(IMinMaxCollateralRatioRebalanceAdapter.MinCollateralRatioTooHigh.selector);
         UnsafeUpgrades.deployUUPSProxy(
-            rebalanceModuleImplementation,
+            rebalanceAdapterImplementation,
             abi.encodeWithSelector(
                 MinMaxCollateralRatioRebalanceAdapterHarness.initialize.selector, minCollateralRatio, maxCollateralRatio
             )
@@ -56,6 +56,6 @@ contract InitializeTest is MinMaxCollateralRatioRebalanceAdapterTest {
         public
     {
         vm.expectRevert(Initializable.InvalidInitialization.selector);
-        rebalanceModule.initialize(minCollateralRatio, maxCollateralRatio);
+        rebalanceAdapter.initialize(minCollateralRatio, maxCollateralRatio);
     }
 }

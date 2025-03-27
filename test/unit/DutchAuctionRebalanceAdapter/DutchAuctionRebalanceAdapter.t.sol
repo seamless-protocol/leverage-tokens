@@ -8,7 +8,7 @@ import {Test} from "forge-std/Test.sol";
 import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 
 // Internal imports
-import {MockRebalanceModule} from "test/unit/mock/MockRebalanceModule.sol";
+import {MockRebalanceAdapter} from "test/unit/mock/MockRebalanceAdapter.sol";
 import {DutchAuctionRebalanceAdapter} from "src/rebalance/DutchAuctionRebalanceAdapter.sol";
 import {DutchAuctionRebalanceAdapterHarness} from "test/unit/harness/DutchAuctionRebalanceAdapterHarness.t.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
@@ -78,7 +78,7 @@ contract DutchAuctionRebalanceAdapterTest is Test {
 
         // Setup owner and deploy auction rebalancer harness
         auctionRebalancer = DutchAuctionRebalanceAdapterHarness(dutchAuctionRebalancerProxy);
-        leverageManager.setLeverageTokenRebalanceModule(leverageToken, address(auctionRebalancer));
+        leverageManager.setLeverageTokenRebalanceAdapter(leverageToken, address(auctionRebalancer));
 
         _mockLeverageTokenTargetCollateralRatio(TARGET_RATIO);
     }

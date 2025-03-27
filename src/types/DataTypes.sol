@@ -40,7 +40,7 @@ struct BaseLeverageTokenConfig {
     /// @dev Lending adapter for leverage token
     ILendingAdapter lendingAdapter;
     /// @dev Rebalance module for leverage token
-    IRebalanceAdapter rebalanceModule;
+    IRebalanceAdapter rebalanceAdapter;
     /// @dev Target collateral ratio of the leverage token on 8 decimals
     uint256 targetCollateralRatio;
 }
@@ -60,7 +60,7 @@ struct LeverageTokenConfig {
     /// @dev Lending adapter for leverage token
     ILendingAdapter lendingAdapter;
     /// @dev Rebalance module for leverage token
-    IRebalanceAdapter rebalanceModule;
+    IRebalanceAdapter rebalanceAdapter;
     /// @dev Target collateral ratio of the leverage token on 8 decimals
     uint256 targetCollateralRatio;
     /// @dev Fee for deposit action

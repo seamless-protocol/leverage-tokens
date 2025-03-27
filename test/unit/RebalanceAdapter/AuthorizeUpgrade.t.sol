@@ -10,7 +10,7 @@ contract AuthorizeUpgradeTest is RebalanceAdapterTest {
         vm.prank(rebalanceAdapter.owner());
         rebalanceAdapter.transferOwnership(caller);
 
-        vm.prank(caller);
+        vm.prank(rebalanceAdapter.owner());
         rebalanceAdapter.exposed_authorizeUpgrade(newImplementation);
     }
 

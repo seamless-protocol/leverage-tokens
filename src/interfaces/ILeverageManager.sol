@@ -81,7 +81,7 @@ interface ILeverageManager is IFeeManager {
     /// @notice Returns the rebalance module for the leverage token
     /// @param token Leverage token to get the rebalance module for
     /// @return module Rebalance module for the leverage token
-    function getLeverageTokenRebalanceModule(ILeverageToken token) external view returns (IRebalanceAdapter module);
+    function getLeverageTokenRebalanceAdapter(ILeverageToken token) external view returns (IRebalanceAdapter module);
 
     /// @notice Returns target ratio for a leverage token
     /// @param token Leverage token to get target ratio for

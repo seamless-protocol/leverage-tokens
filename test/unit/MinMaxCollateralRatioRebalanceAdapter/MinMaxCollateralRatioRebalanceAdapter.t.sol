@@ -21,17 +21,17 @@ contract MinMaxCollateralRatioRebalanceAdapterTest is Test {
     ILeverageToken public leverageToken = ILeverageToken(makeAddr("leverageToken"));
 
     MockLeverageManager public leverageManager;
-    MinMaxCollateralRatioRebalanceAdapterHarness public rebalanceModule;
+    MinMaxCollateralRatioRebalanceAdapterHarness public rebalanceAdapter;
 
     function setUp() public virtual {
-        address rebalanceModuleImplementation = address(new MinMaxCollateralRatioRebalanceAdapterHarness());
-        address rebalanceModuleProxy = UnsafeUpgrades.deployUUPSProxy(
-            rebalanceModuleImplementation,
+        address rebalanceAdapterImplementation = address(new MinMaxCollateralRatioRebalanceAdapterHarness());
+        address rebalanceAdapterProxy = UnsafeUpgrades.deployUUPSProxy(
+            rebalanceAdapterImplementation,
             abi.encodeWithSelector(
                 MinMaxCollateralRatioRebalanceAdapterHarness.initialize.selector, 1.5 * 1e8, 2.5 * 1e8
             )
         );
-        rebalanceModule = MinMaxCollateralRatioRebalanceAdapterHarness(rebalanceModuleProxy);
+        rebalanceAdapter = MinMaxCollateralRatioRebalanceAdapterHarness(rebalanceAdapterProxy);
         leverageManager = new MockLeverageManager();
     }
 
@@ -39,7 +39,7 @@ contract MinMaxCollateralRatioRebalanceAdapterTest is Test {
         bytes32 expectedSlot = keccak256(
             abi.encode(uint256(keccak256("seamless.contracts.storage.MinMaxCollateralRatioRebalanceAdapter")) - 1)
         ) & ~bytes32(uint256(0xff));
-        assertEq(rebalanceModule.exposed_getMinMaxCollateralRatioRebalanceAdapterStorage(), expectedSlot);
+        assertEq(rebalanceAdapter.exposed_getMinMaxCollateralRatioRebalanceAdapterStorage(), expectedSlot);
     }
 
     function _mockCollateralRatio(uint256 collateralRatio) internal {

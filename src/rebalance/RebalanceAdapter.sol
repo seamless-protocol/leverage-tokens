@@ -23,6 +23,9 @@ contract RebalanceAdapter is
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     function initialize(ILeverageToken leverageToken, bytes calldata initData) external initializer {
+        // Cache to avoid stack to deep
+        ILeverageToken _leverageToken = leverageToken;
+
         (
             address _owner,
             ILeverageManager leverageManager,
@@ -33,11 +36,12 @@ contract RebalanceAdapter is
             uint256 minPriceMultiplier
         ) = abi.decode(initData, (address, ILeverageManager, uint256, uint256, uint256, uint256, uint256));
 
-        __Ownable_init(_owner);
-        __MinMaxCollateralRatioRebalanceAdapter_init_unchained(minCollateralRatio, maxCollateralRatio);
         __DutchAuctionRebalanceAdapter_init_unchained(
-            leverageManager, leverageToken, auctionDuration, initialPriceMultiplier, minPriceMultiplier
+            leverageManager, _leverageToken, auctionDuration, initialPriceMultiplier, minPriceMultiplier
         );
+        __MinMaxCollateralRatioRebalanceAdapter_init_unchained(minCollateralRatio, maxCollateralRatio);
+
+        __Ownable_init(_owner);
     }
 
     /// @inheritdoc IRebalanceAdapter

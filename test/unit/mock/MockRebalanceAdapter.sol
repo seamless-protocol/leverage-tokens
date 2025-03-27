@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {LeverageTokenState} from "src/types/DataTypes.sol";
 
-contract MockRebalanceModule {
+contract MockRebalanceAdapter {
     bool public isEligible;
     bool public isValid;
 

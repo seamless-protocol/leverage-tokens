@@ -91,7 +91,7 @@ contract LeverageManagerTest is FeeManagerTest {
                 LeverageTokenConfig({
                     lendingAdapter: ILendingAdapter(address(lendingAdapter)),
                     targetCollateralRatio: _BASE_RATIO() + 1,
-                    rebalanceModule: IRebalanceAdapter(address(0)),
+                    rebalanceAdapter: IRebalanceAdapter(address(0)),
                     depositTokenFee: 0,
                     withdrawTokenFee: 0
                 }),

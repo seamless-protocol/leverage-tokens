@@ -10,7 +10,7 @@ contract IsEligibleForRebalanceTest is MinMaxCollateralRatioRebalanceAdapterTest
         LeverageTokenState memory state =
             LeverageTokenState({collateralInDebtAsset: 100 ether, debt: 100 ether, equity: 0, collateralRatio: 1e8});
 
-        bool isEligible = rebalanceModule.isEligibleForRebalance(leverageToken, state, address(this));
+        bool isEligible = rebalanceAdapter.isEligibleForRebalance(leverageToken, state, address(this));
         assertTrue(isEligible);
     }
 
@@ -22,7 +22,7 @@ contract IsEligibleForRebalanceTest is MinMaxCollateralRatioRebalanceAdapterTest
             collateralRatio: 3e8
         });
 
-        bool isEligible = rebalanceModule.isEligibleForRebalance(leverageToken, state, address(this));
+        bool isEligible = rebalanceAdapter.isEligibleForRebalance(leverageToken, state, address(this));
         assertTrue(isEligible);
     }
 
@@ -34,14 +34,14 @@ contract IsEligibleForRebalanceTest is MinMaxCollateralRatioRebalanceAdapterTest
             collateralRatio: 2e8
         });
 
-        bool isEligible = rebalanceModule.isEligibleForRebalance(leverageToken, state, address(this));
+        bool isEligible = rebalanceAdapter.isEligibleForRebalance(leverageToken, state, address(this));
         assertFalse(isEligible);
     }
 
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_isEligibleForRebalance(uint256 collateralRatio) public view {
-        uint256 minRatio = rebalanceModule.getLeverageTokenMinCollateralRatio();
-        uint256 maxRatio = rebalanceModule.getLeverageTokenMaxCollateralRatio();
+        uint256 minRatio = rebalanceAdapter.getLeverageTokenMinCollateralRatio();
+        uint256 maxRatio = rebalanceAdapter.getLeverageTokenMaxCollateralRatio();
 
         LeverageTokenState memory state = LeverageTokenState({
             collateralInDebtAsset: 100 ether,
@@ -50,7 +50,7 @@ contract IsEligibleForRebalanceTest is MinMaxCollateralRatioRebalanceAdapterTest
             collateralRatio: collateralRatio
         });
 
-        bool isEligible = rebalanceModule.isEligibleForRebalance(leverageToken, state, address(this));
+        bool isEligible = rebalanceAdapter.isEligibleForRebalance(leverageToken, state, address(this));
         bool shouldBeEligible = collateralRatio < minRatio || collateralRatio > maxRatio;
 
         assertEq(isEligible, shouldBeEligible);

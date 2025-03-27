@@ -3,7 +3,7 @@ pragma solidity ^0.8.26;
 
 // Forge imports
 import {Test} from "forge-std/Test.sol";
-import "forge-std/console.sol";
+
 // Dependency imports
 import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -70,17 +70,13 @@ contract IntegrationTestBase is Test {
             )
         );
 
-        console.log("5");
-
         BASE_RATIO = LeverageManager(address(leverageManager)).BASE_RATIO();
-
-        console.log("6");
 
         leverageToken = leverageManager.createNewLeverageToken(
             LeverageTokenConfig({
                 lendingAdapter: ILendingAdapter(address(morphoLendingAdapter)),
                 targetCollateralRatio: 2 * BASE_RATIO,
-                rebalanceModule: IRebalanceAdapter(address(0)),
+                rebalanceAdapter: IRebalanceAdapter(address(0)),
                 depositTokenFee: 0,
                 withdrawTokenFee: 0
             }),
@@ -88,8 +84,6 @@ contract IntegrationTestBase is Test {
             "ltETH/USDC-2x",
             ""
         );
-
-        console.log("7");
 
         leverageManager.setTreasury(treasury);
 
@@ -149,7 +143,7 @@ contract IntegrationTestBase is Test {
             LeverageTokenConfig({
                 lendingAdapter: lendingAdapter,
                 targetCollateralRatio: targetCollateralRatio,
-                rebalanceModule: IRebalanceAdapter(rebalanceAdapter),
+                rebalanceAdapter: IRebalanceAdapter(rebalanceAdapter),
                 depositTokenFee: depositFee,
                 withdrawTokenFee: withdrawFee
             }),

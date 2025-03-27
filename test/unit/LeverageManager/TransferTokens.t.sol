@@ -2,7 +2,7 @@
 pragma solidity ^0.8.26;
 
 // Forge imports
-import {Test, console} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 
 // Dependency imports
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";

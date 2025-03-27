@@ -85,7 +85,7 @@ contract RebalanceTest is LeverageManagerTest {
         ethLong2x = leverageManager.createNewLeverageToken(
             LeverageTokenConfig({
                 lendingAdapter: ILendingAdapter(address(ethLong2xAdapter)),
-                rebalanceModule: IRebalanceAdapter(ethLong2xRebalanceAdapter),
+                rebalanceAdapter: IRebalanceAdapter(ethLong2xRebalanceAdapter),
                 targetCollateralRatio: 2 * BASE_RATIO, // 2x
                 depositTokenFee: 0,
                 withdrawTokenFee: 0
@@ -98,7 +98,7 @@ contract RebalanceTest is LeverageManagerTest {
         ethShort2x = leverageManager.createNewLeverageToken(
             LeverageTokenConfig({
                 lendingAdapter: ILendingAdapter(address(ethShort2xAdapter)),
-                rebalanceModule: IRebalanceAdapter(ethShort2xRebalanceAdapter),
+                rebalanceAdapter: IRebalanceAdapter(ethShort2xRebalanceAdapter),
                 targetCollateralRatio: 15 * BASE_RATIO / 10, // 1.5x
                 depositTokenFee: 0,
                 withdrawTokenFee: 0
