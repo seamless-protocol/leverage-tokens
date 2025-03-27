@@ -4,9 +4,9 @@ pragma solidity ^0.8.26;
 // Internal imports
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {IMorphoLendingAdapterFactory} from "src/interfaces/IMorphoLendingAdapterFactory.sol";
-import {MorphoLendingAdapterFactoryBase} from "./MorphoLendingAdapterFactoryBase.t.sol";
+import {MorphoLendingAdapterFactoryTest} from "./MorphoLendingAdapterFactory.t.sol";
 
-contract MorphoLendingAdapterFactoryComputeAddressTest is MorphoLendingAdapterFactoryBase {
+contract MorphoLendingAdapterFactoryComputeAddressTest is MorphoLendingAdapterFactoryTest {
     function testFuzz_computeAddress_MatchesDeployAddress(address sender, address authorizedCreator, bytes32 baseSalt)
         public
     {

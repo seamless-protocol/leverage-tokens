@@ -16,7 +16,7 @@ import {MorphoLendingAdapterFactory} from "src/adapters/MorphoLendingAdapterFact
 import {MockMorpho} from "../../mock/MockMorpho.sol";
 import {MockERC20} from "../../mock/MockERC20.sol";
 
-contract MorphoLendingAdapterFactoryBase is Test {
+contract MorphoLendingAdapterFactoryTest is Test {
     IMorphoLendingAdapter public lendingAdapterLogic;
 
     IMorphoLendingAdapterFactory public factory;

@@ -9,10 +9,10 @@ import {Errors} from "@openzeppelin/contracts/utils/Errors.sol";
 // Internal imports
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {IMorphoLendingAdapterFactory} from "src/interfaces/IMorphoLendingAdapterFactory.sol";
-import {MorphoLendingAdapterFactoryBase} from "./MorphoLendingAdapterFactoryBase.t.sol";
+import {MorphoLendingAdapterFactoryTest} from "./MorphoLendingAdapterFactory.t.sol";
 import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
 
-contract MorphoLendingAdapterFactoryDeployAdapterTest is MorphoLendingAdapterFactoryBase {
+contract MorphoLendingAdapterFactoryDeployAdapterTest is MorphoLendingAdapterFactoryTest {
     function testFuzz_deployAdapter(address sender, address authorizedCreator, bytes32 baseSaltA, bytes32 baseSaltB)
         public
     {
