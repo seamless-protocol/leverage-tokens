@@ -7,6 +7,9 @@ import {LeverageTokenState} from "src/types/DataTypes.sol";
 import {Auction} from "src/types/DataTypes.sol";
 
 interface IDutchAuctionRebalanceAdapter {
+    /// @notice Error thrown when leverage token is already set
+    error LeverageTokenAlreadySet();
+
     /// @notice Error thrown when auction is not valid
     error AuctionNotValid();
 

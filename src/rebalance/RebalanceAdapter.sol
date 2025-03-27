@@ -44,8 +44,8 @@ contract RebalanceAdapter is
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     function initialize(
-        address _authorizedCreator,
         address _owner,
+        address _authorizedCreator,
         ILeverageManager _leverageManager,
         uint256 _minCollateralRatio,
         uint256 _maxCollateralRatio,

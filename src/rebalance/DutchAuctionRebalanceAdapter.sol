@@ -68,6 +68,10 @@ abstract contract DutchAuctionRebalanceAdapter is IDutchAuctionRebalanceAdapter,
     /// @notice Sets the leverage token for the dutch auction rebalancer
     /// @param leverageToken The leverage token to set
     function _setLeverageToken(ILeverageToken leverageToken) internal {
+        if (address(getLeverageToken()) != address(0)) {
+            revert LeverageTokenAlreadySet();
+        }
+
         _getDutchAuctionRebalanceAdapterStorage().leverageToken = leverageToken;
         emit LeverageTokenSet(leverageToken);
     }

@@ -14,6 +14,7 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
+import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
@@ -26,14 +27,13 @@ import {RebalanceAdapter} from "src/rebalance/RebalanceAdapter.sol";
 
 contract IntegrationTestBase is Test {
     uint256 public constant FORK_BLOCK_NUMBER = 25473904;
+    uint256 public BASE_RATIO = 1e8;
 
     IERC20 public constant WETH = IERC20(0x4200000000000000000000000000000000000006);
     IERC20 public constant USDC = IERC20(0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913);
     IMorpho public constant MORPHO = IMorpho(0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb);
     Id public constant WETH_USDC_MARKET_ID = Id.wrap(0x8793cf302b8ffd655ab97bd1c695dbd967807e8367a65cb2f4edaf1380ba1bda);
 
-    uint256 public BASE_RATIO;
-    address public dutchAuctionModule = makeAddr("dutchAuctionModule");
     address public user = makeAddr("user");
     address public treasury = makeAddr("treasury");
     ILeverageToken public leverageToken;
@@ -71,6 +71,12 @@ contract IntegrationTestBase is Test {
         );
 
         BASE_RATIO = LeverageManager(address(leverageManager)).BASE_RATIO();
+
+        vm.mockCall(
+            address(0),
+            abi.encodeWithSelector(IRebalanceAdapterBase.postLeverageTokenCreation.selector),
+            abi.encode(true)
+        );
 
         leverageToken = leverageManager.createNewLeverageToken(
             LeverageTokenConfig({

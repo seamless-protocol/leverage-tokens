@@ -68,8 +68,6 @@ contract DutchAuctionRebalanceAdapterTest is Test {
             dutchAuctionRebalancerImplementation,
             abi.encodeWithSelector(
                 DutchAuctionRebalanceAdapterHarness.initialize.selector,
-                ILeverageManager(address(leverageManager)),
-                leverageToken,
                 DEFAULT_DURATION,
                 DEFAULT_INITIAL_PRICE_MULTIPLIER,
                 DEFAULT_MIN_PRICE_MULTIPLIER
@@ -78,6 +76,8 @@ contract DutchAuctionRebalanceAdapterTest is Test {
 
         // Setup owner and deploy auction rebalancer harness
         auctionRebalancer = DutchAuctionRebalanceAdapterHarness(dutchAuctionRebalancerProxy);
+        auctionRebalancer.mock_setLeverageManager(ILeverageManager(address(leverageManager)));
+        auctionRebalancer.exposed_setLeverageToken(leverageToken);
         leverageManager.setLeverageTokenRebalanceAdapter(leverageToken, address(auctionRebalancer));
 
         _mockLeverageTokenTargetCollateralRatio(TARGET_RATIO);

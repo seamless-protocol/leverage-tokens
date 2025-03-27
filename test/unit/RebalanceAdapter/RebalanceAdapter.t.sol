@@ -11,6 +11,7 @@ import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 
 contract RebalanceAdapterTest is Test {
+    address public authorizedCreator = makeAddr("authorizedCreator");
     address public owner = makeAddr("owner");
     ILeverageManager public leverageManager = ILeverageManager(makeAddr("leverageManager"));
     ILeverageToken public leverageToken = ILeverageToken(makeAddr("leverageToken"));
@@ -18,8 +19,8 @@ contract RebalanceAdapterTest is Test {
     uint256 public minCollateralRatio = 1.5 * 1e8;
     uint256 public maxCollateralRatio = 2.5 * 1e8;
     uint256 public auctionDuration = 7 minutes;
-    uint256 public initialPriceMultiplier = 1.02 * 1e8;
-    uint256 public minPriceMultiplier = 0.99 * 1e8;
+    uint256 public initialPriceMultiplier = 1.02 * 1e18;
+    uint256 public minPriceMultiplier = 0.99 * 1e18;
 
     RebalanceAdapterHarness public rebalanceAdapter;
 
@@ -29,25 +30,25 @@ contract RebalanceAdapterTest is Test {
             address(implementation),
             abi.encodeWithSelector(
                 RebalanceAdapter.initialize.selector,
-                leverageToken,
-                abi.encode(
-                    owner,
-                    leverageManager,
-                    minCollateralRatio,
-                    maxCollateralRatio,
-                    auctionDuration,
-                    initialPriceMultiplier,
-                    minPriceMultiplier
-                )
+                owner,
+                authorizedCreator,
+                leverageManager,
+                minCollateralRatio,
+                maxCollateralRatio,
+                auctionDuration,
+                initialPriceMultiplier,
+                minPriceMultiplier
             )
         );
 
         rebalanceAdapter = RebalanceAdapterHarness(proxy);
+
+        vm.prank(address(leverageManager));
+        rebalanceAdapter.postLeverageTokenCreation(authorizedCreator, address(leverageToken));
     }
 
     function test_setUp() public view {
-        assertEq(address(rebalanceAdapter.getLeverageManager()), address(leverageManager));
-        assertEq(address(rebalanceAdapter.getLeverageToken()), address(leverageToken));
+        assertEq(rebalanceAdapter.getAuthorizedCreator(), authorizedCreator);
         assertEq(rebalanceAdapter.getLeverageTokenMinCollateralRatio(), minCollateralRatio);
         assertEq(rebalanceAdapter.getLeverageTokenMaxCollateralRatio(), maxCollateralRatio);
         assertEq(rebalanceAdapter.getAuctionDuration(), auctionDuration);
