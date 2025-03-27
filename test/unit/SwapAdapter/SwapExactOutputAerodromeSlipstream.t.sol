@@ -6,12 +6,12 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
-import {SwapAdapterBaseTest} from "./SwapAdapterBase.t.sol";
+import {SwapAdapterTest} from "./SwapAdapter.t.sol";
 import {MockAerodromeSlipstreamRouter} from "test/unit/mock/MockAerodromeSlipstreamRouter.sol";
 import {SwapPathLib} from "test/utils/SwapPathLib.sol";
 
 //  Inherited in `SwapExactOutput.t.sol ` tests
-abstract contract SwapExactOutputAerodromeSlipstreamTest is SwapAdapterBaseTest {
+abstract contract SwapExactOutputAerodromeSlipstreamTest is SwapAdapterTest {
     function test_SwapExactOutputAerodromeSlipstream_SingleHop() public {
         uint256 outputAmount = 10 ether;
         uint256 maxInputAmount = 100 ether;

@@ -15,10 +15,10 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
-import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
+import {MorphoLendingAdapterTest} from "./MorphoLendingAdapter.t.sol";
 import {MockMorpho} from "../../mock/MockMorpho.sol";
 
-contract MorphoLendingAdapterInitializeTest is MorphoLendingAdapterBaseTest {
+contract MorphoLendingAdapterInitializeTest is MorphoLendingAdapterTest {
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_initialize(Id marketId, MarketParams memory marketParams) public {
         morpho.mockSetMarketParams(marketId, marketParams);
@@ -40,7 +40,7 @@ contract MorphoLendingAdapterInitializeTest is MorphoLendingAdapterBaseTest {
 
         vm.expectEmit(true, true, true, true);
         emit Initializable.Initialized(1);
-        _lendingAdapter.initialize(marketId);
+        _lendingAdapter.initialize(marketId, authorizedCreator);
 
         assertEq(address(_lendingAdapter.leverageManager()), address(leverageManager));
         assertEq(address(_lendingAdapter.morpho()), address(morpho));
@@ -52,14 +52,15 @@ contract MorphoLendingAdapterInitializeTest is MorphoLendingAdapterBaseTest {
         assertEq(oracle, marketParams.oracle);
         assertEq(irm, marketParams.irm);
         assertEq(lltv, marketParams.lltv);
+        assertEq(_lendingAdapter.authorizedCreator(), authorizedCreator);
     }
 
     function test_initialize_RevertIf_Initialized() public {
         MorphoLendingAdapter _lendingAdapter = new MorphoLendingAdapter(leverageManager, IMorpho(address(morpho)));
-        _lendingAdapter.initialize(defaultMarketId);
+        _lendingAdapter.initialize(defaultMarketId, authorizedCreator);
 
         vm.expectRevert(abi.encodeWithSelector(Initializable.InvalidInitialization.selector));
-        _lendingAdapter.initialize(defaultMarketId);
+        _lendingAdapter.initialize(defaultMarketId, authorizedCreator);
     }
 
     function test_initialize_UsingBeaconProxy() public {
@@ -85,7 +86,7 @@ contract MorphoLendingAdapterInitializeTest is MorphoLendingAdapterBaseTest {
             address(
                 new BeaconProxy(
                     address(morphoLendingAdapterBeacon),
-                    abi.encodeWithSelector(MorphoLendingAdapter.initialize.selector, defaultMarketId)
+                    abi.encodeWithSelector(MorphoLendingAdapter.initialize.selector, defaultMarketId, authorizedCreator)
                 )
             )
         );
@@ -98,6 +99,7 @@ contract MorphoLendingAdapterInitializeTest is MorphoLendingAdapterBaseTest {
         assertEq(oracle, defaultMarketParams.oracle);
         assertEq(irm, defaultMarketParams.irm);
         assertEq(lltv, defaultMarketParams.lltv);
+        assertEq(morphoLendingAdapterProxy.authorizedCreator(), authorizedCreator);
 
         // Create another beacon proxy with different market params, asserting that the market params are different but
         // the immutable leverage manager and morpho addresses are the same as the beacon
@@ -127,7 +129,7 @@ contract MorphoLendingAdapterInitializeTest is MorphoLendingAdapterBaseTest {
             address(
                 new BeaconProxy(
                     address(morphoLendingAdapterBeacon),
-                    abi.encodeWithSelector(MorphoLendingAdapter.initialize.selector, marketId)
+                    abi.encodeWithSelector(MorphoLendingAdapter.initialize.selector, marketId, authorizedCreator)
                 )
             )
         );
@@ -140,5 +142,6 @@ contract MorphoLendingAdapterInitializeTest is MorphoLendingAdapterBaseTest {
         assertEq(otherOracle, otherMarketParams.oracle);
         assertEq(otherIrm, otherMarketParams.irm);
         assertEq(otherLltv, otherMarketParams.lltv);
+        assertEq(morphoLendingAdapterProxy.authorizedCreator(), authorizedCreator);
     }
 }

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.26;
 
 // Forge imports
-import {Test, console} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 
 // Dependency imports
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -13,11 +13,11 @@ import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol"
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {LeverageManagerBaseTest} from "./LeverageManagerBase.t.sol";
+import {LeverageManagerTest} from "./LeverageManager.t.sol";
 import {LeverageTokenConfig} from "src/types/DataTypes.sol";
 import {LeverageToken} from "src/LeverageToken.sol";
 
-contract CreateNewLeverageTokenTest is LeverageManagerBaseTest {
+contract CreateNewLeverageTokenTest is LeverageManagerTest {
     function testFuzz_CreateNewLeverageToken(
         LeverageTokenConfig memory config,
         address collateralAsset,
@@ -34,12 +34,6 @@ contract CreateNewLeverageTokenTest is LeverageManagerBaseTest {
             0
         );
 
-        // Check if event is emitted properly
-        vm.expectEmit(true, true, true, true);
-        emit ILeverageManager.LeverageTokenCreated(
-            ILeverageToken(expectedLeverageTokenAddress), IERC20(collateralAsset), IERC20(debtAsset), config
-        );
-
         _createNewLeverageToken(manager, config, collateralAsset, debtAsset, name, symbol);
 
         // Check name of the leverage token
@@ -49,7 +43,7 @@ contract CreateNewLeverageTokenTest is LeverageManagerBaseTest {
         // Check if the leverage token core is set correctly
         LeverageTokenConfig memory configAfter = leverageManager.getLeverageTokenConfig(leverageToken);
         assertEq(address(configAfter.lendingAdapter), address(config.lendingAdapter));
-        assertEq(address(configAfter.rebalanceModule), address(config.rebalanceModule));
+        assertEq(address(configAfter.rebalanceAdapter), address(config.rebalanceAdapter));
 
         assertEq(configAfter.depositTokenFee, config.depositTokenFee);
         assertEq(configAfter.withdrawTokenFee, config.withdrawTokenFee);
@@ -57,28 +51,9 @@ contract CreateNewLeverageTokenTest is LeverageManagerBaseTest {
         assertEq(address(leverageManager.getLeverageTokenCollateralAsset(leverageToken)), collateralAsset);
         assertEq(address(leverageManager.getLeverageTokenDebtAsset(leverageToken)), debtAsset);
 
-        assertEq(leverageManager.getIsLendingAdapterUsed(address(config.lendingAdapter)), true);
         assertEq(leverageManager.getLeverageTokenTargetCollateralRatio(leverageToken), config.targetCollateralRatio);
         assertEq(
-            address(leverageManager.getLeverageTokenRebalanceModule(leverageToken)), address(config.rebalanceModule)
+            address(leverageManager.getLeverageTokenRebalanceAdapter(leverageToken)), address(config.rebalanceAdapter)
         );
-    }
-
-    function test_CreateNewLeverageToken_RevertIf_LendingAdapterAlreadyInUse(
-        LeverageTokenConfig memory config,
-        address collateralAsset,
-        address debtAsset,
-        string memory name,
-        string memory symbol
-    ) public {
-        config.depositTokenFee = bound(config.depositTokenFee, 0, _MAX_FEE());
-        config.withdrawTokenFee = bound(config.withdrawTokenFee, 0, _MAX_FEE());
-
-        _createNewLeverageToken(manager, config, collateralAsset, debtAsset, name, symbol);
-
-        vm.expectRevert(
-            abi.encodeWithSelector(ILeverageManager.LendingAdapterAlreadyInUse.selector, address(config.lendingAdapter))
-        );
-        _createNewLeverageToken(manager, config, collateralAsset, debtAsset, name, symbol);
     }
 }

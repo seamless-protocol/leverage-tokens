@@ -7,9 +7,9 @@ import {ORACLE_PRICE_SCALE} from "@morpho-blue/libraries/ConstantsLib.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // Internal imports
-import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
+import {MorphoLendingAdapterTest} from "./MorphoLendingAdapter.t.sol";
 
-contract ConvertDebtToCollateralAsset is MorphoLendingAdapterBaseTest {
+contract ConvertDebtToCollateralAsset is MorphoLendingAdapterTest {
     function test_convertDebtToCollateralAsset_ReturnsDebtDecimalsLessThanCollateralDecimals() public {
         collateralToken.mockSetDecimals(18);
         debtToken.mockSetDecimals(6);

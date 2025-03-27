@@ -5,9 +5,9 @@ pragma solidity ^0.8.26;
 import {IMorphoBase} from "@morpho-blue/interfaces/IMorpho.sol";
 
 // Internal imports
-import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
+import {MorphoLendingAdapterTest} from "./MorphoLendingAdapter.t.sol";
 
-contract GetCollateral is MorphoLendingAdapterBaseTest {
+contract GetCollateral is MorphoLendingAdapterTest {
     function test_getCollateral() public {
         uint256 collateral = 5e6;
 

@@ -5,8 +5,8 @@ pragma solidity ^0.8.26;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
-import {IFeeManager} from "./IFeeManager.sol";
 import {ILeverageToken} from "./ILeverageToken.sol";
+import {IFeeManager} from "./IFeeManager.sol";
 import {IBeaconProxyFactory} from "./IBeaconProxyFactory.sol";
 import {ILendingAdapter} from "./ILendingAdapter.sol";
 import {
@@ -16,12 +16,9 @@ import {
     TokenTransfer,
     LeverageTokenConfig
 } from "src/types/DataTypes.sol";
-import {IRebalanceModule} from "./IRebalanceModule.sol";
+import {IRebalanceAdapter} from "./IRebalanceAdapter.sol";
 
 interface ILeverageManager is IFeeManager {
-    /// @notice Error thrown when someone tries to create leverage token with lending adapter that already exists
-    error LendingAdapterAlreadyInUse(address adapter);
-
     /// @notice Error thrown when someone tries to set zero address for collateral or debt asset when creating leverage token
     error InvalidLeverageTokenAssets();
 
@@ -40,9 +37,6 @@ interface ILeverageManager is IFeeManager {
     /// @notice Error thrown when leverage token state after rebalance is invalid
     error InvalidLeverageTokenStateAfterRebalance(ILeverageToken token);
 
-    /// @notice Event emitted when leverage token factory is set
-    event LeverageTokenFactorySet(address factory);
-
     /// @notice Event emitted when new leverage token is created
     event LeverageTokenCreated(
         ILeverageToken indexed token, IERC20 collateralAsset, IERC20 debtAsset, LeverageTokenConfig config
@@ -57,11 +51,6 @@ interface ILeverageManager is IFeeManager {
     /// @notice Returns factory for creating new leverage tokens
     /// @return factory Factory for creating new leverage tokens
     function getLeverageTokenFactory() external view returns (IBeaconProxyFactory factory);
-
-    /// @notice Returns if lending adapter is in use by some other leverage token
-    /// @param adapter Adapter to check
-    /// @return isUsed True if adapter is used by some leverage token
-    function getIsLendingAdapterUsed(address adapter) external view returns (bool isUsed);
 
     /// @notice Returns lending adapter for the leverage token
     /// @param token Leverage token to get lending adapter for
@@ -81,7 +70,7 @@ interface ILeverageManager is IFeeManager {
     /// @notice Returns the rebalance module for the leverage token
     /// @param token Leverage token to get the rebalance module for
     /// @return module Rebalance module for the leverage token
-    function getLeverageTokenRebalanceModule(ILeverageToken token) external view returns (IRebalanceModule module);
+    function getLeverageTokenRebalanceAdapter(ILeverageToken token) external view returns (IRebalanceAdapter module);
 
     /// @notice Returns target ratio for a leverage token
     /// @param token Leverage token to get target ratio for
@@ -98,19 +87,18 @@ interface ILeverageManager is IFeeManager {
     /// @return state Leverage token state
     function getLeverageTokenState(ILeverageToken token) external view returns (LeverageTokenState memory state);
 
-    /// @notice Sets factory for creating new leverage tokens
-    /// @param factory Factory to set
-    /// @dev Only DEFAULT_ADMIN_ROLE can call this function
-    function setLeverageTokenFactory(address factory) external;
-
     /// @notice Creates new leverage token with given config
     /// @param config Configuration of the leverage token
     /// @param name Name of the leverage token
     /// @param symbol Symbol of the leverage token
+    /// @param rebalanceAdapterInitData Initialization data for the rebalance adapter
     /// @return token Address of the new leverage token
-    function createNewLeverageToken(LeverageTokenConfig memory config, string memory name, string memory symbol)
-        external
-        returns (ILeverageToken token);
+    function createNewLeverageToken(
+        LeverageTokenConfig memory config,
+        string memory name,
+        string memory symbol,
+        bytes memory rebalanceAdapterInitData
+    ) external returns (ILeverageToken token);
 
     /// @notice Previews deposit function call and returns all required data
     /// @param token Leverage token to preview deposit for

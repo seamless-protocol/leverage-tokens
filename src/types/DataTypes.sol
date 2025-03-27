@@ -3,7 +3,7 @@ pragma solidity ^0.8.26;
 
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
-import {IRebalanceModule} from "src/interfaces/IRebalanceModule.sol";
+import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 
 /// @dev Enum defining the type of external action user can perform
 enum ExternalAction {
@@ -40,7 +40,7 @@ struct BaseLeverageTokenConfig {
     /// @dev Lending adapter for leverage token
     ILendingAdapter lendingAdapter;
     /// @dev Rebalance module for leverage token
-    IRebalanceModule rebalanceModule;
+    IRebalanceAdapter rebalanceAdapter;
     /// @dev Target collateral ratio of the leverage token on 8 decimals
     uint256 targetCollateralRatio;
 }
@@ -60,7 +60,7 @@ struct LeverageTokenConfig {
     /// @dev Lending adapter for leverage token
     ILendingAdapter lendingAdapter;
     /// @dev Rebalance module for leverage token
-    IRebalanceModule rebalanceModule;
+    IRebalanceAdapter rebalanceAdapter;
     /// @dev Target collateral ratio of the leverage token on 8 decimals
     uint256 targetCollateralRatio;
     /// @dev Fee for deposit action
@@ -93,10 +93,6 @@ struct TokenTransfer {
 struct Auction {
     /// @dev Whether the leverage token is over-collateralized
     bool isOverCollateralized;
-    /// @dev Initial price multiplier for the auction
-    uint256 initialPriceMultiplier;
-    /// @dev Minimum price multiplier for the auction
-    uint256 minPriceMultiplier;
     /// @dev Timestamp when auction started
     uint256 startTimestamp;
     /// @dev Timestamp when auction ends/ended

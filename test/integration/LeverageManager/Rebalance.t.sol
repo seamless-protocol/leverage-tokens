@@ -2,13 +2,14 @@
 pragma solidity ^0.8.26;
 
 // Dependency imports
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IMorpho, Id, MarketParams} from "@morpho-blue/interfaces/IMorpho.sol";
 import {IOracle} from "@morpho-blue/interfaces/IOracle.sol";
 
 // Internal imports
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {LeverageManagerHarness} from "test/unit/LeverageManager/harness/LeverageManagerHarness.t.sol";
+import {LeverageManagerHarness} from "test/unit/harness/LeverageManagerHarness.t.sol";
 import {
     LeverageTokenState,
     RebalanceAction,
@@ -18,15 +19,15 @@ import {
 } from "src/types/DataTypes.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
-import {LeverageManagerBase} from "test/integration/LeverageManager/LeverageManagerBase.t.sol";
+import {LeverageManagerTest} from "test/integration/LeverageManager/LeverageManager.t.sol";
 import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
-import {IRebalanceModule} from "src/interfaces/IRebalanceModule.sol";
+import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
+import {RebalanceAdapter} from "src/rebalance/RebalanceAdapter.sol";
 
-contract RebalanceTest is LeverageManagerBase {
+contract RebalanceTest is LeverageManagerTest {
     int256 public constant MAX_PERCENTAGE = 100_00; // 100%
 
     Id public constant USDC_WETH_MARKET_ID = Id.wrap(0x3b3769cfca57be2eaed03fcc5299c25691b77781a1e124e7a8d520eb9a7eabb5);
-    address public rebalancer;
 
     ILeverageToken ethLong2x;
     ILeverageToken ethShort2x;
@@ -34,22 +35,49 @@ contract RebalanceTest is LeverageManagerBase {
     MorphoLendingAdapter ethLong2xAdapter;
     MorphoLendingAdapter ethShort2xAdapter;
 
+    address public ethLong2xRebalanceAdapter;
+    address public ethShort2xRebalanceAdapter;
+
     function setUp() public virtual override {
         super.setUp();
 
         // Deploying simple reward distributor for now because more complex reward distributor will be tested separately
         // The same reward distributor can be used for multiple strategies because it is state-less
 
+        bytes memory ethLong2xRebalanceAdapterInitData = abi.encode(
+            address(this),
+            address(leverageManager),
+            18 * BASE_RATIO / 10, // 1.8x
+            22 * BASE_RATIO / 10, // 2.2x
+            7 minutes, // 7 minutes
+            1.2 * 1e18, // 1.2x
+            0.9 * 1e18 // 0.9x
+        );
+
+        bytes memory ethShort2xRebalanceAdapterInitData = abi.encode(
+            address(this),
+            address(leverageManager),
+            13 * BASE_RATIO / 10, // 1.3x
+            2 * BASE_RATIO, // 2x
+            7 minutes, // 7 minutes
+            1.2 * 1e18, // 1.2x
+            0.9 * 1e18 // 0.9x
+        );
+
+        RebalanceAdapter rebalanceAdapterImplementation = new RebalanceAdapter();
+        ethLong2xRebalanceAdapter = address(new ERC1967Proxy(address(rebalanceAdapterImplementation), ""));
+        ethShort2xRebalanceAdapter = address(new ERC1967Proxy(address(rebalanceAdapterImplementation), ""));
+
         ethLong2xAdapter = MorphoLendingAdapter(
             morphoLendingAdapterFactory.createProxy(
-                abi.encodeWithSelector(MorphoLendingAdapter.initialize.selector, WETH_USDC_MARKET_ID),
+                abi.encodeWithSelector(MorphoLendingAdapter.initialize.selector, WETH_USDC_MARKET_ID, address(this)),
                 bytes32(uint256(1))
             )
         );
 
         ethShort2xAdapter = MorphoLendingAdapter(
             morphoLendingAdapterFactory.createProxy(
-                abi.encodeWithSelector(MorphoLendingAdapter.initialize.selector, USDC_WETH_MARKET_ID),
+                abi.encodeWithSelector(MorphoLendingAdapter.initialize.selector, USDC_WETH_MARKET_ID, address(this)),
                 bytes32(uint256(2))
             )
         );
@@ -57,30 +85,28 @@ contract RebalanceTest is LeverageManagerBase {
         ethLong2x = leverageManager.createNewLeverageToken(
             LeverageTokenConfig({
                 lendingAdapter: ILendingAdapter(address(ethLong2xAdapter)),
-                rebalanceModule: IRebalanceModule(address(seamlessRebalanceModule)),
+                rebalanceAdapter: IRebalanceAdapter(ethLong2xRebalanceAdapter),
                 targetCollateralRatio: 2 * BASE_RATIO, // 2x
                 depositTokenFee: 0,
                 withdrawTokenFee: 0
             }),
             "Seamless ETH/USDC 2x leverage token",
-            "ltETH/USDC-2x"
+            "ltETH/USDC-2x",
+            ethLong2xRebalanceAdapterInitData
         );
 
         ethShort2x = leverageManager.createNewLeverageToken(
             LeverageTokenConfig({
                 lendingAdapter: ILendingAdapter(address(ethShort2xAdapter)),
-                rebalanceModule: IRebalanceModule(address(seamlessRebalanceModule)),
+                rebalanceAdapter: IRebalanceAdapter(ethShort2xRebalanceAdapter),
                 targetCollateralRatio: 15 * BASE_RATIO / 10, // 1.5x
                 depositTokenFee: 0,
                 withdrawTokenFee: 0
             }),
             "Seamless USDC/ETH 2x leverage token",
-            "ltUSDC/ETH-2x"
+            "ltUSDC/ETH-2x",
+            ethShort2xRebalanceAdapterInitData
         );
-
-        seamlessRebalanceModule.setLeverageTokenCollateralRatios(ethLong2x, 18 * BASE_RATIO / 10, 22 * BASE_RATIO / 10);
-        seamlessRebalanceModule.setLeverageTokenCollateralRatios(ethShort2x, 13 * BASE_RATIO / 10, 2 * BASE_RATIO);
-        rebalancer = dutchAuctionModule;
     }
 
     /// @dev In this block price on oracle 3392.292471591441746049801068
@@ -121,8 +147,8 @@ contract RebalanceTest is LeverageManagerBase {
         assertEq(debtAfter, debtBefore + 4100 * 1e6);
 
         // Check that USDC is sent to rebalancer and that WETH is taken from him
-        assertEq(USDC.balanceOf(rebalancer), 4100 * 1e6);
-        assertEq(WETH.balanceOf(rebalancer), 0);
+        assertEq(USDC.balanceOf(ethLong2xRebalanceAdapter), 4100 * 1e6);
+        assertEq(WETH.balanceOf(ethLong2xRebalanceAdapter), 0);
     }
 
     function test_rebalance_SingleLeverageToken_UnderCollateralized() public {
@@ -157,8 +183,8 @@ contract RebalanceTest is LeverageManagerBase {
         assertEq(debtAfter, debtBefore - 2800 * 1e6);
 
         // Check that USDC is sent to rebalancer and that WETH is taken from him
-        assertEq(USDC.balanceOf(rebalancer), 0);
-        assertEq(WETH.balanceOf(rebalancer), 1e18);
+        assertEq(USDC.balanceOf(ethLong2xRebalanceAdapter), 0);
+        assertEq(WETH.balanceOf(ethLong2xRebalanceAdapter), 1e18);
     }
 
     /// @dev In this block price on oracle 3392.292471591441746049801068
@@ -172,77 +198,11 @@ contract RebalanceTest is LeverageManagerBase {
         (RebalanceAction[] memory actions, TokenTransfer[] memory transfersIn, TokenTransfer[] memory transfersOut) =
             _prepareForRebalance(ethLong2x, 10 * 1e18, 0, 0, 0);
 
-        vm.prank(rebalancer);
+        vm.prank(ethLong2xRebalanceAdapter);
         vm.expectRevert(
             abi.encodeWithSelector(ILeverageManager.InvalidLeverageTokenStateAfterRebalance.selector, ethLong2x)
         );
         leverageManager.rebalance(actions, transfersIn, transfersOut);
-    }
-
-    /// @dev In this test amounts are smaller because there is not enough liquidity on Morpho to borrow for short leverage token
-    function test_rebalance_MoveFundsAcrossStrategies() public {
-        _depositEthLong2x();
-
-        // Because USDC/ETH market utilization is 100% in this block (everything is borrowed) we need to deposit some assets for borrowing
-        // Random user puts 1000 WETH in USDC/WETH market
-        _supplyWETHForETHShortLeverageToken();
-
-        _depositEthShort2x();
-
-        _moveEthPrice(20_00);
-
-        // ETH short leverage token is now under-collateralized and we are going to gift it 30_000 USDC to simulate over-collateralized state
-        _giftUSDCToETHShortLeverageToken();
-
-        // Double check that both strategies are over-collateralized
-        LeverageTokenState memory ethLongStateBefore = getLeverageTokenState(ethLong2x);
-        assertGe(ethLongStateBefore.collateralRatio, 2 * BASE_RATIO);
-
-        LeverageTokenState memory ethShortStateBefore = getLeverageTokenState(ethShort2x);
-        assertGe(ethShortStateBefore.collateralRatio, 15 * BASE_RATIO / 10);
-
-        // Prepare rebalance parameters
-        uint256 ethShortDebtToBorrow = 3 * 1e18;
-        uint256 ethLongCollateralToAdd = 2.9 * 1e18;
-        uint256 ethLongDebtToBorrow = 12_000 * 1e6;
-        uint256 ethShortCollateralToAdd = 11_500 * 1e6;
-
-        RebalanceAction[] memory actions = new RebalanceAction[](4);
-        actions[0] =
-            RebalanceAction({leverageToken: ethShort2x, actionType: ActionType.Borrow, amount: ethShortDebtToBorrow});
-        actions[1] = RebalanceAction({
-            leverageToken: ethLong2x,
-            actionType: ActionType.AddCollateral,
-            amount: ethLongCollateralToAdd
-        });
-        actions[2] =
-            RebalanceAction({leverageToken: ethLong2x, actionType: ActionType.Borrow, amount: ethLongDebtToBorrow});
-        actions[3] = RebalanceAction({
-            leverageToken: ethShort2x,
-            actionType: ActionType.AddCollateral,
-            amount: ethShortCollateralToAdd
-        });
-
-        TokenTransfer[] memory transfersIn = new TokenTransfer[](0);
-        TokenTransfer[] memory transfersOut = new TokenTransfer[](2);
-        transfersOut[0] = TokenTransfer({token: address(WETH), amount: 0.1 * 1e18});
-        transfersOut[1] = TokenTransfer({token: address(USDC), amount: 500 * 1e6});
-
-        vm.prank(rebalancer);
-        leverageManager.rebalance(actions, transfersIn, transfersOut);
-
-        // Check that rebalancer has received the tokens as reward
-        assertEq(WETH.balanceOf(rebalancer), 0.1 * 1e18);
-        assertEq(USDC.balanceOf(rebalancer), 500 * 1e6);
-
-        // Check that strategies are in better state
-        LeverageTokenState memory ethLongStateAfter = getLeverageTokenState(ethLong2x);
-        assertGe(ethLongStateAfter.collateralRatio, 2 * BASE_RATIO);
-        assertLe(ethLongStateAfter.collateralRatio, ethLongStateBefore.collateralRatio);
-
-        LeverageTokenState memory ethShortStateAfter = getLeverageTokenState(ethShort2x);
-        assertGe(ethShortStateAfter.collateralRatio, 15 * BASE_RATIO / 10);
-        assertLe(ethShortStateAfter.collateralRatio, ethShortStateBefore.collateralRatio);
     }
 
     struct RebalanceData {
@@ -268,7 +228,7 @@ contract RebalanceTest is LeverageManagerBase {
         (RebalanceAction[] memory actions, TokenTransfer[] memory transfersIn, TokenTransfer[] memory transfersOut) =
             _prepareForRebalance(leverageToken, collToAdd, collToTake, debtToBorrow, debtToRepay);
 
-        vm.prank(rebalancer);
+        vm.prank(address(leverageToken) == address(ethLong2x) ? ethLong2xRebalanceAdapter : ethShort2xRebalanceAdapter);
         leverageManager.rebalance(actions, transfersIn, transfersOut);
     }
 
@@ -295,6 +255,9 @@ contract RebalanceTest is LeverageManagerBase {
             TokenTransfer[] memory transfersOut
         )
     {
+        address rebalancer =
+            address(leverageToken) == address(ethLong2x) ? ethLong2xRebalanceAdapter : ethShort2xRebalanceAdapter;
+
         actions = new RebalanceAction[](4);
         actions[0] =
             RebalanceAction({leverageToken: leverageToken, actionType: ActionType.AddCollateral, amount: collToAdd});

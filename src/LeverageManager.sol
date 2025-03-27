@@ -25,14 +25,13 @@ import {
     RebalanceAction,
     TokenTransfer
 } from "src/types/DataTypes.sol";
-import {IRebalanceModule} from "src/interfaces/IRebalanceModule.sol";
+import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 
 contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManager, UUPSUpgradeable {
     // Base collateral ratio constant, 1e8 means that collateral / debt ratio is 1:1
     uint256 public constant BASE_RATIO = 1e8;
     uint256 public constant DECIMALS_OFFSET = 0;
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
-    bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
 
     /// @dev Struct containing all state for the LeverageManager contract
     /// @custom:storage-location erc7201:seamless.contracts.storage.LeverageManager
@@ -41,8 +40,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         IBeaconProxyFactory tokenFactory;
         /// @dev Leverage token address => Base config for leverage token
         mapping(ILeverageToken token => BaseLeverageTokenConfig) config;
-        /// @dev Lending adapter address => Is lending adapter registered. Multiple leverage tokens can't have same lending adapter
-        mapping(address lendingAdapter => bool) isLendingAdapterUsed;
     }
 
     function _getLeverageManagerStorage() internal pure returns (LeverageManagerStorage storage $) {
@@ -53,8 +50,10 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         }
     }
 
-    function initialize(address initialAdmin) external initializer {
+    function initialize(address initialAdmin, IBeaconProxyFactory leverageTokenFactory) external initializer {
         _grantRole(DEFAULT_ADMIN_ROLE, initialAdmin);
+
+        _getLeverageManagerStorage().tokenFactory = leverageTokenFactory;
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}
@@ -62,11 +61,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     /// @inheritdoc ILeverageManager
     function getLeverageTokenFactory() public view returns (IBeaconProxyFactory factory) {
         return _getLeverageManagerStorage().tokenFactory;
-    }
-
-    /// @inheritdoc ILeverageManager
-    function getIsLendingAdapterUsed(address lendingAdapter) public view returns (bool isUsed) {
-        return _getLeverageManagerStorage().isLendingAdapterUsed[lendingAdapter];
     }
 
     /// @inheritdoc ILeverageManager
@@ -80,8 +74,8 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function getLeverageTokenRebalanceModule(ILeverageToken token) public view returns (IRebalanceModule module) {
-        return _getLeverageManagerStorage().config[token].rebalanceModule;
+    function getLeverageTokenRebalanceAdapter(ILeverageToken token) public view returns (IRebalanceAdapter module) {
+        return _getLeverageManagerStorage().config[token].rebalanceAdapter;
     }
 
     /// @inheritdoc ILeverageManager
@@ -93,7 +87,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         return LeverageTokenConfig({
             lendingAdapter: baseConfig.lendingAdapter,
             targetCollateralRatio: baseConfig.targetCollateralRatio,
-            rebalanceModule: baseConfig.rebalanceModule,
+            rebalanceAdapter: baseConfig.rebalanceAdapter,
             depositTokenFee: depositTokenFee,
             withdrawTokenFee: withdrawTokenFee
         });
@@ -133,16 +127,14 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function setLeverageTokenFactory(address factory) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _getLeverageManagerStorage().tokenFactory = IBeaconProxyFactory(factory);
-        emit LeverageTokenFactorySet(factory);
-    }
+    function createNewLeverageToken(
+        LeverageTokenConfig calldata tokenConfig,
+        string memory name,
+        string memory symbol,
+        bytes memory rebalanceAdapterInitData
+    ) external returns (ILeverageToken token) {
+        tokenConfig.lendingAdapter.preLeverageTokenCreation(msg.sender);
 
-    /// @inheritdoc ILeverageManager
-    function createNewLeverageToken(LeverageTokenConfig calldata tokenConfig, string memory name, string memory symbol)
-        external
-        returns (ILeverageToken token)
-    {
         IBeaconProxyFactory tokenFactory = getLeverageTokenFactory();
 
         // slither-disable-next-line reentrancy-events
@@ -153,18 +145,17 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             )
         );
 
-        if (getIsLendingAdapterUsed(address(tokenConfig.lendingAdapter))) {
-            revert LendingAdapterAlreadyInUse(address(tokenConfig.lendingAdapter));
-        }
-
         _getLeverageManagerStorage().config[token] = BaseLeverageTokenConfig({
             lendingAdapter: tokenConfig.lendingAdapter,
-            rebalanceModule: tokenConfig.rebalanceModule,
+            rebalanceAdapter: tokenConfig.rebalanceAdapter,
             targetCollateralRatio: tokenConfig.targetCollateralRatio
         });
-        _getLeverageManagerStorage().isLendingAdapterUsed[address(tokenConfig.lendingAdapter)] = true;
         _setLeverageTokenActionFee(token, ExternalAction.Deposit, tokenConfig.depositTokenFee);
         _setLeverageTokenActionFee(token, ExternalAction.Withdraw, tokenConfig.withdrawTokenFee);
+
+        if (rebalanceAdapterInitData.length > 0) {
+            tokenConfig.rebalanceAdapter.initialize(token, rebalanceAdapterInitData);
+        }
 
         emit LeverageTokenCreated(
             token,
@@ -299,8 +290,8 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
                 LeverageTokenState memory state = getLeverageTokenState(leverageToken);
                 leverageTokensStateBefore[i] = state;
 
-                IRebalanceModule rebalanceModule = getLeverageTokenRebalanceModule(leverageToken);
-                if (!rebalanceModule.isEligibleForRebalance(leverageToken, state, msg.sender)) {
+                IRebalanceAdapter rebalanceAdapter = getLeverageTokenRebalanceAdapter(leverageToken);
+                if (!rebalanceAdapter.isEligibleForRebalance(leverageToken, state, msg.sender)) {
                     revert LeverageTokenNotEligibleForRebalance(leverageToken);
                 }
             }
@@ -312,9 +303,9 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             // Validate the leverage token state after rebalancing if it has not been validated yet in a previous iteration of the loop
             if (!_isElementInSlice(actions, actions[i].leverageToken, i)) {
                 ILeverageToken leverageToken = actions[i].leverageToken;
-                IRebalanceModule rebalanceModule = getLeverageTokenRebalanceModule(leverageToken);
+                IRebalanceAdapter rebalanceAdapter = getLeverageTokenRebalanceAdapter(leverageToken);
 
-                if (!rebalanceModule.isStateAfterRebalanceValid(leverageToken, leverageTokensStateBefore[i])) {
+                if (!rebalanceAdapter.isStateAfterRebalanceValid(leverageToken, leverageTokensStateBefore[i])) {
                     revert InvalidLeverageTokenStateAfterRebalance(leverageToken);
                 }
             }

@@ -6,10 +6,10 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
-import {LeverageRouterBase} from "./LeverageRouterBase.t.sol";
+import {LeverageRouterTest} from "./LeverageRouter.t.sol";
 import {SwapPathLib} from "../../utils/SwapPathLib.sol";
 
-contract LeverageRouterDepositTest is LeverageRouterBase {
+contract LeverageRouterDepositTest is LeverageRouterTest {
     /// @dev In this block price on oracle 3392.292471591441746049801068
     function testFork_deposit_UniswapV2() public {
         uint256 equityInCollateralAsset = 1 ether;
