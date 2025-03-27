@@ -31,7 +31,7 @@ interface IMinMaxCollateralRatioRebalanceAdapter {
     /// @param token The leverage token
     /// @param state The state of the leverage token
     /// @param caller The caller of the function
-    /// @return isEligible True if the leverage token is eligible for rebalance, false otherwise
+    /// @return isEligible True if leverage token is eligible for rebalance, false otherwise
     function isEligibleForRebalance(ILeverageToken token, LeverageTokenState memory state, address caller)
         external
         view

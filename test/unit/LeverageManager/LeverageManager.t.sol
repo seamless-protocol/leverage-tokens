@@ -110,25 +110,32 @@ contract LeverageManagerTest is FeeManagerTest {
         string memory name,
         string memory symbol
     ) internal returns (ILeverageToken) {
+        // Mock getCollateralAsset to return the collateral asset
         vm.mockCall(
             address(config.lendingAdapter),
             abi.encodeWithSelector(ILendingAdapter.getCollateralAsset.selector),
             abi.encode(IERC20(collateralAsset))
         );
+
+        // Mock getDebtAsset to return the debt asset
         vm.mockCall(
             address(config.lendingAdapter),
             abi.encodeWithSelector(ILendingAdapter.getDebtAsset.selector),
             abi.encode(IERC20(debtAsset))
         );
+
+        // Mock postLeverageTokenCreation to return true
         vm.mockCall(
             address(config.lendingAdapter),
             abi.encodeWithSelector(ILendingAdapter.postLeverageTokenCreation.selector),
-            abi.encode(true)
+            abi.encode()
         );
+
+        // Mock postLeverageTokenCreation to return true
         vm.mockCall(
             address(config.rebalanceAdapter),
             abi.encodeWithSelector(IRebalanceAdapterBase.postLeverageTokenCreation.selector),
-            abi.encode(true)
+            abi.encode()
         );
 
         vm.startPrank(caller);
