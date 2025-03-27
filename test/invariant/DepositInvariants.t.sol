@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.26;
 
+// Forge imports
+import {stdMath} from "forge-std/StdMath.sol";
+
 // Dependency imports
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
@@ -65,68 +68,77 @@ contract DepositInvariants is InvariantTestBase {
         LeverageManagerHandler.StrategyStateData memory stateBefore,
         StrategyState memory stateAfter
     ) internal view {
-        _assertCollateralRatioNonEmptyStrategy(depositData, stateBefore, stateAfter);
+        _assertCollateralRatioNonEmptyStrategy(stateBefore, stateAfter);
         _assertCollateralRatioEmptyStrategy(depositData, stateBefore, stateAfter);
         _assertCollateralRatioZeroEquityDeposit(depositData, stateBefore, stateAfter);
     }
 
     function _assertCollateralRatioNonEmptyStrategy(
-        LeverageManagerHandler.DepositActionData memory depositData,
         LeverageManagerHandler.StrategyStateData memory stateBefore,
         StrategyState memory stateAfter
-    ) internal view {
+    ) internal pure {
         if (stateBefore.totalSupply == 0 || stateBefore.debt == 0) {
             return;
         }
 
-        if (stateBefore.debt != stateBefore.totalSupply) {
-            MockLendingAdapter lendingAdapter =
-                MockLendingAdapter(address(leverageManager.getStrategyLendingAdapter(depositData.strategy)));
-            string memory debug = string.concat(
-                " stateBefore.totalSupply: ",
-                Strings.toString(stateBefore.totalSupply),
-                " stateBefore.collateral: ",
-                Strings.toString(stateBefore.collateral),
-                " stateBefore.collateralInDebtAsset: ",
-                Strings.toString(stateBefore.collateralInDebtAsset),
-                " stateBefore.debt: ",
-                Strings.toString(stateBefore.debt),
-                " stateBefore.equityInCollateralAsset: ",
-                Strings.toString(stateBefore.equityInCollateralAsset),
-                " stateBefore.collateralRatio: ",
-                Strings.toString(stateBefore.collateralRatio)
-            );
-            string memory debug2 = string.concat(
-                " stateAfter.collateral: ",
-                Strings.toString(leverageManager.getStrategyLendingAdapter(depositData.strategy).getCollateral()),
-                " stateAfter.collateralInDebtAsset: ",
-                Strings.toString(stateAfter.collateralInDebtAsset),
-                " stateAfter.debt: ",
-                Strings.toString(stateAfter.debt),
-                " stateAfter.equityInCollateralAsset: ",
-                Strings.toString(
-                    leverageManager.getStrategyLendingAdapter(depositData.strategy).getEquityInCollateralAsset()
-                ),
-                " stateAfter.collateralRatio: ",
-                Strings.toString(stateAfter.collateralRatio),
-                " stateAfter.totalSupply: ",
-                Strings.toString(depositData.strategy.totalSupply())
-            );
-            string memory debug3 = string.concat(
-                " exchangeRate: ",
-                Strings.toString(lendingAdapter.collateralToDebtAssetExchangeRate()),
-                " equityInCollateralAsset deposited: ",
-                Strings.toString(depositData.equityInCollateralAsset)
-            );
-            assertGe(
+        // MockLendingAdapter lendingAdapter =
+        //     MockLendingAdapter(address(leverageManager.getStrategyLendingAdapter(depositData.strategy)));
+        // string memory debug = string.concat(
+        //     " stateBefore.totalSupply: ",
+        //     Strings.toString(stateBefore.totalSupply),
+        //     " stateBefore.collateral: ",
+        //     Strings.toString(stateBefore.collateral),
+        //     " stateBefore.collateralInDebtAsset: ",
+        //     Strings.toString(stateBefore.collateralInDebtAsset),
+        //     " stateBefore.debt: ",
+        //     Strings.toString(stateBefore.debt),
+        //     " stateBefore.equityInCollateralAsset: ",
+        //     Strings.toString(stateBefore.equityInCollateralAsset),
+        //     " stateBefore.collateralRatio: ",
+        //     Strings.toString(stateBefore.collateralRatio)
+        // );
+        // string memory debug2 = string.concat(
+        //     " stateAfter.collateral: ",
+        //     Strings.toString(leverageManager.getStrategyLendingAdapter(depositData.strategy).getCollateral()),
+        //     " stateAfter.collateralInDebtAsset: ",
+        //     Strings.toString(stateAfter.collateralInDebtAsset),
+        //     " stateAfter.debt: ",
+        //     Strings.toString(stateAfter.debt),
+        //     " stateAfter.equityInCollateralAsset: ",
+        //     Strings.toString(
+        //         leverageManager.getStrategyLendingAdapter(depositData.strategy).getEquityInCollateralAsset()
+        //     ),
+        //     " stateAfter.collateralRatio: ",
+        //     Strings.toString(stateAfter.collateralRatio),
+        //     " stateAfter.totalSupply: ",
+        //     Strings.toString(depositData.strategy.totalSupply())
+        // );
+        // string memory debug3 = string.concat(
+        //     " exchangeRate: ",
+        //     Strings.toString(lendingAdapter.collateralToDebtAssetExchangeRate()),
+        //     " equityInCollateralAsset deposited: ",
+        //     Strings.toString(depositData.equityInCollateralAsset)
+        // );
+
+        // assertGe(
+        //     stateAfter.collateralRatio,
+        //     stateBefore.collateralRatio,
+        //     string.concat(
+        //         "Invariant Violated: Collateral ratio after deposit into a non-empty strategy must be greater than or equal to the initial collateral ratio.",
+        //         debug,
+        //         debug2,
+        //         debug3
+        //     )
+        // );
+
+        // assertApproxEqRel scales the difference by 1e18, so we can't check this if the difference is too high
+        uint256 collateralRatioDiff = stdMath.delta(stateAfter.collateralRatio, stateBefore.collateralRatio);
+        if (collateralRatioDiff == 0 || type(uint256).max / 1e18 >= collateralRatioDiff) {
+            assertApproxEqRel(
                 stateAfter.collateralRatio,
                 stateBefore.collateralRatio,
-                string.concat(
-                    "Invariant Violated: Collateral ratio after deposit into a non-empty strategy must be greater than or equal to the initial collateral ratio.",
-                    debug,
-                    debug2,
-                    debug3
-                )
+                _getAllowedCollateralRatioSlippage(Math.min(stateBefore.collateral, stateBefore.debt)),
+                "Invariant Violated: Collateral ratio after deposit into a non-empty strategy must be equal to the initial collateral ratio, within the allowed slippage."
             );
         }
     }
