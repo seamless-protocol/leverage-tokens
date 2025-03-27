@@ -49,6 +49,7 @@ contract RebalanceAdapterTest is Test {
 
     function test_setUp() public view {
         assertEq(rebalanceAdapter.getAuthorizedCreator(), authorizedCreator);
+        assertEq(address(rebalanceAdapter.getLeverageManager()), address(leverageManager));
         assertEq(rebalanceAdapter.getLeverageTokenMinCollateralRatio(), minCollateralRatio);
         assertEq(rebalanceAdapter.getLeverageTokenMaxCollateralRatio(), maxCollateralRatio);
         assertEq(rebalanceAdapter.getAuctionDuration(), auctionDuration);
