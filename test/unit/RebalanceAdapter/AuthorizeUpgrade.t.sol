@@ -7,6 +7,9 @@ import {RebalanceAdapterTest} from "./RebalanceAdapter.t.sol";
 
 contract AuthorizeUpgradeTest is RebalanceAdapterTest {
     function testFuzz_authorizeUpgrade(address caller, address newImplementation) public {
+        vm.assume(caller != rebalanceAdapter.owner());
+        vm.assume(caller != address(0));
+
         vm.prank(rebalanceAdapter.owner());
         rebalanceAdapter.transferOwnership(caller);
 
