@@ -91,14 +91,10 @@ interface ILeverageManager is IFeeManager {
     /// @param config Configuration of the leverage token
     /// @param name Name of the leverage token
     /// @param symbol Symbol of the leverage token
-    /// @param rebalanceAdapterInitData Initialization data for the rebalance adapter
     /// @return token Address of the new leverage token
-    function createNewLeverageToken(
-        LeverageTokenConfig memory config,
-        string memory name,
-        string memory symbol,
-        bytes memory rebalanceAdapterInitData
-    ) external returns (ILeverageToken token);
+    function createNewLeverageToken(LeverageTokenConfig memory config, string memory name, string memory symbol)
+        external
+        returns (ILeverageToken token);
 
     /// @notice Previews deposit function call and returns all required data
     /// @param token Leverage token to preview deposit for

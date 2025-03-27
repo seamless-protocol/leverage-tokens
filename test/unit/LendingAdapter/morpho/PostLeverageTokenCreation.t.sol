@@ -10,40 +10,45 @@ import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
 import {MorphoLendingAdapterTest} from "./MorphoLendingAdapter.t.sol";
 
-contract PreLeverageTokenCreation is MorphoLendingAdapterTest {
+contract PostLeverageTokenCreation is MorphoLendingAdapterTest {
     // forge-config: default.fuzz.runs = 1
-    function testFuzz_preLeverageTokenCreation(address creator) public {
+    function testFuzz_postLeverageTokenCreation(address creator, address token) public {
         lendingAdapter = new MorphoLendingAdapter(leverageManager, IMorpho(address(morpho)));
         MorphoLendingAdapter(address(lendingAdapter)).initialize(defaultMarketId, creator);
 
         vm.prank(address(leverageManager));
-        lendingAdapter.preLeverageTokenCreation(creator); // Should not revert
+        lendingAdapter.postLeverageTokenCreation(creator, token); // Should not revert
     }
 
     // forge-config: default.fuzz.runs = 1
-    function testFuzz_preLeverageTokenCreation_RevertIf_CreatorIsNotAuthorized(address creator) public {
+    function testFuzz_postLeverageTokenCreation_RevertIf_CreatorIsNotAuthorized(address creator, address token)
+        public
+    {
         vm.assume(creator != authorizedCreator);
 
         vm.expectRevert(abi.encodeWithSelector(ILendingAdapter.Unauthorized.selector));
         vm.prank(address(leverageManager));
-        lendingAdapter.preLeverageTokenCreation(creator);
+        lendingAdapter.postLeverageTokenCreation(creator, token);
     }
 
     // forge-config: default.fuzz.runs = 1
-    function testFuzz_preLeverageTokenCreation_RevertIf_CallerIsNotLeverageManager(address caller) public {
+    function testFuzz_postLeverageTokenCreation_RevertIf_CallerIsNotLeverageManager(address caller, address token)
+        public
+    {
         vm.assume(caller != address(leverageManager));
 
         vm.expectRevert(abi.encodeWithSelector(ILendingAdapter.Unauthorized.selector));
         vm.prank(caller);
-        lendingAdapter.preLeverageTokenCreation(authorizedCreator);
+        lendingAdapter.postLeverageTokenCreation(authorizedCreator, token);
     }
 
-    function test_preLeverageTokenCreation_RevertIf_LendingAdapterIsAlreadyUsed() public {
+    // forge-config: default.fuzz.runs = 1
+    function test_postLeverageTokenCreation_RevertIf_LendingAdapterIsAlreadyUsed(address token) public {
         vm.prank(address(leverageManager));
-        lendingAdapter.preLeverageTokenCreation(authorizedCreator);
+        lendingAdapter.postLeverageTokenCreation(authorizedCreator, token);
 
         vm.expectRevert(abi.encodeWithSelector(IMorphoLendingAdapter.LendingAdapterAlreadyInUse.selector));
         vm.prank(address(leverageManager));
-        lendingAdapter.preLeverageTokenCreation(authorizedCreator);
+        lendingAdapter.postLeverageTokenCreation(authorizedCreator, token);
     }
 }

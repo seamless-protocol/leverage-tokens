@@ -193,8 +193,7 @@ contract RebalanceTest is LeverageManagerTest {
                 withdrawTokenFee: 0
             }),
             "ETH Short 2x",
-            "ETHS2x",
-            ""
+            "ETHS2x"
         );
 
         rebalanceAdapter.mockIsEligibleForRebalance(ethLong, true);

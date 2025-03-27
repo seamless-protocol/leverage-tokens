@@ -48,6 +48,9 @@ abstract contract MinMaxCollateralRatioRebalanceAdapter is IMinMaxCollateralRati
     }
 
     /// @inheritdoc IMinMaxCollateralRatioRebalanceAdapter
+    function getLeverageManager() public view virtual returns (ILeverageManager);
+
+    /// @inheritdoc IMinMaxCollateralRatioRebalanceAdapter
     function getLeverageTokenMinCollateralRatio() public view returns (uint256) {
         return _getMinMaxCollateralRatioRebalanceAdapterStorage().minCollateralRatio;
     }
@@ -57,6 +60,7 @@ abstract contract MinMaxCollateralRatioRebalanceAdapter is IMinMaxCollateralRati
         return _getMinMaxCollateralRatioRebalanceAdapterStorage().maxCollateralRatio;
     }
 
+    /// @inheritdoc IMinMaxCollateralRatioRebalanceAdapter
     function isEligibleForRebalance(ILeverageToken, LeverageTokenState memory state, address)
         public
         view
@@ -73,6 +77,7 @@ abstract contract MinMaxCollateralRatioRebalanceAdapter is IMinMaxCollateralRati
         return true;
     }
 
+    /// @inheritdoc IMinMaxCollateralRatioRebalanceAdapter
     function isStateAfterRebalanceValid(ILeverageToken token, LeverageTokenState memory stateBefore)
         public
         view
