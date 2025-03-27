@@ -5,6 +5,7 @@ pragma solidity ^0.8.26;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
+import {IRebalanceAdapterBase} from "./IRebalanceAdapterBase.sol";
 import {ILeverageToken} from "./ILeverageToken.sol";
 import {IFeeManager} from "./IFeeManager.sol";
 import {IBeaconProxyFactory} from "./IBeaconProxyFactory.sol";
@@ -16,7 +17,6 @@ import {
     TokenTransfer,
     LeverageTokenConfig
 } from "src/types/DataTypes.sol";
-import {IRebalanceAdapter} from "./IRebalanceAdapter.sol";
 
 interface ILeverageManager is IFeeManager {
     /// @notice Error thrown when someone tries to set zero address for collateral or debt asset when creating leverage token
@@ -69,8 +69,11 @@ interface ILeverageManager is IFeeManager {
 
     /// @notice Returns the rebalance module for the leverage token
     /// @param token Leverage token to get the rebalance module for
-    /// @return module Rebalance module for the leverage token
-    function getLeverageTokenRebalanceAdapter(ILeverageToken token) external view returns (IRebalanceAdapter module);
+    /// @return adapter Rebalance module for the leverage token
+    function getLeverageTokenRebalanceAdapter(ILeverageToken token)
+        external
+        view
+        returns (IRebalanceAdapterBase adapter);
 
     /// @notice Returns target ratio for a leverage token
     /// @param token Leverage token to get target ratio for
