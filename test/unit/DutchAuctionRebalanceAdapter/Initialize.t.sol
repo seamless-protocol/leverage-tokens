@@ -12,13 +12,9 @@ import {DutchAuctionRebalanceAdapterTest} from "./DutchAuctionRebalanceAdapter.t
 import {DutchAuctionRebalanceAdapterHarness} from "test/unit/harness/DutchAuctionRebalanceAdapterHarness.t.sol";
 
 contract InitializeTest is DutchAuctionRebalanceAdapterTest {
-    function test_Fuzz_Initialize(
-        ILeverageManager leverageManager,
-        ILeverageToken leverageToken,
-        uint256 auctionDuration,
-        uint256 initialPriceMultiplier,
-        uint256 minPriceMultiplier
-    ) public {
+    function test_Fuzz_Initialize(uint256 auctionDuration, uint256 initialPriceMultiplier, uint256 minPriceMultiplier)
+        public
+    {
         vm.assume(auctionDuration > 0);
         vm.assume(initialPriceMultiplier > minPriceMultiplier);
 
@@ -27,8 +23,6 @@ contract InitializeTest is DutchAuctionRebalanceAdapterTest {
             dutchAuctionRebalancerImplementation,
             abi.encodeWithSelector(
                 DutchAuctionRebalanceAdapterHarness.initialize.selector,
-                leverageManager,
-                leverageToken,
                 auctionDuration,
                 initialPriceMultiplier,
                 minPriceMultiplier
@@ -38,16 +32,12 @@ contract InitializeTest is DutchAuctionRebalanceAdapterTest {
         DutchAuctionRebalanceAdapterHarness newDutchAuctionRebalanceAdapter =
             DutchAuctionRebalanceAdapterHarness(dutchAuctionRebalancerProxy);
 
-        assertEq(address(newDutchAuctionRebalanceAdapter.getLeverageManager()), address(leverageManager));
-        assertEq(address(newDutchAuctionRebalanceAdapter.getLeverageToken()), address(leverageToken));
         assertEq(newDutchAuctionRebalanceAdapter.getAuctionDuration(), auctionDuration);
         assertEq(newDutchAuctionRebalanceAdapter.getInitialPriceMultiplier(), initialPriceMultiplier);
         assertEq(newDutchAuctionRebalanceAdapter.getMinPriceMultiplier(), minPriceMultiplier);
     }
 
     function test_Fuzz_Initialize_RevertIf_InvalidAuctionDuration(
-        ILeverageManager leverageManager,
-        ILeverageToken leverageToken,
         uint256 initialPriceMultiplier,
         uint256 minPriceMultiplier
     ) public {
@@ -58,19 +48,12 @@ contract InitializeTest is DutchAuctionRebalanceAdapterTest {
         UnsafeUpgrades.deployUUPSProxy(
             dutchAuctionRebalancerImplementation,
             abi.encodeWithSelector(
-                DutchAuctionRebalanceAdapterHarness.initialize.selector,
-                leverageManager,
-                leverageToken,
-                0,
-                initialPriceMultiplier,
-                minPriceMultiplier
+                DutchAuctionRebalanceAdapterHarness.initialize.selector, 0, initialPriceMultiplier, minPriceMultiplier
             )
         );
     }
 
     function test_Fuzz_Initialize_RevertIf_MinPriceMultiplierTooHigh(
-        ILeverageManager leverageManager,
-        ILeverageToken leverageToken,
         uint256 auctionDuration,
         uint256 initialPriceMultiplier,
         uint256 minPriceMultiplier
@@ -84,8 +67,6 @@ contract InitializeTest is DutchAuctionRebalanceAdapterTest {
             dutchAuctionRebalancerImplementation,
             abi.encodeWithSelector(
                 DutchAuctionRebalanceAdapterHarness.initialize.selector,
-                leverageManager,
-                leverageToken,
                 auctionDuration,
                 initialPriceMultiplier,
                 minPriceMultiplier
