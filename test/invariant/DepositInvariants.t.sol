@@ -35,6 +35,29 @@ contract DepositInvariants is InvariantTestBase {
             StrategyState memory stateAfter = leverageManager.exposed_getStrategyState(depositData.strategy);
             _assertCollateralRatioInvariants(depositData, stateBefore, stateAfter);
         }
+
+        _assertShareValueInvariants(depositData, stateBefore);
+    }
+
+    function _assertShareValueInvariants(
+        LeverageManagerHandler.DepositActionData memory depositData,
+        LeverageManagerHandler.StrategyStateData memory stateBefore
+    ) internal view {
+        uint256 sharesMinted = depositData.strategy.totalSupply() - stateBefore.totalSupply;
+        uint256 sharesMintedValue = leverageManagerHandler.convertToAssets(depositData.strategy, sharesMinted);
+        uint256 equityDelta = leverageManager.getStrategyLendingAdapter(depositData.strategy).getEquityInCollateralAsset(
+        ) - stateBefore.equityInCollateralAsset;
+        assertLe(
+            sharesMintedValue,
+            equityDelta,
+            "Invariant Violated: The value of the minted shares from a deposit must be less than or equal to the equity added to the leverage token."
+        );
+
+        assertGe(
+            leverageManagerHandler.convertToAssets(depositData.strategy, stateBefore.totalSupply + 1), // +1 to accommodate for offset
+            stateBefore.equityInCollateralAsset,
+            "Invariant Violated: Existing total share value must be greater than or equal to the value before the deposit."
+        );
     }
 
     function _assertCollateralRatioInvariants(
