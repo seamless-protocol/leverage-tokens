@@ -121,12 +121,12 @@ contract LeverageManagerTest is FeeManagerTest {
         );
         vm.mockCall(
             address(config.lendingAdapter),
-            abi.encodeWithSelector(ILendingAdapter.preLeverageTokenCreation.selector, caller),
+            abi.encodeWithSelector(ILendingAdapter.postLeverageTokenCreation.selector),
             abi.encode(true)
         );
 
         vm.startPrank(caller);
-        leverageToken = leverageManager.createNewLeverageToken(config, name, symbol, "");
+        leverageToken = leverageManager.createNewLeverageToken(config, name, symbol);
         vm.stopPrank();
 
         return leverageToken;

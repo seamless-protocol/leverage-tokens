@@ -81,8 +81,7 @@ contract IntegrationTestBase is Test {
                 withdrawTokenFee: 0
             }),
             "Seamless ETH/USDC 2x leverage token",
-            "ltETH/USDC-2x",
-            ""
+            "ltETH/USDC-2x"
         );
 
         leverageManager.setTreasury(treasury);
@@ -133,10 +132,21 @@ contract IntegrationTestBase is Test {
         );
 
         RebalanceAdapter rebalanceAdapterImplementation = new RebalanceAdapter();
-        address rebalanceAdapter = address(new ERC1967Proxy(address(rebalanceAdapterImplementation), ""));
-
-        bytes memory rebalanceAdapterInitData = abi.encode(
-            address(this), address(leverageManager), minColRatio, maxColRatio, 7 minutes, 1.2 * 1e18, 0.9 * 1e18
+        address rebalanceAdapter = address(
+            new ERC1967Proxy(
+                address(rebalanceAdapterImplementation),
+                abi.encodeWithSelector(
+                    RebalanceAdapter.initialize.selector,
+                    address(this),
+                    address(this),
+                    leverageManager,
+                    minColRatio,
+                    maxColRatio,
+                    7 minutes,
+                    1.2 * 1e18,
+                    0.9 * 1e18
+                )
+            )
         );
 
         ILeverageToken _leverageToken = leverageManager.createNewLeverageToken(
@@ -148,8 +158,7 @@ contract IntegrationTestBase is Test {
                 withdrawTokenFee: withdrawFee
             }),
             "dummy name",
-            "dummy symbol",
-            rebalanceAdapterInitData
+            "dummy symbol"
         );
 
         return _leverageToken;

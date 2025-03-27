@@ -126,14 +126,10 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function createNewLeverageToken(
-        LeverageTokenConfig calldata tokenConfig,
-        string memory name,
-        string memory symbol,
-        bytes memory rebalanceAdapterInitData
-    ) external returns (ILeverageToken token) {
-        tokenConfig.lendingAdapter.preLeverageTokenCreation(msg.sender);
-
+    function createNewLeverageToken(LeverageTokenConfig calldata tokenConfig, string memory name, string memory symbol)
+        external
+        returns (ILeverageToken token)
+    {
         IBeaconProxyFactory tokenFactory = getLeverageTokenFactory();
         token = ILeverageToken(
             tokenFactory.createProxy(
@@ -150,9 +146,8 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         _setLeverageTokenActionFee(token, ExternalAction.Deposit, tokenConfig.depositTokenFee);
         _setLeverageTokenActionFee(token, ExternalAction.Withdraw, tokenConfig.withdrawTokenFee);
 
-        if (rebalanceAdapterInitData.length > 0) {
-            tokenConfig.rebalanceAdapter.initialize(token, rebalanceAdapterInitData);
-        }
+        tokenConfig.lendingAdapter.postLeverageTokenCreation(msg.sender, address(token));
+        tokenConfig.rebalanceAdapter.postLeverageTokenCreation(msg.sender, address(token));
 
         emit LeverageTokenCreated(
             token,
