@@ -57,28 +57,9 @@ contract CreateNewLeverageTokenTest is LeverageManagerBaseTest {
         assertEq(address(leverageManager.getLeverageTokenCollateralAsset(leverageToken)), collateralAsset);
         assertEq(address(leverageManager.getLeverageTokenDebtAsset(leverageToken)), debtAsset);
 
-        assertEq(leverageManager.getIsLendingAdapterUsed(address(config.lendingAdapter)), true);
         assertEq(leverageManager.getLeverageTokenTargetCollateralRatio(leverageToken), config.targetCollateralRatio);
         assertEq(
             address(leverageManager.getLeverageTokenRebalanceModule(leverageToken)), address(config.rebalanceModule)
         );
-    }
-
-    function test_CreateNewLeverageToken_RevertIf_LendingAdapterAlreadyInUse(
-        LeverageTokenConfig memory config,
-        address collateralAsset,
-        address debtAsset,
-        string memory name,
-        string memory symbol
-    ) public {
-        config.depositTokenFee = bound(config.depositTokenFee, 0, _MAX_FEE());
-        config.withdrawTokenFee = bound(config.withdrawTokenFee, 0, _MAX_FEE());
-
-        _createNewLeverageToken(manager, config, collateralAsset, debtAsset, name, symbol);
-
-        vm.expectRevert(
-            abi.encodeWithSelector(ILeverageManager.LendingAdapterAlreadyInUse.selector, address(config.lendingAdapter))
-        );
-        _createNewLeverageToken(manager, config, collateralAsset, debtAsset, name, symbol);
     }
 }

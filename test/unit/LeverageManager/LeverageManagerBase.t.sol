@@ -39,7 +39,7 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
     function setUp() public virtual override {
         leverageTokenImplementation = address(new LeverageToken());
         leverageTokenFactory = new BeaconProxyFactory(leverageTokenImplementation, address(this));
-        lendingAdapter = new MockLendingAdapter(address(collateralToken), address(debtToken));
+        lendingAdapter = new MockLendingAdapter(address(collateralToken), address(debtToken), address(this));
         address leverageManagerImplementation = address(new LeverageManagerHarness());
         address leverageManagerProxy = UnsafeUpgrades.deployUUPSProxy(
             leverageManagerImplementation,
@@ -117,6 +117,11 @@ contract LeverageManagerBaseTest is FeeManagerBaseTest {
             address(config.lendingAdapter),
             abi.encodeWithSelector(ILendingAdapter.getDebtAsset.selector),
             abi.encode(IERC20(debtAsset))
+        );
+        vm.mockCall(
+            address(config.lendingAdapter),
+            abi.encodeWithSelector(ILendingAdapter.preLeverageTokenCreation.selector, caller),
+            abi.encode(true)
         );
 
         vm.startPrank(caller);

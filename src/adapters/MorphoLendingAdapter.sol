@@ -31,6 +31,12 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     /// @inheritdoc IMorphoLendingAdapter
     MarketParams public marketParams;
 
+    /// @inheritdoc IMorphoLendingAdapter
+    address public authorizedCreator;
+
+    /// @inheritdoc IMorphoLendingAdapter
+    bool public isUsed;
+
     /// @dev Reverts if the caller is not the stored leverageManager address
     modifier onlyLeverageManager() {
         if (msg.sender != address(leverageManager)) revert Unauthorized();
@@ -47,9 +53,20 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
 
     /// @notice Initializes the Morpho lending adapter
     /// @param _morphoMarketId The Morpho market ID
-    function initialize(Id _morphoMarketId) external initializer {
+    /// @param _authorizedCreator The authorized creator of this lending adapter. The authorized creator can create a
+    /// new leverage token using this adapter on the LeverageManager
+    function initialize(Id _morphoMarketId, address _authorizedCreator) external initializer {
         morphoMarketId = _morphoMarketId;
         marketParams = morpho.idToMarketParams(_morphoMarketId);
+
+        authorizedCreator = _authorizedCreator;
+    }
+
+    /// @inheritdoc ILendingAdapter
+    function preLeverageTokenCreation(address creator) external onlyLeverageManager {
+        if (creator != authorizedCreator) revert Unauthorized();
+        if (isUsed) revert LendingAdapterAlreadyInUse();
+        isUsed = true;
     }
 
     /// @inheritdoc ILendingAdapter

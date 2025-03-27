@@ -46,7 +46,7 @@ contract DutchAuctionRebalancerBaseTest is Test {
         leverageToken = ILeverageToken(address(new MockERC20()));
 
         // Setup mock adapters and managers
-        lendingAdapter = new MockLendingAdapter(address(collateralToken), address(debtToken));
+        lendingAdapter = new MockLendingAdapter(address(collateralToken), address(debtToken), address(this));
         leverageManager = new MockLeverageManager();
         rebalanceModule = new MockRebalanceModule();
 

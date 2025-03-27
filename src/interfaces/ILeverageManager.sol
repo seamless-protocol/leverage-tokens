@@ -19,9 +19,6 @@ import {
 import {IRebalanceModule} from "./IRebalanceModule.sol";
 
 interface ILeverageManager is IFeeManager {
-    /// @notice Error thrown when someone tries to create leverage token with lending adapter that already exists
-    error LendingAdapterAlreadyInUse(address adapter);
-
     /// @notice Error thrown when someone tries to set zero address for collateral or debt asset when creating leverage token
     error InvalidLeverageTokenAssets();
 
@@ -54,11 +51,6 @@ interface ILeverageManager is IFeeManager {
     /// @notice Returns factory for creating new leverage tokens
     /// @return factory Factory for creating new leverage tokens
     function getLeverageTokenFactory() external view returns (IBeaconProxyFactory factory);
-
-    /// @notice Returns if lending adapter is in use by some other leverage token
-    /// @param adapter Adapter to check
-    /// @return isUsed True if adapter is used by some leverage token
-    function getIsLendingAdapterUsed(address adapter) external view returns (bool isUsed);
 
     /// @notice Returns lending adapter for the leverage token
     /// @param token Leverage token to get lending adapter for
