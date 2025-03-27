@@ -34,12 +34,6 @@ contract CreateNewLeverageTokenTest is LeverageManagerTest {
             0
         );
 
-        // Check if event is emitted properly
-        vm.expectEmit(true, true, true, true);
-        emit ILeverageManager.LeverageTokenCreated(
-            ILeverageToken(expectedLeverageTokenAddress), IERC20(collateralAsset), IERC20(debtAsset), config
-        );
-
         _createNewLeverageToken(manager, config, collateralAsset, debtAsset, name, symbol);
 
         // Check name of the leverage token
@@ -57,28 +51,9 @@ contract CreateNewLeverageTokenTest is LeverageManagerTest {
         assertEq(address(leverageManager.getLeverageTokenCollateralAsset(leverageToken)), collateralAsset);
         assertEq(address(leverageManager.getLeverageTokenDebtAsset(leverageToken)), debtAsset);
 
-        assertEq(leverageManager.getIsLendingAdapterUsed(address(config.lendingAdapter)), true);
         assertEq(leverageManager.getLeverageTokenTargetCollateralRatio(leverageToken), config.targetCollateralRatio);
         assertEq(
             address(leverageManager.getLeverageTokenRebalanceAdapter(leverageToken)), address(config.rebalanceAdapter)
         );
-    }
-
-    function test_CreateNewLeverageToken_RevertIf_LendingAdapterAlreadyInUse(
-        LeverageTokenConfig memory config,
-        address collateralAsset,
-        address debtAsset,
-        string memory name,
-        string memory symbol
-    ) public {
-        config.depositTokenFee = bound(config.depositTokenFee, 0, _MAX_FEE());
-        config.withdrawTokenFee = bound(config.withdrawTokenFee, 0, _MAX_FEE());
-
-        _createNewLeverageToken(manager, config, collateralAsset, debtAsset, name, symbol);
-
-        vm.expectRevert(
-            abi.encodeWithSelector(ILeverageManager.LendingAdapterAlreadyInUse.selector, address(config.lendingAdapter))
-        );
-        _createNewLeverageToken(manager, config, collateralAsset, debtAsset, name, symbol);
     }
 }

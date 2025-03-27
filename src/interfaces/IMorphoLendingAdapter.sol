@@ -9,6 +9,19 @@ import {ILendingAdapter} from "./ILendingAdapter.sol";
 import {ILeverageManager} from "./ILeverageManager.sol";
 
 interface IMorphoLendingAdapter is ILendingAdapter {
+    /// @notice Thrown when someone tries to create leverage token with this lending adapter but it is already in use
+    error LendingAdapterAlreadyInUse();
+
+    /// @notice The authorized creator of the lending adapter
+    /// @return authorizedCreator The authorized creator of the lending adapter
+    /// @dev Only the authorized creator can create a new leverage token using this adapter on the LeverageManager
+    function authorizedCreator() external view returns (address authorizedCreator);
+
+    /// @notice Whether the lending adapter is in use
+    /// @return isUsed Whether the lending adapter is in use
+    /// @dev If this is true, the lending adapter cannot be used to create a new leverage token
+    function isUsed() external view returns (bool isUsed);
+
     /// @notice The Seamless ilm-v2 LeverageManager contract
     /// @return leverageManager The Seamless ilm-v2 LeverageManager contract
     function leverageManager() external view returns (ILeverageManager leverageManager);

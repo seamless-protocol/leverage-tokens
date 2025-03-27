@@ -32,7 +32,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     uint256 public constant BASE_RATIO = 1e8;
     uint256 public constant DECIMALS_OFFSET = 0;
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
-    bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
 
     /// @dev Struct containing all state for the LeverageManager contract
     /// @custom:storage-location erc7201:seamless.contracts.storage.LeverageManager
@@ -41,8 +40,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         IBeaconProxyFactory tokenFactory;
         /// @dev Leverage token address => Base config for leverage token
         mapping(ILeverageToken token => BaseLeverageTokenConfig) config;
-        /// @dev Lending adapter address => Is lending adapter registered. Multiple leverage tokens can't have same lending adapter
-        mapping(address lendingAdapter => bool) isLendingAdapterUsed;
     }
 
     function _getLeverageManagerStorage() internal pure returns (LeverageManagerStorage storage $) {
@@ -52,8 +49,10 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         }
     }
 
-    function initialize(address initialAdmin) external initializer {
+    function initialize(address initialAdmin, IBeaconProxyFactory leverageTokenFactory) external initializer {
         _grantRole(DEFAULT_ADMIN_ROLE, initialAdmin);
+
+        _getLeverageManagerStorage().tokenFactory = leverageTokenFactory;
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}
@@ -61,11 +60,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     /// @inheritdoc ILeverageManager
     function getLeverageTokenFactory() public view returns (IBeaconProxyFactory factory) {
         return _getLeverageManagerStorage().tokenFactory;
-    }
-
-    /// @inheritdoc ILeverageManager
-    function getIsLendingAdapterUsed(address lendingAdapter) public view returns (bool isUsed) {
-        return _getLeverageManagerStorage().isLendingAdapterUsed[lendingAdapter];
     }
 
     /// @inheritdoc ILeverageManager
@@ -132,20 +126,15 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function setLeverageTokenFactory(address factory) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _getLeverageManagerStorage().tokenFactory = IBeaconProxyFactory(factory);
-        emit LeverageTokenFactorySet(factory);
-    }
-
-    /// @inheritdoc ILeverageManager
     function createNewLeverageToken(
         LeverageTokenConfig calldata tokenConfig,
         string memory name,
         string memory symbol,
         bytes memory rebalanceAdapterInitData
     ) external returns (ILeverageToken token) {
-        IBeaconProxyFactory tokenFactory = getLeverageTokenFactory();
+        tokenConfig.lendingAdapter.preLeverageTokenCreation(msg.sender);
 
+        IBeaconProxyFactory tokenFactory = getLeverageTokenFactory();
         token = ILeverageToken(
             tokenFactory.createProxy(
                 abi.encodeWithSelector(LeverageToken.initialize.selector, address(this), name, symbol),
@@ -153,16 +142,11 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
             )
         );
 
-        if (getIsLendingAdapterUsed(address(tokenConfig.lendingAdapter))) {
-            revert LendingAdapterAlreadyInUse(address(tokenConfig.lendingAdapter));
-        }
-
         _getLeverageManagerStorage().config[token] = BaseLeverageTokenConfig({
             lendingAdapter: tokenConfig.lendingAdapter,
             rebalanceAdapter: tokenConfig.rebalanceAdapter,
             targetCollateralRatio: tokenConfig.targetCollateralRatio
         });
-        _getLeverageManagerStorage().isLendingAdapterUsed[address(tokenConfig.lendingAdapter)] = true;
         _setLeverageTokenActionFee(token, ExternalAction.Deposit, tokenConfig.depositTokenFee);
         _setLeverageTokenActionFee(token, ExternalAction.Withdraw, tokenConfig.withdrawTokenFee);
 

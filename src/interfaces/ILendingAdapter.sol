@@ -51,6 +51,12 @@ interface ILendingAdapter {
     /// @param amount Amount of assets to supply
     function addCollateral(uint256 amount) external;
 
+    /// @notice Pre-LeverageToken creation hook. Used for any validation logic or initialization before a LeverageToken
+    /// is created using this adapter
+    /// @param creator The address of the creator of the LeverageToken
+    /// @dev This function is called in `LeverageManager.createNewLeverageToken` before the new LeverageToken is created
+    function preLeverageTokenCreation(address creator) external;
+
     /// @notice Withdraws collateral assets from the lending pool
     /// @param amount Amount of assets to withdraw
     function removeCollateral(uint256 amount) external;

@@ -16,8 +16,6 @@ import {MockUniswapSwapRouter02} from "test/unit/mock/MockUniswapSwapRouter02.so
 import {MockUniswapV2Router02} from "test/unit/mock/MockUniswapV2Router02.sol";
 
 contract SwapAdapterTest is Test {
-    address public defaultAdmin = makeAddr("defaultAdmin");
-
     MockERC20 public fromToken = new MockERC20();
     MockERC20 public toToken = new MockERC20();
 
@@ -32,20 +30,10 @@ contract SwapAdapterTest is Test {
     MockAerodromeSlipstreamRouter public mockAerodromeSlipstreamRouter;
 
     function setUp() public virtual {
-        address swapAdapterImplementation = address(new SwapAdapterHarness());
-        address swapAdapterProxy = UnsafeUpgrades.deployUUPSProxy(
-            swapAdapterImplementation, abi.encodeWithSelector(SwapAdapter.initialize.selector, defaultAdmin)
-        );
-
-        swapAdapter = SwapAdapterHarness(swapAdapterProxy);
+        swapAdapter = new SwapAdapterHarness();
         mockUniswapSwapRouter02 = new MockUniswapSwapRouter02();
         mockUniswapV2Router02 = new MockUniswapV2Router02();
         mockAerodromeRouter = new MockAerodromeRouter();
         mockAerodromeSlipstreamRouter = new MockAerodromeSlipstreamRouter();
-    }
-
-    function test_setUp() public view virtual {
-        SwapAdapter swapAdapterContract = SwapAdapter(address(swapAdapter));
-        assertTrue(swapAdapterContract.hasRole(swapAdapterContract.DEFAULT_ADMIN_ROLE(), defaultAdmin));
     }
 }

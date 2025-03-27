@@ -70,14 +70,14 @@ contract RebalanceTest is LeverageManagerTest {
 
         ethLong2xAdapter = MorphoLendingAdapter(
             morphoLendingAdapterFactory.createProxy(
-                abi.encodeWithSelector(MorphoLendingAdapter.initialize.selector, WETH_USDC_MARKET_ID),
+                abi.encodeWithSelector(MorphoLendingAdapter.initialize.selector, WETH_USDC_MARKET_ID, address(this)),
                 bytes32(uint256(1))
             )
         );
 
         ethShort2xAdapter = MorphoLendingAdapter(
             morphoLendingAdapterFactory.createProxy(
-                abi.encodeWithSelector(MorphoLendingAdapter.initialize.selector, USDC_WETH_MARKET_ID),
+                abi.encodeWithSelector(MorphoLendingAdapter.initialize.selector, USDC_WETH_MARKET_ID, address(this)),
                 bytes32(uint256(2))
             )
         );

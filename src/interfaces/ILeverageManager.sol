@@ -19,9 +19,6 @@ import {
 import {IRebalanceAdapter} from "./IRebalanceAdapter.sol";
 
 interface ILeverageManager is IFeeManager {
-    /// @notice Error thrown when someone tries to create leverage token with lending adapter that already exists
-    error LendingAdapterAlreadyInUse(address adapter);
-
     /// @notice Error thrown when someone tries to set zero address for collateral or debt asset when creating leverage token
     error InvalidLeverageTokenAssets();
 
@@ -40,9 +37,6 @@ interface ILeverageManager is IFeeManager {
     /// @notice Error thrown when leverage token state after rebalance is invalid
     error InvalidLeverageTokenStateAfterRebalance(ILeverageToken token);
 
-    /// @notice Event emitted when leverage token factory is set
-    event LeverageTokenFactorySet(address factory);
-
     /// @notice Event emitted when new leverage token is created
     event LeverageTokenCreated(
         ILeverageToken indexed token, IERC20 collateralAsset, IERC20 debtAsset, LeverageTokenConfig config
@@ -57,11 +51,6 @@ interface ILeverageManager is IFeeManager {
     /// @notice Returns factory for creating new leverage tokens
     /// @return factory Factory for creating new leverage tokens
     function getLeverageTokenFactory() external view returns (IBeaconProxyFactory factory);
-
-    /// @notice Returns if lending adapter is in use by some other leverage token
-    /// @param adapter Adapter to check
-    /// @return isUsed True if adapter is used by some leverage token
-    function getIsLendingAdapterUsed(address adapter) external view returns (bool isUsed);
 
     /// @notice Returns lending adapter for the leverage token
     /// @param token Leverage token to get lending adapter for
@@ -97,11 +86,6 @@ interface ILeverageManager is IFeeManager {
     /// @param token Leverage token to query state for
     /// @return state Leverage token state
     function getLeverageTokenState(ILeverageToken token) external view returns (LeverageTokenState memory state);
-
-    /// @notice Sets factory for creating new leverage tokens
-    /// @param factory Factory to set
-    /// @dev Only DEFAULT_ADMIN_ROLE can call this function
-    function setLeverageTokenFactory(address factory) external;
 
     /// @notice Creates new leverage token with given config
     /// @param config Configuration of the leverage token

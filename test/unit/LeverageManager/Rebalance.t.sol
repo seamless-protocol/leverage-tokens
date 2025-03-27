@@ -34,7 +34,7 @@ contract RebalanceTest is LeverageManagerTest {
     function setUp() public override {
         super.setUp();
 
-        adapter = new MockLendingAdapter(address(WETH), address(USDC));
+        adapter = new MockLendingAdapter(address(WETH), address(USDC), manager);
         rebalanceAdapter = new MockRebalanceAdapter();
 
         _createNewLeverageToken(
@@ -182,7 +182,7 @@ contract RebalanceTest is LeverageManagerTest {
     function test_Rebalance_MultipleStrategies_MoveFundsAcrossStrategies() public {
         ILeverageToken ethLong = leverageToken;
         MockLendingAdapter ethLongAdapter = adapter;
-        MockLendingAdapter ethShortAdapter = new MockLendingAdapter(address(USDC), address(WETH));
+        MockLendingAdapter ethShortAdapter = new MockLendingAdapter(address(USDC), address(WETH), address(this));
 
         ILeverageToken ethShort = leverageManager.createNewLeverageToken(
             LeverageTokenConfig({
