@@ -2,9 +2,9 @@
 pragma solidity ^0.8.26;
 
 // Internal imports
-import {LeverageManagerBaseTest} from "test/unit/LeverageManager/LeverageManagerBase.t.sol";
+import {LeverageManagerTest} from "test/unit/LeverageManager/LeverageManager.t.sol";
 
-contract ConvertToSharesTest is LeverageManagerBaseTest {
+contract ConvertToSharesTest is LeverageManagerTest {
     function setUp() public override {
         super.setUp();
 

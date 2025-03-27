@@ -9,11 +9,12 @@ import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IMorpho, Id} from "@morpho-blue/interfaces/IMorpho.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IMorphoLendingAdapterFactory} from "src/interfaces/IMorphoLendingAdapterFactory.sol";
-import {IRebalanceModule} from "src/interfaces/IRebalanceModule.sol";
+import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
@@ -21,10 +22,9 @@ import {BeaconProxyFactory} from "src/BeaconProxyFactory.sol";
 import {LeverageManager} from "src/LeverageManager.sol";
 import {LeverageToken} from "src/LeverageToken.sol";
 import {LeverageTokenConfig} from "src/types/DataTypes.sol";
+import {LeverageManagerHarness} from "test/unit/harness/LeverageManagerHarness.t.sol";
 import {MorphoLendingAdapterFactory} from "src/adapters/MorphoLendingAdapterFactory.sol";
-import {LeverageManagerHarness} from "test/unit/LeverageManager/harness/LeverageManagerHarness.t.sol";
-import {DutchAuctionRebalancer} from "src/rebalance/DutchAuctionRebalancer.sol";
-import {SeamlessRebalanceModule} from "src/rebalance/SeamlessRebalanceModule.sol";
+import {RebalanceAdapter} from "src/rebalance/RebalanceAdapter.sol";
 
 contract IntegrationTestBase is Test {
     uint256 public constant FORK_BLOCK_NUMBER = 25473904;
@@ -43,7 +43,6 @@ contract IntegrationTestBase is Test {
     IMorphoLendingAdapterFactory public morphoLendingAdapterFactory;
     ILeverageManager public leverageManager = ILeverageManager(makeAddr("leverageManager"));
     MorphoLendingAdapter public morphoLendingAdapter;
-    SeamlessRebalanceModule public seamlessRebalanceModule;
 
     function setUp() public virtual {
         vm.createSelectFork(vm.envString("BASE_RPC_URL"), FORK_BLOCK_NUMBER);
@@ -72,27 +71,17 @@ contract IntegrationTestBase is Test {
 
         BASE_RATIO = LeverageManager(address(leverageManager)).BASE_RATIO();
 
-        dutchAuctionModule = address(new DutchAuctionRebalancer(address(this), leverageManager));
-
-        SeamlessRebalanceModule seamlessRebalanceModuleImplementation = new SeamlessRebalanceModule();
-        seamlessRebalanceModule = SeamlessRebalanceModule(
-            UnsafeUpgrades.deployUUPSProxy(
-                address(seamlessRebalanceModuleImplementation),
-                abi.encodeWithSelector(SeamlessRebalanceModule.initialize.selector, address(this))
-            )
-        );
-        seamlessRebalanceModule.setIsRebalancer(dutchAuctionModule, true);
-
         leverageToken = leverageManager.createNewLeverageToken(
             LeverageTokenConfig({
                 lendingAdapter: ILendingAdapter(address(morphoLendingAdapter)),
                 targetCollateralRatio: 2 * BASE_RATIO,
-                rebalanceModule: IRebalanceModule(address(seamlessRebalanceModule)),
+                rebalanceAdapter: IRebalanceAdapter(address(0)),
                 depositTokenFee: 0,
                 withdrawTokenFee: 0
             }),
             "Seamless ETH/USDC 2x leverage token",
-            "ltETH/USDC-2x"
+            "ltETH/USDC-2x",
+            ""
         );
 
         leverageManager.setTreasury(treasury);
@@ -139,19 +128,25 @@ contract IntegrationTestBase is Test {
             morphoLendingAdapterFactory.deployAdapter(WETH_USDC_MARKET_ID, address(this), bytes32(vm.randomUint()))
         );
 
+        RebalanceAdapter rebalanceAdapterImplementation = new RebalanceAdapter();
+        address rebalanceAdapter = address(new ERC1967Proxy(address(rebalanceAdapterImplementation), ""));
+
+        bytes memory rebalanceAdapterInitData = abi.encode(
+            address(this), address(leverageManager), minColRatio, maxColRatio, 7 minutes, 1.2 * 1e18, 0.9 * 1e18
+        );
+
         ILeverageToken _leverageToken = leverageManager.createNewLeverageToken(
             LeverageTokenConfig({
                 lendingAdapter: lendingAdapter,
                 targetCollateralRatio: targetCollateralRatio,
-                rebalanceModule: IRebalanceModule(address(0)),
+                rebalanceAdapter: IRebalanceAdapter(rebalanceAdapter),
                 depositTokenFee: depositFee,
                 withdrawTokenFee: withdrawFee
             }),
             "dummy name",
-            "dummy symbol"
+            "dummy symbol",
+            rebalanceAdapterInitData
         );
-
-        seamlessRebalanceModule.setLeverageTokenCollateralRatios(_leverageToken, minColRatio, maxColRatio);
 
         return _leverageToken;
     }

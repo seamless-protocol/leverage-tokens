@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-// External imports
-import {console} from "forge-std/console.sol";
-
 // Internal imports
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ActionData, ExternalAction} from "src/types/DataTypes.sol";

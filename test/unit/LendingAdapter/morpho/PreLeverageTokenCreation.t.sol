@@ -8,9 +8,9 @@ import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
-import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
+import {MorphoLendingAdapterTest} from "./MorphoLendingAdapter.t.sol";
 
-contract PreLeverageTokenCreation is MorphoLendingAdapterBaseTest {
+contract PreLeverageTokenCreation is MorphoLendingAdapterTest {
     // forge-config: default.fuzz.runs = 1
     function testFuzz_preLeverageTokenCreation(address creator) public {
         lendingAdapter = new MorphoLendingAdapter(leverageManager, IMorpho(address(morpho)));

@@ -2,10 +2,10 @@
 pragma solidity ^0.8.26;
 
 // Internal imports
-import {LeverageManagerBaseTest} from "./LeverageManagerBase.t.sol";
+import {LeverageManagerTest} from "./LeverageManager.t.sol";
 import {LeverageTokenState} from "src/types/DataTypes.sol";
 
-contract GetLeverageTokenStateTest is LeverageManagerBaseTest {
+contract GetLeverageTokenStateTest is LeverageManagerTest {
     function setUp() public override {
         super.setUp();
 
