@@ -18,8 +18,7 @@ abstract contract DutchAuctionRebalanceAdapter is IDutchAuctionRebalanceAdapter,
     uint256 public constant PRICE_MULTIPLIER_PRECISION = 1e18;
 
     /// @dev Struct containing all state for the DutchAuctionRebalanceAdapter contract
-    /// @dev None of this storage slot can be changed after initialization
-    /// @custom:storage-location erc7201:dutch.auction.rebalancer.storage.DutchAuctionRebalanceAdapter
+    /// @custom:storage-location erc7201:seamless.contracts.storage.DutchAuctionRebalanceAdapter
     struct DutchAuctionRebalanceAdapterStorage {
         /// @notice Leverage manager contract
         ILeverageManager leverageManager;
