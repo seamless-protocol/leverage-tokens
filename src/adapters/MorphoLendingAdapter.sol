@@ -131,6 +131,19 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     }
 
     /// @inheritdoc ILendingAdapter
+    function getHealthFactor() external view returns (uint256) {
+        uint256 borrowed = getDebt();
+        uint256 collateral = getCollateral();
+        uint256 collateralInDebtAsset = convertCollateralToDebtAsset(collateral);
+
+        uint256 maxBorrow = Math.mulDiv(collateralInDebtAsset, marketParams.lltv, 1e18, Math.Rounding.Floor);
+
+        if (borrowed == 0) return type(uint256).max;
+
+        return Math.mulDiv(maxBorrow, 1e18, borrowed, Math.Rounding.Floor);
+    }
+
+    /// @inheritdoc ILendingAdapter
     function addCollateral(uint256 amount) external {
         if (amount == 0) return;
 
