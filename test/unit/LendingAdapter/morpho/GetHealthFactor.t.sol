@@ -49,4 +49,42 @@ contract GetHealthFactor is MorphoLendingAdapterBaseTest {
         // Not exactly 2 because of virtual assets and shares used in morpho's SharesMathLib
         assertEq(lendingAdapter.getHealthFactor(), 2199998328001270719);
     }
+
+    function test_getHealthFactor_noDebt() public {
+        uint256 collateral = 5e6;
+
+        // Mock the price of the collateral asset in the debt asset to be 1:1 for simplicity
+        uint256 price = ORACLE_PRICE_SCALE;
+        vm.mockCall(
+            address(defaultMarketParams.oracle), abi.encodeWithSelector(IOracle.price.selector), abi.encode(price)
+        );
+
+        // MorphoLib, used by MorphoLendingAdapter, calls Morpho.extSloads to get the position's collateral
+        bytes32[] memory collateralReturnValue = new bytes32[](2);
+        collateralReturnValue[0] = bytes32(uint256(collateral << 128));
+
+        // MorphoBalancesLib, used by MorphoLendingAdapter, calls Morpho.extSloads to get the lendingAdapter's amount of borrow shares
+        uint256[] memory borrowSharesReturnValue = new uint256[](1);
+        borrowSharesReturnValue[0] = 0;
+
+        bytes[] memory mocks = new bytes[](2);
+        mocks[0] = abi.encode(borrowSharesReturnValue);
+        mocks[1] = abi.encode(collateralReturnValue);
+
+        vm.mockCalls(address(morpho), abi.encodeWithSelector(IMorphoBase.extSloads.selector), mocks);
+
+        // Mocking call to Morpho made in MorphoBalancesLib to get the market's total borrow assets and shares, which is how MorphoBalancesLib
+        // calculates the exchange rate between borrow shares and borrow assets
+        Market memory market = Market({
+            totalSupplyAssets: 0, // Doesn't matter for this test
+            totalSupplyShares: 0, // Doesn't matter for this test
+            totalBorrowAssets: 0,
+            totalBorrowShares: 0,
+            lastUpdate: uint128(block.timestamp), // Set to the current block timestamp to reduce test complexity (used for accruing interest in MorphoBalancesLib)
+            fee: 0 // Set to 0 to reduce test complexity (used for accruing interest in MorphoBalancesLib)
+        });
+        morpho.mockSetMarket(defaultMarketId, market);
+
+        assertEq(lendingAdapter.getHealthFactor(), type(uint256).max);
+    }
 }
