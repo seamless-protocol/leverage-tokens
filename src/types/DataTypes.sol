@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
+import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
-import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 
 /// @dev Enum defining the type of external action user can perform
 enum ExternalAction {
@@ -39,8 +39,8 @@ struct ActionData {
 struct BaseLeverageTokenConfig {
     /// @dev Lending adapter for leverage token
     ILendingAdapter lendingAdapter;
-    /// @dev Rebalance module for leverage token
-    IRebalanceAdapter rebalanceAdapter;
+    /// @dev Rebalance adapter for leverage token
+    IRebalanceAdapterBase rebalanceAdapter;
     /// @dev Target collateral ratio of the leverage token on 8 decimals
     uint256 targetCollateralRatio;
 }
@@ -59,8 +59,8 @@ struct RebalanceAction {
 struct LeverageTokenConfig {
     /// @dev Lending adapter for leverage token
     ILendingAdapter lendingAdapter;
-    /// @dev Rebalance module for leverage token
-    IRebalanceAdapter rebalanceAdapter;
+    /// @dev Rebalance adapter for leverage token
+    IRebalanceAdapterBase rebalanceAdapter;
     /// @dev Target collateral ratio of the leverage token on 8 decimals
     uint256 targetCollateralRatio;
     /// @dev Fee for deposit action
