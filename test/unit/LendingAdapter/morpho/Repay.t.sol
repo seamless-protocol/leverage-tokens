@@ -9,9 +9,9 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SharesMathLib} from "@morpho-blue/libraries/SharesMathLib.sol";
 
 // Internal imports
-import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
+import {MorphoLendingAdapterTest} from "./MorphoLendingAdapter.t.sol";
 
-contract MorphoLendingAdapterRepayTest is MorphoLendingAdapterBaseTest {
+contract MorphoLendingAdapterRepayTest is MorphoLendingAdapterTest {
     address public alice = makeAddr("alice");
 
     function testFuzz_repay_RepayingLessThatWeOwe(uint64 amount) public {

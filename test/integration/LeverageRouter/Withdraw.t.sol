@@ -7,10 +7,10 @@ import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.so
 // Internal imports
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {ActionData} from "src/types/DataTypes.sol";
-import {LeverageRouterBase} from "./LeverageRouterBase.t.sol";
+import {LeverageRouterTest} from "./LeverageRouter.t.sol";
 import {SwapPathLib} from "test/utils/SwapPathLib.sol";
 
-contract LeverageRouterWithdrawTest is LeverageRouterBase {
+contract LeverageRouterWithdrawTest is LeverageRouterTest {
     function testFork_withdraw_UniswapV2_FullWithdraw() public {
         uint256 equityInCollateralAsset = _deposit();
 

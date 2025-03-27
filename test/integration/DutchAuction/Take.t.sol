@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-import {console} from "forge-std/console.sol";
-
-import {DutchAuctionBase} from "./DutchAuctionBase.t.sol";
-import {DutchAuctionRebalancer} from "src/rebalance/DutchAuctionRebalancer.sol";
+import {DutchAuctionTest} from "./DutchAuction.t.sol";
+import {DutchAuctionRebalanceAdapter} from "src/rebalance/DutchAuctionRebalanceAdapter.sol";
 import {LeverageTokenState} from "src/types/DataTypes.sol";
-import {IDutchAuctionRebalancer} from "src/interfaces/IDutchAuctionRebalancer.sol";
+import {IDutchAuctionRebalanceAdapter} from "src/interfaces/IDutchAuctionRebalanceAdapter.sol";
+import {Auction} from "src/types/DataTypes.sol";
 
-contract Take is DutchAuctionBase {
+contract TakeTest is DutchAuctionTest {
     address public alice = makeAddr("alice");
     address public bob = makeAddr("bob");
     address public charlie = makeAddr("charlie");
@@ -17,7 +16,7 @@ contract Take is DutchAuctionBase {
         _prepareOverCollateralizedState();
 
         // Start auction
-        DutchAuctionRebalancer(dutchAuctionModule).createAuction(ethLong2x);
+        DutchAuctionRebalanceAdapter(ethLong2xRebalanceAdapter).createAuction();
 
         LeverageTokenState memory stateBefore = leverageManager.getLeverageTokenState(ethLong2x);
 
@@ -47,19 +46,11 @@ contract Take is DutchAuctionBase {
         assertEq(USDC.balanceOf(charlie), 2_000 * 1e6);
 
         // Auction should automatically be removed because leverage token is back into healthy state
-        (
-            bool isOverCollateralized,
-            uint256 initialPriceMultiplier,
-            uint256 minPriceMultiplier,
-            uint256 startTimestamp,
-            uint256 endTimestamp
-        ) = DutchAuctionRebalancer(dutchAuctionModule).auctions(ethLong2x);
+        Auction memory auction = DutchAuctionRebalanceAdapter(ethLong2xRebalanceAdapter).getAuction();
 
-        assertEq(isOverCollateralized, false);
-        assertEq(startTimestamp, 0);
-        assertEq(endTimestamp, 0);
-        assertEq(minPriceMultiplier, 0);
-        assertEq(initialPriceMultiplier, 0);
+        assertEq(auction.isOverCollateralized, false);
+        assertEq(auction.startTimestamp, 0);
+        assertEq(auction.endTimestamp, 0);
 
         assertLe(amountInBob, amountInAlice);
         assertLe(amountInCharlie, amountInBob);
@@ -70,7 +61,7 @@ contract Take is DutchAuctionBase {
         _prepareUnderCollateralizedState();
 
         // Start auction
-        DutchAuctionRebalancer(dutchAuctionModule).createAuction(ethLong2x);
+        DutchAuctionRebalanceAdapter(ethLong2xRebalanceAdapter).createAuction();
 
         LeverageTokenState memory stateBefore = leverageManager.getLeverageTokenState(ethLong2x);
 
@@ -99,19 +90,14 @@ contract Take is DutchAuctionBase {
         assertEq(WETH.balanceOf(charlie), 1 * 1e18);
 
         // Auction should automatically be removed because leverage token is back into healthy state
-        (
-            bool isOverCollateralized,
-            uint256 initialPriceMultiplier,
-            uint256 minPriceMultiplier,
-            uint256 startTimestamp,
-            uint256 endTimestamp
-        ) = DutchAuctionRebalancer(dutchAuctionModule).auctions(ethLong2x);
+        Auction memory auction = DutchAuctionRebalanceAdapter(ethLong2xRebalanceAdapter).getAuction();
 
-        assertEq(isOverCollateralized, false);
-        assertEq(startTimestamp, 0);
-        assertEq(endTimestamp, 0);
-        assertEq(minPriceMultiplier, 0);
-        assertEq(initialPriceMultiplier, 0);
+        assertEq(auction.isOverCollateralized, false);
+        assertEq(auction.startTimestamp, 0);
+        assertEq(auction.endTimestamp, 0);
+
+        assertLe(amountInBob, amountInAlice);
+        assertLe(amountInCharlie, amountInBob);
 
         assertLe(amountInBob, amountInAlice);
         assertLe(amountInCharlie, amountInBob);
@@ -121,7 +107,7 @@ contract Take is DutchAuctionBase {
         _prepareOverCollateralizedState();
 
         // Start auction
-        DutchAuctionRebalancer(dutchAuctionModule).createAuction(ethLong2x);
+        DutchAuctionRebalanceAdapter(ethLong2xRebalanceAdapter).createAuction();
 
         // Alice takes
         _take_OverCollateralized(alice, 2_000 * 1e6);
@@ -129,29 +115,29 @@ contract Take is DutchAuctionBase {
         _moveEthPrice(-15_00); // Move ETH price 15% down to bring leverage token is back to healthy state
 
         // Try to take and reverts
-        vm.expectRevert(IDutchAuctionRebalancer.AuctionNotValid.selector);
-        DutchAuctionRebalancer(dutchAuctionModule).take(ethLong2x, 1e18);
+        vm.expectRevert(IDutchAuctionRebalanceAdapter.AuctionNotValid.selector);
+        DutchAuctionRebalanceAdapter(ethLong2xRebalanceAdapter).take(1e18);
     }
 
     function _take_OverCollateralized(address user, uint256 amountOut) internal returns (uint256) {
-        uint256 amountIn = DutchAuctionRebalancer(dutchAuctionModule).getAmountIn(ethLong2x, amountOut);
+        uint256 amountIn = DutchAuctionRebalanceAdapter(ethLong2xRebalanceAdapter).getAmountIn(amountOut);
         deal(address(WETH), user, amountIn);
 
         vm.startPrank(user);
-        WETH.approve(dutchAuctionModule, amountIn);
-        DutchAuctionRebalancer(dutchAuctionModule).take(ethLong2x, amountOut);
+        WETH.approve(ethLong2xRebalanceAdapter, amountIn);
+        DutchAuctionRebalanceAdapter(ethLong2xRebalanceAdapter).take(amountOut);
         vm.stopPrank();
 
         return amountIn;
     }
 
     function _take_UnderCollateralized(address user, uint256 amountOut) internal returns (uint256) {
-        uint256 amountIn = DutchAuctionRebalancer(dutchAuctionModule).getAmountIn(ethLong2x, amountOut);
+        uint256 amountIn = DutchAuctionRebalanceAdapter(ethLong2xRebalanceAdapter).getAmountIn(amountOut);
         deal(address(USDC), user, amountIn);
 
         vm.startPrank(user);
-        USDC.approve(dutchAuctionModule, amountIn);
-        DutchAuctionRebalancer(dutchAuctionModule).take(ethLong2x, amountOut);
+        USDC.approve(ethLong2xRebalanceAdapter, amountIn);
+        DutchAuctionRebalanceAdapter(ethLong2xRebalanceAdapter).take(amountOut);
         vm.stopPrank();
 
         return amountIn;

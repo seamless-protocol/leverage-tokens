@@ -7,9 +7,9 @@ import {IOracle} from "@morpho-blue/interfaces/IOracle.sol";
 import {ORACLE_PRICE_SCALE} from "@morpho-blue/libraries/ConstantsLib.sol";
 
 // Internal imports
-import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
+import {MorphoLendingAdapterTest} from "./MorphoLendingAdapter.t.sol";
 
-contract GetEquityInDebtAsset is MorphoLendingAdapterBaseTest {
+contract GetEquityInDebtAsset is MorphoLendingAdapterTest {
     function test_getEquityInDebtAsset_CollateralIsGreaterThanDebt() public {
         uint128 collateral = 10e6;
         uint128 borrowShares = 5e6;

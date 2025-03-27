@@ -6,9 +6,9 @@ import {LeverageRouter} from "src/periphery/LeverageRouter.sol";
 import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {ExternalAction} from "src/types/DataTypes.sol";
-import {LeverageRouterBaseTest} from "./LeverageRouterBase.t.sol";
+import {LeverageRouterTest} from "./LeverageRouter.t.sol";
 
-contract OnMorphoFlashLoanTest is LeverageRouterBaseTest {
+contract OnMorphoFlashLoanTest is LeverageRouterTest {
     function test_onMorphoFlashLoan_Deposit() public {
         uint256 requiredCollateral = 10 ether;
         uint256 equityInCollateralAsset = 5 ether;

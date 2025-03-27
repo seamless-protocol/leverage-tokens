@@ -7,11 +7,11 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 // Internal imports
 import {IAerodromeRouter} from "src/interfaces/periphery/IAerodromeRouter.sol";
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
-import {SwapAdapterBaseTest} from "./SwapAdapterBase.t.sol";
+import {SwapAdapterTest} from "./SwapAdapter.t.sol";
 import {MockAerodromeRouter} from "test/unit/mock/MockAerodromeRouter.sol";
 
 //  Inherited in `SwapExactInput.t.sol` tests
-abstract contract SwapExactInputAerodromeTest is SwapAdapterBaseTest {
+abstract contract SwapExactInputAerodromeTest is SwapAdapterTest {
     address public aerodromePoolFactory = makeAddr("aerodromePoolFactory");
 
     function test_SwapExactInputAerodrome_SingleHop() public {

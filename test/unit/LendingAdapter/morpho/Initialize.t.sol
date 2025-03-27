@@ -15,10 +15,10 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
-import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
+import {MorphoLendingAdapterTest} from "./MorphoLendingAdapter.t.sol";
 import {MockMorpho} from "../../mock/MockMorpho.sol";
 
-contract MorphoLendingAdapterInitializeTest is MorphoLendingAdapterBaseTest {
+contract MorphoLendingAdapterInitializeTest is MorphoLendingAdapterTest {
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_initialize(Id marketId, MarketParams memory marketParams) public {
         morpho.mockSetMarketParams(marketId, marketParams);
