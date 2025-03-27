@@ -25,9 +25,11 @@ interface IMorphoLendingAdapterFactory {
 
     /// @notice Deploys a new MorphoLendingAdapter contract with the specified configuration.
     /// @param morphoMarketId The Morpho market ID
+    /// @param authorizedCreator The authorized creator of this lending adapter. The authorized creator can create a
+    /// new leverage token using this adapter on the LeverageManager
     /// @param baseSalt Used to compute the resulting address of the MorphoLendingAdapter.
     /// @dev MorphoLendingAdapters deployed by this factory are minimal proxies.
-    function deployAdapter(Id morphoMarketId, bytes32 baseSalt)
+    function deployAdapter(Id morphoMarketId, address authorizedCreator, bytes32 baseSalt)
         external
         returns (IMorphoLendingAdapter lendingAdapter);
 }

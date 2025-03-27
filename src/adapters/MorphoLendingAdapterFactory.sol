@@ -27,11 +27,15 @@ contract MorphoLendingAdapterFactory is IMorphoLendingAdapterFactory {
     }
 
     /// @inheritdoc IMorphoLendingAdapterFactory
-    function deployAdapter(Id morphoMarketId, bytes32 baseSalt) public returns (IMorphoLendingAdapter) {
+    function deployAdapter(Id morphoMarketId, address authorizedCreator, bytes32 baseSalt)
+        public
+        returns (IMorphoLendingAdapter)
+    {
         IMorphoLendingAdapter lendingAdapter =
             IMorphoLendingAdapter(address(lendingAdapterLogic).cloneDeterministic(salt(msg.sender, baseSalt)));
         emit MorphoLendingAdapterDeployed(lendingAdapter);
-        MorphoLendingAdapter(address(lendingAdapter)).initialize(morphoMarketId);
+
+        MorphoLendingAdapter(address(lendingAdapter)).initialize(morphoMarketId, authorizedCreator);
 
         return lendingAdapter;
     }

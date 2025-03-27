@@ -41,11 +41,11 @@ contract RebalanceTest is LeverageManagerBase {
         // The same reward distributor can be used for multiple strategies because it is state-less
 
         ethLong2xAdapter = MorphoLendingAdapter(
-            address(morphoLendingAdapterFactory.deployAdapter(WETH_USDC_MARKET_ID, bytes32(uint256(1))))
+            address(morphoLendingAdapterFactory.deployAdapter(WETH_USDC_MARKET_ID, address(this), bytes32(uint256(1))))
         );
 
         ethShort2xAdapter = MorphoLendingAdapter(
-            address(morphoLendingAdapterFactory.deployAdapter(USDC_WETH_MARKET_ID, bytes32(uint256(2))))
+            address(morphoLendingAdapterFactory.deployAdapter(USDC_WETH_MARKET_ID, address(this), bytes32(uint256(2))))
         );
 
         ethLong2x = leverageManager.createNewLeverageToken(

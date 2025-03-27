@@ -7,11 +7,13 @@ import {IMorphoLendingAdapterFactory} from "src/interfaces/IMorphoLendingAdapter
 import {MorphoLendingAdapterFactoryBase} from "./MorphoLendingAdapterFactoryBase.t.sol";
 
 contract MorphoLendingAdapterFactoryComputeAddressTest is MorphoLendingAdapterFactoryBase {
-    function testFuzz_computeAddress_MatchesDeployAddress(address sender, bytes32 baseSalt) public {
+    function testFuzz_computeAddress_MatchesDeployAddress(address sender, address authorizedCreator, bytes32 baseSalt)
+        public
+    {
         address computedAddress = factory.computeAddress(sender, baseSalt);
 
         vm.prank(sender);
-        IMorphoLendingAdapter lendingAdapter = factory.deployAdapter(defaultMarketId, baseSalt);
+        IMorphoLendingAdapter lendingAdapter = factory.deployAdapter(defaultMarketId, authorizedCreator, baseSalt);
 
         assertEq(address(lendingAdapter), computedAddress);
     }

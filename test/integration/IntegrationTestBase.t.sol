@@ -66,8 +66,9 @@ contract IntegrationTestBase is Test {
 
         morphoLendingAdapterFactory = new MorphoLendingAdapterFactory(morphoLendingAdapterImplementation);
 
-        morphoLendingAdapter =
-            MorphoLendingAdapter(address(morphoLendingAdapterFactory.deployAdapter(WETH_USDC_MARKET_ID, bytes32(0))));
+        morphoLendingAdapter = MorphoLendingAdapter(
+            address(morphoLendingAdapterFactory.deployAdapter(WETH_USDC_MARKET_ID, address(this), bytes32(0)))
+        );
 
         BASE_RATIO = LeverageManager(address(leverageManager)).BASE_RATIO();
 
@@ -134,8 +135,9 @@ contract IntegrationTestBase is Test {
         uint256 depositFee,
         uint256 withdrawFee
     ) internal returns (ILeverageToken) {
-        ILendingAdapter lendingAdapter =
-            ILendingAdapter(morphoLendingAdapterFactory.deployAdapter(WETH_USDC_MARKET_ID, bytes32(vm.randomUint())));
+        ILendingAdapter lendingAdapter = ILendingAdapter(
+            morphoLendingAdapterFactory.deployAdapter(WETH_USDC_MARKET_ID, address(this), bytes32(vm.randomUint()))
+        );
 
         ILeverageToken _leverageToken = leverageManager.createNewLeverageToken(
             LeverageTokenConfig({
