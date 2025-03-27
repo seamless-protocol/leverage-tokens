@@ -6,9 +6,9 @@ import {IMorpho, IMorphoBase} from "@morpho-blue/interfaces/IMorpho.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
-import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
+import {MorphoLendingAdapterTest} from "./MorphoLendingAdapter.t.sol";
 
-contract MorphoLendingAdapterAddCollateralTest is MorphoLendingAdapterBaseTest {
+contract MorphoLendingAdapterAddCollateralTest is MorphoLendingAdapterTest {
     address public alice = makeAddr("alice");
 
     function testFuzz_addCollateral(uint256 amount) public {

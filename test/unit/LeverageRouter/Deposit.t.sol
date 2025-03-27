@@ -6,9 +6,9 @@ import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
-import {LeverageRouterBaseTest} from "./LeverageRouterBase.t.sol";
+import {LeverageRouterTest} from "./LeverageRouter.t.sol";
 
-contract DepositTest is LeverageRouterBaseTest {
+contract DepositTest is LeverageRouterTest {
     function testFuzz_deposit_DebtSwapLessThanRequiredFlashLoanRepaymentCollateral_SenderSuppliesSufficientCollateral(
         uint256 requiredCollateral,
         uint256 equityInCollateralAsset,

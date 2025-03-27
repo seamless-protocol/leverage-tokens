@@ -8,10 +8,10 @@ import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol"
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {ExternalAction} from "src/types/DataTypes.sol";
-import {FeeManagerBaseTest} from "test/unit/FeeManager/FeeManagerBase.t.sol";
+import {FeeManagerTest} from "test/unit/FeeManager/FeeManager.t.sol";
 import {FeeManager} from "src/FeeManager.sol";
 
-contract SetLeverageTokenActionFeeTest is FeeManagerBaseTest {
+contract SetLeverageTokenActionFeeTest is FeeManagerTest {
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_setLeverageTokenActionFee(ILeverageToken leverageToken, uint256 actionNum, uint256 fee) public {
         ExternalAction action = ExternalAction(actionNum % 2);

@@ -8,10 +8,10 @@ import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 // Internal imports
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {LeverageManagerBaseTest} from "./LeverageManagerBase.t.sol";
+import {LeverageManagerTest} from "./LeverageManager.t.sol";
 import {RebalanceAction, ActionType} from "src/types/DataTypes.sol";
 
-contract TransferTokensTest is LeverageManagerBaseTest {
+contract TransferTokensTest is LeverageManagerTest {
     function setUp() public override {
         super.setUp();
     }

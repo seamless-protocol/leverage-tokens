@@ -8,10 +8,10 @@ import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {LeverageRouter} from "src/periphery/LeverageRouter.sol";
 import {ExternalAction} from "src/types/DataTypes.sol";
-import {LeverageRouterBaseTest} from "./LeverageRouterBase.t.sol";
+import {LeverageRouterTest} from "./LeverageRouter.t.sol";
 import {MockLeverageManager} from "../mock/MockLeverageManager.sol";
 
-contract WithdrawTest is LeverageRouterBaseTest {
+contract WithdrawTest is LeverageRouterTest {
     function testFuzz_withdraw_CollateralSwapWithinMaxCostForFlashLoanRepaymentDebt(
         uint128 requiredCollateral,
         uint128 requiredDebt,

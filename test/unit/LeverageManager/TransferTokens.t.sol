@@ -2,7 +2,7 @@
 pragma solidity ^0.8.26;
 
 // Forge imports
-import {Test, console} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 
 // Dependency imports
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
@@ -11,15 +11,11 @@ import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {LeverageManagerBaseTest} from "./LeverageManagerBase.t.sol";
+import {LeverageManagerTest} from "./LeverageManager.t.sol";
 import {MockLendingAdapter} from "test/unit/mock/MockLendingAdapter.sol";
 import {TokenTransfer} from "src/types/DataTypes.sol";
 
-contract TransferTokensTest is LeverageManagerBaseTest {
-    function setUp() public override {
-        super.setUp();
-    }
-
+contract TransferTokensTest is LeverageManagerTest {
     function test_transferTokens_FromLeverageManager() public {
         ERC20Mock token1 = new ERC20Mock();
         ERC20Mock token2 = new ERC20Mock();

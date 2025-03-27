@@ -7,17 +7,16 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 // Internal imports
 import {ExternalAction} from "src/types/DataTypes.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
-import {FeeManagerBaseTest} from "test/unit/FeeManager/FeeManagerBase.t.sol";
+import {FeeManagerTest} from "test/unit/FeeManager/FeeManager.t.sol";
 
-contract ComputeEquityFeesTest is FeeManagerBaseTest {
+contract ComputeEquityFeesTest is FeeManagerTest {
     address public treasury = makeAddr("treasury");
     ILeverageToken public leverageToken = ILeverageToken(makeAddr("leverageToken"));
 
     function setUp() public override {
         super.setUp();
 
-        vm.prank(feeManagerRole);
-        feeManager.setTreasury(treasury);
+        _setTreasury(feeManagerRole, treasury);
     }
 
     function test_computeEquityFees_Deposit() public {

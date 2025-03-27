@@ -8,10 +8,10 @@ import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol"
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {ExternalAction} from "src/types/DataTypes.sol";
-import {FeeManagerBaseTest} from "test/unit/FeeManager/FeeManagerBase.t.sol";
+import {FeeManagerTest} from "test/unit/FeeManager/FeeManager.t.sol";
 import {FeeManager} from "src/FeeManager.sol";
 
-contract SetTreasuryActionFeeTest is FeeManagerBaseTest {
+contract SetTreasuryActionFeeTest is FeeManagerTest {
     address public treasury = makeAddr("treasury");
 
     function setUp() public override {

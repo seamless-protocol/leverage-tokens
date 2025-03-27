@@ -6,9 +6,9 @@ import {IMorphoBase} from "@morpho-blue/interfaces/IMorpho.sol";
 
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
-import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
+import {MorphoLendingAdapterTest} from "./MorphoLendingAdapter.t.sol";
 
-contract MorphoLendingAdapterBorrowTest is MorphoLendingAdapterBaseTest {
+contract MorphoLendingAdapterBorrowTest is MorphoLendingAdapterTest {
     function testFuzz_borrow(uint256 amount) public {
         vm.assume(amount > 0);
 
