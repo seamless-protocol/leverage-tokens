@@ -3,9 +3,13 @@ pragma solidity ^0.8.26;
 
 import {ILeverageToken} from "./ILeverageToken.sol";
 import {ILeverageManager} from "./ILeverageManager.sol";
+import {LeverageTokenState} from "src/types/DataTypes.sol";
 import {Auction} from "src/types/DataTypes.sol";
 
 interface IDutchAuctionRebalanceAdapter {
+    /// @notice Error thrown when leverage token is already set
+    error LeverageTokenAlreadySet();
+
     /// @notice Error thrown when auction is not valid
     error AuctionNotValid();
 
@@ -23,12 +27,11 @@ interface IDutchAuctionRebalanceAdapter {
 
     /// @notice Event emitted when Dutch auction rebalancer is initialized
     event DutchAuctionRebalanceAdapterInitialized(
-        ILeverageManager indexed leverageManager,
-        ILeverageToken indexed leverageToken,
-        uint256 auctionDuration,
-        uint256 initialPriceMultiplier,
-        uint256 minPriceMultiplier
+        uint256 auctionDuration, uint256 initialPriceMultiplier, uint256 minPriceMultiplier
     );
+
+    /// @notice Event emitted when leverage token is set
+    event LeverageTokenSet(ILeverageToken leverageToken);
 
     /// @notice Event emitted when new auction is created
     event AuctionCreated(Auction auction);
@@ -80,14 +83,33 @@ interface IDutchAuctionRebalanceAdapter {
         view
         returns (bool isEligibleForRebalance, bool isOverCollateralized);
 
-    /// @notice Returns whether auction is valid
-    /// @return isValid Whether auction is valid
-    function isAuctionValid() external view returns (bool isValid);
-
     /// @notice Returns current auction multiplier
     /// @return multiplier Current auction multiplier
     /// @dev This module uses exponential approximation (1-x)^4 to calculate the current auction multiplier
     function getCurrentAuctionMultiplier() external view returns (uint256 multiplier);
+
+    /// @notice Returns true if the leverage token is eligible for rebalance
+    /// @param token The leverage token
+    /// @param state The state of the leverage token
+    /// @param caller The caller of the function
+    /// @return isEligible True if the leverage token is eligible for rebalance, false otherwise
+    function isEligibleForRebalance(ILeverageToken token, LeverageTokenState memory state, address caller)
+        external
+        view
+        returns (bool isEligible);
+
+    /// @notice Returns true if the leverage token state after rebalance is valid
+    /// @param token The leverage token
+    /// @param stateBefore The state of the leverage token before rebalance
+    /// @return isValid True if the leverage token state after rebalance is valid, false otherwise
+    function isStateAfterRebalanceValid(ILeverageToken token, LeverageTokenState memory stateBefore)
+        external
+        view
+        returns (bool isValid);
+
+    /// @notice Returns whether auction is valid
+    /// @return isValid Whether auction is valid
+    function isAuctionValid() external view returns (bool isValid);
 
     /// @notice Returns amount of tokens to provide for given amount of tokens to receive
     /// @param amountOut Amount of tokens to receive

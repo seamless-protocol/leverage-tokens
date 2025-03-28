@@ -35,51 +35,24 @@ contract RebalanceTest is LeverageManagerTest {
     MorphoLendingAdapter ethLong2xAdapter;
     MorphoLendingAdapter ethShort2xAdapter;
 
-    address public ethLong2xRebalanceAdapter;
-    address public ethShort2xRebalanceAdapter;
+    RebalanceAdapter rebalanceAdapterImplementation;
+
+    RebalanceAdapter ethLong2xRebalanceAdapter;
+    RebalanceAdapter ethShort2xRebalanceAdapter;
 
     function setUp() public virtual override {
         super.setUp();
 
-        // Deploying simple reward distributor for now because more complex reward distributor will be tested separately
-        // The same reward distributor can be used for multiple strategies because it is state-less
-
-        bytes memory ethLong2xRebalanceAdapterInitData = abi.encode(
-            address(this),
-            address(leverageManager),
-            18 * BASE_RATIO / 10, // 1.8x
-            22 * BASE_RATIO / 10, // 2.2x
-            7 minutes, // 7 minutes
-            1.2 * 1e18, // 1.2x
-            0.9 * 1e18 // 0.9x
-        );
-
-        bytes memory ethShort2xRebalanceAdapterInitData = abi.encode(
-            address(this),
-            address(leverageManager),
-            13 * BASE_RATIO / 10, // 1.3x
-            2 * BASE_RATIO, // 2x
-            7 minutes, // 7 minutes
-            1.2 * 1e18, // 1.2x
-            0.9 * 1e18 // 0.9x
-        );
-
-        RebalanceAdapter rebalanceAdapterImplementation = new RebalanceAdapter();
-        ethLong2xRebalanceAdapter = address(new ERC1967Proxy(address(rebalanceAdapterImplementation), ""));
-        ethShort2xRebalanceAdapter = address(new ERC1967Proxy(address(rebalanceAdapterImplementation), ""));
+        rebalanceAdapterImplementation = new RebalanceAdapter();
+        ethLong2xRebalanceAdapter = _deployRebalanceAdapter(1.8e8, 2.2e8, 7 minutes, 1.2e18, 0.9e18);
+        ethShort2xRebalanceAdapter = _deployRebalanceAdapter(1.3e8, 2e8, 7 minutes, 1.2e18, 0.9e18);
 
         ethLong2xAdapter = MorphoLendingAdapter(
-            morphoLendingAdapterFactory.createProxy(
-                abi.encodeWithSelector(MorphoLendingAdapter.initialize.selector, WETH_USDC_MARKET_ID, address(this)),
-                bytes32(uint256(1))
-            )
+            address(morphoLendingAdapterFactory.deployAdapter(WETH_USDC_MARKET_ID, address(this), bytes32(uint256(1))))
         );
 
         ethShort2xAdapter = MorphoLendingAdapter(
-            morphoLendingAdapterFactory.createProxy(
-                abi.encodeWithSelector(MorphoLendingAdapter.initialize.selector, USDC_WETH_MARKET_ID, address(this)),
-                bytes32(uint256(2))
-            )
+            address(morphoLendingAdapterFactory.deployAdapter(USDC_WETH_MARKET_ID, address(this), bytes32(uint256(2))))
         );
 
         ethLong2x = leverageManager.createNewLeverageToken(
@@ -91,8 +64,7 @@ contract RebalanceTest is LeverageManagerTest {
                 withdrawTokenFee: 0
             }),
             "Seamless ETH/USDC 2x leverage token",
-            "ltETH/USDC-2x",
-            ethLong2xRebalanceAdapterInitData
+            "ltETH/USDC-2x"
         );
 
         ethShort2x = leverageManager.createNewLeverageToken(
@@ -104,8 +76,7 @@ contract RebalanceTest is LeverageManagerTest {
                 withdrawTokenFee: 0
             }),
             "Seamless USDC/ETH 2x leverage token",
-            "ltUSDC/ETH-2x",
-            ethShort2xRebalanceAdapterInitData
+            "ltUSDC/ETH-2x"
         );
     }
 
@@ -147,8 +118,8 @@ contract RebalanceTest is LeverageManagerTest {
         assertEq(debtAfter, debtBefore + 4100 * 1e6);
 
         // Check that USDC is sent to rebalancer and that WETH is taken from him
-        assertEq(USDC.balanceOf(ethLong2xRebalanceAdapter), 4100 * 1e6);
-        assertEq(WETH.balanceOf(ethLong2xRebalanceAdapter), 0);
+        assertEq(USDC.balanceOf(address(ethLong2xRebalanceAdapter)), 4100 * 1e6);
+        assertEq(WETH.balanceOf(address(ethLong2xRebalanceAdapter)), 0);
     }
 
     function test_rebalance_SingleLeverageToken_UnderCollateralized() public {
@@ -183,8 +154,8 @@ contract RebalanceTest is LeverageManagerTest {
         assertEq(debtAfter, debtBefore - 2800 * 1e6);
 
         // Check that USDC is sent to rebalancer and that WETH is taken from him
-        assertEq(USDC.balanceOf(ethLong2xRebalanceAdapter), 0);
-        assertEq(WETH.balanceOf(ethLong2xRebalanceAdapter), 1e18);
+        assertEq(USDC.balanceOf(address(ethLong2xRebalanceAdapter)), 0);
+        assertEq(WETH.balanceOf(address(ethLong2xRebalanceAdapter)), 1e18);
     }
 
     /// @dev In this block price on oracle 3392.292471591441746049801068
@@ -198,7 +169,7 @@ contract RebalanceTest is LeverageManagerTest {
         (RebalanceAction[] memory actions, TokenTransfer[] memory transfersIn, TokenTransfer[] memory transfersOut) =
             _prepareForRebalance(ethLong2x, 10 * 1e18, 0, 0, 0);
 
-        vm.prank(ethLong2xRebalanceAdapter);
+        vm.prank(address(ethLong2xRebalanceAdapter));
         vm.expectRevert(
             abi.encodeWithSelector(ILeverageManager.InvalidLeverageTokenStateAfterRebalance.selector, ethLong2x)
         );
@@ -228,7 +199,11 @@ contract RebalanceTest is LeverageManagerTest {
         (RebalanceAction[] memory actions, TokenTransfer[] memory transfersIn, TokenTransfer[] memory transfersOut) =
             _prepareForRebalance(leverageToken, collToAdd, collToTake, debtToBorrow, debtToRepay);
 
-        vm.prank(address(leverageToken) == address(ethLong2x) ? ethLong2xRebalanceAdapter : ethShort2xRebalanceAdapter);
+        vm.prank(
+            address(leverageToken) == address(ethLong2x)
+                ? address(ethLong2xRebalanceAdapter)
+                : address(ethShort2xRebalanceAdapter)
+        );
         leverageManager.rebalance(actions, transfersIn, transfersOut);
     }
 
@@ -255,8 +230,9 @@ contract RebalanceTest is LeverageManagerTest {
             TokenTransfer[] memory transfersOut
         )
     {
-        address rebalancer =
-            address(leverageToken) == address(ethLong2x) ? ethLong2xRebalanceAdapter : ethShort2xRebalanceAdapter;
+        address rebalancer = address(leverageToken) == address(ethLong2x)
+            ? address(ethLong2xRebalanceAdapter)
+            : address(ethShort2xRebalanceAdapter);
 
         actions = new RebalanceAction[](4);
         actions[0] =
@@ -370,5 +346,30 @@ contract RebalanceTest is LeverageManagerTest {
 
     function getLeverageTokenState(ILeverageToken leverageToken) internal view returns (LeverageTokenState memory) {
         return LeverageManagerHarness(address(leverageManager)).getLeverageTokenState(leverageToken);
+    }
+
+    function _deployRebalanceAdapter(
+        uint256 minCollateralRatio,
+        uint256 maxCollateralRatio,
+        uint256 auctionDuration,
+        uint256 initialPriceMultiplier,
+        uint256 minPriceMultiplier
+    ) internal returns (RebalanceAdapter) {
+        ERC1967Proxy proxy = new ERC1967Proxy(
+            address(rebalanceAdapterImplementation),
+            abi.encodeWithSelector(
+                RebalanceAdapter.initialize.selector,
+                address(this),
+                address(this),
+                address(leverageManager),
+                minCollateralRatio,
+                maxCollateralRatio,
+                auctionDuration,
+                initialPriceMultiplier,
+                minPriceMultiplier
+            )
+        );
+
+        return RebalanceAdapter(address(proxy));
     }
 }

@@ -8,8 +8,7 @@ import {RebalanceAdapterTest} from "./RebalanceAdapter.t.sol";
 import {RebalanceAdapterHarness} from "test/unit/harness/RebalaneAdapterHarness.t.sol";
 
 contract UpgradeToAndCallTest is RebalanceAdapterTest {
-    /// forge-config: default.fuzz.runs = 1
-    function testFuzz_upgradeToAndCall() public {
+    function test_upgradeToAndCall() public {
         address newImplementation = address(new RebalanceAdapterHarness());
 
         vm.prank(rebalanceAdapter.owner());

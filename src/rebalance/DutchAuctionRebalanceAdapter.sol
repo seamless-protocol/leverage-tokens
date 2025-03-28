@@ -20,8 +20,6 @@ abstract contract DutchAuctionRebalanceAdapter is IDutchAuctionRebalanceAdapter,
     /// @dev Struct containing all state for the DutchAuctionRebalanceAdapter contract
     /// @custom:storage-location erc7201:seamless.contracts.storage.DutchAuctionRebalanceAdapter
     struct DutchAuctionRebalanceAdapterStorage {
-        /// @notice Leverage manager contract
-        ILeverageManager leverageManager;
         /// @notice Leverage token that this dutch auction rebalancer is for
         ILeverageToken leverageToken;
         /// @notice Currently active auction
@@ -47,8 +45,6 @@ abstract contract DutchAuctionRebalanceAdapter is IDutchAuctionRebalanceAdapter,
     }
 
     function __DutchAuctionRebalanceAdapter_init_unchained(
-        ILeverageManager _leverageManager,
-        ILeverageToken _leverageToken,
         uint256 _auctionDuration,
         uint256 _initialPriceMultiplier,
         uint256 _minPriceMultiplier
@@ -62,21 +58,26 @@ abstract contract DutchAuctionRebalanceAdapter is IDutchAuctionRebalanceAdapter,
         }
 
         DutchAuctionRebalanceAdapterStorage storage $ = _getDutchAuctionRebalanceAdapterStorage();
-        $.leverageManager = _leverageManager;
-        $.leverageToken = _leverageToken;
         $.auctionDuration = _auctionDuration;
         $.initialPriceMultiplier = _initialPriceMultiplier;
         $.minPriceMultiplier = _minPriceMultiplier;
 
-        emit DutchAuctionRebalanceAdapterInitialized(
-            _leverageManager, _leverageToken, _auctionDuration, _initialPriceMultiplier, _minPriceMultiplier
-        );
+        emit DutchAuctionRebalanceAdapterInitialized(_auctionDuration, _initialPriceMultiplier, _minPriceMultiplier);
+    }
+
+    /// @notice Sets the leverage token for the dutch auction rebalancer
+    /// @param leverageToken The leverage token to set
+    function _setLeverageToken(ILeverageToken leverageToken) internal {
+        if (address(getLeverageToken()) != address(0)) {
+            revert LeverageTokenAlreadySet();
+        }
+
+        _getDutchAuctionRebalanceAdapterStorage().leverageToken = leverageToken;
+        emit LeverageTokenSet(leverageToken);
     }
 
     /// @inheritdoc IDutchAuctionRebalanceAdapter
-    function getLeverageManager() public view returns (ILeverageManager) {
-        return _getDutchAuctionRebalanceAdapterStorage().leverageManager;
-    }
+    function getLeverageManager() public view virtual returns (ILeverageManager);
 
     /// @inheritdoc IDutchAuctionRebalanceAdapter
     function getLeverageToken() public view returns (ILeverageToken) {
@@ -181,6 +182,7 @@ abstract contract DutchAuctionRebalanceAdapter is IDutchAuctionRebalanceAdapter,
         return Math.mulDiv(baseAmountIn, getCurrentAuctionMultiplier(), PRICE_MULTIPLIER_PRECISION);
     }
 
+    /// @inheritdoc IDutchAuctionRebalanceAdapter
     function createAuction() external {
         // End current on going auction
         endAuction();
@@ -308,6 +310,7 @@ abstract contract DutchAuctionRebalanceAdapter is IDutchAuctionRebalanceAdapter,
         SafeERC20.safeTransfer(collateralAsset, msg.sender, collateralAmount);
     }
 
+    /// @inheritdoc IDutchAuctionRebalanceAdapter
     function isEligibleForRebalance(ILeverageToken, LeverageTokenState memory, address caller)
         public
         view
@@ -317,5 +320,6 @@ abstract contract DutchAuctionRebalanceAdapter is IDutchAuctionRebalanceAdapter,
         return caller == address(this);
     }
 
+    /// @inheritdoc IDutchAuctionRebalanceAdapter
     function isStateAfterRebalanceValid(ILeverageToken, LeverageTokenState memory) public view virtual returns (bool);
 }

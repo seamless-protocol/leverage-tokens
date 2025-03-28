@@ -13,7 +13,9 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
+import {IMorphoLendingAdapterFactory} from "src/interfaces/IMorphoLendingAdapterFactory.sol";
 import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
+import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
@@ -22,23 +24,23 @@ import {LeverageManager} from "src/LeverageManager.sol";
 import {LeverageToken} from "src/LeverageToken.sol";
 import {LeverageTokenConfig} from "src/types/DataTypes.sol";
 import {LeverageManagerHarness} from "test/unit/harness/LeverageManagerHarness.t.sol";
+import {MorphoLendingAdapterFactory} from "src/adapters/MorphoLendingAdapterFactory.sol";
 import {RebalanceAdapter} from "src/rebalance/RebalanceAdapter.sol";
 
 contract IntegrationTestBase is Test {
     uint256 public constant FORK_BLOCK_NUMBER = 25473904;
+    uint256 public constant BASE_RATIO = 1e8;
 
     IERC20 public constant WETH = IERC20(0x4200000000000000000000000000000000000006);
     IERC20 public constant USDC = IERC20(0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913);
     IMorpho public constant MORPHO = IMorpho(0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb);
     Id public constant WETH_USDC_MARKET_ID = Id.wrap(0x8793cf302b8ffd655ab97bd1c695dbd967807e8367a65cb2f4edaf1380ba1bda);
 
-    uint256 public BASE_RATIO;
-    address public dutchAuctionModule = makeAddr("dutchAuctionModule");
     address public user = makeAddr("user");
     address public treasury = makeAddr("treasury");
     ILeverageToken public leverageToken;
 
-    BeaconProxyFactory public morphoLendingAdapterFactory;
+    IMorphoLendingAdapterFactory public morphoLendingAdapterFactory;
     ILeverageManager public leverageManager = ILeverageManager(makeAddr("leverageManager"));
     MorphoLendingAdapter public morphoLendingAdapter;
 
@@ -61,16 +63,17 @@ contract IntegrationTestBase is Test {
         MorphoLendingAdapter morphoLendingAdapterImplementation =
             new MorphoLendingAdapter(ILeverageManager(leverageManager), MORPHO);
 
-        morphoLendingAdapterFactory = new BeaconProxyFactory(address(morphoLendingAdapterImplementation), address(this));
+        morphoLendingAdapterFactory = new MorphoLendingAdapterFactory(morphoLendingAdapterImplementation);
 
         morphoLendingAdapter = MorphoLendingAdapter(
-            morphoLendingAdapterFactory.createProxy(
-                abi.encodeWithSelector(MorphoLendingAdapter.initialize.selector, WETH_USDC_MARKET_ID, address(this)),
-                bytes32(0)
-            )
+            address(morphoLendingAdapterFactory.deployAdapter(WETH_USDC_MARKET_ID, address(this), bytes32(0)))
         );
 
-        BASE_RATIO = LeverageManager(address(leverageManager)).BASE_RATIO();
+        vm.mockCall(
+            address(0),
+            abi.encodeWithSelector(IRebalanceAdapterBase.postLeverageTokenCreation.selector),
+            abi.encode(true)
+        );
 
         leverageToken = leverageManager.createNewLeverageToken(
             LeverageTokenConfig({
@@ -81,8 +84,7 @@ contract IntegrationTestBase is Test {
                 withdrawTokenFee: 0
             }),
             "Seamless ETH/USDC 2x leverage token",
-            "ltETH/USDC-2x",
-            ""
+            "ltETH/USDC-2x"
         );
 
         leverageManager.setTreasury(treasury);
@@ -126,17 +128,25 @@ contract IntegrationTestBase is Test {
         uint256 withdrawFee
     ) internal returns (ILeverageToken) {
         ILendingAdapter lendingAdapter = ILendingAdapter(
-            morphoLendingAdapterFactory.createProxy(
-                abi.encodeWithSelector(MorphoLendingAdapter.initialize.selector, WETH_USDC_MARKET_ID, address(this)),
-                keccak256(abi.encode(vm.randomUint()))
-            )
+            morphoLendingAdapterFactory.deployAdapter(WETH_USDC_MARKET_ID, address(this), bytes32(vm.randomUint()))
         );
 
         RebalanceAdapter rebalanceAdapterImplementation = new RebalanceAdapter();
-        address rebalanceAdapter = address(new ERC1967Proxy(address(rebalanceAdapterImplementation), ""));
-
-        bytes memory rebalanceAdapterInitData = abi.encode(
-            address(this), address(leverageManager), minColRatio, maxColRatio, 7 minutes, 1.2 * 1e18, 0.9 * 1e18
+        address rebalanceAdapter = address(
+            new ERC1967Proxy(
+                address(rebalanceAdapterImplementation),
+                abi.encodeWithSelector(
+                    RebalanceAdapter.initialize.selector,
+                    address(this),
+                    address(this),
+                    leverageManager,
+                    minColRatio,
+                    maxColRatio,
+                    7 minutes,
+                    1.2 * 1e18,
+                    0.9 * 1e18
+                )
+            )
         );
 
         ILeverageToken _leverageToken = leverageManager.createNewLeverageToken(
@@ -148,8 +158,7 @@ contract IntegrationTestBase is Test {
                 withdrawTokenFee: withdrawFee
             }),
             "dummy name",
-            "dummy symbol",
-            rebalanceAdapterInitData
+            "dummy symbol"
         );
 
         return _leverageToken;

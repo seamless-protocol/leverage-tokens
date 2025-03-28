@@ -12,13 +12,31 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {MorphoBalancesLib} from "@morpho-blue/libraries/periphery/MorphoBalancesLib.sol";
 
 // Internal imports
+import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
+import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {BeaconProxyFactory} from "src/BeaconProxyFactory.sol";
 import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IntegrationTestBase} from "./IntegrationTestBase.t.sol";
+import {LeverageTokenConfig} from "src/types/DataTypes.sol";
 
 contract MorphoLendingAdapterTest is IntegrationTestBase {
+    function testFork_createNewLeverageToken_RevertIf_LendingAdapterIsAlreadyInUse() public {
+        vm.expectRevert(abi.encodeWithSelector(IMorphoLendingAdapter.LendingAdapterAlreadyInUse.selector));
+        leverageManager.createNewLeverageToken(
+            LeverageTokenConfig({
+                lendingAdapter: morphoLendingAdapter,
+                rebalanceAdapter: IRebalanceAdapterBase(address(0)),
+                targetCollateralRatio: 2e8,
+                depositTokenFee: 0,
+                withdrawTokenFee: 0
+            }),
+            "LT",
+            "LT"
+        );
+    }
+
     /// @dev In this block price on oracle 3392.292471591441746049801068
     function testFork_convertCollateralToDebtAsset() public view {
         uint256 result = morphoLendingAdapter.convertCollateralToDebtAsset(1 ether);
@@ -180,6 +198,31 @@ contract MorphoLendingAdapterTest is IntegrationTestBase {
         assertEq(morphoLendingAdapter.getDebt(), expectedBorrowAssets);
 
         assertEq(USDC.balanceOf(caller), 0);
+    }
+
+    function testFork_getHealthFactor() public {
+        assertEq(MORPHO.idToMarketParams(WETH_USDC_MARKET_ID).lltv, 0.86e18);
+
+        // Initial health factor is max
+        assertEq(morphoLendingAdapter.getHealthFactor(), type(uint256).max);
+
+        // Add some collateral
+        _addCollateral(address(this), 1e18);
+        // Health factor is still max
+        assertEq(morphoLendingAdapter.getHealthFactor(), type(uint256).max);
+
+        // Borrow some debt, a bit more than half of the allowed amount (some error due to rounding in conversion)
+        // and rounding down in getHealthFactor()
+        _borrow(address(leverageManager), morphoLendingAdapter.convertCollateralToDebtAsset(0.43e18));
+        assertEq(morphoLendingAdapter.getHealthFactor(), 1999999999314451388);
+
+        // Borrow remaining allowed amount
+        _borrow(address(leverageManager), morphoLendingAdapter.convertCollateralToDebtAsset(0.43e18));
+        assertEq(morphoLendingAdapter.getHealthFactor(), 1000000000000000000);
+
+        // Cannot borrow more debt due to health factor
+        vm.expectRevert("insufficient collateral");
+        _borrow(address(leverageManager), 1);
     }
 
     function _addCollateral(address caller, uint256 amount) internal {

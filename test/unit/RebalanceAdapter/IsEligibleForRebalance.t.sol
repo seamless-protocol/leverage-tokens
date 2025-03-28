@@ -42,7 +42,7 @@ contract IsEligibleForRebalanceTest is RebalanceAdapterTest {
         vm.mockCall(
             address(leverageManager),
             abi.encodeWithSelector(ILeverageManager.getLeverageTokenState.selector, leverageToken),
-            abi.encode(stateBefore)
+            abi.encode(stateAfter)
         );
 
         bool isEligible = rebalanceAdapter.isEligibleForRebalance(leverageToken, stateBefore, caller);
