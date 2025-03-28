@@ -6,6 +6,7 @@ import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
+import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
@@ -109,24 +110,36 @@ contract LeverageManagerTest is FeeManagerTest {
         string memory name,
         string memory symbol
     ) internal returns (ILeverageToken) {
+        // Mock getCollateralAsset to return the collateral asset
         vm.mockCall(
             address(config.lendingAdapter),
             abi.encodeWithSelector(ILendingAdapter.getCollateralAsset.selector),
             abi.encode(IERC20(collateralAsset))
         );
+
+        // Mock getDebtAsset to return the debt asset
         vm.mockCall(
             address(config.lendingAdapter),
             abi.encodeWithSelector(ILendingAdapter.getDebtAsset.selector),
             abi.encode(IERC20(debtAsset))
         );
+
+        // Mock postLeverageTokenCreation to return true
         vm.mockCall(
             address(config.lendingAdapter),
-            abi.encodeWithSelector(ILendingAdapter.preLeverageTokenCreation.selector, caller),
-            abi.encode(true)
+            abi.encodeWithSelector(ILendingAdapter.postLeverageTokenCreation.selector),
+            abi.encode()
+        );
+
+        // Mock postLeverageTokenCreation to return true
+        vm.mockCall(
+            address(config.rebalanceAdapter),
+            abi.encodeWithSelector(IRebalanceAdapterBase.postLeverageTokenCreation.selector),
+            abi.encode()
         );
 
         vm.startPrank(caller);
-        leverageToken = leverageManager.createNewLeverageToken(config, name, symbol, "");
+        leverageToken = leverageManager.createNewLeverageToken(config, name, symbol);
         vm.stopPrank();
 
         return leverageToken;
