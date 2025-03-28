@@ -7,7 +7,7 @@ import {Test} from "forge-std/Test.sol";
 import {IDutchAuctionRebalanceAdapter} from "src/interfaces/IDutchAuctionRebalanceAdapter.sol";
 import {RebalanceAdapter} from "src/rebalance/RebalanceAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
+import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 
 contract PostLeverageTokenCreation is Test {
     ILeverageManager public leverageManager = ILeverageManager(makeAddr("leverageManager"));
@@ -34,7 +34,7 @@ contract PostLeverageTokenCreation is Test {
     {
         vm.assume(creator != authorizedCreator);
 
-        vm.expectRevert(abi.encodeWithSelector(IRebalanceAdapterBase.Unauthorized.selector));
+        vm.expectRevert(abi.encodeWithSelector(IRebalanceAdapter.Unauthorized.selector));
         vm.prank(address(leverageManager));
         rebalanceAdapter.postLeverageTokenCreation(creator, token);
     }
@@ -45,7 +45,7 @@ contract PostLeverageTokenCreation is Test {
     {
         vm.assume(caller != address(leverageManager));
 
-        vm.expectRevert(abi.encodeWithSelector(IRebalanceAdapterBase.Unauthorized.selector));
+        vm.expectRevert(abi.encodeWithSelector(IRebalanceAdapter.Unauthorized.selector));
         vm.prank(caller);
         rebalanceAdapter.postLeverageTokenCreation(authorizedCreator, token);
     }

@@ -5,14 +5,10 @@ import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageTokenState} from "src/types/DataTypes.sol";
 
+/// @title IRebalanceAdapterBase
+/// @notice Interface for the base rebalance adapter
+/// @dev This is minimal interface required for the rebalance adapter to be used by the LeverageManager
 interface IRebalanceAdapterBase {
-    /// @notice Error thrown when the caller is not the authorized creator of the rebalance adapter
-    error Unauthorized();
-
-    /// @notice Returns the leverage manager of the rebalance adapter
-    /// @return leverageManager The leverage manager of the rebalance adapter
-    function getLeverageManager() external view returns (ILeverageManager leverageManager);
-
     /// @notice Validates if leverage token is eligible for rebalance
     /// @param token Leverage token to validate
     /// @param state State of the leverage token

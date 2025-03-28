@@ -73,11 +73,11 @@ contract RebalanceAdapter is
         return _getRebalanceAdapterStorage().authorizedCreator;
     }
 
-    /// @inheritdoc IRebalanceAdapterBase
+    /// @inheritdoc IRebalanceAdapter
     function getLeverageManager()
         public
         view
-        override(IRebalanceAdapterBase, DutchAuctionRebalanceAdapter, MinMaxCollateralRatioRebalanceAdapter)
+        override(IRebalanceAdapter, DutchAuctionRebalanceAdapter, MinMaxCollateralRatioRebalanceAdapter)
         returns (ILeverageManager)
     {
         return _getRebalanceAdapterStorage().leverageManager;
