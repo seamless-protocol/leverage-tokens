@@ -19,6 +19,8 @@ import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 
 contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
+    uint256 internal constant WAD = 1e18;
+
     /// @inheritdoc IMorphoLendingAdapter
     ILeverageManager public immutable leverageManager;
 
@@ -128,6 +130,19 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
         uint256 debt = getDebt();
 
         return collateralInDebtAsset > debt ? collateralInDebtAsset - debt : 0;
+    }
+
+    /// @inheritdoc ILendingAdapter
+    function getHealthFactor() external view returns (uint256) {
+        uint256 borrowed = getDebt();
+        uint256 collateral = getCollateral();
+        uint256 collateralInDebtAsset = convertCollateralToDebtAsset(collateral);
+
+        uint256 maxBorrow = Math.mulDiv(collateralInDebtAsset, marketParams.lltv, WAD, Math.Rounding.Floor);
+
+        if (borrowed == 0) return type(uint256).max;
+
+        return Math.mulDiv(maxBorrow, WAD, borrowed, Math.Rounding.Floor);
     }
 
     /// @inheritdoc ILendingAdapter

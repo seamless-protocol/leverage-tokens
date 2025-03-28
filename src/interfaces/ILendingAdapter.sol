@@ -47,6 +47,11 @@ interface ILendingAdapter {
     /// @dev Equity is calculated as collateral - debt
     function getEquityInDebtAsset() external view returns (uint256 equity);
 
+    /// @notice Returns the health factor of the position held by the lending adapter
+    /// @return healthFactor Health factor of the position held by the lending adapter, scaled by 1e18
+    /// @dev If the debt is 0, `type(uint256).max` is returned
+    function getHealthFactor() external view returns (uint256 healthFactor);
+
     /// @notice Supplies collateral assets to the lending pool
     /// @param amount Amount of assets to supply
     function addCollateral(uint256 amount) external;
