@@ -76,12 +76,12 @@ interface IDutchAuctionRebalanceAdapter {
     function getMinPriceMultiplier() external view returns (uint256 multiplier);
 
     /// @notice Returns leverage token rebalance status
-    /// @return isEligibleForRebalance Whether leverage token is eligible for rebalance
+    /// @return _isEligibleForRebalance Whether leverage token is eligible for rebalance
     /// @return isOverCollateralized Whether leverage token is over-collateralized
     function getLeverageTokenRebalanceStatus()
         external
         view
-        returns (bool isEligibleForRebalance, bool isOverCollateralized);
+        returns (bool _isEligibleForRebalance, bool isOverCollateralized);
 
     /// @notice Returns current auction multiplier
     /// @return multiplier Current auction multiplier
