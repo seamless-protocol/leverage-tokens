@@ -356,7 +356,7 @@ contract PreviewActionTest is LeverageManagerTest {
     ///    initialDebt >= 1000000000: 0.00000001e18 (0.000001% slippage)
     ///
     /// Note: We can at minimum support up to 0.00000001e18 (0.000001% slippage) due to the base collateral ratio
-    ///       being 1e8
+    ///       being 1e18
     function _getAllowedCollateralRatioSlippage(uint256 initialDebt)
         internal
         pure
@@ -369,8 +369,8 @@ contract PreviewActionTest is LeverageManagerTest {
         uint256 i = Math.log10(initialDebt);
 
         // This is the minimum slippage that we can support due to the precision of the collateral ratio being
-        // 1e8 (1e18 / 1e8 = 1e10 = 0.00000001e18)
-        if (i > 8) return 0.00000001e18;
+        // 1e18 (1e18 / 1e18 = 1e0 = 1)
+        if (i > 18) return 1;
 
         // If i <= 1, that means initialDebt < 100, thus slippage = 1e18
         // Otherwise slippage = 1e18 / (10^(i - 1))

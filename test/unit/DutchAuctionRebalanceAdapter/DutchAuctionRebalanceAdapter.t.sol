@@ -22,10 +22,10 @@ import {LeverageTokenState} from "src/types/DataTypes.sol";
 contract DutchAuctionRebalanceAdapterTest is Test {
     // Common constants used across tests
     uint256 public constant BPS_DENOMINATOR = 1e18;
-    uint256 public constant BASE_RATIO = 1e8; // 1.0 with 8 decimals precision
-    uint256 public constant MIN_RATIO = 1e8; // 1x
-    uint256 public constant MAX_RATIO = 3e8; // 3x
-    uint256 public constant TARGET_RATIO = 2e8; // 2x
+    uint256 public constant BASE_RATIO = 1e18; // 1.0 with 18 decimals precision
+    uint256 public constant MIN_RATIO = 1e18; // 1x
+    uint256 public constant MAX_RATIO = 3e18; // 3x
+    uint256 public constant TARGET_RATIO = 2e18; // 2x
     uint256 public constant AUCTION_START_TIME = 1000;
     uint256 public constant DEFAULT_DURATION = 1 days;
     uint256 public constant DEFAULT_INITIAL_PRICE_MULTIPLIER = 1.1 * 1e18;

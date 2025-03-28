@@ -8,7 +8,7 @@ import {LeverageTokenState} from "src/types/DataTypes.sol";
 contract IsEligibleForRebalanceTest is MinMaxCollateralRatioRebalanceAdapterTest {
     function test_isEligibleForRebalance_WhenCollateralRatioTooLow() public view {
         LeverageTokenState memory state =
-            LeverageTokenState({collateralInDebtAsset: 100 ether, debt: 100 ether, equity: 0, collateralRatio: 1e8});
+            LeverageTokenState({collateralInDebtAsset: 100 ether, debt: 100 ether, equity: 0, collateralRatio: 1e18});
 
         bool isEligible = rebalanceAdapter.isEligibleForRebalance(leverageToken, state, address(this));
         assertTrue(isEligible);
@@ -19,7 +19,7 @@ contract IsEligibleForRebalanceTest is MinMaxCollateralRatioRebalanceAdapterTest
             collateralInDebtAsset: 300 ether,
             debt: 100 ether,
             equity: 200 ether,
-            collateralRatio: 3e8
+            collateralRatio: 3e18
         });
 
         bool isEligible = rebalanceAdapter.isEligibleForRebalance(leverageToken, state, address(this));
@@ -31,7 +31,7 @@ contract IsEligibleForRebalanceTest is MinMaxCollateralRatioRebalanceAdapterTest
             collateralInDebtAsset: 200 ether,
             debt: 100 ether,
             equity: 100 ether,
-            collateralRatio: 2e8
+            collateralRatio: 2e18
         });
 
         bool isEligible = rebalanceAdapter.isEligibleForRebalance(leverageToken, state, address(this));

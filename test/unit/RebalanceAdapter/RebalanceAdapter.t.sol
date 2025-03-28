@@ -16,8 +16,8 @@ contract RebalanceAdapterTest is Test {
     ILeverageManager public leverageManager = ILeverageManager(makeAddr("leverageManager"));
     ILeverageToken public leverageToken = ILeverageToken(makeAddr("leverageToken"));
 
-    uint256 public minCollateralRatio = 1.5 * 1e8;
-    uint256 public maxCollateralRatio = 2.5 * 1e8;
+    uint256 public minCollateralRatio = 1.5 * 1e18;
+    uint256 public maxCollateralRatio = 2.5 * 1e18;
     uint256 public auctionDuration = 7 minutes;
     uint256 public initialPriceMultiplier = 1.02 * 1e18;
     uint256 public minPriceMultiplier = 0.99 * 1e18;

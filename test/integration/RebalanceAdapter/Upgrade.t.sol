@@ -16,8 +16,8 @@ contract UpgradeTest is DutchAuctionTest {
         assertEq(ethLong2xRebalanceAdapter.getAuctionDuration(), 7 minutes);
         assertEq(ethLong2xRebalanceAdapter.getInitialPriceMultiplier(), 1.2e18);
         assertEq(ethLong2xRebalanceAdapter.getMinPriceMultiplier(), 0.9e18);
-        assertEq(ethLong2xRebalanceAdapter.getLeverageTokenMinCollateralRatio(), 1.8e8);
-        assertEq(ethLong2xRebalanceAdapter.getLeverageTokenMaxCollateralRatio(), 2.2e8);
+        assertEq(ethLong2xRebalanceAdapter.getLeverageTokenMinCollateralRatio(), 1.8e18);
+        assertEq(ethLong2xRebalanceAdapter.getLeverageTokenMaxCollateralRatio(), 2.2e18);
     }
 
     function testFork_Upgrade_RevertIf_NonOwner() public {

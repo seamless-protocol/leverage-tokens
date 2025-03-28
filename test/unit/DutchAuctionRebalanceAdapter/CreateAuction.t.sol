@@ -8,7 +8,7 @@ import {Auction} from "src/types/DataTypes.sol";
 contract CreateAuctionTest is DutchAuctionRebalanceAdapterTest {
     function test_createAuction_UnderCollateralized() public {
         // Set current ratio to be below min (under-collateralized)
-        _setLeverageTokenCollateralRatio(1.4e8);
+        _setLeverageTokenCollateralRatio(1.4e18);
 
         // Set block timestamp
         vm.warp(AUCTION_START_TIME);
@@ -35,7 +35,7 @@ contract CreateAuctionTest is DutchAuctionRebalanceAdapterTest {
 
     function test_createAuction_OverCollateralized() public {
         // Set current ratio to be above max (over-collateralized)
-        _setLeverageTokenCollateralRatio(3.1e8);
+        _setLeverageTokenCollateralRatio(3.1e18);
 
         // Set block timestamp
         vm.warp(AUCTION_START_TIME);
@@ -62,7 +62,7 @@ contract CreateAuctionTest is DutchAuctionRebalanceAdapterTest {
 
     function test_createAuction_RevertIf_AuctionStillValid() public {
         // Set current ratio to be above max (eligible)
-        _setLeverageTokenCollateralRatio(3.1e8);
+        _setLeverageTokenCollateralRatio(3.1e18);
 
         // Create first auction
         _createAuction();

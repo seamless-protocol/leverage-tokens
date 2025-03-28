@@ -44,8 +44,8 @@ contract RebalanceTest is LeverageManagerTest {
         super.setUp();
 
         rebalanceAdapterImplementation = new RebalanceAdapter();
-        ethLong2xRebalanceAdapter = _deployRebalanceAdapter(1.8e8, 2.2e8, 7 minutes, 1.2e18, 0.9e18);
-        ethShort2xRebalanceAdapter = _deployRebalanceAdapter(1.3e8, 2e8, 7 minutes, 1.2e18, 0.9e18);
+        ethLong2xRebalanceAdapter = _deployRebalanceAdapter(1.8e18, 2.2e18, 7 minutes, 1.2e18, 0.9e18);
+        ethShort2xRebalanceAdapter = _deployRebalanceAdapter(1.3e18, 2e18, 7 minutes, 1.2e18, 0.9e18);
 
         ethLong2xAdapter = MorphoLendingAdapter(
             address(morphoLendingAdapterFactory.deployAdapter(WETH_USDC_MARKET_ID, address(this), bytes32(uint256(1))))
