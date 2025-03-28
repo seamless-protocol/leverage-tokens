@@ -12,13 +12,31 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {MorphoBalancesLib} from "@morpho-blue/libraries/periphery/MorphoBalancesLib.sol";
 
 // Internal imports
+import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
+import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {BeaconProxyFactory} from "src/BeaconProxyFactory.sol";
 import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IntegrationTestBase} from "./IntegrationTestBase.t.sol";
+import {LeverageTokenConfig} from "src/types/DataTypes.sol";
 
 contract MorphoLendingAdapterTest is IntegrationTestBase {
+    function testFork_createNewLeverageToken_RevertIf_LendingAdapterIsAlreadyInUse() public {
+        vm.expectRevert(abi.encodeWithSelector(IMorphoLendingAdapter.LendingAdapterAlreadyInUse.selector));
+        leverageManager.createNewLeverageToken(
+            LeverageTokenConfig({
+                lendingAdapter: morphoLendingAdapter,
+                rebalanceAdapter: IRebalanceAdapterBase(address(0)),
+                targetCollateralRatio: 2e8,
+                depositTokenFee: 0,
+                withdrawTokenFee: 0
+            }),
+            "LT",
+            "LT"
+        );
+    }
+
     /// @dev In this block price on oracle 3392.292471591441746049801068
     function testFork_convertCollateralToDebtAsset() public view {
         uint256 result = morphoLendingAdapter.convertCollateralToDebtAsset(1 ether);
