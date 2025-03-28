@@ -138,9 +138,8 @@ contract LeverageManagerTest is FeeManagerTest {
             abi.encode()
         );
 
-        vm.startPrank(caller);
+        vm.prank(caller);
         leverageToken = leverageManager.createNewLeverageToken(config, name, symbol);
-        vm.stopPrank();
 
         return leverageToken;
     }

@@ -30,7 +30,8 @@ contract IsEligibleForRebalanceTest is RebalanceAdapterTest {
     function testFuzz_isEligibleForRebalance_ReturnsFalseIfDutchAuctionReturnsFalse(
         address caller,
         uint256 targetRatio,
-        LeverageTokenState memory stateBefore
+        LeverageTokenState memory stateBefore,
+        LeverageTokenState memory stateAfter
     ) public {
         vm.assume(caller != address(rebalanceAdapter));
 
