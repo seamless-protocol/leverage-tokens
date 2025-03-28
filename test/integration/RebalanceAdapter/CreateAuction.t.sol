@@ -12,9 +12,9 @@ contract CreateAuctionTest is DutchAuctionTest {
         _prepareOverCollateralizedState();
 
         // Start auction
-        DutchAuctionRebalanceAdapter(ethLong2xRebalanceAdapter).createAuction();
+        ethLong2xRebalanceAdapter.createAuction();
 
-        Auction memory auction = DutchAuctionRebalanceAdapter(ethLong2xRebalanceAdapter).getAuction();
+        Auction memory auction = ethLong2xRebalanceAdapter.getAuction();
 
         assertEq(auction.isOverCollateralized, true);
         assertEq(auction.startTimestamp, block.timestamp);
@@ -25,9 +25,9 @@ contract CreateAuctionTest is DutchAuctionTest {
         _prepareUnderCollateralizedState();
 
         // Start auction
-        DutchAuctionRebalanceAdapter(ethLong2xRebalanceAdapter).createAuction();
+        ethLong2xRebalanceAdapter.createAuction();
 
-        Auction memory auction = DutchAuctionRebalanceAdapter(ethLong2xRebalanceAdapter).getAuction();
+        Auction memory auction = ethLong2xRebalanceAdapter.getAuction();
 
         assertEq(auction.isOverCollateralized, false);
         assertEq(auction.startTimestamp, block.timestamp);
@@ -38,15 +38,15 @@ contract CreateAuctionTest is DutchAuctionTest {
         _prepareOverCollateralizedState();
 
         // Start auction
-        DutchAuctionRebalanceAdapter(ethLong2xRebalanceAdapter).createAuction();
+        ethLong2xRebalanceAdapter.createAuction();
 
         // Time passes
         vm.warp(block.timestamp + 7 minutes + 1);
 
         // Create auction again
-        DutchAuctionRebalanceAdapter(ethLong2xRebalanceAdapter).createAuction();
+        ethLong2xRebalanceAdapter.createAuction();
 
-        Auction memory auction = DutchAuctionRebalanceAdapter(ethLong2xRebalanceAdapter).getAuction();
+        Auction memory auction = ethLong2xRebalanceAdapter.getAuction();
 
         assertEq(auction.isOverCollateralized, true);
         assertEq(auction.startTimestamp, block.timestamp);
@@ -57,15 +57,15 @@ contract CreateAuctionTest is DutchAuctionTest {
         _prepareOverCollateralizedState();
 
         // Start auction
-        DutchAuctionRebalanceAdapter(ethLong2xRebalanceAdapter).createAuction();
+        ethLong2xRebalanceAdapter.createAuction();
 
         // Move ETH price 40% down
         _moveEthPrice(-40_00);
 
         // Create auction again
-        DutchAuctionRebalanceAdapter(ethLong2xRebalanceAdapter).createAuction();
+        ethLong2xRebalanceAdapter.createAuction();
 
-        Auction memory auction = DutchAuctionRebalanceAdapter(ethLong2xRebalanceAdapter).getAuction();
+        Auction memory auction = ethLong2xRebalanceAdapter.getAuction();
 
         assertEq(auction.isOverCollateralized, false);
         assertEq(auction.startTimestamp, block.timestamp);
@@ -78,6 +78,6 @@ contract CreateAuctionTest is DutchAuctionTest {
         _deposit(ethLong2x, user, equityToDeposit, collateralToAdd);
 
         vm.expectRevert(IDutchAuctionRebalanceAdapter.LeverageTokenNotEligibleForRebalance.selector);
-        DutchAuctionRebalanceAdapter(ethLong2xRebalanceAdapter).createAuction();
+        ethLong2xRebalanceAdapter.createAuction();
     }
 }
