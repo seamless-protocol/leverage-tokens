@@ -52,6 +52,7 @@ contract PostLeverageTokenCreation is Test {
 
     // forge-config: default.fuzz.runs = 1
     function test_postLeverageTokenCreation_RevertIf_LeverageTokenAlreadySet(address token) public {
+        vm.assume(token != address(0));
         vm.prank(address(leverageManager));
         rebalanceAdapter.postLeverageTokenCreation(authorizedCreator, token);
 
