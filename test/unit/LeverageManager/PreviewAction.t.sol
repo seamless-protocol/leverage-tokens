@@ -292,7 +292,8 @@ contract PreviewActionTest is LeverageManagerTest {
             ? initialDebtInCollateralAsset + debtChange
             : initialDebtInCollateralAsset - debtChange;
 
-        newCollateralRatio = newDebt != 0 ? (newCollateral * _BASE_RATIO()) / newDebt : type(uint256).max;
+        newCollateralRatio =
+            newDebt != 0 ? Math.mulDiv(newCollateral, _BASE_RATIO(), newDebt, Math.Rounding.Floor) : type(uint256).max;
 
         return (newCollateral, newDebt, newCollateralRatio);
     }
