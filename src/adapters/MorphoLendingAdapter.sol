@@ -3,6 +3,9 @@ pragma solidity ^0.8.26;
 
 // Dependency imports
 import {Id, IMorpho, MarketParams, Market, Position} from "@morpho-blue/interfaces/IMorpho.sol";
+import {MAX_LIQUIDATION_INCENTIVE_FACTOR, LIQUIDATION_CURSOR} from "@morpho-blue/libraries/ConstantsLib.sol";
+import {MathLib as MorphoMathLib} from "@morpho-blue/libraries/MathLib.sol";
+import {UtilsLib as MorphoUtilsLib} from "@morpho-blue/libraries/UtilsLib.sol";
 import {SharesMathLib} from "@morpho-blue/libraries/SharesMathLib.sol";
 import {IOracle} from "@morpho-blue/interfaces/IOracle.sol";
 import {ORACLE_PRICE_SCALE} from "@morpho-blue/libraries/ConstantsLib.sol";
@@ -143,6 +146,16 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
         if (borrowed == 0) return type(uint256).max;
 
         return Math.mulDiv(maxBorrow, WAD, borrowed, Math.Rounding.Floor);
+    }
+
+    /// @inheritdoc ILendingAdapter
+    function getLiquidationPenalty() external view returns (uint256) {
+        uint256 liquidationIncentiveFactor = MorphoUtilsLib.min(
+            MAX_LIQUIDATION_INCENTIVE_FACTOR,
+            MorphoMathLib.wDivDown(WAD, WAD - MorphoMathLib.wMulDown(LIQUIDATION_CURSOR, WAD - marketParams.lltv))
+        );
+
+        return liquidationIncentiveFactor - WAD;
     }
 
     /// @inheritdoc ILendingAdapter

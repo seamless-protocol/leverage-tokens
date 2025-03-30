@@ -10,6 +10,7 @@ import {IMorpho, Position, Market} from "@morpho-blue/interfaces/IMorpho.sol";
 import {Id, MarketParams} from "@morpho-blue/interfaces/IMorpho.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {MorphoBalancesLib} from "@morpho-blue/libraries/periphery/MorphoBalancesLib.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 // Internal imports
 import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
@@ -22,6 +23,25 @@ import {IntegrationTestBase} from "./IntegrationTestBase.t.sol";
 import {LeverageTokenConfig} from "src/types/DataTypes.sol";
 
 contract MorphoLendingAdapterTest is IntegrationTestBase {
+    function testFork_getLiquidationPenalty() public {
+        // cbBTC/USDC market from Morpho UI
+        IMorphoLendingAdapter lendingAdapter = morphoLendingAdapterFactory.deployAdapter(
+            Id.wrap(0x9103c3b4e834476c9a62ea009ba2c884ee42e94e6e314a26f04d312434191836),
+            address(this),
+            bytes32(uint256(1))
+        );
+
+        assertEq(lendingAdapter.getLiquidationPenalty(), 0.043841336116910229e18);
+
+        // PT-LBTC-29MAY2025/LBTC market from Morpho UI
+        lendingAdapter = morphoLendingAdapterFactory.deployAdapter(
+            Id.wrap(0x12c37bd01e0050e15e85e37b6bfd9a9bc357e7881a4589b6873f94512af1ce66),
+            address(this),
+            bytes32(uint256(2))
+        );
+        assertEq(lendingAdapter.getLiquidationPenalty(), 0.01677681748856126e18);
+    }
+
     function testFork_createNewLeverageToken_RevertIf_LendingAdapterIsAlreadyInUse() public {
         vm.expectRevert(abi.encodeWithSelector(IMorphoLendingAdapter.LendingAdapterAlreadyInUse.selector));
         leverageManager.createNewLeverageToken(
