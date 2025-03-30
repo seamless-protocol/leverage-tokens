@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
+import {console} from "forge-std/console.sol";
+
 // Dependency imports
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
@@ -22,7 +24,9 @@ abstract contract PreLiquidationRebalanceAdapter is Initializable, IPreLiquidati
     struct PreLiquidationRebalanceAdapterStorage {
         /// @notice Health factor threshold to allow rebalance
         uint256 healthFactorThreshold;
-        /// @notice Rebalance reward, flat percentage that rebalancer can take from equity of the leverage token position
+        /// @notice Rebalance reward, flat percentage that rebalancer can take from equity
+        /// @dev Percentage represents percentage of debt repaid that rebalancer can take from equity
+        /// @dev 100_00 = 100%
         uint256 rebalanceReward;
     }
 
@@ -67,13 +71,17 @@ abstract contract PreLiquidationRebalanceAdapter is Initializable, IPreLiquidati
         returns (bool)
     {
         ILeverageManager leverageManager = getLeverageManager();
-        ILendingAdapter lendingAdapter = leverageManager.getLeverageTokenLendingAdapter(token);
-
-        uint256 liquidationPenalty = lendingAdapter.getLiquidationPenalty();
-        uint256 rebalanceRewardPercentage = Math.mulDiv(liquidationPenalty, getRebalanceReward(), REWARD_BASE);
-        uint256 maxEquityLoss = Math.mulDiv(stateBefore.equity, rebalanceRewardPercentage, 1e18);
+        IMorphoLendingAdapter lendingAdapter =
+            IMorphoLendingAdapter(address(leverageManager.getLeverageTokenLendingAdapter(token)));
 
         LeverageTokenState memory stateAfter = leverageManager.getLeverageTokenState(token);
+        uint256 liquidationPenalty = lendingAdapter.getLiquidationPenalty();
+        uint256 rebalanceRewardPercentage = Math.mulDiv(liquidationPenalty, getRebalanceReward(), REWARD_BASE);
+
+        uint256 debtRepaid =
+            stateBefore.debt > stateAfter.debt ? stateBefore.debt - stateAfter.debt : stateAfter.debt - stateBefore.debt;
+
+        uint256 maxEquityLoss = Math.mulDiv(debtRepaid, rebalanceRewardPercentage, 1e18);
         return stateAfter.equity >= stateBefore.equity - maxEquityLoss;
     }
 

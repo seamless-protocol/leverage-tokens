@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
+import {console} from "forge-std/console.sol";
+
 // Dependency imports
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
@@ -91,12 +93,22 @@ abstract contract MinMaxCollateralRatioRebalanceAdapter is IMinMaxCollateralRati
         uint256 ratioBefore = stateBefore.collateralRatio;
         uint256 ratioAfter = stateAfter.collateralRatio;
 
+        console.log("ratioBefore", ratioBefore);
+        console.log("targetRatio", targetRatio);
+        console.log("ratioAfter", ratioAfter);
+
         uint256 minRatioAfter = ratioBefore > targetRatio ? targetRatio : ratioBefore;
         uint256 maxRatioAfter = ratioBefore > targetRatio ? ratioBefore : targetRatio;
+
+        console.log("ratioAfter", ratioAfter);
+        console.log("minRatioAfter", minRatioAfter);
+        console.log("maxCollateralRatioAfter", maxRatioAfter);
 
         if (ratioAfter < minRatioAfter || ratioAfter > maxRatioAfter) {
             return false;
         }
+
+        console.log("true");
 
         return true;
     }
