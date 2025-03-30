@@ -7,15 +7,15 @@ import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // Internal imports
-import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
+import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {LeverageTokenState} from "src/types/DataTypes.sol";
 import {IPreLiquidationRebalanceAdapter} from "src/interfaces/IPreLiquidationRebalanceAdapter.sol";
 
 abstract contract PreLiquidationRebalanceAdapter is Initializable, IPreLiquidationRebalanceAdapter {
-    /// @notice Reward base, 1e5 means that the reward is 100%
-    uint256 public constant REWARD_BASE = 1e5;
+    /// @notice Reward base, 100_00 means that the reward is 100%
+    uint256 public constant REWARD_BASE = 1e4;
 
     /// @dev Struct containing all state for the PreLiquidationRebalanceAdapter contract
     /// @custom:storage-location erc7201:seamless.contracts.storage.PreLiquidationRebalanceAdapter
@@ -33,7 +33,7 @@ abstract contract PreLiquidationRebalanceAdapter is Initializable, IPreLiquidati
     {
         assembly {
             // keccak256(abi.encode(uint256(keccak256("seamless.contracts.storage.PreLiquidationRebalanceAdapter")) - 1)) & ~bytes32(uint256(0xff));
-            $.slot := 0x326e20d598a681eb69bc11b5176604d340fccf9864170f09484f3c317edf3600
+            $.slot := 0xb16e43fdb4a23e2eb5ac7d6fe250e1e010c7a5096910e708d8b2faba66b7d800
         }
     }
 
