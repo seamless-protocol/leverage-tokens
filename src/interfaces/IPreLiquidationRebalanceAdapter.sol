@@ -7,6 +7,9 @@ import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageTokenState} from "src/types/DataTypes.sol";
 
 interface IPreLiquidationRebalanceAdapter {
+    /// @notice Emitted when the PreLiquidationRebalanceAdapter is initialized
+    event PreLiquidationRebalanceAdapterInitialized(uint256 healthFactorThreshold, uint256 rebalanceReward);
+
     /// @notice Returns the leverage manager contract
     /// @return leverageManager The leverage manager contract
     function getLeverageManager() external view returns (ILeverageManager leverageManager);

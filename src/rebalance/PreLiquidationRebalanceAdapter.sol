@@ -2,7 +2,7 @@
 pragma solidity ^0.8.26;
 
 // Dependency imports
-import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
@@ -43,6 +43,7 @@ abstract contract PreLiquidationRebalanceAdapter is Initializable, IPreLiquidati
     {
         _getPreLiquidationRebalanceAdapterStorage().healthFactorThreshold = healthFactorThreshold;
         _getPreLiquidationRebalanceAdapterStorage().rebalanceReward = rebalanceReward;
+        emit PreLiquidationRebalanceAdapterInitialized(healthFactorThreshold, rebalanceReward);
     }
 
     /// @inheritdoc IPreLiquidationRebalanceAdapter

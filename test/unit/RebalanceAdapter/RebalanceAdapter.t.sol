@@ -9,6 +9,8 @@ import {RebalanceAdapter} from "src/rebalance/RebalanceAdapter.sol";
 import {RebalanceAdapterHarness} from "test/unit/harness/RebalaneAdapterHarness.t.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
+import {LeverageTokenState} from "src/types/DataTypes.sol";
+import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 
 contract RebalanceAdapterTest is Test {
     address public authorizedCreator = makeAddr("authorizedCreator");
@@ -21,6 +23,8 @@ contract RebalanceAdapterTest is Test {
     uint256 public auctionDuration = 7 minutes;
     uint256 public initialPriceMultiplier = 1.02 * 1e18;
     uint256 public minPriceMultiplier = 0.99 * 1e18;
+    uint256 public healthFactorThreshold = 1.1e18;
+    uint256 public rebalanceReward = 50_00;
 
     RebalanceAdapterHarness public rebalanceAdapter;
 
@@ -37,7 +41,9 @@ contract RebalanceAdapterTest is Test {
                 maxCollateralRatio,
                 auctionDuration,
                 initialPriceMultiplier,
-                minPriceMultiplier
+                minPriceMultiplier,
+                healthFactorThreshold,
+                rebalanceReward
             )
         );
 
@@ -60,5 +66,32 @@ contract RebalanceAdapterTest is Test {
             abi.encode(uint256(keccak256("seamless.contracts.storage.RebalanceAdapter")) - 1)
         ) & ~bytes32(uint256(0xff));
         assertEq(rebalanceAdapter.exposed_getRebalanceAdapterStorageSlot(), expectedSlot);
+    }
+
+    function _mockLeverageTokenState(uint256 targetRatio, LeverageTokenState memory state, uint256 healthFactor)
+        internal
+    {
+        vm.mockCall(
+            address(leverageManager),
+            abi.encodeWithSelector(ILeverageManager.getLeverageTokenTargetCollateralRatio.selector, leverageToken),
+            abi.encode(targetRatio)
+        );
+        vm.mockCall(
+            address(leverageManager),
+            abi.encodeWithSelector(ILeverageManager.getLeverageTokenState.selector, leverageToken),
+            abi.encode(state)
+        );
+
+        ILendingAdapter lendingAdapter = ILendingAdapter(makeAddr("lendingAdapter"));
+        vm.mockCall(
+            address(leverageManager),
+            abi.encodeWithSelector(ILeverageManager.getLeverageTokenLendingAdapter.selector, leverageToken),
+            abi.encode(lendingAdapter)
+        );
+        vm.mockCall(
+            address(lendingAdapter),
+            abi.encodeWithSelector(ILendingAdapter.getHealthFactor.selector),
+            abi.encode(healthFactor)
+        );
     }
 }
