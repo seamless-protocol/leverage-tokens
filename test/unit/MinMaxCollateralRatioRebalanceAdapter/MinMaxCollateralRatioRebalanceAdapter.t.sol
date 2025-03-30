@@ -14,6 +14,7 @@ import {MinMaxCollateralRatioRebalanceAdapter} from "src/rebalance/MinMaxCollate
 import {MinMaxCollateralRatioRebalanceAdapterHarness} from
     "test/unit/harness/MinMaxCollateralRatioRebalanceAdapterHarness.t.sol";
 import {LeverageTokenState} from "src/types/DataTypes.sol";
+import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 
 contract MinMaxCollateralRatioRebalanceAdapterTest is Test {
     uint256 public constant TARGET_RATIO = 2e8; // 2x
@@ -33,6 +34,8 @@ contract MinMaxCollateralRatioRebalanceAdapterTest is Test {
         );
         rebalanceAdapter = MinMaxCollateralRatioRebalanceAdapterHarness(rebalanceAdapterProxy);
         leverageManager = new MockLeverageManager();
+
+        rebalanceAdapter.mock_setLeverageManager(ILeverageManager(address(leverageManager)));
     }
 
     function test_setUp() public virtual {
