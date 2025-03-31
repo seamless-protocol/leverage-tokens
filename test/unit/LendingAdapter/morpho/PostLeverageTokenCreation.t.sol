@@ -7,7 +7,7 @@ import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
-import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
+import {MorphoLendingAdapter} from "src/lending/MorphoLendingAdapter.sol";
 import {MorphoLendingAdapterTest} from "./MorphoLendingAdapter.t.sol";
 
 contract PostLeverageTokenCreation is MorphoLendingAdapterTest {

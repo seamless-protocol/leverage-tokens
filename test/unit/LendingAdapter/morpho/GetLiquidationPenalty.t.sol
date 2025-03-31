@@ -6,7 +6,7 @@ import {MarketParamsLib} from "@morpho-blue/libraries/MarketParamsLib.sol";
 import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 import {MorphoLendingAdapterTest} from "./MorphoLendingAdapter.t.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
-import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
+import {MorphoLendingAdapter} from "src/lending/MorphoLendingAdapter.sol";
 
 contract GetLiquidationPenaltyTest is MorphoLendingAdapterTest {
     function test_getLiquidationPenalty_DefaultLendingAdapter() public view {
