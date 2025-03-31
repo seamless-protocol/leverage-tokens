@@ -6,18 +6,26 @@ import {ExternalAction} from "src/types/DataTypes.sol";
 
 interface IFeeManager {
     /// @notice Error emitted when `FEE_MANAGER_ROLE` tries to set fee higher than `MAX_FEE`
+    /// @param fee The fee that was set
+    /// @param maxFee The maximum fee that can be set
     error FeeTooHigh(uint256 fee, uint256 maxFee);
 
     /// @notice Error emitted when trying to set a treasury fee when the treasury address is not set
     error TreasuryNotSet();
 
     /// @notice Emitted when a LeverageToken fee is set for a specific action
+    /// @param leverageToken The LeverageToken that the fee was set for
+    /// @param action The action that the fee was set for
+    /// @param fee The fee that was set
     event LeverageTokenActionFeeSet(ILeverageToken indexed leverageToken, ExternalAction indexed action, uint256 fee);
 
     /// @notice Emitted when a treasury fee is set for a specific action
+    /// @param action The action that the fee was set for
+    /// @param fee The fee that was set
     event TreasuryActionFeeSet(ExternalAction indexed action, uint256 fee);
 
     /// @notice Emitted when the treasury address is set
+    /// @param treasury The address of the treasury
     event TreasurySet(address treasury);
 
     /// @notice Returns the LeverageToken fee for a specific action

@@ -26,29 +26,46 @@ interface ILeverageManager is IFeeManager {
     error InvalidCollateralRatios();
 
     /// @notice Error thrown when slippage is too high during deposit/withdraw
+    /// @param actual The actual amount of tokens received
+    /// @param expected The expected amount of tokens to receive
     error SlippageTooHigh(uint256 actual, uint256 expected);
 
     /// @notice Error thrown when caller is not authorized to rebalance
+    /// @param token The LeverageToken to rebalance
+    /// @param caller The caller of the rebalance function
     error NotRebalancer(ILeverageToken token, address caller);
 
     /// @notice Error thrown when a LeverageToken is not eligible for rebalance
+    /// @param token The LeverageToken that is not eligible for rebalance
     error LeverageTokenNotEligibleForRebalance(ILeverageToken token);
 
     /// @notice Error thrown when a LeverageToken's state after rebalance is invalid
+    /// @param token The LeverageToken that has invalid state after rebalance
     error InvalidLeverageTokenStateAfterRebalance(ILeverageToken token);
 
     /// @notice Event emitted when the LeverageManager is initialized
+    /// @param leverageTokenFactory The factory for creating new LeverageTokens
     event LeverageManagerInitialized(IBeaconProxyFactory leverageTokenFactory);
 
     /// @notice Event emitted when a new LeverageToken is created
+    /// @param token The new LeverageToken
+    /// @param collateralAsset The collateral asset of the LeverageToken
+    /// @param debtAsset The debt asset of the LeverageToken
+    /// @param config The config of the LeverageToken
     event LeverageTokenCreated(
         ILeverageToken indexed token, IERC20 collateralAsset, IERC20 debtAsset, LeverageTokenConfig config
     );
 
     /// @notice Event emitted when a user deposits assets into a LeverageToken
+    /// @param token The LeverageToken
+    /// @param sender The sender of the deposit
+    /// @param actionData The action data of the deposit
     event Deposit(ILeverageToken indexed token, address indexed sender, ActionData actionData);
 
     /// @notice Event emitted when a user withdraws assets from a LeverageToken
+    /// @param token The LeverageToken
+    /// @param sender The sender of the withdraw
+    /// @param actionData The action data of the withdraw
     event Withdraw(ILeverageToken indexed token, address indexed sender, ActionData actionData);
 
     /// @notice Returns the factory for creating new LeverageTokens

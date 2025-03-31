@@ -26,30 +26,29 @@ interface IDutchAuctionRebalanceAdapter {
     error MinPriceMultiplierTooHigh();
 
     /// @notice Event emitted when the Dutch auction rebalancer is initialized
+    /// @param auctionDuration The duration of auctions
+    /// @param initialPriceMultiplier The initial price multiplier for auctions
+    /// @param minPriceMultiplier The minimum price multiplier for auctions
     event DutchAuctionRebalanceAdapterInitialized(
         uint256 auctionDuration, uint256 initialPriceMultiplier, uint256 minPriceMultiplier
     );
 
     /// @notice Event emitted when the LeverageToken is set
+    /// @param leverageToken The LeverageToken
     event LeverageTokenSet(ILeverageToken leverageToken);
 
     /// @notice Event emitted when a new auction is created
+    /// @param auction The auction
     event AuctionCreated(Auction auction);
 
     /// @notice Event emitted when an auction is taken
+    /// @param taker The taker of the auction
+    /// @param amountIn The amount of tokens provided
+    /// @param amountOut The amount of tokens received
     event Take(address indexed taker, uint256 amountIn, uint256 amountOut);
 
     /// @notice Event emitted when an auction ends
     event AuctionEnded();
-
-    /// @notice Event emitted when the auction duration is updated
-    event AuctionDurationSet(uint256 newDuration);
-
-    /// @notice Event emitted when the initial price multiplier is updated
-    event InitialPriceMultiplierSet(uint256 newMultiplier);
-
-    /// @notice Event emitted when the minimum price multiplier is updated
-    event MinPriceMultiplierSet(uint256 newMultiplier);
 
     /// @notice Returns the LeverageManager
     /// @return leverageManager The LeverageManager

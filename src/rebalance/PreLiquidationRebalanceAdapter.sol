@@ -20,9 +20,10 @@ import {IPreLiquidationRebalanceAdapter} from "src/interfaces/IPreLiquidationReb
  * The `isEligibleForRebalance` function will return true if the current collateral ratio of the LeverageToken is below the configured
  * collateral ratio threshold, allowing for a rebalance action to be performed on LeverageToken on the LeverageManager.
  *
- * The PreLiquidationRebalanceAdapter is also initialized with a rebalance reward, which is a flat percentage that rebalancer can take
- * from the liquidation penalty of the underlying lending pool used by the LeverageToken. It is expected that the rebalance reward
- * is set to a value that is less than the liquidation penalty, but high enough such that rebalancing is attractive to rebalancers.
+ * The PreLiquidationRebalanceAdapter is also initialized with a rebalance reward, which is a flat percentage that is applied to the
+ * liquidation penalty of the underlying lending pool used by the LeverageToken. The result is the amount of equity that the rebalancer
+ * can earn for rebalancing the LeverageToken. It is expected that the rebalance reward is set to a value that is less than the liquidation penalty,
+ * but high enough such that rebalancing is attractive to rebalancers.
  */
 abstract contract PreLiquidationRebalanceAdapter is Initializable, IPreLiquidationRebalanceAdapter {
     uint256 internal constant WAD = 1e18;
