@@ -97,4 +97,9 @@ contract IsAuctionValidTest is DutchAuctionRebalanceAdapterTest {
 
         assertFalse(auctionRebalancer.isAuctionValid());
     }
+
+    function test_isAuctionValid_ReturnsFalse_WhenNotEligible() public {
+        auctionRebalancer.mock_isEligible(false);
+        assertFalse(auctionRebalancer.isAuctionValid());
+    }
 }

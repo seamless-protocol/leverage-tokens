@@ -76,6 +76,7 @@ contract DutchAuctionRebalanceAdapterTest is Test {
         // Setup owner and deploy auction rebalancer harness
         auctionRebalancer = DutchAuctionRebalanceAdapterHarness(dutchAuctionRebalancerProxy);
         auctionRebalancer.mock_setLeverageManager(ILeverageManager(address(leverageManager)));
+        auctionRebalancer.mock_isEligible(true);
         auctionRebalancer.exposed_setLeverageToken(leverageToken);
         leverageManager.setLeverageTokenRebalanceAdapter(leverageToken, address(auctionRebalancer));
 

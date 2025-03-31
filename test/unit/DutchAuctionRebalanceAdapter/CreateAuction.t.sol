@@ -73,4 +73,11 @@ contract CreateAuctionTest is DutchAuctionRebalanceAdapterTest {
         vm.expectRevert(IDutchAuctionRebalanceAdapter.AuctionStillValid.selector);
         auctionRebalancer.createAuction();
     }
+
+    function test_createAuction_RevertIf_NotEligible() public {
+        auctionRebalancer.mock_isEligible(false);
+
+        vm.expectRevert(IDutchAuctionRebalanceAdapter.LeverageTokenNotEligibleForRebalance.selector);
+        auctionRebalancer.createAuction();
+    }
 }
