@@ -80,6 +80,11 @@ abstract contract PreLiquidationRebalanceAdapter is Initializable, IPreLiquidati
         uint256 liquidationPenalty = lendingAdapter.getLiquidationPenalty();
 
         uint256 rebalanceRewardPercentage = Math.mulDiv(liquidationPenalty, getRebalanceReward(), REWARD_BASE);
+
+        // Scenario where debt after is bigger than debt before is scenario where user is adding collateral and borrowing debt
+        // Collateral ratio must increase after rebalance and increasing is with adding collateral and borrowing debt is highly unprofitable
+        // That means that this scenario is highly unlikely but we support it with this check
+
         uint256 debtDelta =
             stateBefore.debt > stateAfter.debt ? stateBefore.debt - stateAfter.debt : stateAfter.debt - stateBefore.debt;
 
