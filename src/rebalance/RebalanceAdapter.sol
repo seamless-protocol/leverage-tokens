@@ -127,13 +127,13 @@ contract RebalanceAdapter is
     }
 
     /// @inheritdoc IRebalanceAdapterBase
-    function getInitialCollateralRatio(ILeverageToken token)
+    function getLeverageTokenInitialCollateralRatio(ILeverageToken token)
         public
         view
         override(IRebalanceAdapterBase, CollateralRatiosRebalanceAdapter)
         returns (uint256)
     {
-        return super.getInitialCollateralRatio(token);
+        return super.getLeverageTokenInitialCollateralRatio(token);
     }
 
     /// @inheritdoc IDutchAuctionRebalanceAdapter

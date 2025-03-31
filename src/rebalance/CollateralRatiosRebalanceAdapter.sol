@@ -84,7 +84,7 @@ abstract contract CollateralRatiosRebalanceAdapter is ICollateralRatiosRebalance
     }
 
     /// @inheritdoc ICollateralRatiosRebalanceAdapter
-    function getInitialCollateralRatio(ILeverageToken) public view virtual returns (uint256) {
+    function getLeverageTokenInitialCollateralRatio(ILeverageToken) public view virtual returns (uint256) {
         return getLeverageTokenTargetCollateralRatio();
     }
 
