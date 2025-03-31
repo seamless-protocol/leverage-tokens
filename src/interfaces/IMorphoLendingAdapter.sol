@@ -5,10 +5,10 @@ pragma solidity ^0.8.26;
 import {Id, IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 
 // Internal imports
-import {ILendingAdapter} from "./ILendingAdapter.sol";
+import {IPreLiquidationLendingAdapter} from "./IPreLiquidationLendingAdapter.sol";
 import {ILeverageManager} from "./ILeverageManager.sol";
 
-interface IMorphoLendingAdapter is ILendingAdapter {
+interface IMorphoLendingAdapter is IPreLiquidationLendingAdapter {
     /// @notice Thrown when someone tries to create leverage token with this lending adapter but it is already in use
     error LendingAdapterAlreadyInUse();
 

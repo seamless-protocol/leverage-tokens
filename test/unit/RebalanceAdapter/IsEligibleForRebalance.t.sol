@@ -4,16 +4,20 @@ pragma solidity ^0.8.26;
 import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
+import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {RebalanceAdapterTest} from "./RebalanceAdapter.t.sol";
 import {MinMaxCollateralRatioRebalanceAdapterHarness} from
     "test/unit/harness/MinMaxCollateralRatioRebalanceAdapterHarness.t.sol";
+import {PreLiquidationRebalanceAdapterHarness} from "test/unit/harness/PreLiquidationRebalanceAdapterHarness.t.sol";
 import {LeverageTokenState} from "src/types/DataTypes.sol";
 
 contract IsEligibleForRebalanceTest is RebalanceAdapterTest {
     MinMaxCollateralRatioRebalanceAdapterHarness public minMaxCollateralRatioRebalanceAdapter;
+    PreLiquidationRebalanceAdapterHarness public preLiquidationRebalanceAdapter;
 
     function setUp() public override {
         super.setUp();
+
         MinMaxCollateralRatioRebalanceAdapterHarness minMaxCollateralRatioRebalanceAdapterHarness =
             new MinMaxCollateralRatioRebalanceAdapterHarness();
         address minMaxCollateralRatioRebalanceAdapterProxy = UnsafeUpgrades.deployUUPSProxy(
@@ -23,11 +27,24 @@ contract IsEligibleForRebalanceTest is RebalanceAdapterTest {
             )
         );
 
+        PreLiquidationRebalanceAdapterHarness preLiquidationRebalanceAdapterHarness =
+            new PreLiquidationRebalanceAdapterHarness();
+        address preLiquidationRebalanceAdapterProxy = UnsafeUpgrades.deployUUPSProxy(
+            address(preLiquidationRebalanceAdapterHarness),
+            abi.encodeWithSelector(
+                PreLiquidationRebalanceAdapterHarness.initialize.selector, collateralRatioThreshold, rebalanceReward
+            )
+        );
+
         minMaxCollateralRatioRebalanceAdapter =
             MinMaxCollateralRatioRebalanceAdapterHarness(minMaxCollateralRatioRebalanceAdapterProxy);
+        preLiquidationRebalanceAdapter = PreLiquidationRebalanceAdapterHarness(preLiquidationRebalanceAdapterProxy);
+
+        preLiquidationRebalanceAdapter.setLeverageManager(leverageManager);
+        minMaxCollateralRatioRebalanceAdapter.mock_setLeverageManager(leverageManager);
     }
 
-    function testFuzz_isEligibleForRebalance_ReturnsFalseIfDutchAuctionReturnsFalse(
+    function testFuzz_isEligibleForRebalance_ReturnsTheSameAsPreLiquidationRebalanceAdapter_IfDutchAuctionReturnsFalse(
         address caller,
         uint256 targetRatio,
         LeverageTokenState memory stateBefore,
@@ -35,19 +52,12 @@ contract IsEligibleForRebalanceTest is RebalanceAdapterTest {
     ) public {
         vm.assume(caller != address(rebalanceAdapter));
 
-        vm.mockCall(
-            address(leverageManager),
-            abi.encodeWithSelector(ILeverageManager.getLeverageTokenTargetCollateralRatio.selector, leverageToken),
-            abi.encode(targetRatio)
-        );
-        vm.mockCall(
-            address(leverageManager),
-            abi.encodeWithSelector(ILeverageManager.getLeverageTokenState.selector, leverageToken),
-            abi.encode(stateAfter)
-        );
+        _mockLeverageTokenState(targetRatio, stateAfter);
 
         bool isEligible = rebalanceAdapter.isEligibleForRebalance(leverageToken, stateBefore, caller);
-        assertEq(isEligible, false);
+        bool expectedIsEligible =
+            preLiquidationRebalanceAdapter.isEligibleForRebalance(leverageToken, stateBefore, caller);
+        assertEq(isEligible, expectedIsEligible);
     }
 
     function testFuzz_isEligibleForRebalance_ReturnsSameAsMinMaxCollateralRatioRebalanceAdapter(
@@ -55,16 +65,8 @@ contract IsEligibleForRebalanceTest is RebalanceAdapterTest {
         LeverageTokenState memory stateBefore,
         LeverageTokenState memory stateAfter
     ) public {
-        vm.mockCall(
-            address(leverageManager),
-            abi.encodeWithSelector(ILeverageManager.getLeverageTokenTargetCollateralRatio.selector, leverageToken),
-            abi.encode(targetRatio)
-        );
-        vm.mockCall(
-            address(leverageManager),
-            abi.encodeWithSelector(ILeverageManager.getLeverageTokenState.selector, leverageToken),
-            abi.encode(stateAfter)
-        );
+        vm.assume(stateBefore.collateralRatio >= 1.3e8);
+        _mockLeverageTokenState(targetRatio, stateAfter);
 
         bool isEligible = rebalanceAdapter.isEligibleForRebalance(leverageToken, stateBefore, address(rebalanceAdapter));
         bool expectedIsEligible = minMaxCollateralRatioRebalanceAdapter.isEligibleForRebalance(

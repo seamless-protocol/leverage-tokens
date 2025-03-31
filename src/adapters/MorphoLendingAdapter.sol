@@ -3,6 +3,9 @@ pragma solidity ^0.8.26;
 
 // Dependency imports
 import {Id, IMorpho, MarketParams, Market, Position} from "@morpho-blue/interfaces/IMorpho.sol";
+import {MAX_LIQUIDATION_INCENTIVE_FACTOR, LIQUIDATION_CURSOR} from "@morpho-blue/libraries/ConstantsLib.sol";
+import {MathLib as MorphoMathLib} from "@morpho-blue/libraries/MathLib.sol";
+import {UtilsLib as MorphoUtilsLib} from "@morpho-blue/libraries/UtilsLib.sol";
 import {SharesMathLib} from "@morpho-blue/libraries/SharesMathLib.sol";
 import {IOracle} from "@morpho-blue/interfaces/IOracle.sol";
 import {ORACLE_PRICE_SCALE} from "@morpho-blue/libraries/ConstantsLib.sol";
@@ -17,6 +20,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
+import {IPreLiquidationLendingAdapter} from "src/interfaces/IPreLiquidationLendingAdapter.sol";
 
 contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     uint256 internal constant WAD = 1e18;
@@ -133,17 +137,14 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
         return collateralInDebtAsset > debt ? collateralInDebtAsset - debt : 0;
     }
 
-    /// @inheritdoc ILendingAdapter
-    function getHealthFactor() external view returns (uint256) {
-        uint256 borrowed = getDebt();
-        uint256 collateral = getCollateral();
-        uint256 collateralInDebtAsset = convertCollateralToDebtAsset(collateral);
+    /// @inheritdoc IPreLiquidationLendingAdapter
+    function getLiquidationPenalty() external view returns (uint256) {
+        uint256 liquidationIncentiveFactor = MorphoUtilsLib.min(
+            MAX_LIQUIDATION_INCENTIVE_FACTOR,
+            MorphoMathLib.wDivDown(WAD, WAD - MorphoMathLib.wMulDown(LIQUIDATION_CURSOR, WAD - marketParams.lltv))
+        );
 
-        uint256 maxBorrow = Math.mulDiv(collateralInDebtAsset, marketParams.lltv, WAD, Math.Rounding.Floor);
-
-        if (borrowed == 0) return type(uint256).max;
-
-        return Math.mulDiv(maxBorrow, WAD, borrowed, Math.Rounding.Floor);
+        return liquidationIncentiveFactor - WAD;
     }
 
     /// @inheritdoc ILendingAdapter
