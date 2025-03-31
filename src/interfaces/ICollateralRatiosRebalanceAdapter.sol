@@ -10,7 +10,7 @@ import {LeverageTokenState} from "src/types/DataTypes.sol";
 /// @notice Interface for the CollateralRatiosRebalanceAdapter contract
 interface ICollateralRatiosRebalanceAdapter {
     /// @notice Error thrown when min collateral ratio is too high
-    error MinCollateralRatioTooHigh();
+    error InvalidCollateralRatios();
 
     /// @notice Event emitted when the collateral ratios are set
     event CollateralRatiosRebalanceAdapterInitialized(

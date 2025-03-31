@@ -34,8 +34,8 @@ contract DutchAuctionTest is RebalanceTest {
         ethLong2xRebalanceAdapter = _deployRebalanceAdapter(1, 2, 2, 0, 1.2e18, 0.9e18, 1.1e18, 40_00);
     }
 
-    function testFork_DeployNewDutchAuctionRebalanceAdapter_RevertIf_MinCollateralRatioTooHigh() public {
-        vm.expectRevert(ICollateralRatiosRebalanceAdapter.MinCollateralRatioTooHigh.selector);
+    function testFork_DeployNewDutchAuctionRebalanceAdapter_RevertIf_InvalidCollateralRatios() public {
+        vm.expectRevert(ICollateralRatiosRebalanceAdapter.InvalidCollateralRatios.selector);
         _deployRebalanceAdapter(3, 2, 2, 1, 1.2e18, 0.9e18, 1.1e18, 40_00);
     }
 

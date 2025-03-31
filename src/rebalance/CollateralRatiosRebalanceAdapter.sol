@@ -40,9 +40,9 @@ abstract contract CollateralRatiosRebalanceAdapter is ICollateralRatiosRebalance
         uint256 targetCollateralRatio,
         uint256 maxCollateralRatio
     ) internal onlyInitializing {
-        bool areRatioValid = minCollateralRatio <= targetCollateralRatio && targetCollateralRatio <= maxCollateralRatio;
-        if (!areRatioValid) {
-            revert MinCollateralRatioTooHigh();
+        bool areRatiosValid = minCollateralRatio <= targetCollateralRatio && targetCollateralRatio <= maxCollateralRatio;
+        if (!areRatiosValid) {
+            revert InvalidCollateralRatios();
         }
 
         _getCollateralRatiosRebalanceAdapterStorage().minCollateralRatio = minCollateralRatio;

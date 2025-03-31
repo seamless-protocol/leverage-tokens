@@ -47,7 +47,7 @@ contract InitializeTest is CollateralRatiosRebalanceAdapterTest {
 
         address rebalanceAdapterImplementation = address(new CollateralRatiosRebalanceAdapterHarness());
 
-        vm.expectRevert(ICollateralRatiosRebalanceAdapter.MinCollateralRatioTooHigh.selector);
+        vm.expectRevert(ICollateralRatiosRebalanceAdapter.InvalidCollateralRatios.selector);
         UnsafeUpgrades.deployUUPSProxy(
             rebalanceAdapterImplementation,
             abi.encodeWithSelector(
