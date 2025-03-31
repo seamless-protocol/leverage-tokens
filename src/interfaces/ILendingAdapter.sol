@@ -16,12 +16,12 @@ interface ILendingAdapter {
     /// @return debtAsset Address of the debt asset
     function getDebtAsset() external view returns (IERC20 debtAsset);
 
-    /// @notice Converts amount of collateral asset to debt asset amount based on lending pool oracle
+    /// @notice Converts an amount of collateral asset to a debt asset amount based on the lending pool oracle
     /// @param collateral Collateral amount
     /// @return debt Amount of debt asset
     function convertCollateralToDebtAsset(uint256 collateral) external view returns (uint256 debt);
 
-    /// @notice Converts amount of debt asset to collateral asset amount based on lending pool oracle
+    /// @notice Converts an amount of debt asset to a collateral asset amount based on the lending pool oracle
     /// @param debt Debt amount
     /// @return collateral Amount of collateral asset
     function convertDebtToCollateralAsset(uint256 debt) external view returns (uint256 collateral);
@@ -30,19 +30,19 @@ interface ILendingAdapter {
     /// @return collateral Total collateral of the position held by the lending adapter
     function getCollateral() external view returns (uint256 collateral);
 
-    /// @notice Returns total collateral of the position held by the lending adapter denominated in debt asset
-    /// @return collateral Total collateral of the position held by the lending adapter denominated in debt asset
+    /// @notice Returns the total collateral of the position held by the lending adapter denominated in the debt asset
+    /// @return collateral Total collateral of the position held by the lending adapter denominated in the debt asset
     function getCollateralInDebtAsset() external view returns (uint256 collateral);
 
-    /// @notice Returns total debt of the position held by the lending adapter
+    /// @notice Returns the total debt of the position held by the lending adapter
     /// @return debt Total debt of the position held by the lending adapter
     function getDebt() external view returns (uint256 debt);
 
-    /// @notice Returns total equity of the position held by the lending adapter denominated in collateral asset
+    /// @notice Returns the total equity of the position held by the lending adapter denominated in the collateral asset
     /// @return equity Equity of the position held by the lending adapter
     function getEquityInCollateralAsset() external view returns (uint256 equity);
 
-    /// @notice Returns total equity of the position held by the lending adapter denominated in debt asset
+    /// @notice Returns the total equity of the position held by the lending adapter denominated in the debt asset
     /// @return equity Equity of the position held by the lending adapter
     /// @dev Equity is calculated as collateral - debt
     function getEquityInDebtAsset() external view returns (uint256 equity);
@@ -59,14 +59,14 @@ interface ILendingAdapter {
     function postLeverageTokenCreation(address creator, address leverageToken) external;
 
     /// @notice Withdraws collateral assets from the lending pool
-    /// @param amount Amount of assets to withdraw
+    /// @param amount Amount of collateral assets to withdraw
     function removeCollateral(uint256 amount) external;
 
-    /// @notice Borrows assets from the lending pool
-    /// @param amount Amount of assets to borrow
+    /// @notice Borrows debt assets from the lending pool
+    /// @param amount Amount of debt assets to borrow
     function borrow(uint256 amount) external;
 
     /// @notice Repays debt to the lending pool
-    /// @param amount Amount of assets of debt to repay
+    /// @param amount Amount of debt assets to repay
     function repay(uint256 amount) external;
 }

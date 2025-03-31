@@ -12,6 +12,18 @@ import {LeverageTokenState} from "src/types/DataTypes.sol";
 import {IPreLiquidationLendingAdapter} from "src/interfaces/IPreLiquidationLendingAdapter.sol";
 import {IPreLiquidationRebalanceAdapter} from "src/interfaces/IPreLiquidationRebalanceAdapter.sol";
 
+/**
+ * @dev The PreLiquidationRebalanceAdapter is an abstract contract that implements the IPreLiquidationRebalanceAdapter interface.
+ * It is intended to be used to create pre-liquidation rebalance mechanisms for LeverageTokens.
+ *
+ * The PreLiquidationRebalanceAdapter is initialized for a LeverageToken with a collateral ratio threshold and a rebalance reward.
+ * The `isEligibleForRebalance` function will return true if the current collateral ratio of the LeverageToken is below the configured
+ * collateral ratio threshold, allowing for a rebalance action to be performed on LeverageToken on the LeverageManager.
+ *
+ * The PreLiquidationRebalanceAdapter is also initialized with a rebalance reward, which is a flat percentage that rebalancer can take
+ * from the liquidation penalty of the underlying lending pool used by the LeverageToken. It is expected that the rebalance reward
+ * is set to a value that is less than the liquidation penalty, but high enough such that rebalancing is attractive to rebalancers.
+ */
 abstract contract PreLiquidationRebalanceAdapter is Initializable, IPreLiquidationRebalanceAdapter {
     uint256 internal constant WAD = 1e18;
     /// @notice Reward base, 100_00 means that the reward is 100%
@@ -20,10 +32,11 @@ abstract contract PreLiquidationRebalanceAdapter is Initializable, IPreLiquidati
     /// @dev Struct containing all state for the PreLiquidationRebalanceAdapter contract
     /// @custom:storage-location erc7201:seamless.contracts.storage.PreLiquidationRebalanceAdapter
     struct PreLiquidationRebalanceAdapterStorage {
-        /// @notice Collateral ratio threshold to allow rebalance
+        /// @notice Collateral ratio threshold to allow pre-liquidation rebalance. If collateral ratio is below this threshold,
+        /// rebalance is allowed
         uint256 collateralRatioThreshold;
-        /// @notice Rebalance reward, flat percentage that rebalancer can take from equity
-        /// @dev Percentage represents percentage of debt repaid that rebalancer can take from equity
+        /// @notice Rebalance reward, a flat percentage of the liquidation penalty that a rebalancer can take from the equity of the LeverageToken
+        /// @dev The percentage is applied to the debt repaid by the rebalancer that they can take from the equity of the LeverageToken
         /// @dev 100_00 = 100%
         uint256 rebalanceReward;
     }

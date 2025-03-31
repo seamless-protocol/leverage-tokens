@@ -14,21 +14,38 @@ import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {RebalanceAction, TokenTransfer, ActionType, LeverageTokenState, Auction} from "src/types/DataTypes.sol";
 
+/**
+ * @dev The DutchAuctionRebalanceAdapter is a periphery abstract contract that implements the IDutchAuctionRebalanceAdapter interface.
+ * It is used to create Dutch auctions to determine the price of a rebalance action for a LeverageToken.
+ *
+ * The DutchAuctionRebalanceAdapter is initialized for a LeverageToken with an auction duration, initial price multiplier,
+ * and min price multiplier.
+ *
+ * When the LeverageToken is eligible for rebalance, an auction can be created. The auction will run for the duration specified
+ * by the auction duration and follow an exponential decay curve (following the exponential approximation (1-x)^4)) starting at
+ * the initial price multiplier, decreasing towards the min price multiplier.
+ *
+ * When a rebalancer sees a favorable price, they can call `take` to rebalance the LeverageToken. The `take` function will either
+ * decrease or increase the collateral ratio of the LeverageToken, depending on the current collateral ratio of the LeverageToken.
+ * If the LeverageToken is over-collateralized, the rebalancer will borrow debt and add collateral. If the LeverageToken is
+ * under-collateralized, the rebalancer will repay debt and remove collateral.
+ * Note: If the auction is no longer valid, `take` will revert
+ */
 abstract contract DutchAuctionRebalanceAdapter is IDutchAuctionRebalanceAdapter, Initializable {
     uint256 public constant PRICE_MULTIPLIER_PRECISION = 1e18;
 
     /// @dev Struct containing all state for the DutchAuctionRebalanceAdapter contract
     /// @custom:storage-location erc7201:seamless.contracts.storage.DutchAuctionRebalanceAdapter
     struct DutchAuctionRebalanceAdapterStorage {
-        /// @notice Leverage token that this dutch auction rebalancer is for
+        /// @notice LeverageToken that this DutchAuctionRebalanceAdapter is for
         ILeverageToken leverageToken;
-        /// @notice Currently active auction
+        /// @notice The current auction, or uninitialized if there is no on-going auction
         Auction auction;
         /// @notice Duration for all auctions in seconds
         uint256 auctionDuration;
-        /// @notice Initial price multiplier relative to oracle price
+        /// @notice Initial price multiplier for all auctions relative to the current oracle price
         uint256 initialPriceMultiplier;
-        /// @notice Minimum price multiplier relative to oracle price
+        /// @notice Minimum price multiplier for all auctions relative to the current oracle price
         uint256 minPriceMultiplier;
     }
 
@@ -65,8 +82,8 @@ abstract contract DutchAuctionRebalanceAdapter is IDutchAuctionRebalanceAdapter,
         emit DutchAuctionRebalanceAdapterInitialized(_auctionDuration, _initialPriceMultiplier, _minPriceMultiplier);
     }
 
-    /// @notice Sets the leverage token for the dutch auction rebalancer
-    /// @param leverageToken The leverage token to set
+    /// @notice Sets the LeverageToken for the DutchAuctionRebalanceAdapter
+    /// @param leverageToken The LeverageToken to set
     function _setLeverageToken(ILeverageToken leverageToken) internal {
         if (address(getLeverageToken()) != address(0)) {
             revert LeverageTokenAlreadySet();

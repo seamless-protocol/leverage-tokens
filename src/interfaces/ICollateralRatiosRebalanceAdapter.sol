@@ -17,40 +17,40 @@ interface ICollateralRatiosRebalanceAdapter {
         uint256 minCollateralRatio, uint256 targetCollateralRatio, uint256 maxCollateralRatio
     );
 
-    /// @notice Returns the leverage manager
-    /// @return leverageManager The leverage manager
+    /// @notice Returns the LeverageManager
+    /// @return leverageManager The LeverageManager
     function getLeverageManager() external view returns (ILeverageManager leverageManager);
 
-    /// @notice Returns the minimum collateral ratio for a leverage token
-    /// @return minCollateralRatio Minimum collateral ratio for the leverage token
+    /// @notice Returns the minimum collateral ratio for a LeverageToken
+    /// @return minCollateralRatio Minimum collateral ratio for the LeverageToken
     function getLeverageTokenMinCollateralRatio() external view returns (uint256 minCollateralRatio);
 
-    /// @notice Returns the target collateral ratio for a leverage token
-    /// @return targetCollateralRatio Target collateral ratio for the leverage token
+    /// @notice Returns the target collateral ratio for a LeverageToken
+    /// @return targetCollateralRatio Target collateral ratio for the LeverageToken
     function getLeverageTokenTargetCollateralRatio() external view returns (uint256 targetCollateralRatio);
 
-    /// @notice Returns the maximum collateral ratio for a leverage token
-    /// @return maxCollateralRatio Maximum collateral ratio for the leverage token
+    /// @notice Returns the maximum collateral ratio for a LeverageToken
+    /// @return maxCollateralRatio Maximum collateral ratio for the LeverageToken
     function getLeverageTokenMaxCollateralRatio() external view returns (uint256 maxCollateralRatio);
 
-    /// @notice Returns the initial collateral ratio for a leverage token
-    /// @return initialCollateralRatio Initial collateral ratio for the leverage token
+    /// @notice Returns the initial collateral ratio for a LeverageToken
+    /// @return initialCollateralRatio Initial collateral ratio for the LeverageToken
     function getInitialCollateralRatio(ILeverageToken token) external view returns (uint256 initialCollateralRatio);
 
-    /// @notice Returns true if the leverage token is eligible for rebalance
-    /// @param token The leverage token
-    /// @param state The state of the leverage token
+    /// @notice Returns true if the LeverageToken is eligible for rebalance
+    /// @param token The LeverageToken
+    /// @param state The state of the LeverageToken
     /// @param caller The caller of the function
-    /// @return isEligible True if leverage token is eligible for rebalance, false otherwise
+    /// @return isEligible True if the LeverageToken is eligible for rebalance, false otherwise
     function isEligibleForRebalance(ILeverageToken token, LeverageTokenState memory state, address caller)
         external
         view
         returns (bool isEligible);
 
-    /// @notice Returns true if the leverage token state after rebalance is valid
-    /// @param token The leverage token
-    /// @param stateBefore The state of the leverage token before rebalance
-    /// @return isValid True if the leverage token state after rebalance is valid, false otherwise
+    /// @notice Returns true if the LeverageToken state after rebalance is valid
+    /// @param token The LeverageToken
+    /// @param stateBefore The state of the LeverageToken before rebalance
+    /// @return isValid True if the LeverageToken state after rebalance is valid, false otherwise
     function isStateAfterRebalanceValid(ILeverageToken token, LeverageTokenState memory stateBefore)
         external
         view

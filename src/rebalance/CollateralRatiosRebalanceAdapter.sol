@@ -11,6 +11,19 @@ import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {LeverageTokenState} from "src/types/DataTypes.sol";
 
+/**
+ * @dev The CollateralRatiosRebalanceAdapter is an abstract contract that implements the ICollateralRatiosRebalanceAdapter interface.
+ *
+ * The CollateralRatiosRebalanceAdapter is initialized for a LeverageToken with a minimum collateral ratio, target collateral ratio, and maximum collateral ratio.
+ *
+ * The `isEligibleForRebalance` function will return true if the current collateral ratio of the LeverageToken is below the configured
+ * minimum collateral ratio or above the configured maximum collateral ratio, allowing for a rebalance action to be performed on the LeverageToken.
+ *
+ * The `isStateAfterRebalanceValid` function will return true if the collateral ratio is better than before:
+ *  - The collateral ratio is closer to the target collateral ratio than before
+ *  - If the collateral ratio was below the target collateral ratio, the collateral ratio is still below the target collateral ratio or equal to it
+ *  - If the collateral ratio was above the target collateral ratio, the collateral ratio is still above the target collateral ratio or equal to it
+ */
 abstract contract CollateralRatiosRebalanceAdapter is ICollateralRatiosRebalanceAdapter, Initializable {
     /// @dev Struct containing all state for the CollateralRatiosRebalanceAdapter contract
     /// @custom:storage-location erc7201:seamless.contracts.storage.CollateralRatiosRebalanceAdapter

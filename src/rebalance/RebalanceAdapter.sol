@@ -17,6 +17,20 @@ import {CollateralRatiosRebalanceAdapter} from "src/rebalance/CollateralRatiosRe
 import {PreLiquidationRebalanceAdapter} from "src/rebalance/PreLiquidationRebalanceAdapter.sol";
 import {LeverageTokenState} from "src/types/DataTypes.sol";
 
+/**
+ * @dev The RebalanceAdapter contract is an upgradeable periphery contract that implements the IRebalanceAdapter interface.
+ * LeverageTokens configured on the LeverageManager must specify a RebalanceAdapter, which defines hooks for determining
+ * when a LeverageToken can be rebalanced and if a rebalance action is valid, and how rebalancers should be rewarded.
+ *
+ * This RebalanceAdapter utilizes the DutchAuctionRebalanceAdapter, MinMaxCollateralRatioRebalanceAdapter, and
+ * PreLiquidationRebalanceAdapter abstract contracts.
+ *   - The DutchAuctionRebalanceAdapter creates Dutch auctions to determine the price of a rebalance action
+ *   - The MinMaxCollateralRatioRebalanceAdapter ensures that the collateral ratio of a LeverageToken must be outside
+ *     of a specified range before a rebalance action can be performed.
+ *   - The PreLiquidationRebalanceAdapter allows for fast-tracking rebalance operations for LeverageTokens that are below
+ *     a specified collateral ratio threshold. The intention is that this acts as a pre-liquidation rebalance mechanism
+ *     in cases that the dutch auction price is too slow to react to a dramatic drop in collateral ratio.
+ */
 contract RebalanceAdapter is
     IRebalanceAdapter,
     UUPSUpgradeable,

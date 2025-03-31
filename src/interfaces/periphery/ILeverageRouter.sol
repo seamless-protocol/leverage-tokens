@@ -13,11 +13,11 @@ interface ILeverageRouter {
     /// @notice Error thrown when the cost of a swap exceeds the maximum allowed cost
     error MaxSwapCostExceeded(uint256 actualCost, uint256 maxCost);
 
-    /// @notice Error thrown when the caller is not authorized to call a function
+    /// @notice Error thrown when the caller is not authorized to execute a function
     error Unauthorized();
 
-    /// @notice The Seamless LeverageManager contract
-    /// @return _leverageManager The Seamless LeverageManager contract
+    /// @notice The LeverageManager contract
+    /// @return _leverageManager The LeverageManager contract
     function leverageManager() external view returns (ILeverageManager _leverageManager);
 
     /// @notice The Morpho core protocol contract
@@ -28,16 +28,16 @@ interface ILeverageRouter {
     /// @return _swapper The swap adapter contract
     function swapper() external view returns (ISwapAdapter _swapper);
 
-    /// @notice Deposit equity into a leverage token
-    /// @param token Leverage token to deposit equity into
-    /// @param equityInCollateralAsset The amount of equity to deposit into the leverage token. Denominated in the collateral
-    ///        asset of the leverage token
-    /// @param minShares Minimum shares to receive from the deposit
+    /// @notice Deposit equity into a LeverageToken
+    /// @param token LeverageToken to deposit equity into
+    /// @param equityInCollateralAsset The amount of equity to deposit into the LeverageToken. Denominated in the collateral
+    ///        asset of the LeverageToken
+    /// @param minShares Minimum shares (LeverageTokens) to receive from the deposit
     /// @param maxSwapCostInCollateralAsset The maximum amount of collateral from the sender to use to help repay the flash loan
     ///        due to the swap of debt to collateral being unfavorable
     /// @param swapContext Swap context to use for the swap (which DEX to use, the route, tick spacing, etc.)
-    /// @dev Flash loans the collateral required to add the equity to the leverage token, receives debt, then swaps the debt to the
-    ///      leverage token's collateral asset. The swapped assets and the sender's supplied collateral are used to repay the flash loan
+    /// @dev Flash loans the collateral required to add the equity to the LeverageToken, receives debt, then swaps the debt to the
+    ///      LeverageToken's collateral asset. The swapped assets and the sender's supplied collateral are used to repay the flash loan
     /// @dev The sender should approve the LeverageRouter to spend an amount of collateral assets greater than the equity being added
     ///      to facilitate the deposit in the case that the deposit requires additional collateral to cover swap slippage when swapping
     ///      debt to collateral to repay the flash loan. The approved amount should equal at least `equityInCollateralAsset + maxSwapCostInCollateralAsset`.
@@ -50,12 +50,12 @@ interface ILeverageRouter {
         ISwapAdapter.SwapContext memory swapContext
     ) external;
 
-    /// @notice Withdraw equity from a leverage token
-    /// @param token Leverage token to withdraw equity from
-    /// @param equityInCollateralAsset The amount of equity to withdraw from the leverage token. Denominated in the collateral
-    ///        asset of the leverage token
-    /// @param maxShares Maximum shares to burn for the withdrawal
-    /// @param maxSwapCostInCollateralAsset The maximum amount of equity received from the withdrawal from the leverage token
+    /// @notice Withdraw equity from a LeverageToken
+    /// @param token LeverageToken to withdraw equity from
+    /// @param equityInCollateralAsset The amount of equity to withdraw from the LeverageToken. Denominated in the collateral
+    ///        asset of the LeverageToken
+    /// @param maxShares Maximum shares (LeverageTokens) to burn for the withdrawal
+    /// @param maxSwapCostInCollateralAsset The maximum amount of equity received from the withdrawal from the LeverageToken
     ///        to use to help repay the debt flash loan due to the swap of debt to collateral being unfavorable
     /// @param swapContext Swap context to use for the swap (which DEX to use, the route, tick spacing, etc.)
     function withdraw(

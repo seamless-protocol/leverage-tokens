@@ -43,7 +43,8 @@ interface ISwapAdapter {
     /// @notice Error thrown when the number of fees is invalid
     error InvalidNumFees();
 
-    /// @notice Swap tokens from the inputToken to the outputToken using the specified provider
+    /// @notice Swap tokens from the `inputToken` to the `outputToken` using the specified provider
+    /// @dev The `outputToken` must be encoded in the `swapContext` path
     /// @param inputToken Token to swap from
     /// @param inputAmount Amount of tokens to swap
     /// @param minOutputAmount Minimum amount of tokens to receive
@@ -56,7 +57,8 @@ interface ISwapAdapter {
         SwapContext memory swapContext
     ) external returns (uint256 outputAmount);
 
-    /// @notice Swap tokens from the inputToken to the outputToken using the specified provider
+    /// @notice Swap tokens from the `inputToken` to the `outputToken` using the specified provider
+    /// @dev The `outputToken` must be encoded in the `swapContext` path
     /// @param inputToken Token to swap from
     /// @param outputAmount Amount of tokens to receive
     /// @param maxInputAmount Maximum amount of tokens to swap

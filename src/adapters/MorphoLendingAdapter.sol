@@ -22,6 +22,17 @@ import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {IPreLiquidationLendingAdapter} from "src/interfaces/IPreLiquidationLendingAdapter.sol";
 
+/**
+ * @dev The MorphoLendingAdapter is an adapter to interface with Morpho markets. LeverageToken creators can configure their LeverageToken
+ * to use a MorphoLendingAdapter to use Morpho as the lending protocol for their LeverageToken.
+ *
+ * The MorphoLendingAdapter uses the underlying oracle of the Morpho market to convert between the collateral and debt asset. It also
+ * uses Morpho's libraries to calculate the collateral and debt held by the adapter, including any accrued interest.
+ *
+ * Note: `getDebt` uses `MorphoBalancesLib.expectedBorrowAssets` which calculates the total debt of the adapter based on the Morpho
+ * market's borrow shares owned by the adapter. This logic rounds up, so it is possible that `getDebt` returns a value that is
+ * greater than the actual debt owed to the Morpho market.
+ */
 contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     uint256 internal constant WAD = 1e18;
 
@@ -43,24 +54,24 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     /// @inheritdoc IMorphoLendingAdapter
     bool public isUsed;
 
-    /// @dev Reverts if the caller is not the stored leverageManager address
+    /// @dev Reverts if the caller is not the stored LeverageManager address
     modifier onlyLeverageManager() {
         if (msg.sender != address(leverageManager)) revert Unauthorized();
         _;
     }
 
-    /// @notice Creates a new Morpho lending adapter
-    /// @param _leverageManager The Seamless ilm-v2 LeverageManager contract
+    /// @notice Creates a new MorphoLendingAdapter
+    /// @param _leverageManager The LeverageManager contract
     /// @param _morpho The Morpho core protocol contract
     constructor(ILeverageManager _leverageManager, IMorpho _morpho) {
         leverageManager = _leverageManager;
         morpho = _morpho;
     }
 
-    /// @notice Initializes the Morpho lending adapter
+    /// @notice Initializes the MorphoLendingAdapter
     /// @param _morphoMarketId The Morpho market ID
-    /// @param _authorizedCreator The authorized creator of this lending adapter. The authorized creator can create a
-    /// new leverage token using this adapter on the LeverageManager
+    /// @param _authorizedCreator The authorized creator of this MorphoLendingAdapter. The authorized creator can create a
+    /// new LeverageToken using this adapter on the LeverageManager
     function initialize(Id _morphoMarketId, address _authorizedCreator) external initializer {
         morphoMarketId = _morphoMarketId;
         marketParams = morpho.idToMarketParams(_morphoMarketId);

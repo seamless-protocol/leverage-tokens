@@ -13,14 +13,31 @@ import {ISwapAdapter} from "../interfaces/periphery/ISwapAdapter.sol";
 import {ILeverageRouter} from "../interfaces/periphery/ILeverageRouter.sol";
 import {ActionData, ExternalAction} from "../types/DataTypes.sol";
 
+/**
+ * @dev The LeverageRouter contract is an immutable periphery contract that facilitates the use of Morpho flash loans and a swap adapter
+ * to deposit and withdraw equity from LeverageTokens.
+ *
+ * The high-level deposit flow is as follows:
+ *   1. The user calls `deposit` with the amount of equity to deposit, the minimum amount of shares (LeverageTokens) to receive, the maximum
+ *      cost to the sender for the swap of debt to collateral during the deposit to help repay the flash loan, and the swap context.
+ *   2. The LeverageRouter will flash loan the required collateral asset from Morpho.
+ *   3. The LeverageRouter will use the flash loaned collateral and the equity from the sender for the deposit into the LeverageToken,
+ *      receiving LeverageTokens and debt in return.
+ *   4. The LeverageRouter will swap the debt received from the deposit to the collateral asset.
+ *   5. The LeverageRouter will use the swapped assets to repay the flash loan along with the collateral asset from the sender
+ *      (the maximum swap cost)
+ *   6. The LeverageRouter will transfer the LeverageTokens and any remaining collateral asset to the sender.
+ *
+ * The high-level withdrawal flow is the same as the deposit flow, but in reverse.
+ */
 contract LeverageRouter is ILeverageRouter {
     /// @notice Deposit related parameters to pass to the Morpho flash loan callback handler for deposits
     struct DepositParams {
-        // Leverage token to deposit into
+        // LeverageToken to deposit into
         ILeverageToken token;
         // Amount of equity to deposit, denominated in the collateral asset
         uint256 equityInCollateralAsset;
-        // Minimum amount of shares to receive
+        // Minimum amount of shares (LeverageTokens) to receive
         uint256 minShares;
         // Maximum cost to the sender for the swap of debt to collateral during the deposit to repay the flash loan,
         // denominated in the collateral asset
@@ -33,11 +50,11 @@ contract LeverageRouter is ILeverageRouter {
 
     /// @notice Withdraw related parameters to pass to the Morpho flash loan callback handler for withdrawals
     struct WithdrawParams {
-        // Leverage token to withdraw from
+        // LeverageToken to withdraw from
         ILeverageToken token;
         // Amount of equity to withdraw, denominated in the collateral asset
         uint256 equityInCollateralAsset;
-        // Maximum amount of shares to be burned during the withdrawal
+        // Maximum amount of shares (LeverageTokens) to be burned during the withdrawal
         uint256 maxShares;
         // Maximum cost to the sender for the swap of debt to collateral during the withdrawal to repay the flash loan,
         // denominated in the collateral asset. This cost is applied to the equity being withdrawn
@@ -64,7 +81,7 @@ contract LeverageRouter is ILeverageRouter {
     ISwapAdapter public immutable swapper;
 
     /// @notice Creates a new LeverageRouter
-    /// @param _leverageManager The Seamless LeverageManager contract
+    /// @param _leverageManager The LeverageManager contract
     /// @param _morpho The Morpho core protocol contract
     /// @param _swapper The Swapper contract
     constructor(ILeverageManager _leverageManager, IMorpho _morpho, ISwapAdapter _swapper) {
@@ -149,9 +166,9 @@ contract LeverageRouter is ILeverageRouter {
         }
     }
 
-    /// @notice Executes the deposit of equity into a leverage token and the swap of debt assets to the collateral asset
+    /// @notice Executes the deposit of equity into a LeverageToken and the swap of debt assets to the collateral asset
     /// to repay the flash loan from Morpho
-    /// @param params Params for the deposit of equity into a leverage token
+    /// @param params Params for the deposit of equity into a LeverageToken
     /// @param collateralLoanAmount Amount of collateral asset flash loaned
     function _depositAndRepayMorphoFlashLoan(DepositParams memory params, uint256 collateralLoanAmount) internal {
         IERC20 collateralAsset = leverageManager.getLeverageTokenCollateralAsset(params.token);
@@ -166,7 +183,7 @@ contract LeverageRouter is ILeverageRouter {
             params.equityInCollateralAsset + params.maxSwapCostInCollateralAsset
         );
 
-        // Use the flash loaned collateral and the equity from the sender for the deposit into the leverage token
+        // Use the flash loaned collateral and the equity from the sender for the deposit into the LeverageToken
         SafeERC20.forceApprove(
             collateralAsset, address(leverageManager), collateralLoanAmount + params.equityInCollateralAsset
         );
@@ -202,9 +219,9 @@ contract LeverageRouter is ILeverageRouter {
         SafeERC20.forceApprove(collateralAsset, address(morpho), collateralLoanAmount);
     }
 
-    /// @notice Executes the withdrawal of equity from a leverage token and the swap of collateral assets to the debt asset
+    /// @notice Executes the withdrawal of equity from a LeverageToken and the swap of collateral assets to the debt asset
     /// to repay the flash loan from Morpho
-    /// @param params Params for the withdrawal of equity from a leverage token
+    /// @param params Params for the withdrawal of equity from a LeverageToken
     /// @param debtLoanAmount Amount of debt asset flash loaned
     function _withdrawAndRepayMorphoFlashLoan(WithdrawParams memory params, uint256 debtLoanAmount) internal {
         IERC20 collateralAsset = leverageManager.getLeverageTokenCollateralAsset(params.token);

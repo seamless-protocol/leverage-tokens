@@ -10,6 +10,10 @@ import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {IMorphoLendingAdapterFactory} from "src/interfaces/IMorphoLendingAdapterFactory.sol";
 import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
 
+/**
+ * @dev The MorphoLendingAdapterFactory is a factory contract for deploying ERC-1167 minimal proxies of the
+ * MorphoLendingAdapter contract using OpenZeppelin's Clones library.
+ */
 contract MorphoLendingAdapterFactory is IMorphoLendingAdapterFactory {
     using Clones for address;
 
@@ -40,9 +44,9 @@ contract MorphoLendingAdapterFactory is IMorphoLendingAdapterFactory {
         return lendingAdapter;
     }
 
-    /// @notice Given the `baseSalt`, return the salt that will be used for deployment.
-    /// @param sender The address of the sender of the deployAdapter call.
-    /// @param baseSalt The user-provided salt.
+    /// @notice Given the `sender` and `baseSalt`, return the salt that will be used for deployment.
+    /// @param sender The address of the sender of the `deployAdapter` call.
+    /// @param baseSalt The user-provided base salt.
     function salt(address sender, bytes32 baseSalt) internal pure returns (bytes32) {
         return keccak256(abi.encode(sender, baseSalt));
     }

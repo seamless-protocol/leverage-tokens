@@ -10,13 +10,14 @@ interface IPreLiquidationRebalanceAdapter {
     /// @notice Emitted when the PreLiquidationRebalanceAdapter is initialized
     event PreLiquidationRebalanceAdapterInitialized(uint256 collateralRatioThreshold, uint256 rebalanceReward);
 
-    /// @notice Returns the leverage manager contract
-    /// @return leverageManager The leverage manager contract
+    /// @notice Returns the LeverageManager contract
+    /// @return leverageManager The LeverageManager contract
     function getLeverageManager() external view returns (ILeverageManager leverageManager);
 
-    /// @notice Returns the collateral ratio threshold for rebalancing
-    /// @return collateralRatioThreshold The collateral ratio threshold for rebalancing
-    /// @dev When leverage token collateral ratio is below this threshold, the leverage token will be rebalanced
+    /// @notice Returns the collateral ratio threshold for pre-liquidation rebalancing
+    /// @return collateralRatioThreshold The collateral ratio threshold for pre-liquidation rebalancing
+    /// @dev When the LeverageToken collateral ratio is below this threshold, the LeverageToken can be pre-liquidation
+    ///      rebalanced
     function getCollateralRatioThreshold() external view returns (uint256 collateralRatioThreshold);
 
     /// @notice Returns the rebalance reward percentage
@@ -26,7 +27,7 @@ interface IPreLiquidationRebalanceAdapter {
     function getRebalanceReward() external view returns (uint256 rebalanceRewardPercentage);
 
     /// @notice Returns true if the state after rebalance is valid
-    /// @param token The leverage token
+    /// @param token The LeverageToken
     /// @param stateBefore The state before rebalance
     /// @return isValid True if the state after rebalance is valid
     function isStateAfterRebalanceValid(ILeverageToken token, LeverageTokenState memory stateBefore)
@@ -34,12 +35,12 @@ interface IPreLiquidationRebalanceAdapter {
         view
         returns (bool isValid);
 
-    /// @notice Returns true if the leverage token is eligible for rebalance
-    /// @param token The leverage token
+    /// @notice Returns true if the LeverageToken is eligible for pre-liquidation rebalance
+    /// @param token The LeverageToken
     /// @param stateBefore The state before rebalance
     /// @param caller The caller of the rebalance function
-    /// @return isEligible True if the leverage token is eligible for rebalance
-    /// @dev Token is eligible for rebalance if health factor is below the threshold
+    /// @return isEligible True if the LeverageToken is eligible for pre-liquidation rebalance
+    /// @dev Token is eligible for pre-liquidation rebalance if health factor is below the threshold
     function isEligibleForRebalance(ILeverageToken token, LeverageTokenState memory stateBefore, address caller)
         external
         view
