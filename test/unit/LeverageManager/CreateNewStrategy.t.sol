@@ -24,10 +24,12 @@ contract CreateNewLeverageTokenTest is LeverageManagerTest {
         address collateralAsset,
         address debtAsset,
         string memory name,
-        string memory symbol
+        string memory symbol,
+        string memory rebalanceAdapterName,
+        string memory lendingAdapterName
     ) public {
-        config.rebalanceAdapter = IRebalanceAdapterBase(makeAddr("rebalanceAdapter"));
-        config.lendingAdapter = ILendingAdapter(makeAddr("lendingAdapter"));
+        config.rebalanceAdapter = IRebalanceAdapterBase(makeAddr(rebalanceAdapterName));
+        config.lendingAdapter = ILendingAdapter(makeAddr(lendingAdapterName));
 
         config.depositTokenFee = bound(config.depositTokenFee, 0, _MAX_FEE());
         config.withdrawTokenFee = bound(config.withdrawTokenFee, 0, _MAX_FEE());
@@ -52,12 +54,12 @@ contract CreateNewLeverageTokenTest is LeverageManagerTest {
         assertEq(configAfter.depositTokenFee, config.depositTokenFee);
         assertEq(configAfter.withdrawTokenFee, config.withdrawTokenFee);
 
-        // assertEq(address(leverageManager.getLeverageTokenCollateralAsset(leverageToken)), collateralAsset);
-        // assertEq(address(leverageManager.getLeverageTokenDebtAsset(leverageToken)), debtAsset);
+        assertEq(address(leverageManager.getLeverageTokenCollateralAsset(leverageToken)), collateralAsset);
+        assertEq(address(leverageManager.getLeverageTokenDebtAsset(leverageToken)), debtAsset);
 
-        // assertEq(leverageManager.getLeverageTokenTargetCollateralRatio(leverageToken), config.targetCollateralRatio);
-        // assertEq(
-        //     address(leverageManager.getLeverageTokenRebalanceAdapter(leverageToken)), address(config.rebalanceAdapter)
-        // );
+        assertEq(leverageManager.getLeverageTokenTargetCollateralRatio(leverageToken), config.targetCollateralRatio);
+        assertEq(
+            address(leverageManager.getLeverageTokenRebalanceAdapter(leverageToken)), address(config.rebalanceAdapter)
+        );
     }
 }
