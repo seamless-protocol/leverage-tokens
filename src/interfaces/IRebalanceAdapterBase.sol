@@ -5,22 +5,22 @@ import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {LeverageTokenState} from "src/types/DataTypes.sol";
 
 /// @title IRebalanceAdapterBase
-/// @notice Interface for the base rebalance adapter
-/// @dev This is minimal interface required for the rebalance adapter to be used by the LeverageManager
+/// @notice Interface for the base RebalanceAdapter
+/// @dev This is minimal interface required for the RebalanceAdapter to be used by the LeverageManager
 interface IRebalanceAdapterBase {
-    /// @notice Validates if leverage token is eligible for rebalance
-    /// @param token Leverage token to validate
-    /// @param state State of the leverage token
+    /// @notice Validates if LeverageToken is eligible for rebalance
+    /// @param token LeverageToken to validate
+    /// @param state State of the LeverageToken
     /// @param caller Caller of the function
-    /// @return isEligible True if leverage token is eligible for rebalance, false otherwise
+    /// @return isEligible True if LeverageToken is eligible for rebalance, false otherwise
     function isEligibleForRebalance(ILeverageToken token, LeverageTokenState memory state, address caller)
         external
         view
         returns (bool isEligible);
 
-    /// @notice Validates if leverage token state after rebalance is valid
-    /// @param token Leverage token to validate
-    /// @param stateBefore State of the leverage token before rebalance
+    /// @notice Validates if the LeverageToken's state after rebalance is valid
+    /// @param token LeverageToken to validate state for
+    /// @param stateBefore State of the LeverageToken before rebalance
     /// @return isValid True if state after rebalance is valid, false otherwise
     function isStateAfterRebalanceValid(ILeverageToken token, LeverageTokenState memory stateBefore)
         external

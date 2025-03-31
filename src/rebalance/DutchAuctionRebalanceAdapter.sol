@@ -20,15 +20,15 @@ abstract contract DutchAuctionRebalanceAdapter is IDutchAuctionRebalanceAdapter,
     /// @dev Struct containing all state for the DutchAuctionRebalanceAdapter contract
     /// @custom:storage-location erc7201:seamless.contracts.storage.DutchAuctionRebalanceAdapter
     struct DutchAuctionRebalanceAdapterStorage {
-        /// @notice Leverage token that this dutch auction rebalancer is for
+        /// @notice LeverageToken that this DutchAuctionRebalanceAdapter is for
         ILeverageToken leverageToken;
-        /// @notice Currently active auction
+        /// @notice The current auction, or uninitialized if there is no on-going auction
         Auction auction;
         /// @notice Duration for all auctions in seconds
         uint256 auctionDuration;
-        /// @notice Initial price multiplier relative to oracle price
+        /// @notice Initial price multiplier for all auctions relative to the current oracle price
         uint256 initialPriceMultiplier;
-        /// @notice Minimum price multiplier relative to oracle price
+        /// @notice Minimum price multiplier for all auctions relative to the current oracle price
         uint256 minPriceMultiplier;
     }
 
@@ -65,8 +65,8 @@ abstract contract DutchAuctionRebalanceAdapter is IDutchAuctionRebalanceAdapter,
         emit DutchAuctionRebalanceAdapterInitialized(_auctionDuration, _initialPriceMultiplier, _minPriceMultiplier);
     }
 
-    /// @notice Sets the leverage token for the dutch auction rebalancer
-    /// @param leverageToken The leverage token to set
+    /// @notice Sets the LeverageToken for the DutchAuctionRebalanceAdapter
+    /// @param leverageToken The LeverageToken to set
     function _setLeverageToken(ILeverageToken leverageToken) internal {
         if (address(getLeverageToken()) != address(0)) {
             revert LeverageTokenAlreadySet();

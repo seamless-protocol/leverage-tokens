@@ -7,123 +7,127 @@ import {LeverageTokenState} from "src/types/DataTypes.sol";
 import {Auction} from "src/types/DataTypes.sol";
 
 interface IDutchAuctionRebalanceAdapter {
-    /// @notice Error thrown when leverage token is already set
+    /// @notice Error thrown when the LeverageToken is already set
     error LeverageTokenAlreadySet();
 
-    /// @notice Error thrown when auction is not valid
+    /// @notice Error thrown when an auction is not valid
     error AuctionNotValid();
 
-    /// @notice Error thrown when auction is still valid
+    /// @notice Error thrown when an auction is still valid
     error AuctionStillValid();
 
-    /// @notice Error thrown when leverage token is not eligible for rebalance
+    /// @notice Error thrown when the LeverageToken is not eligible for rebalance
     error LeverageTokenNotEligibleForRebalance();
 
-    /// @notice Error thrown when auction duration is zero
+    /// @notice Error thrown when attempting to set an auction duration of zero
     error InvalidAuctionDuration();
 
-    /// @notice Error thrown when minimum price multiplier is higher than initial price multiplier
+    /// @notice Error thrown when the minimum price multiplier is higher than the initial price multiplier
     error MinPriceMultiplierTooHigh();
 
-    /// @notice Event emitted when Dutch auction rebalancer is initialized
+    /// @notice Event emitted when the Dutch auction rebalancer is initialized
     event DutchAuctionRebalanceAdapterInitialized(
         uint256 auctionDuration, uint256 initialPriceMultiplier, uint256 minPriceMultiplier
     );
 
-    /// @notice Event emitted when leverage token is set
+    /// @notice Event emitted when the LeverageToken is set
     event LeverageTokenSet(ILeverageToken leverageToken);
 
-    /// @notice Event emitted when new auction is created
+    /// @notice Event emitted when a new auction is created
     event AuctionCreated(Auction auction);
 
-    /// @notice Event emitted when auction is taken
+    /// @notice Event emitted when an auction is taken
     event Take(address indexed taker, uint256 amountIn, uint256 amountOut);
 
-    /// @notice Event emitted when auction ends
+    /// @notice Event emitted when an auction ends
     event AuctionEnded();
 
-    /// @notice Event emitted when auction duration is updated
+    /// @notice Event emitted when the auction duration is updated
     event AuctionDurationSet(uint256 newDuration);
 
-    /// @notice Event emitted when initial price multiplier is updated
+    /// @notice Event emitted when the initial price multiplier is updated
     event InitialPriceMultiplierSet(uint256 newMultiplier);
 
-    /// @notice Event emitted when minimum price multiplier is updated
+    /// @notice Event emitted when the minimum price multiplier is updated
     event MinPriceMultiplierSet(uint256 newMultiplier);
 
-    /// @notice Returns leverage manager
-    /// @return leverageManager Leverage manager
+    /// @notice Returns the LeverageManager
+    /// @return leverageManager The LeverageManager
     function getLeverageManager() external view returns (ILeverageManager leverageManager);
 
-    /// @notice Returns leverage token
-    /// @return leverageToken Leverage token
+    /// @notice Returns the LeverageToken
+    /// @return leverageToken The LeverageToken
     function getLeverageToken() external view returns (ILeverageToken leverageToken);
 
-    /// @notice Returns auction
-    /// @return auction Auction
+    /// @notice Returns the current ongoing auction, if one exists
+    /// @return auction The current ongoing auction, if one exists
+    /// @dev If there is no ongoing auction, this function will return a un-initialized Auction struct
     function getAuction() external view returns (Auction memory auction);
 
-    /// @notice Returns auction duration
-    /// @return auctionDuration Auction duration
+    /// @notice Returns the maximum duration of all auctions in seconds
+    /// @return auctionDuration The maximum duration of all auctions in seconds
     function getAuctionDuration() external view returns (uint256 auctionDuration);
 
-    /// @notice Returns initial price multiplier
-    /// @return multiplier Initial price multiplier
-    function getInitialPriceMultiplier() external view returns (uint256 multiplier);
+    /// @notice Returns the initial price multiplier for all auctions
+    /// @return initialPriceMultiplier The initial price multiplier for all auctions
+    function getInitialPriceMultiplier() external view returns (uint256 initialPriceMultiplier);
 
-    /// @notice Returns minimum price multiplier
-    /// @return multiplier Minimum price multiplier
-    function getMinPriceMultiplier() external view returns (uint256 multiplier);
+    /// @notice Returns the minimum price multiplier for all auctions
+    /// @return minPriceMultiplier The minimum price multiplier for all auctions
+    function getMinPriceMultiplier() external view returns (uint256 minPriceMultiplier);
 
-    /// @notice Returns leverage token rebalance status
-    /// @return _isEligibleForRebalance Whether leverage token is eligible for rebalance
-    /// @return isOverCollateralized Whether leverage token is over-collateralized
+    /// @notice Returns the rebalance status of the LeverageToken
+    /// @return _isEligibleForRebalance Whether the LeverageToken is eligible for rebalance
+    /// @return isOverCollateralized Whether the LeverageToken is over-collateralized with respect to the target collateral
+    ///         ratio of the LeverageToken
     function getLeverageTokenRebalanceStatus()
         external
         view
         returns (bool _isEligibleForRebalance, bool isOverCollateralized);
 
-    /// @notice Returns current auction multiplier
-    /// @return multiplier Current auction multiplier
+    /// @notice Returns the current auction multiplier
+    /// @return multiplier The current auction multiplier
     /// @dev This module uses exponential approximation (1-x)^4 to calculate the current auction multiplier
     function getCurrentAuctionMultiplier() external view returns (uint256 multiplier);
 
-    /// @notice Returns true if the leverage token is eligible for rebalance
-    /// @param token The leverage token
-    /// @param state The state of the leverage token
+    /// @notice Returns true if the LeverageToken is eligible for rebalance
+    /// @param token The LeverageToken
+    /// @param state The state of the LeverageToken
     /// @param caller The caller of the function
-    /// @return isEligible True if the leverage token is eligible for rebalance, false otherwise
+    /// @return isEligible True if the LeverageToken is eligible for rebalance, false otherwise
     function isEligibleForRebalance(ILeverageToken token, LeverageTokenState memory state, address caller)
         external
         view
         returns (bool isEligible);
 
-    /// @notice Returns true if the leverage token state after rebalance is valid
-    /// @param token The leverage token
-    /// @param stateBefore The state of the leverage token before rebalance
-    /// @return isValid True if the leverage token state after rebalance is valid, false otherwise
+    /// @notice Returns true if the LeverageToken state after rebalance is valid
+    /// @param token The LeverageToken
+    /// @param stateBefore The state of the LeverageToken before rebalance
+    /// @return isValid True if the LeverageToken state after rebalance is valid, false otherwise
     function isStateAfterRebalanceValid(ILeverageToken token, LeverageTokenState memory stateBefore)
         external
         view
         returns (bool isValid);
 
-    /// @notice Returns whether auction is valid
-    /// @return isValid Whether auction is valid
+    /// @notice Returns whether the current auction is valid
+    /// @return isValid Whether the current auction is valid
     function isAuctionValid() external view returns (bool isValid);
 
-    /// @notice Returns amount of tokens to provide for given amount of tokens to receive
-    /// @param amountOut Amount of tokens to receive
-    /// @return amountIn Amount of tokens to provide
-    /// @dev If there is no valid auction in the current block, this function will still return a value based on the most recent auction
+    /// @notice Returns the amount of tokens to provide for a given amount of tokens to receive for the current auction
+    /// @param amountOut The amount of tokens to receive
+    /// @return amountIn The amount of tokens to provide
+    /// @dev If there is no valid auction in the current block, this function will still return a value based on the auction
+    ///      saved in storage (whether that be the most recent auction or an un-initialized auction)
     function getAmountIn(uint256 amountOut) external view returns (uint256 amountIn);
 
-    /// @notice Creates new auction for leverage token that needs rebalancing
+    /// @notice Creates a new auction for the LeverageToken that needs rebalancing
     function createAuction() external;
 
-    /// @notice Ends auction for leverage token
+    /// @notice Ends the current auction
     function endAuction() external;
 
-    /// @notice Takes part in auction at current discounted price
-    /// @param amountOut Amount of tokens to receive
+    /// @notice Takes part in the current auction at the current price
+    /// @param amountOut The amount of tokens to receive
+    /// @dev To preview the amount of tokens to provide, the `getAmountIn` function can be used
     function take(uint256 amountOut) external;
 }

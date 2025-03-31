@@ -5,13 +5,7 @@ import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 
-/// @dev Enum defining the type of external action user can perform
-enum ExternalAction {
-    Deposit,
-    Withdraw
-}
-
-/// @dev Enum defining the type of internal action the lending adapter manager can perform on lending pool
+/// @dev Enum defining internal actions that a LendingAdapter can perform on a lending pool
 enum ActionType {
     AddCollateral,
     RemoveCollateral,
@@ -19,7 +13,13 @@ enum ActionType {
     Repay
 }
 
-/// @dev Struct that contains all data related to a leverage token action
+/// @dev Enum defining actions that users can perform on a LeverageToken
+enum ExternalAction {
+    Deposit,
+    Withdraw
+}
+
+/// @dev Struct that contains all data related to a LeverageToken action
 struct ActionData {
     /// @dev Amount of collateral added or withdrawn
     uint256 collateral;
@@ -35,41 +35,41 @@ struct ActionData {
     uint256 treasuryFee;
 }
 
-/// @dev Struct that contains base leverage token config stored in LeverageManager
+/// @dev Struct containing auction parameters
+struct Auction {
+    /// @dev Whether the LeverageToken is over-collateralized
+    bool isOverCollateralized;
+    /// @dev Timestamp when the auction started
+    uint256 startTimestamp;
+    /// @dev Timestamp when the auction ends/ended
+    uint256 endTimestamp;
+}
+
+/// @dev Struct that contains the base LeverageToken config stored in LeverageManager
 struct BaseLeverageTokenConfig {
-    /// @dev Lending adapter for leverage token
+    /// @dev LendingAdapter for the LeverageToken
     ILendingAdapter lendingAdapter;
-    /// @dev Rebalance adapter for leverage token
+    /// @dev RebalanceAdapter for the LeverageToken
     IRebalanceAdapterBase rebalanceAdapter;
-    /// @dev Target collateral ratio of the leverage token on 8 decimals
+    /// @dev Target collateral ratio of the LeverageToken on 8 decimals
     uint256 targetCollateralRatio;
 }
 
-/// @dev Struct that contains all data related to a rebalance action
-struct RebalanceAction {
-    /// @dev Leverage token to perform the action on
-    ILeverageToken leverageToken;
-    /// @dev Type of action to perform
-    ActionType actionType;
-    /// @dev Amount to perform the action with
-    uint256 amount;
-}
-
-/// @dev Struct that contains entire leverage token config
+/// @dev Struct that contains the entire LeverageToken config
 struct LeverageTokenConfig {
-    /// @dev Lending adapter for leverage token
+    /// @dev LendingAdapter for the LeverageToken
     ILendingAdapter lendingAdapter;
-    /// @dev Rebalance adapter for leverage token
+    /// @dev RebalanceAdapter for the LeverageToken
     IRebalanceAdapterBase rebalanceAdapter;
-    /// @dev Target collateral ratio of the leverage token on 8 decimals
+    /// @dev Target collateral ratio of the LeverageToken on 8 decimals
     uint256 targetCollateralRatio;
-    /// @dev Fee for deposit action
+    /// @dev Fee for deposit action, defined as a percentage
     uint256 depositTokenFee;
-    /// @dev Fee for withdraw action
+    /// @dev Fee for withdraw action, defined as a percentage
     uint256 withdrawTokenFee;
 }
 
-/// @dev Struct that contains all data describing the state of a leverage token
+/// @dev Struct that contains all data describing the state of a LeverageToken
 struct LeverageTokenState {
     /// @dev Collateral denominated in debt asset
     uint256 collateralInDebtAsset;
@@ -81,20 +81,20 @@ struct LeverageTokenState {
     uint256 collateralRatio;
 }
 
+/// @dev Struct that contains all data related to a rebalance action
+struct RebalanceAction {
+    /// @dev LeverageToken to perform the action on
+    ILeverageToken leverageToken;
+    /// @dev Type of action to perform
+    ActionType actionType;
+    /// @dev Amount to perform the action with
+    uint256 amount;
+}
+
 /// @dev Struct that contains all data related to a token transfer
 struct TokenTransfer {
     /// @dev Token to transfer
     address token;
     /// @dev Amount to transfer
     uint256 amount;
-}
-
-/// @dev Struct containing auction parameters
-struct Auction {
-    /// @dev Whether the leverage token is over-collateralized
-    bool isOverCollateralized;
-    /// @dev Timestamp when auction started
-    uint256 startTimestamp;
-    /// @dev Timestamp when auction ends/ended
-    uint256 endTimestamp;
 }

@@ -26,7 +26,7 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
         address treasury;
         /// @dev Treasury fee for each action
         mapping(ExternalAction action => uint256) treasuryActionFee;
-        /// @dev Leverage token fee for each action
+        /// @dev LeverageToken fee for each action
         mapping(ILeverageToken token => mapping(ExternalAction action => uint256)) tokenActionFee;
     }
 
@@ -93,16 +93,16 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
     }
 
     /// @notice Computes equity fees based on action
-    /// @param token Leverage token to compute fees for
+    /// @param token LeverageToken to compute fees for
     /// @param equity Amount of equity to compute fees for, denominated in collateral asset
     /// @param action Action to compute fees for, Deposit or Withdraw
-    /// @return equityToCover Equity to add / remove from the leverage token after fees, denominated in collateral asset
-    /// @return equityForShares Equity to mint / burn shares for from the leverage token after fees, denominated in collateral asset
-    /// @return tokenFee Leverage token fee amount, denominated in collateral asset
-    /// @return treasuryFee Treasury fee amount, denominated in collateral asset
+    /// @return equityToCover Equity to add / remove from the LeverageToken after fees, denominated in the collateral asset of the LeverageToken
+    /// @return equityForShares Equity to mint / burn shares for the LeverageToken after fees, denominated in the collateral asset of the LeverageToken
+    /// @return tokenFee LeverageToken fee amount, denominated in the collateral asset of the LeverageToken
+    /// @return treasuryFee Treasury fee amount, denominated in the collateral asset of the LeverageToken
     /// @dev Fees are always rounded up.
-    /// @dev If the sum of the leverage token fee and the treasury fee is greater than the amount,
-    ///      the leverage token fee is set to the delta of the amount and the treasury fee.
+    /// @dev If the sum of the LeverageToken fee and the treasury fee is greater than the amount,
+    ///      the LeverageToken fee is set to the delta of the amount and the treasury fee.
     function _computeEquityFees(ILeverageToken token, uint256 equity, ExternalAction action)
         internal
         view
@@ -112,21 +112,21 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
         uint256 treasuryFee = Math.mulDiv(equity, getTreasuryActionFee(action), MAX_FEE, Math.Rounding.Ceil);
         uint256 tokenFee = Math.mulDiv(equity, getLeverageTokenActionFee(token, action), MAX_FEE, Math.Rounding.Ceil);
 
-        // If the sum of the leverage token fee and the treasury fee is greater than the equity amount,
-        // the leverage token fee is set to the delta of the equity amount and the treasury fee.
+        // If the sum of the LeverageToken fee and the treasury fee is greater than the equity amount,
+        // the LeverageToken fee is set to the delta of the equity amount and the treasury fee.
         tokenFee = Math.min(tokenFee, equity - treasuryFee);
 
-        // For the collateral and debt required by the position held by the leverage token for the action, we need to use
-        // the equity amount without the leverage token fee applied because the leverage token fee is used to increase share value
-        // among existing leverage token shares. So, the leverage token fee is applied on the shares received / burned but not on
+        // For the collateral and debt required by the position held by the LeverageToken for the action, we need to use
+        // the equity amount without the LeverageToken fee applied because the LeverageToken fee is used to increase share value
+        // among existing LeverageToken shares. So, the LeverageToken fee is applied on the shares received / burned but not on
         // the collateral supplied / removed and debt borrowed / repaid.
         //
         // For deposits we need to subtract the treasury fee from the equity amount used for the calculation of the
-        // collateral and debt because the treasury fee should not be supplied to the position held by the leverage token,
+        // collateral and debt because the treasury fee should not be supplied to the position held by the LeverageToken,
         // it should be simply transferred to the treasury.
         //
         // For withdrawals, the treasury fee should be included in the calculation of the collateral and debt because
-        // it comes from the collateral removed from the position held by the leverage token.
+        // it comes from the collateral removed from the position held by the LeverageToken.
         uint256 equityToCover = action == ExternalAction.Deposit ? equity - treasuryFee : equity;
 
         // To increase share value for existing users, less shares are minted on deposits and more shares are burned on
@@ -146,8 +146,8 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
         }
     }
 
-    /// @notice Sets leverage token fee for specific action
-    /// @param token Leverage token to set fee for
+    /// @notice Sets the LeverageToken fee for a specific action
+    /// @param token LeverageToken to set fee for
     /// @param action Action to set fee for
     /// @param fee Fee for action, 100_00 is 100%
     /// @dev If caller tries to set fee above 100% it reverts with FeeTooHigh error

@@ -17,7 +17,7 @@ interface IMorphoLendingAdapterFactory {
     /// @param baseSalt The user-provided salt.
     /// @dev MorphoLendingAdapter addresses are uniquely determined by their salt because the deployer is always the factory,
     /// and the use of minimal proxies means they all have identical bytecode and therefore an identical bytecode hash.
-    /// @dev The `baseSalt` is the user-provided salt, not the final salt after hashing with the deployer's address.
+    /// @dev The `baseSalt` is the user-provided salt, not the final salt after hashing with the sender's address.
     function computeAddress(address sender, bytes32 baseSalt) external view returns (address);
 
     /// @notice Returns the address of the MorphoLendingAdapter logic contract used to deploy minimal proxies.
@@ -25,8 +25,8 @@ interface IMorphoLendingAdapterFactory {
 
     /// @notice Deploys a new MorphoLendingAdapter contract with the specified configuration.
     /// @param morphoMarketId The Morpho market ID
-    /// @param authorizedCreator The authorized creator of this lending adapter. The authorized creator can create a
-    /// new leverage token using this adapter on the LeverageManager
+    /// @param authorizedCreator The authorized creator of the deployed MorphoLendingAdapter. The authorized creator can create a
+    /// new LeverageToken using this adapter on the LeverageManager
     /// @param baseSalt Used to compute the resulting address of the MorphoLendingAdapter.
     /// @dev MorphoLendingAdapters deployed by this factory are minimal proxies.
     function deployAdapter(Id morphoMarketId, address authorizedCreator, bytes32 baseSalt)

@@ -40,9 +40,9 @@ contract MorphoLendingAdapterFactory is IMorphoLendingAdapterFactory {
         return lendingAdapter;
     }
 
-    /// @notice Given the `baseSalt`, return the salt that will be used for deployment.
-    /// @param sender The address of the sender of the deployAdapter call.
-    /// @param baseSalt The user-provided salt.
+    /// @notice Given the `sender` and `baseSalt`, return the salt that will be used for deployment.
+    /// @param sender The address of the sender of the `deployAdapter` call.
+    /// @param baseSalt The user-provided base salt.
     function salt(address sender, bytes32 baseSalt) internal pure returns (bytes32) {
         return keccak256(abi.encode(sender, baseSalt));
     }

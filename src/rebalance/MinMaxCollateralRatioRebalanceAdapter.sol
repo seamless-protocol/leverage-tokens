@@ -15,9 +15,9 @@ abstract contract MinMaxCollateralRatioRebalanceAdapter is IMinMaxCollateralRati
     /// @dev Struct containing all state for the MinMaxCollateralRatioRebalanceAdapter contract
     /// @custom:storage-location erc7201:seamless.contracts.storage.MinMaxCollateralRatioRebalanceAdapter
     struct MinMaxCollateralRatioRebalanceAdapterStorage {
-        /// @dev Minimum collateral ratio for a leverage token, immutable
+        /// @dev Minimum collateral ratio for a LeverageToken, immutable
         uint256 minCollateralRatio;
-        /// @dev Maximum collateral ratio for a leverage token, immutable
+        /// @dev Maximum collateral ratio for a LeverageToken, immutable
         uint256 maxCollateralRatio;
     }
 

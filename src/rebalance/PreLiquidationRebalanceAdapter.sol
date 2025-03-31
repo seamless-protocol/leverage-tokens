@@ -20,10 +20,11 @@ abstract contract PreLiquidationRebalanceAdapter is Initializable, IPreLiquidati
     /// @dev Struct containing all state for the PreLiquidationRebalanceAdapter contract
     /// @custom:storage-location erc7201:seamless.contracts.storage.PreLiquidationRebalanceAdapter
     struct PreLiquidationRebalanceAdapterStorage {
-        /// @notice Collateral ratio threshold to allow rebalance
+        /// @notice Collateral ratio threshold to allow pre-liquidation rebalance. If collateral ratio is below this threshold,
+        /// rebalance is allowed
         uint256 collateralRatioThreshold;
-        /// @notice Rebalance reward, flat percentage that rebalancer can take from equity
-        /// @dev Percentage represents percentage of debt repaid that rebalancer can take from equity
+        /// @notice Rebalance reward, a flat percentage that rebalancer can take from the equity of the LeverageToken
+        /// @dev Percentage represents percentage of debt repaid that rebalancer can take from the equity of the LeverageToken
         /// @dev 100_00 = 100%
         uint256 rebalanceReward;
     }

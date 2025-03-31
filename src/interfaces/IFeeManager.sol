@@ -5,35 +5,35 @@ import {ILeverageToken} from "./ILeverageToken.sol";
 import {ExternalAction} from "src/types/DataTypes.sol";
 
 interface IFeeManager {
-    /// @notice Error emitted when fee manager tries to set fee higher than MAX_FEE
+    /// @notice Error emitted when `FEE_MANAGER_ROLE` tries to set fee higher than `MAX_FEE`
     error FeeTooHigh(uint256 fee, uint256 maxFee);
 
-    /// @notice Error emitted when trying to set treasury fee when treasury address is not set
+    /// @notice Error emitted when trying to set a treasury fee when the treasury address is not set
     error TreasuryNotSet();
 
-    /// @notice Emitted when fee is set for specific action
+    /// @notice Emitted when a LeverageToken fee is set for a specific action
     event LeverageTokenActionFeeSet(ILeverageToken leverageToken, ExternalAction action, uint256 fee);
 
-    /// @notice Emitted when treasury fee is set for specific action
+    /// @notice Emitted when a treasury fee is set for a specific action
     event TreasuryActionFeeSet(ExternalAction indexed action, uint256 fee);
 
-    /// @notice Emitted when treasury is set
+    /// @notice Emitted when the treasury address is set
     event TreasurySet(address treasury);
 
-    /// @notice Returns leverage token fee for specific action
-    /// @param leverageToken Leverage token to get fee for
-    /// @param action Action to get fee for
+    /// @notice Returns the LeverageToken fee for a specific action
+    /// @param leverageToken The LeverageToken to get fee for
+    /// @param action The action to get fee for
     /// @return fee Fee for action, 100_00 is 100%
     function getLeverageTokenActionFee(ILeverageToken leverageToken, ExternalAction action)
         external
         view
         returns (uint256 fee);
 
-    /// @notice Returns address of the treasury
-    /// @return treasury Address of the treasury
+    /// @notice Returns the address of the treasury
+    /// @return treasury The address of the treasury
     function getTreasury() external view returns (address treasury);
 
-    /// @notice Returns treasury fee for specific action
+    /// @notice Returns the treasury fee for a specific action
     /// @param action Action to get fee for
     /// @return fee Fee for action, 100_00 is 100%
     function getTreasuryActionFee(ExternalAction action) external view returns (uint256 fee);
@@ -42,17 +42,15 @@ interface IFeeManager {
     /// @return maxFee Max fee, 100_00 is 100%
     function MAX_FEE() external view returns (uint256 maxFee);
 
-    /// @notice Sets address of the treasury. Treasury receives all fees from LeverageManager. If the treasury is set to
-    ///         the zero address, the treasury fees are reset to 0 as well
-    /// @param treasury Address of the treasury
-    /// @dev Only FEE_MANAGER role can call this function
-    /// @dev Emits TreasurySet event
+    /// @notice Sets the address of the treasury. The treasury receives all treasury fees from the LeverageManager. If the
+    ///         treasury is set to the zero address, the treasury fees are reset to 0 as well
+    /// @param treasury The address of the treasury
+    /// @dev Only `FEE_MANAGER_ROLE` can call this function
     function setTreasury(address treasury) external;
 
-    /// @notice Sets fee for specific action
-    /// @param action Action to set fee for
-    /// @param fee Fee for action, 100_00 is 100%
-    /// @dev Only FEE_MANAGER role can call this function.
-    ///      If manager tries to set fee above 100% it reverts with FeeTooHigh error
+    /// @notice Sets the treasury fee for a specific action
+    /// @param action The action to set fee for
+    /// @param fee The fee for action, 100_00 is 100%
+    /// @dev Only `FEE_MANAGER_ROLE` can call this function.
     function setTreasuryActionFee(ExternalAction action, uint256 fee) external;
 }

@@ -19,94 +19,94 @@ import {
 } from "src/types/DataTypes.sol";
 
 interface ILeverageManager is IFeeManager {
-    /// @notice Error thrown when someone tries to set zero address for collateral or debt asset when creating leverage token
+    /// @notice Error thrown when someone tries to set zero address for collateral or debt asset when creating a LeverageToken
     error InvalidLeverageTokenAssets();
 
-    /// @notice Error thrown when collateral ratios are invalid
+    /// @notice Error thrown when collateral ratios are invalid for an action
     error InvalidCollateralRatios();
 
-    /// @notice Error thrown when slippage is too high during mint/redeem
+    /// @notice Error thrown when slippage is too high during deposit/withdraw
     error SlippageTooHigh(uint256 actual, uint256 expected);
 
-    /// @notice Error thrown when caller is whitelisted for rebalance action
+    /// @notice Error thrown when caller is not authorized to rebalance
     error NotRebalancer(ILeverageToken token, address caller);
 
-    /// @notice Error thrown when leverage token is not eligible for rebalance
+    /// @notice Error thrown when a LeverageToken is not eligible for rebalance
     error LeverageTokenNotEligibleForRebalance(ILeverageToken token);
 
-    /// @notice Error thrown when leverage token state after rebalance is invalid
+    /// @notice Error thrown when a LeverageToken's state after rebalance is invalid
     error InvalidLeverageTokenStateAfterRebalance(ILeverageToken token);
 
-    /// @notice Event emitted when new leverage token is created
+    /// @notice Event emitted when a new LeverageToken is created
     event LeverageTokenCreated(
         ILeverageToken indexed token, IERC20 collateralAsset, IERC20 debtAsset, LeverageTokenConfig config
     );
 
-    /// @notice Event emitted when user deposits assets into leverage token
+    /// @notice Event emitted when a user deposits assets into a LeverageToken
     event Deposit(ILeverageToken indexed token, address indexed sender, ActionData actionData);
 
-    /// @notice Event emitted when user withdraws assets from leverage token
+    /// @notice Event emitted when a user withdraws assets from a LeverageToken
     event Withdraw(ILeverageToken indexed token, address indexed sender, ActionData actionData);
 
-    /// @notice Returns factory for creating new leverage tokens
-    /// @return factory Factory for creating new leverage tokens
+    /// @notice Returns the factory for creating new LeverageTokens
+    /// @return factory Factory for creating new LeverageTokens
     function getLeverageTokenFactory() external view returns (IBeaconProxyFactory factory);
 
-    /// @notice Returns lending adapter for the leverage token
-    /// @param token Leverage token to get lending adapter for
-    /// @return adapter Lending adapter for the leverage token
+    /// @notice Returns the lending adapter for a LeverageToken
+    /// @param token LeverageToken to get lending adapter for
+    /// @return adapter Lending adapter for the LeverageToken
     function getLeverageTokenLendingAdapter(ILeverageToken token) external view returns (ILendingAdapter adapter);
 
-    /// @notice Returns collateral asset for the leverage token
-    /// @param token Leverage token to get collateral asset for
-    /// @return collateralAsset Collateral asset for the leverage token
+    /// @notice Returns the collateral asset for a LeverageToken
+    /// @param token LeverageToken to get collateral asset for
+    /// @return collateralAsset Collateral asset for the LeverageToken
     function getLeverageTokenCollateralAsset(ILeverageToken token) external view returns (IERC20 collateralAsset);
 
-    /// @notice Returns debt asset for the leverage token
-    /// @param token Leverage token to get debt asset for
-    /// @return debtAsset Debt asset for the leverage token
+    /// @notice Returns the debt asset for a LeverageToken
+    /// @param token LeverageToken to get debt asset for
+    /// @return debtAsset Debt asset for the LeverageToken
     function getLeverageTokenDebtAsset(ILeverageToken token) external view returns (IERC20 debtAsset);
 
-    /// @notice Returns the rebalance module for the leverage token
-    /// @param token Leverage token to get the rebalance module for
-    /// @return adapter Rebalance module for the leverage token
+    /// @notice Returns the rebalance adapter for a LeverageToken
+    /// @param token LeverageToken to get the rebalance adapter for
+    /// @return adapter Rebalance adapter for the LeverageToken
     function getLeverageTokenRebalanceAdapter(ILeverageToken token)
         external
         view
         returns (IRebalanceAdapterBase adapter);
 
-    /// @notice Returns target ratio for a leverage token
-    /// @param token Leverage token to get target ratio for
-    /// @return targetRatio Target ratio
+    /// @notice Returns the target collateral ratio for a LeverageToken
+    /// @param token LeverageToken to get target collateral ratio for
+    /// @return targetRatio Target collateral ratio
     function getLeverageTokenTargetCollateralRatio(ILeverageToken token) external view returns (uint256 targetRatio);
 
-    /// @notice Returns entire configuration for given leverage token
-    /// @param token Leverage token to get config for
-    /// @return config Leverage token configuration
+    /// @notice Returns the configuration for a LeverageToken
+    /// @param token LeverageToken to get config for
+    /// @return config LeverageToken configuration
     function getLeverageTokenConfig(ILeverageToken token) external view returns (LeverageTokenConfig memory config);
 
-    /// @notice Returns all data required to describe current leverage token state - collateral, debt, equity and collateral ratio
-    /// @param token Leverage token to query state for
-    /// @return state Leverage token state
+    /// @notice Returns all data required to describe current LeverageToken state - collateral, debt, equity and collateral ratio
+    /// @param token LeverageToken to query state for
+    /// @return state LeverageToken state
     function getLeverageTokenState(ILeverageToken token) external view returns (LeverageTokenState memory state);
 
-    /// @notice Creates new leverage token with given config
-    /// @param config Configuration of the leverage token
-    /// @param name Name of the leverage token
-    /// @param symbol Symbol of the leverage token
-    /// @return token Address of the new leverage token
+    /// @notice Creates a new LeverageToken with the given config
+    /// @param config Configuration of the LeverageToken
+    /// @param name Name of the LeverageToken
+    /// @param symbol Symbol of the LeverageToken
+    /// @return token Address of the new LeverageToken
     function createNewLeverageToken(LeverageTokenConfig memory config, string memory name, string memory symbol)
         external
         returns (ILeverageToken token);
 
     /// @notice Previews deposit function call and returns all required data
-    /// @param token Leverage token to preview deposit for
+    /// @param token LeverageToken to preview deposit for
     /// @param equityInCollateralAsset Equity to deposit denominated in collateral asset
     /// @return previewData Preview data for deposit
     ///         - collateralToAdd Amount of collateral that sender needs to approve the LeverageManager to spend,
     ///           this includes any fees
     ///         - debtToBorrow Amount of debt that will be borrowed and sent to sender
-    ///         - equityInCollateralAsset Amount of equity that will be deposited before fees
+    ///         - equity Amount of equity that will be deposited before fees, denominated in collateral asset
     ///         - shares Amount of shares that will be minted to the sender
     ///         - tokenFee Amount of collateral asset that will be charged for the deposit to the leverage token
     ///         - treasuryFee Amount of collateral asset that will be charged for the deposit to the treasury
@@ -117,12 +117,12 @@ interface ILeverageManager is IFeeManager {
         returns (ActionData memory previewData);
 
     /// @notice Previews withdraw function call and returns all required data
-    /// @param token Leverage token to preview withdraw for
+    /// @param token LeverageToken to preview withdraw for
     /// @param equityInCollateralAsset Equity to withdraw denominated in collateral asset
     /// @return previewData Preview data for withdraw
-    ///         - collateralToRemove Amount of collateral that will be removed from the leverage token and sent to the sender
-    ///         - debtToRepay Amount of debt that will be taken from sender and repaid to the leverage token
-    ///         - equityInCollateralAsset Amount of equity that will be withdrawn before fees
+    ///         - collateralToRemove Amount of collateral that will be removed from the LeverageToken and sent to the sender
+    ///         - debtToRepay Amount of debt that will be taken from sender and repaid to the LeverageToken
+    ///         - equity Amount of equity that will be withdrawn before fees, denominated in collateral asset
     ///         - shares Amount of shares that will be burned from sender
     ///         - tokenFee Amount of collateral asset that will be charged for the withdraw to the leverage token
     ///         - treasuryFee Amount of collateral asset that will be charged for the withdraw to the treasury
@@ -132,14 +132,14 @@ interface ILeverageManager is IFeeManager {
         view
         returns (ActionData memory previewData);
 
-    /// @notice Deposits equity into a leverage token and mints shares to the sender
-    /// @param token The leverage token to deposit into
-    /// @param equityInCollateralAsset The amount of equity to deposit denominated in the collateral asset of the leverage token
+    /// @notice Deposits equity into a LeverageToken and mints shares to the sender
+    /// @param token The LeverageToken to deposit into
+    /// @param equityInCollateralAsset The amount of equity to deposit denominated in the collateral asset of the LeverageToken
     /// @param minShares The minimum amount of shares to mint
     /// @return actionData Data about the deposit
     ///         - collateral Amount of collateral that was added, including any fees
     ///         - debt Amount of debt that was added
-    ///         - equityInCollateralAsset Amount of equity that was deposited before fees
+    ///         - equity Amount of equity that was deposited before fees, denominated in collateral asset
     ///         - shares Amount of shares minted to the sender
     ///         - tokenFee Amount of collateral that was charged for the deposit to the leverage token
     ///         - treasuryFee Amount of collateral that was charged for the deposit to the treasury
@@ -147,14 +147,14 @@ interface ILeverageManager is IFeeManager {
         external
         returns (ActionData memory actionData);
 
-    /// @notice Withdraws equity from a leverage token and burns shares from sender
-    /// @param token The leverage token to withdraw from
-    /// @param equityInCollateralAsset The amount of equity to withdraw denominated in the collateral asset of the leverage token
+    /// @notice Withdraws equity from a LeverageToken and burns shares from sender
+    /// @param token The LeverageToken to withdraw from
+    /// @param equityInCollateralAsset The amount of equity to withdraw denominated in the collateral asset of the LeverageToken
     /// @param maxShares The maximum amount of shares to burn
     /// @return actionData Data about the withdraw
-    ///         - collateral Amount of collateral that was removed from leverage token and sent to sender
-    ///         - debt Amount of debt that was repaid to leverage token, taken from sender
-    ///         - equityInCollateralAsset Amount of equity that was withdrawn before fees
+    ///         - collateral Amount of collateral that was removed from LeverageToken and sent to sender
+    ///         - debt Amount of debt that was repaid to LeverageToken, taken from sender
+    ///         - equity Amount of equity that was withdrawn before fees, denominated in collateral asset
     ///         - shares Amount of the sender's shares that were burned for the withdrawal
     ///         - tokenFee Amount of collateral that was charged for the withdraw to the leverage token
     ///         - treasuryFee Amount of collateral that was charged for the withdraw to the treasury
@@ -162,11 +162,11 @@ interface ILeverageManager is IFeeManager {
         external
         returns (ActionData memory actionData);
 
-    /// @notice Rebalances leverage tokens based on provided actions
+    /// @notice Rebalances LeverageTokens based on provided actions
     /// @param actions Array of rebalance actions to execute (add collateral, remove collateral, borrow or repay)
-    /// @param tokensIn Array of tokens to transfer in. Transfer from caller to leverage manager contract
-    /// @param tokensOut Array of tokens to transfer out. Transfer from leverage manager contract to caller
-    /// @dev Anyone can call this function. At the end function will just check if all effected leverage tokens are in the
+    /// @param tokensIn Array of tokens to transfer in. Transfer from caller to the LeverageManager contract
+    /// @param tokensOut Array of tokens to transfer out. Transfer from the LeverageManager contract to caller
+    /// @dev Anyone can call this function. At the end function will just check if all effected LeverageTokens are in the
     ///      better state than before rebalance. Caller needs to calculate and to provide tokens for rebalancing and he needs
     ///      to specify tokens that he wants to receive
     function rebalance(

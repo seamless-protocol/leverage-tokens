@@ -36,9 +36,9 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     /// @dev Struct containing all state for the LeverageManager contract
     /// @custom:storage-location erc7201:seamless.contracts.storage.LeverageManager
     struct LeverageManagerStorage {
-        /// @dev Factory for deploying new leverage tokens
+        /// @dev Factory for deploying new LeverageTokens
         IBeaconProxyFactory tokenFactory;
-        /// @dev Leverage token address => Base config for leverage token
+        /// @dev LeverageToken address => Base config for LeverageToken
         mapping(ILeverageToken token => BaseLeverageTokenConfig) config;
     }
 
@@ -217,7 +217,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         IERC20 collateralAsset = getLeverageTokenCollateralAsset(token);
         SafeERC20.safeTransferFrom(collateralAsset, msg.sender, address(this), depositData.collateral);
 
-        // Add collateral to leverage token
+        // Add collateral to LeverageToken
         _executeLendingAdapterAction(token, ActionType.AddCollateral, depositData.collateral - depositData.treasuryFee);
 
         // Charge treasury fee
@@ -284,7 +284,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         for (uint256 i = 0; i < actions.length; i++) {
             ILeverageToken leverageToken = actions[i].leverageToken;
 
-            // Check if the leverage token is eligible for rebalance if it has not been checked yet in a previous iteration of the loop
+            // Check if the LeverageToken is eligible for rebalance if it has not been checked yet in a previous iteration of the loop
             if (!_isElementInSlice(actions, leverageToken, i)) {
                 LeverageTokenState memory state = getLeverageTokenState(leverageToken);
                 leverageTokensStateBefore[i] = state;
@@ -299,7 +299,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         }
 
         for (uint256 i = 0; i < actions.length; i++) {
-            // Validate the leverage token state after rebalancing if it has not been validated yet in a previous iteration of the loop
+            // Validate the LeverageToken state after rebalancing if it has not been validated yet in a previous iteration of the loop
             if (!_isElementInSlice(actions, actions[i].leverageToken, i)) {
                 ILeverageToken leverageToken = actions[i].leverageToken;
                 IRebalanceAdapterBase rebalanceAdapter = getLeverageTokenRebalanceAdapter(leverageToken);
@@ -315,7 +315,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
     /// @notice Function that converts user's equity to shares
     /// @notice Function uses OZ formula for calculating shares
-    /// @param token Leverage token to convert equity for
+    /// @param token LeverageToken to convert equity for
     /// @param equityInCollateralAsset Equity to convert to shares, denominated in collateral asset
     /// @return shares Shares
     /// @dev Function should be used to calculate how much shares user should receive for their equity
@@ -335,11 +335,11 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @notice Previews parameters related to a deposit action
-    /// @param token Leverage token to preview deposit for
+    /// @param token LeverageToken to preview deposit for
     /// @param equityInCollateralAsset Amount of equity to add or withdraw, denominated in collateral asset
     /// @param action Type of the action to preview, can be Deposit or Withdraw
     /// @return data Preview data for the action
-    /// @dev If the leverage token has zero total supply of shares (so the leverage token does not hold any collateral or debt,
+    /// @dev If the LeverageToken has zero total supply of shares (so the LeverageToken does not hold any collateral or debt,
     ///      or holds some leftover dust after all shares are redeemed), then the preview will use the target
     ///      collateral ratio for determining how much collateral and debt is required instead of the current collateral ratio.
     /// @dev If action is deposit collateral will be rounded down and debt up, if action is withdraw collateral will be rounded up and debt down
@@ -355,8 +355,8 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
         (uint256 collateral, uint256 debt) = _computeCollateralAndDebtForAction(token, equityToCover, action);
 
-        // The collateral returned by `_computeCollateralAndDebtForAction` can be zero if the amount of equity for the leverage token
-        // cannot be exchanged for at least 1 leverage token share due to rounding down in the exchange rate calculation.
+        // The collateral returned by `_computeCollateralAndDebtForAction` can be zero if the amount of equity for the LeverageToken
+        // cannot be exchanged for at least 1 LeverageToken share due to rounding down in the exchange rate calculation.
         // The treasury fee returned by `_computeEquityFees` is wrt the equity amount, not the share amount, thus it's possible
         // for it to be non-zero even if the collateral amount is zero. In this case, the treasury fee should be set to 0
         treasuryFee = collateral == 0 ? 0 : treasuryFee;
@@ -371,12 +371,12 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         });
     }
 
-    /// @notice Function that computes collateral and debt required by the position held by a leverage token for a given action and an amount of equity to add / remove
-    /// @param token Leverage token to compute collateral and debt for
+    /// @notice Function that computes collateral and debt required by the position held by a LeverageToken for a given action and an amount of equity to add / remove
+    /// @param token LeverageToken to compute collateral and debt for
     /// @param equityInCollateralAsset Equity amount in collateral asset
     /// @param action Action to compute collateral and debt for
-    /// @return collateral Collateral to add / remove from the leverage token
-    /// @return debt Debt to borrow / repay to the leverage token
+    /// @return collateral Collateral to add / remove from the LeverageToken
+    /// @return debt Debt to borrow / repay to the LeverageToken
     function _computeCollateralAndDebtForAction(
         ILeverageToken token,
         uint256 equityInCollateralAsset,
@@ -406,12 +406,12 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         return (collateral, debt);
     }
 
-    /// @notice Function that checks if specific element has already been processed in the slice up to the given index
+    /// @notice Helper function that checks if a specific element has already been processed in the slice up to the given index
     /// @param actions Entire array to go through
     /// @param token Element to search for
     /// @param untilIndex Search until this specific index
-    /// @dev This function is used to check if we already stored the state of the leverage token before rebalance.
-    ///      This function is used to check if leverage token state has been already validated after rebalance
+    /// @dev This function is used to check if we already stored the state of the LeverageToken before rebalance.
+    ///      This function is used to check if LeverageToken state has been already validated after rebalance
     function _isElementInSlice(RebalanceAction[] calldata actions, ILeverageToken token, uint256 untilIndex)
         internal
         pure
@@ -426,8 +426,8 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         return false;
     }
 
-    /// @notice Executes action on lending adapter from specific leverage token
-    /// @param token Leverage token to execute action on
+    /// @notice Executes actions on the LendingAdapter for a specific LeverageToken
+    /// @param token LeverageToken to execute action for
     /// @param actionType Type of the action to execute
     /// @param amount Amount to execute action with
     function _executeLendingAdapterAction(ILeverageToken token, ActionType actionType, uint256 amount) internal {
@@ -454,11 +454,11 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         }
     }
 
-    /// @notice Batched token transfer
+    /// @notice Used for batching token transfers
     /// @param transfers Array of transfer data. Transfer data consist of token to transfer and amount
     /// @param from Address to transfer tokens from
     /// @param to Address to transfer tokens to
-    /// @dev If from address is this smart contract it will use regular transfer function otherwise it will use transferFrom
+    /// @dev If from address is this smart contract it will use the regular transfer function otherwise it will use transferFrom
     function _transferTokens(TokenTransfer[] calldata transfers, address from, address to) internal {
         for (uint256 i = 0; i < transfers.length; i++) {
             TokenTransfer calldata transfer = transfers[i];
