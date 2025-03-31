@@ -19,6 +19,7 @@ contract RebalanceAdapterTest is Test {
     ILeverageToken public leverageToken = ILeverageToken(makeAddr("leverageToken"));
 
     uint256 public minCollateralRatio = 1.5 * 1e18;
+    uint256 public targetCollateralRatio = 2 * 1e18;
     uint256 public maxCollateralRatio = 2.5 * 1e18;
     uint256 public auctionDuration = 7 minutes;
     uint256 public initialPriceMultiplier = 1.02 * 1e18;
@@ -42,6 +43,7 @@ contract RebalanceAdapterTest is Test {
                 authorizedCreator,
                 leverageManager,
                 minCollateralRatio,
+                targetCollateralRatio,
                 maxCollateralRatio,
                 auctionDuration,
                 initialPriceMultiplier,
@@ -62,6 +64,8 @@ contract RebalanceAdapterTest is Test {
         assertEq(address(rebalanceAdapter.getLeverageManager()), address(leverageManager));
         assertEq(rebalanceAdapter.getLeverageTokenMinCollateralRatio(), minCollateralRatio);
         assertEq(rebalanceAdapter.getLeverageTokenMaxCollateralRatio(), maxCollateralRatio);
+        assertEq(rebalanceAdapter.getLeverageTokenTargetCollateralRatio(), targetCollateralRatio);
+        assertEq(rebalanceAdapter.getInitialCollateralRatio(leverageToken), targetCollateralRatio);
         assertEq(rebalanceAdapter.getAuctionDuration(), auctionDuration);
         assertEq(rebalanceAdapter.getInitialPriceMultiplier(), initialPriceMultiplier);
         assertEq(rebalanceAdapter.getMinPriceMultiplier(), minPriceMultiplier);
@@ -72,12 +76,7 @@ contract RebalanceAdapterTest is Test {
         assertEq(rebalanceAdapter.exposed_getRebalanceAdapterStorageSlot(), expectedSlot);
     }
 
-    function _mockLeverageTokenState(uint256 targetRatio, LeverageTokenState memory state) internal {
-        vm.mockCall(
-            address(leverageManager),
-            abi.encodeWithSelector(ILeverageManager.getLeverageTokenTargetCollateralRatio.selector, leverageToken),
-            abi.encode(targetRatio)
-        );
+    function _mockLeverageTokenState(LeverageTokenState memory state) internal {
         vm.mockCall(
             address(leverageManager),
             abi.encodeWithSelector(ILeverageManager.getLeverageTokenState.selector, leverageToken),

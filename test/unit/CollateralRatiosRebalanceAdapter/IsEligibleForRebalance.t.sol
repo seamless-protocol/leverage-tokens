@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-import {MinMaxCollateralRatioRebalanceAdapterTest} from "./MinMaxCollateralRatioRebalanceAdapter.t.sol";
+import {CollateralRatiosRebalanceAdapterTest} from "./CollateralRatiosRebalanceAdapter.t.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {LeverageTokenState} from "src/types/DataTypes.sol";
 
-contract IsEligibleForRebalanceTest is MinMaxCollateralRatioRebalanceAdapterTest {
+contract IsEligibleForRebalanceTest is CollateralRatiosRebalanceAdapterTest {
     function test_isEligibleForRebalance_WhenCollateralRatioTooLow() public view {
         LeverageTokenState memory state =
             LeverageTokenState({collateralInDebtAsset: 100 ether, debt: 100 ether, equity: 0, collateralRatio: 1e18});

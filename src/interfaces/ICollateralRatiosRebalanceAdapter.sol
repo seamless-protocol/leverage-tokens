@@ -6,14 +6,16 @@ import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageTokenState} from "src/types/DataTypes.sol";
 
-/// @title IMinMaxCollateralRatioRebalanceAdapter
-/// @notice Interface for the MinMaxCollateralRatioRebalanceAdapter contract
-interface IMinMaxCollateralRatioRebalanceAdapter {
+/// @title ICollateralRatiosRebalanceAdapter
+/// @notice Interface for the CollateralRatiosRebalanceAdapter contract
+interface ICollateralRatiosRebalanceAdapter {
     /// @notice Error thrown when min collateral ratio is too high
-    error MinCollateralRatioTooHigh();
+    error InvalidCollateralRatios();
 
     /// @notice Event emitted when the collateral ratios are set
-    event MinMaxCollateralRatioRebalanceAdapterInitialized(uint256 minCollateralRatio, uint256 maxCollateralRatio);
+    event CollateralRatiosRebalanceAdapterInitialized(
+        uint256 minCollateralRatio, uint256 targetCollateralRatio, uint256 maxCollateralRatio
+    );
 
     /// @notice Returns the leverage manager
     /// @return leverageManager The leverage manager
@@ -23,9 +25,17 @@ interface IMinMaxCollateralRatioRebalanceAdapter {
     /// @return minCollateralRatio Minimum collateral ratio for the leverage token
     function getLeverageTokenMinCollateralRatio() external view returns (uint256 minCollateralRatio);
 
+    /// @notice Returns the target collateral ratio for a leverage token
+    /// @return targetCollateralRatio Target collateral ratio for the leverage token
+    function getLeverageTokenTargetCollateralRatio() external view returns (uint256 targetCollateralRatio);
+
     /// @notice Returns the maximum collateral ratio for a leverage token
     /// @return maxCollateralRatio Maximum collateral ratio for the leverage token
     function getLeverageTokenMaxCollateralRatio() external view returns (uint256 maxCollateralRatio);
+
+    /// @notice Returns the initial collateral ratio for a leverage token
+    /// @return initialCollateralRatio Initial collateral ratio for the leverage token
+    function getInitialCollateralRatio(ILeverageToken token) external view returns (uint256 initialCollateralRatio);
 
     /// @notice Returns true if the leverage token is eligible for rebalance
     /// @param token The leverage token

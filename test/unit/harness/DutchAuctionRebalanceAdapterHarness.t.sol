@@ -8,12 +8,13 @@ import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {LeverageTokenState} from "src/types/DataTypes.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IDutchAuctionRebalanceAdapter} from "src/interfaces/IDutchAuctionRebalanceAdapter.sol";
-import {IMinMaxCollateralRatioRebalanceAdapter} from "src/interfaces/IMinMaxCollateralRatioRebalanceAdapter.sol";
+import {ICollateralRatiosRebalanceAdapter} from "src/interfaces/ICollateralRatiosRebalanceAdapter.sol";
 import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 
 /// @notice Wrapper contract that exposes internal functions of DutchAuctionRebalanceAdapter for testing
 contract DutchAuctionRebalanceAdapterHarness is DutchAuctionRebalanceAdapter {
     bool public isValidState;
+    uint256 public targetCollateralRatio;
     ILeverageManager public leverageManager;
 
     function initialize(uint256 _auctionDuration, uint256 _initialPriceMultiplier, uint256 _minPriceMultiplier)
@@ -68,11 +69,19 @@ contract DutchAuctionRebalanceAdapterHarness is DutchAuctionRebalanceAdapter {
         return leverageManager;
     }
 
+    function getLeverageTokenTargetCollateralRatio() public view override returns (uint256) {
+        return targetCollateralRatio;
+    }
+
     function mock_isStateAfterRebalanceValid(bool _isValidState) external {
         isValidState = _isValidState;
     }
 
     function mock_setLeverageManager(ILeverageManager _leverageManager) external {
         leverageManager = _leverageManager;
+    }
+
+    function mock_setTargetCollateralRatio(uint256 _targetCollateralRatio) external {
+        targetCollateralRatio = _targetCollateralRatio;
     }
 }

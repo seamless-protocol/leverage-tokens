@@ -11,6 +11,7 @@ import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageManagerTest} from "./LeverageManager.t.sol";
 import {MockLendingAdapter} from "test/unit/mock/MockLendingAdapter.sol";
 import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
+import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
 import {ActionType, LeverageTokenConfig} from "src/types/DataTypes.sol";
 
 contract ExecuteActionTest is LeverageManagerTest {
@@ -19,10 +20,10 @@ contract ExecuteActionTest is LeverageManagerTest {
 
         _createNewLeverageToken(
             manager,
+            2e18,
             LeverageTokenConfig({
                 lendingAdapter: ILendingAdapter(address(lendingAdapter)),
-                targetCollateralRatio: _BASE_RATIO() + 1, // 1.00000001x
-                rebalanceAdapter: IRebalanceAdapter(address(0)),
+                rebalanceAdapter: IRebalanceAdapterBase(address(0)),
                 depositTokenFee: 0,
                 withdrawTokenFee: 0
             }),

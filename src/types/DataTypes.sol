@@ -41,8 +41,6 @@ struct BaseLeverageTokenConfig {
     ILendingAdapter lendingAdapter;
     /// @dev Rebalance adapter for leverage token
     IRebalanceAdapterBase rebalanceAdapter;
-    /// @dev Target collateral ratio of the leverage token on 8 decimals
-    uint256 targetCollateralRatio;
 }
 
 /// @dev Struct that contains all data related to a rebalance action
@@ -61,8 +59,6 @@ struct LeverageTokenConfig {
     ILendingAdapter lendingAdapter;
     /// @dev Rebalance adapter for leverage token
     IRebalanceAdapterBase rebalanceAdapter;
-    /// @dev Target collateral ratio of the leverage token on 8 decimals
-    uint256 targetCollateralRatio;
     /// @dev Fee for deposit action
     uint256 depositTokenFee;
     /// @dev Fee for withdraw action

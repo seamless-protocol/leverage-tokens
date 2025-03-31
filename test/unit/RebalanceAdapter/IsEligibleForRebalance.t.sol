@@ -6,24 +6,26 @@ import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {RebalanceAdapterTest} from "./RebalanceAdapter.t.sol";
-import {MinMaxCollateralRatioRebalanceAdapterHarness} from
-    "test/unit/harness/MinMaxCollateralRatioRebalanceAdapterHarness.t.sol";
+import {CollateralRatiosRebalanceAdapterHarness} from "test/unit/harness/CollateralRatiosRebalanceAdapterHarness.t.sol";
 import {PreLiquidationRebalanceAdapterHarness} from "test/unit/harness/PreLiquidationRebalanceAdapterHarness.t.sol";
 import {LeverageTokenState} from "src/types/DataTypes.sol";
 
 contract IsEligibleForRebalanceTest is RebalanceAdapterTest {
-    MinMaxCollateralRatioRebalanceAdapterHarness public minMaxCollateralRatioRebalanceAdapter;
+    CollateralRatiosRebalanceAdapterHarness public collateralRatiosRebalanceAdapter;
     PreLiquidationRebalanceAdapterHarness public preLiquidationRebalanceAdapter;
 
     function setUp() public override {
         super.setUp();
 
-        MinMaxCollateralRatioRebalanceAdapterHarness minMaxCollateralRatioRebalanceAdapterHarness =
-            new MinMaxCollateralRatioRebalanceAdapterHarness();
-        address minMaxCollateralRatioRebalanceAdapterProxy = UnsafeUpgrades.deployUUPSProxy(
-            address(minMaxCollateralRatioRebalanceAdapterHarness),
+        CollateralRatiosRebalanceAdapterHarness collateralRatiosRebalanceAdapterHarness =
+            new CollateralRatiosRebalanceAdapterHarness();
+        address collateralRatiosRebalanceAdapterProxy = UnsafeUpgrades.deployUUPSProxy(
+            address(collateralRatiosRebalanceAdapterHarness),
             abi.encodeWithSelector(
-                MinMaxCollateralRatioRebalanceAdapterHarness.initialize.selector, minCollateralRatio, maxCollateralRatio
+                CollateralRatiosRebalanceAdapterHarness.initialize.selector,
+                minCollateralRatio,
+                targetCollateralRatio,
+                maxCollateralRatio
             )
         );
 
@@ -36,23 +38,22 @@ contract IsEligibleForRebalanceTest is RebalanceAdapterTest {
             )
         );
 
-        minMaxCollateralRatioRebalanceAdapter =
-            MinMaxCollateralRatioRebalanceAdapterHarness(minMaxCollateralRatioRebalanceAdapterProxy);
+        collateralRatiosRebalanceAdapter =
+            CollateralRatiosRebalanceAdapterHarness(collateralRatiosRebalanceAdapterProxy);
         preLiquidationRebalanceAdapter = PreLiquidationRebalanceAdapterHarness(preLiquidationRebalanceAdapterProxy);
 
         preLiquidationRebalanceAdapter.setLeverageManager(leverageManager);
-        minMaxCollateralRatioRebalanceAdapter.mock_setLeverageManager(leverageManager);
+        collateralRatiosRebalanceAdapter.mock_setLeverageManager(leverageManager);
     }
 
     function testFuzz_isEligibleForRebalance_ReturnsTheSameAsPreLiquidationRebalanceAdapter_IfDutchAuctionReturnsFalse(
         address caller,
-        uint256 targetRatio,
         LeverageTokenState memory stateBefore,
         LeverageTokenState memory stateAfter
     ) public {
         vm.assume(caller != address(rebalanceAdapter));
 
-        _mockLeverageTokenState(targetRatio, stateAfter);
+        _mockLeverageTokenState(stateAfter);
 
         bool isEligible = rebalanceAdapter.isEligibleForRebalance(leverageToken, stateBefore, caller);
         bool expectedIsEligible =
@@ -60,16 +61,15 @@ contract IsEligibleForRebalanceTest is RebalanceAdapterTest {
         assertEq(isEligible, expectedIsEligible);
     }
 
-    function testFuzz_isEligibleForRebalance_ReturnsSameAsMinMaxCollateralRatioRebalanceAdapter(
-        uint256 targetRatio,
+    function testFuzz_isEligibleForRebalance_ReturnsSameAsCollateralRatiosRebalanceAdapter(
         LeverageTokenState memory stateBefore,
         LeverageTokenState memory stateAfter
     ) public {
         vm.assume(stateBefore.collateralRatio >= 1.3e8);
-        _mockLeverageTokenState(targetRatio, stateAfter);
+        _mockLeverageTokenState(stateAfter);
 
         bool isEligible = rebalanceAdapter.isEligibleForRebalance(leverageToken, stateBefore, address(rebalanceAdapter));
-        bool expectedIsEligible = minMaxCollateralRatioRebalanceAdapter.isEligibleForRebalance(
+        bool expectedIsEligible = collateralRatiosRebalanceAdapter.isEligibleForRebalance(
             leverageToken, stateBefore, address(rebalanceAdapter)
         );
         assertEq(isEligible, expectedIsEligible);

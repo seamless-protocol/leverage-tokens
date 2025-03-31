@@ -21,6 +21,7 @@ import {LeverageToken} from "src/LeverageToken.sol";
 contract CreateNewLeverageTokenTest is LeverageManagerTest {
     function testFuzz_CreateNewLeverageToken(
         LeverageTokenConfig memory config,
+        uint256 targetCollateralRatio,
         address collateralAsset,
         address debtAsset,
         string memory name,
@@ -40,7 +41,7 @@ contract CreateNewLeverageTokenTest is LeverageManagerTest {
             0
         );
 
-        _createNewLeverageToken(manager, config, collateralAsset, debtAsset, name, symbol);
+        _createNewLeverageToken(manager, targetCollateralRatio, config, collateralAsset, debtAsset, name, symbol);
 
         // Check name of the leverage token
         assertEq(IERC20Metadata(expectedLeverageTokenAddress).name(), name);
@@ -57,9 +58,10 @@ contract CreateNewLeverageTokenTest is LeverageManagerTest {
         assertEq(address(leverageManager.getLeverageTokenCollateralAsset(leverageToken)), collateralAsset);
         assertEq(address(leverageManager.getLeverageTokenDebtAsset(leverageToken)), debtAsset);
 
-        assertEq(leverageManager.getLeverageTokenTargetCollateralRatio(leverageToken), config.targetCollateralRatio);
         assertEq(
             address(leverageManager.getLeverageTokenRebalanceAdapter(leverageToken)), address(config.rebalanceAdapter)
         );
+
+        assertEq(leverageManager.getLeverageTokenInitialCollateralRatio(leverageToken), targetCollateralRatio);
     }
 }

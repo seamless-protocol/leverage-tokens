@@ -1,18 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-import {MinMaxCollateralRatioRebalanceAdapterTest} from "./MinMaxCollateralRatioRebalanceAdapter.t.sol";
+import {CollateralRatiosRebalanceAdapterTest} from "./CollateralRatiosRebalanceAdapter.t.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageTokenState} from "src/types/DataTypes.sol";
 
-contract IsStateAfterRebalanceValidTest is MinMaxCollateralRatioRebalanceAdapterTest {
-    function setUp() public override {
-        super.setUp();
-
-        leverageManager.setLeverageTokenTargetCollateralRatio(leverageToken, TARGET_RATIO);
-    }
-
+contract IsStateAfterRebalanceValidTest is CollateralRatiosRebalanceAdapterTest {
     function test_isStateAfterRebalanceValid_WhenMovingCloserToTarget() public {
         // Initial state is at 3x, moving closer to 2x target
         LeverageTokenState memory stateBefore = LeverageTokenState({

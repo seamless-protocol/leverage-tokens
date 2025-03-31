@@ -4,26 +4,28 @@ pragma solidity ^0.8.26;
 import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 
 import {RebalanceAdapterTest} from "./RebalanceAdapter.t.sol";
-import {MinMaxCollateralRatioRebalanceAdapterHarness} from
-    "test/unit/harness/MinMaxCollateralRatioRebalanceAdapterHarness.t.sol";
+import {CollateralRatiosRebalanceAdapterHarness} from "test/unit/harness/CollateralRatiosRebalanceAdapterHarness.t.sol";
 import {PreLiquidationRebalanceAdapterHarness} from "test/unit/harness/PreLiquidationRebalanceAdapterHarness.t.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageTokenState} from "src/types/DataTypes.sol";
 import {IPreLiquidationLendingAdapter} from "src/interfaces/IPreLiquidationLendingAdapter.sol";
 
 contract IsStateAfterRebalanceValidTest is RebalanceAdapterTest {
-    MinMaxCollateralRatioRebalanceAdapterHarness public minMaxCollateralRatioRebalanceAdapter;
+    CollateralRatiosRebalanceAdapterHarness public collateralRatiosRebalanceAdapter;
     PreLiquidationRebalanceAdapterHarness public preLiquidationRebalanceAdapter;
 
     function setUp() public override {
         super.setUp();
 
-        MinMaxCollateralRatioRebalanceAdapterHarness minMaxCollateralRatioRebalanceAdapterHarness =
-            new MinMaxCollateralRatioRebalanceAdapterHarness();
-        address minMaxCollateralRatioRebalanceAdapterProxy = UnsafeUpgrades.deployUUPSProxy(
-            address(minMaxCollateralRatioRebalanceAdapterHarness),
+        CollateralRatiosRebalanceAdapterHarness collateralRatiosRebalanceAdapterHarness =
+            new CollateralRatiosRebalanceAdapterHarness();
+        address collateralRatiosRebalanceAdapterProxy = UnsafeUpgrades.deployUUPSProxy(
+            address(collateralRatiosRebalanceAdapterHarness),
             abi.encodeWithSelector(
-                MinMaxCollateralRatioRebalanceAdapterHarness.initialize.selector, minCollateralRatio, maxCollateralRatio
+                CollateralRatiosRebalanceAdapterHarness.initialize.selector,
+                minCollateralRatio,
+                targetCollateralRatio,
+                maxCollateralRatio
             )
         );
 
@@ -36,12 +38,12 @@ contract IsStateAfterRebalanceValidTest is RebalanceAdapterTest {
             )
         );
 
-        minMaxCollateralRatioRebalanceAdapter =
-            MinMaxCollateralRatioRebalanceAdapterHarness(minMaxCollateralRatioRebalanceAdapterProxy);
+        collateralRatiosRebalanceAdapter =
+            CollateralRatiosRebalanceAdapterHarness(collateralRatiosRebalanceAdapterProxy);
         preLiquidationRebalanceAdapter = PreLiquidationRebalanceAdapterHarness(preLiquidationRebalanceAdapterProxy);
 
         preLiquidationRebalanceAdapter.setLeverageManager(leverageManager);
-        minMaxCollateralRatioRebalanceAdapter.mock_setLeverageManager(leverageManager);
+        collateralRatiosRebalanceAdapter.mock_setLeverageManager(leverageManager);
     }
 
     function test_isStateAfterRebalanceValid_ReturnsTrue_PreLiquidationRebalanceAdapter() public {
@@ -63,7 +65,7 @@ contract IsStateAfterRebalanceValidTest is RebalanceAdapterTest {
         LeverageTokenState memory stateAfter =
             LeverageTokenState({debt: 100e18, equity: 98e18, collateralInDebtAsset: 0, collateralRatio: 1.3e8 - 1});
 
-        _mockLeverageTokenState(1e8, stateAfter);
+        _mockLeverageTokenState(stateAfter);
 
         bool isValid = rebalanceAdapter.isStateAfterRebalanceValid(leverageToken, stateBefore);
         assertEq(isValid, true);

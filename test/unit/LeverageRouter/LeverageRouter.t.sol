@@ -60,8 +60,7 @@ contract LeverageRouterTest is Test {
                 leverageToken: leverageToken,
                 lendingAdapter: ILendingAdapter(address(lendingAdapter)),
                 collateralAsset: collateralToken,
-                debtAsset: debtToken,
-                targetCollateralRatio: 2 * _BASE_RATIO()
+                debtAsset: debtToken
             })
         );
         swapper = new MockSwapper();

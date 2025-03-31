@@ -7,13 +7,13 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 
 // Internal imports
 import {IDutchAuctionRebalanceAdapter} from "src/interfaces/IDutchAuctionRebalanceAdapter.sol";
-import {IMinMaxCollateralRatioRebalanceAdapter} from "src/interfaces/IMinMaxCollateralRatioRebalanceAdapter.sol";
+import {ICollateralRatiosRebalanceAdapter} from "src/interfaces/ICollateralRatiosRebalanceAdapter.sol";
 import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 import {DutchAuctionRebalanceAdapter} from "src/rebalance/DutchAuctionRebalanceAdapter.sol";
-import {MinMaxCollateralRatioRebalanceAdapter} from "src/rebalance/MinMaxCollateralRatioRebalanceAdapter.sol";
+import {CollateralRatiosRebalanceAdapter} from "src/rebalance/CollateralRatiosRebalanceAdapter.sol";
 import {PreLiquidationRebalanceAdapter} from "src/rebalance/PreLiquidationRebalanceAdapter.sol";
 import {LeverageTokenState} from "src/types/DataTypes.sol";
 
@@ -21,7 +21,7 @@ contract RebalanceAdapter is
     IRebalanceAdapter,
     UUPSUpgradeable,
     OwnableUpgradeable,
-    MinMaxCollateralRatioRebalanceAdapter,
+    CollateralRatiosRebalanceAdapter,
     DutchAuctionRebalanceAdapter,
     PreLiquidationRebalanceAdapter
 {
@@ -45,26 +45,44 @@ contract RebalanceAdapter is
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
-    function initialize(
-        address _owner,
-        address _authorizedCreator,
-        ILeverageManager _leverageManager,
-        uint256 _minCollateralRatio,
-        uint256 _maxCollateralRatio,
-        uint256 _auctionDuration,
-        uint256 _initialPriceMultiplier,
-        uint256 _minPriceMultiplier,
-        uint256 _preliquidationCollateralRatioThreshold,
-        uint256 _rebalanceReward
-    ) external initializer {
-        __DutchAuctionRebalanceAdapter_init_unchained(_auctionDuration, _initialPriceMultiplier, _minPriceMultiplier);
-        __MinMaxCollateralRatioRebalanceAdapter_init_unchained(_minCollateralRatio, _maxCollateralRatio);
-        __PreLiquidationRebalanceAdapter_init(_preliquidationCollateralRatioThreshold, _rebalanceReward);
-        __Ownable_init(_owner);
+    struct RebalanceAdapterInitParams {
+        /// @notice The owner of the rebalance adapter
+        address owner;
+        /// @notice The authorized creator of the rebalance adapter
+        address authorizedCreator;
+        /// @notice The LeverageManager contract
+        ILeverageManager leverageManager;
+        /// @notice The minimum collateral ratio for the rebalance adapter
+        uint256 minCollateralRatio;
+        /// @notice The target collateral ratio for the rebalance adapter
+        uint256 targetCollateralRatio;
+        /// @notice The maximum collateral ratio for the rebalance adapter
+        uint256 maxCollateralRatio;
+        /// @notice The duration of the auction for the rebalance adapter
+        uint256 auctionDuration;
+        /// @notice The initial price multiplier for the rebalance adapter
+        uint256 initialPriceMultiplier;
+        /// @notice The minimum price multiplier for the rebalance adapter
+        uint256 minPriceMultiplier;
+        /// @notice The collateral ratio threshold for the pre-liquidation rebalance adapter
+        uint256 preLiquidationCollateralRatioThreshold;
+        /// @notice The rebalance reward for the rebalance adapter
+        uint256 rebalanceReward;
+    }
 
-        _getRebalanceAdapterStorage().authorizedCreator = _authorizedCreator;
-        _getRebalanceAdapterStorage().leverageManager = _leverageManager;
-        emit RebalanceAdapterInitialized(_authorizedCreator, _leverageManager);
+    function initialize(RebalanceAdapterInitParams memory params) external initializer {
+        __DutchAuctionRebalanceAdapter_init_unchained(
+            params.auctionDuration, params.initialPriceMultiplier, params.minPriceMultiplier
+        );
+        __CollateralRatiosRebalanceAdapter_init_unchained(
+            params.minCollateralRatio, params.targetCollateralRatio, params.maxCollateralRatio
+        );
+        __PreLiquidationRebalanceAdapter_init(params.preLiquidationCollateralRatioThreshold, params.rebalanceReward);
+        __Ownable_init(params.owner);
+
+        _getRebalanceAdapterStorage().authorizedCreator = params.authorizedCreator;
+        _getRebalanceAdapterStorage().leverageManager = params.leverageManager;
+        emit RebalanceAdapterInitialized(params.authorizedCreator, params.leverageManager);
     }
 
     /// @inheritdoc IRebalanceAdapterBase
@@ -86,12 +104,32 @@ contract RebalanceAdapter is
         override(
             IRebalanceAdapter,
             DutchAuctionRebalanceAdapter,
-            MinMaxCollateralRatioRebalanceAdapter,
+            CollateralRatiosRebalanceAdapter,
             PreLiquidationRebalanceAdapter
         )
         returns (ILeverageManager)
     {
         return _getRebalanceAdapterStorage().leverageManager;
+    }
+
+    /// @inheritdoc IRebalanceAdapterBase
+    function getInitialCollateralRatio(ILeverageToken token)
+        public
+        view
+        override(IRebalanceAdapterBase, CollateralRatiosRebalanceAdapter)
+        returns (uint256)
+    {
+        return super.getInitialCollateralRatio(token);
+    }
+
+    /// @inheritdoc IDutchAuctionRebalanceAdapter
+    function getLeverageTokenTargetCollateralRatio()
+        public
+        view
+        override(DutchAuctionRebalanceAdapter, CollateralRatiosRebalanceAdapter)
+        returns (uint256 targetCollateralRatio)
+    {
+        return super.getLeverageTokenTargetCollateralRatio();
     }
 
     /// @inheritdoc IRebalanceAdapterBase
@@ -101,7 +139,7 @@ contract RebalanceAdapter is
         override(
             IRebalanceAdapterBase,
             DutchAuctionRebalanceAdapter,
-            MinMaxCollateralRatioRebalanceAdapter,
+            CollateralRatiosRebalanceAdapter,
             PreLiquidationRebalanceAdapter
         )
         returns (bool)
@@ -109,7 +147,7 @@ contract RebalanceAdapter is
         return (
             (
                 DutchAuctionRebalanceAdapter.isEligibleForRebalance(token, state, caller)
-                    && MinMaxCollateralRatioRebalanceAdapter.isEligibleForRebalance(token, state, caller)
+                    && CollateralRatiosRebalanceAdapter.isEligibleForRebalance(token, state, caller)
             ) || PreLiquidationRebalanceAdapter.isEligibleForRebalance(token, state, caller)
         );
     }
@@ -121,13 +159,13 @@ contract RebalanceAdapter is
         override(
             IRebalanceAdapterBase,
             DutchAuctionRebalanceAdapter,
-            MinMaxCollateralRatioRebalanceAdapter,
+            CollateralRatiosRebalanceAdapter,
             PreLiquidationRebalanceAdapter
         )
         returns (bool)
     {
         return (
-            MinMaxCollateralRatioRebalanceAdapter.isStateAfterRebalanceValid(token, stateBefore)
+            CollateralRatiosRebalanceAdapter.isStateAfterRebalanceValid(token, stateBefore)
                 && PreLiquidationRebalanceAdapter.isStateAfterRebalanceValid(token, stateBefore)
         );
     }
