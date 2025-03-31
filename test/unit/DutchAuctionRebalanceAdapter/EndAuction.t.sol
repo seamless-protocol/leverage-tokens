@@ -8,7 +8,7 @@ import {Auction} from "src/types/DataTypes.sol";
 contract EndAuctionTest is DutchAuctionRebalanceAdapterTest {
     function test_endAuction_WhenExpired() public {
         // Create an auction that will be expired
-        _setLeverageTokenCollateralRatio(3.1e8); // Over-collateralized
+        _setLeverageTokenCollateralRatio(3.1e18); // Over-collateralized
 
         _createAuction();
 
@@ -30,12 +30,12 @@ contract EndAuctionTest is DutchAuctionRebalanceAdapterTest {
 
     function test_endAuction_WhenLeverageTokenNoLongerEligible() public {
         // Create an auction when over-collateralized
-        _setLeverageTokenCollateralRatio(3.1e8);
+        _setLeverageTokenCollateralRatio(3.1e18);
 
         _createAuction();
 
         // Change leverage token state to be within bounds (no longer eligible)
-        _setLeverageTokenCollateralRatio(2e8);
+        _setLeverageTokenCollateralRatio(2e18);
 
         // End auction
         vm.expectEmit(true, true, true, true);
@@ -52,12 +52,12 @@ contract EndAuctionTest is DutchAuctionRebalanceAdapterTest {
 
     function test_endAuction_WhenCollateralRatioDirectionChanged() public {
         // Create an auction when over-collateralized
-        _setLeverageTokenCollateralRatio(3.1e8);
+        _setLeverageTokenCollateralRatio(3.1e18);
 
         _createAuction();
 
         // Change leverage token state to be under-collateralized
-        _setLeverageTokenCollateralRatio(0.9e8);
+        _setLeverageTokenCollateralRatio(0.9e18);
 
         // End auction
         vm.expectEmit(true, true, true, true);
@@ -74,7 +74,7 @@ contract EndAuctionTest is DutchAuctionRebalanceAdapterTest {
 
     function test_endAuction_RevertIf_AuctionStillValid() public {
         // Create an auction
-        _setLeverageTokenCollateralRatio(3.1e8);
+        _setLeverageTokenCollateralRatio(3.1e18);
 
         _createAuction();
 
@@ -86,7 +86,7 @@ contract EndAuctionTest is DutchAuctionRebalanceAdapterTest {
 
     function testFuzz_endAuction_WhenExpired(uint256 timeAfterExpiry) public {
         // Create an auction
-        _setLeverageTokenCollateralRatio(3.1e8);
+        _setLeverageTokenCollateralRatio(3.1e18);
 
         _createAuction();
 

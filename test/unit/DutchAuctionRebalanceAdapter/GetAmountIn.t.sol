@@ -46,7 +46,7 @@ contract GetAmountInTest is DutchAuctionRebalanceAdapterTest {
 
     function test_getAmountIn_OverCollateralized_AtHalf() public {
         // Create over-collateralized auction
-        _setLeverageTokenCollateralRatio(3.1e8);
+        _setLeverageTokenCollateralRatio(3.1e18);
 
         _createAuction();
 

@@ -6,7 +6,7 @@ import {DutchAuctionRebalanceAdapterTest} from "./DutchAuctionRebalanceAdapter.t
 contract GetLeverageTokenRebalanceStatusTest is DutchAuctionRebalanceAdapterTest {
     function test_getLeverageTokenRebalanceStatus_Eligible_UnderCollateralized() public {
         // Set current ratio to be below min (e.g., 1.4x)
-        _setLeverageTokenCollateralRatio(1.4e8);
+        _setLeverageTokenCollateralRatio(1.4e18);
 
         (bool isEligible, bool isOverCollateralized) = auctionRebalancer.getLeverageTokenRebalanceStatus();
         assertTrue(isEligible);
@@ -15,7 +15,7 @@ contract GetLeverageTokenRebalanceStatusTest is DutchAuctionRebalanceAdapterTest
 
     function test_getLeverageTokenRebalanceStatus_Eligible_OverCollateralized() public {
         // Set current ratio to be above max (e.g., 3.1x)
-        _setLeverageTokenCollateralRatio(3.1e8);
+        _setLeverageTokenCollateralRatio(3.1e18);
 
         (bool isEligible, bool isOverCollateralized) = auctionRebalancer.getLeverageTokenRebalanceStatus();
         assertTrue(isEligible);

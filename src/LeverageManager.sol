@@ -28,8 +28,8 @@ import {
 } from "src/types/DataTypes.sol";
 
 contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManager, UUPSUpgradeable {
-    // Base collateral ratio constant, 1e8 means that collateral / debt ratio is 1:1
-    uint256 public constant BASE_RATIO = 1e8;
+    // Base collateral ratio constant, 1e18 means that collateral / debt ratio is 1:1
+    uint256 public constant BASE_RATIO = 1e18;
     uint256 public constant DECIMALS_OFFSET = 0;
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
 

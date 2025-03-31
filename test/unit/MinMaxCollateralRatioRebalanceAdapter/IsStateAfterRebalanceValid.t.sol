@@ -19,10 +19,10 @@ contract IsStateAfterRebalanceValidTest is MinMaxCollateralRatioRebalanceAdapter
             collateralInDebtAsset: 0, // Not important for this test
             debt: 0, // Not important for this test
             equity: 0, // Not important for this test
-            collateralRatio: 3e8 // 3x
+            collateralRatio: 3e18 // 3x
         });
 
-        _mockCollateralRatio(2.5e8);
+        _mockCollateralRatio(2.5e18);
 
         vm.prank(address(leverageManager));
         bool isValid = rebalanceAdapter.isStateAfterRebalanceValid(leverageToken, stateBefore);
@@ -35,10 +35,10 @@ contract IsStateAfterRebalanceValidTest is MinMaxCollateralRatioRebalanceAdapter
             collateralInDebtAsset: 0, // Not important for this test
             debt: 0, // Not important for this test
             equity: 0, // Not important for this test
-            collateralRatio: 2.5e8 // 2.5x
+            collateralRatio: 2.5e18 // 2.5x
         });
 
-        _mockCollateralRatio(3e8);
+        _mockCollateralRatio(3e18);
 
         vm.prank(address(leverageManager));
         bool isValid = rebalanceAdapter.isStateAfterRebalanceValid(leverageToken, stateBefore);
@@ -51,10 +51,10 @@ contract IsStateAfterRebalanceValidTest is MinMaxCollateralRatioRebalanceAdapter
             collateralInDebtAsset: 0, // Not important for this test
             debt: 0, // Not important for this test
             equity: 0, // Not important for this test
-            collateralRatio: 2.5e8 // 2.5x
+            collateralRatio: 2.5e18 // 2.5x
         });
 
-        _mockCollateralRatio(1.4e8);
+        _mockCollateralRatio(1.4e18);
 
         vm.prank(address(leverageManager));
         bool isValid = rebalanceAdapter.isStateAfterRebalanceValid(leverageToken, stateBefore);
@@ -65,10 +65,10 @@ contract IsStateAfterRebalanceValidTest is MinMaxCollateralRatioRebalanceAdapter
         uint256 ratioBefore,
         uint256 ratioAfter
     ) public {
-        if (ratioBefore > 2e8) {
-            ratioAfter = bound(ratioAfter, 2e8, ratioBefore);
+        if (ratioBefore > 2e18) {
+            ratioAfter = bound(ratioAfter, 2e18, ratioBefore);
         } else {
-            ratioAfter = bound(ratioAfter, ratioBefore, 2e8);
+            ratioAfter = bound(ratioAfter, ratioBefore, 2e18);
         }
 
         LeverageTokenState memory stateBefore = LeverageTokenState({
@@ -89,7 +89,7 @@ contract IsStateAfterRebalanceValidTest is MinMaxCollateralRatioRebalanceAdapter
         uint256 ratioBefore,
         uint256 ratioAfter
     ) public {
-        if (ratioBefore > 2e8) {
+        if (ratioBefore > 2e18) {
             ratioAfter = bound(ratioAfter, ratioBefore, type(uint256).max);
         } else {
             ratioAfter = bound(ratioAfter, 0, ratioBefore);

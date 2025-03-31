@@ -15,7 +15,7 @@ import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {LeverageTokenState, ActionData, RebalanceAction, TokenTransfer} from "src/types/DataTypes.sol";
 
 contract MockLeverageManager is Test {
-    uint256 public BASE_RATIO = 1e8;
+    uint256 public BASE_RATIO = 1e18;
 
     struct LeverageTokenData {
         ILeverageToken leverageToken;

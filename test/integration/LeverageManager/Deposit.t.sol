@@ -63,6 +63,7 @@ contract LeverageManagerDepositTest is LeverageManagerTest {
         assertEq(WETH.balanceOf(user), 1 ether); // User receives 10% of the equity in collateral asset
     }
 
+    /// @dev In this block price on oracle 3392.292471591441746049801068
     function testFork_deposit_PriceChangedBetweenDeposits_CollateralRatioDoesNotChange() public {
         leverageToken = _createNewLeverageToken(
             BASE_RATIO,
@@ -79,6 +80,9 @@ contract LeverageManagerDepositTest is LeverageManagerTest {
         uint256 collateralToAdd = 2 * equityInCollateralAsset;
         _deposit(user, equityInCollateralAsset, collateralToAdd);
 
+        LeverageTokenState memory stateAfterFirstDeposit = getLeverageTokenState();
+        assertEq(stateAfterFirstDeposit.collateralRatio, 1999999999970521409); // ~2x CR
+
         // Price doubles
         (,, address oracle,,) = morphoLendingAdapter.marketParams();
         uint256 currentPrice = IOracle(oracle).price();
@@ -87,8 +91,8 @@ contract LeverageManagerDepositTest is LeverageManagerTest {
 
         // Since price of ETH doubled current collateral ratio should be 4x and not 2x
         LeverageTokenState memory stateBefore = getLeverageTokenState();
-        assertGe(stateBefore.collateralRatio, 4 * BASE_RATIO - 1);
-        assertLe(stateBefore.collateralRatio, 4 * BASE_RATIO);
+        assertEq(stateBefore.collateralRatio, 3999999999970521409); // ~4x CR
+        assertGe(stateBefore.collateralRatio, 2 * stateAfterFirstDeposit.collateralRatio);
 
         // Deposit based on what preview function says
         uint256 collateral = leverageManager.previewDeposit(leverageToken, equityInCollateralAsset).collateral;
@@ -101,17 +105,19 @@ contract LeverageManagerDepositTest is LeverageManagerTest {
         // Validate that user has no WETH left
         assertEq(WETH.balanceOf(user), 0);
 
-        // Validate that collateral ratio did not change which means that new deposit follows current collateral ratio and not target
-        // It is important that there can be rounding error but it should bring collateral ratio up not down
+        // Validate that collateral ratio did not change (minus some rounding error) which means that new deposit follows
+        // current collateral ratio and not target. It is important that there can be rounding error but it should bring
+        // collateral ratio up not down
         LeverageTokenState memory stateAfter = getLeverageTokenState();
         assertGe(stateAfter.collateralRatio, stateBefore.collateralRatio);
-        assertLe(stateAfter.collateralRatio, stateBefore.collateralRatio + 1);
+        assertEq(stateAfter.collateralRatio, 3999999999982312845);
 
         // // Price goes down 3x
         newPrice /= 3;
         vm.mockCall(address(oracle), abi.encodeWithSelector(IOracle.price.selector), abi.encode(newPrice));
 
         stateBefore = getLeverageTokenState();
+        assertEq(stateBefore.collateralRatio, 1333333333321541897);
 
         collateral = leverageManager.previewDeposit(leverageToken, equityInCollateralAsset).collateral;
         shares = _deposit(user, equityInCollateralAsset, collateral);
@@ -120,8 +126,11 @@ contract LeverageManagerDepositTest is LeverageManagerTest {
         equityAfterDeposit = _convertToAssets(shares);
         assertGe(equityInCollateralAsset, equityAfterDeposit);
 
-        // Validate that collateral ratio did not change which means that new deposit follows current collateral ratio and not target
+        // Validate that collateral ratio did not change (minus some rounding error) which means that new deposit follows
+        // current collateral ratio and not target. It is important that there can be rounding error but it should bring
+        // collateral ratio up not down
         stateAfter = getLeverageTokenState();
-        assertEq(stateAfter.collateralRatio, stateBefore.collateralRatio);
+        assertGe(stateAfter.collateralRatio, stateBefore.collateralRatio);
+        assertEq(stateAfter.collateralRatio, 1333333333327973589);
     }
 }

@@ -10,7 +10,7 @@ contract GetCurrentAuctionMultiplierTest is DutchAuctionRebalanceAdapterTest {
 
     function test_getCurrentAuctionMultiplier_AtStart() public {
         // Create auction
-        _setLeverageTokenCollateralRatio(3.1e8); // Over-collateralized
+        _setLeverageTokenCollateralRatio(3.1e18); // Over-collateralized
 
         _createAuction();
 
@@ -20,7 +20,7 @@ contract GetCurrentAuctionMultiplierTest is DutchAuctionRebalanceAdapterTest {
 
     function test_getCurrentAuctionMultiplier_AtEnd() public {
         // Create auction
-        _setLeverageTokenCollateralRatio(3.1e8); // Over-collateralized
+        _setLeverageTokenCollateralRatio(3.1e18); // Over-collateralized
 
         _createAuction();
 
@@ -33,7 +33,7 @@ contract GetCurrentAuctionMultiplierTest is DutchAuctionRebalanceAdapterTest {
 
     function test_getCurrentAuctionMultiplier_AtQuarter() public {
         // Create auction
-        _setLeverageTokenCollateralRatio(3.1e8);
+        _setLeverageTokenCollateralRatio(3.1e18);
 
         _createAuction();
 
@@ -58,7 +58,7 @@ contract GetCurrentAuctionMultiplierTest is DutchAuctionRebalanceAdapterTest {
 
     function test_getCurrentAuctionMultiplier_AtHalf() public {
         // Create auction
-        _setLeverageTokenCollateralRatio(3.1e8);
+        _setLeverageTokenCollateralRatio(3.1e18);
 
         _createAuction();
 
@@ -83,7 +83,7 @@ contract GetCurrentAuctionMultiplierTest is DutchAuctionRebalanceAdapterTest {
 
     function test_getCurrentAuctionMultiplier_AtThreeQuarters() public {
         // Create auction
-        _setLeverageTokenCollateralRatio(3.1e8);
+        _setLeverageTokenCollateralRatio(3.1e18);
 
         _createAuction();
 
@@ -115,7 +115,7 @@ contract GetCurrentAuctionMultiplierTest is DutchAuctionRebalanceAdapterTest {
         vm.assume(timeElapsed2 - timeElapsed1 > 3);
 
         // Create auction
-        _setLeverageTokenCollateralRatio(3.1e8);
+        _setLeverageTokenCollateralRatio(3.1e18);
 
         _createAuction();
 

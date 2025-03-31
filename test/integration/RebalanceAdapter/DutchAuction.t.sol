@@ -13,14 +13,14 @@ import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IMinMaxCollateralRatioRebalanceAdapter} from "src/interfaces/IMinMaxCollateralRatioRebalanceAdapter.sol";
 
 contract DutchAuctionTest is RebalanceTest {
-    function test_setUp() public {
+    function test_setUp() public view {
         assertEq(address(ethLong2xRebalanceAdapter.getLeverageToken()), address(ethLong2x));
         assertEq(address(ethLong2xRebalanceAdapter.getLeverageManager()), address(leverageManager));
         assertEq(ethLong2xRebalanceAdapter.getAuctionDuration(), 7 minutes);
         assertEq(ethLong2xRebalanceAdapter.getInitialPriceMultiplier(), 1.2e18);
         assertEq(ethLong2xRebalanceAdapter.getMinPriceMultiplier(), 0.98e18);
-        assertEq(ethLong2xRebalanceAdapter.getLeverageTokenMinCollateralRatio(), 1.8e8);
-        assertEq(ethLong2xRebalanceAdapter.getLeverageTokenMaxCollateralRatio(), 2.2e8);
+        assertEq(ethLong2xRebalanceAdapter.getLeverageTokenMinCollateralRatio(), 1.8e18);
+        assertEq(ethLong2xRebalanceAdapter.getLeverageTokenMaxCollateralRatio(), 2.2e18);
         assertEq(ethLong2xRebalanceAdapter.getAuthorizedCreator(), address(this));
     }
 

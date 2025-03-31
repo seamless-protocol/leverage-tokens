@@ -44,8 +44,8 @@ contract RebalanceTest is LeverageManagerTest {
         super.setUp();
 
         rebalanceAdapterImplementation = new RebalanceAdapter();
-        ethLong2xRebalanceAdapter = _deployRebalanceAdapter(1.8e8, 2.2e8, 7 minutes, 1.2e18, 0.98e18, 1.3e8, 45_66);
-        ethShort2xRebalanceAdapter = _deployRebalanceAdapter(1.3e8, 2e8, 7 minutes, 1.2e18, 0.9e18, 1.3e8, 45_66);
+        ethLong2xRebalanceAdapter = _deployRebalanceAdapter(1.8e18, 2.2e18, 7 minutes, 1.2e18, 0.98e18, 1.3e18, 45_66);
+        ethShort2xRebalanceAdapter = _deployRebalanceAdapter(1.3e18, 2e18, 7 minutes, 1.2e18, 0.9e18, 1.3e18, 45_66);
 
         ethLong2xAdapter = MorphoLendingAdapter(
             address(morphoLendingAdapterFactory.deployAdapter(WETH_USDC_MARKET_ID, address(this), bytes32(uint256(1))))
@@ -86,13 +86,12 @@ contract RebalanceTest is LeverageManagerTest {
 
         // After previous action we expect leverage token to have 20 ETH collateral
         // We need to mock price change so leverage token goes off balance
-        // Price should change for 20% which means that collateral ratio is now going to be 2.4x
+        // Price should change for 20% which means that collateral ratio is now going to be ~2.4x
         // Price of ETH after this change should be 4070.750000000000000000000000
         _moveEthPrice(20_00);
 
         LeverageTokenState memory stateBefore = getLeverageTokenState(ethLong2x);
-        assertGe(stateBefore.collateralRatio, 24 * BASE_RATIO / 10 - 1);
-        assertLe(stateBefore.collateralRatio, 24 * BASE_RATIO / 10);
+        assertEq(stateBefore.collateralRatio, 2399999999988208563);
 
         uint256 collateralBefore = ethLong2xAdapter.getCollateral();
         uint256 debtBefore = ethLong2xAdapter.getDebt();
@@ -127,13 +126,12 @@ contract RebalanceTest is LeverageManagerTest {
 
         // After previous action we expect leverage token to have 20 ETH collateral
         // We need to mock price change so leverage token goes off balance
-        // Price should change for 20% downwards which means that collateral ratio is now going to be 1.6x
+        // Price should change for 20% downwards which means that collateral ratio is now going to be ~1.6x
         // Price of ETH after this change should be 2728.194981060953630732673600
         _moveEthPrice(-20_00);
 
         LeverageTokenState memory stateBefore = getLeverageTokenState(ethLong2x);
-        assertGe(stateBefore.collateralRatio, 16 * BASE_RATIO / 10 - 1);
-        assertLe(stateBefore.collateralRatio, 16 * BASE_RATIO / 10);
+        assertEq(stateBefore.collateralRatio, 1599999999982312845);
 
         uint256 collateralBefore = ethLong2xAdapter.getCollateral();
         uint256 debtBefore = ethLong2xAdapter.getDebt();

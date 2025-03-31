@@ -6,7 +6,7 @@ import {PreLiquidationRebalanceAdapterTest} from "./PreLiquidationRebalanceAdapt
 import {LeverageTokenState} from "src/types/DataTypes.sol";
 
 contract IsEligibleForRebalanceTest is PreLiquidationRebalanceAdapterTest {
-    function test_isEligibleForRebalance_CollateralRatioAboveThreshold() public {
+    function test_isEligibleForRebalance_CollateralRatioAboveThreshold() public view {
         LeverageTokenState memory state =
             LeverageTokenState({collateralRatio: 1.14e18, collateralInDebtAsset: 0, debt: 0, equity: 0});
 
@@ -15,7 +15,7 @@ contract IsEligibleForRebalanceTest is PreLiquidationRebalanceAdapterTest {
         assertEq(isEligible, false);
     }
 
-    function test_isEligibleForRebalance_CollateralRatioBelowThreshold() public {
+    function test_isEligibleForRebalance_CollateralRatioBelowThreshold() public view {
         LeverageTokenState memory state =
             LeverageTokenState({collateralRatio: 1.3e8 - 1, collateralInDebtAsset: 0, debt: 0, equity: 0});
 

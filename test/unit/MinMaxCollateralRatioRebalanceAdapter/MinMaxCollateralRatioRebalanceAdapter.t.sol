@@ -17,7 +17,7 @@ import {LeverageTokenState} from "src/types/DataTypes.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 
 contract MinMaxCollateralRatioRebalanceAdapterTest is Test {
-    uint256 public constant TARGET_RATIO = 2e8; // 2x
+    uint256 public constant TARGET_RATIO = 2e18; // 2x
 
     ILeverageToken public leverageToken = ILeverageToken(makeAddr("leverageToken"));
 
@@ -29,7 +29,7 @@ contract MinMaxCollateralRatioRebalanceAdapterTest is Test {
         address rebalanceAdapterProxy = UnsafeUpgrades.deployUUPSProxy(
             rebalanceAdapterImplementation,
             abi.encodeWithSelector(
-                MinMaxCollateralRatioRebalanceAdapterHarness.initialize.selector, 1.5 * 1e8, 2.5 * 1e8
+                MinMaxCollateralRatioRebalanceAdapterHarness.initialize.selector, 1.5 * 1e18, 2.5 * 1e18
             )
         );
         rebalanceAdapter = MinMaxCollateralRatioRebalanceAdapterHarness(rebalanceAdapterProxy);

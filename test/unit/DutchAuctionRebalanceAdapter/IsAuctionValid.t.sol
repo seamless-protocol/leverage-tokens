@@ -6,31 +6,31 @@ import {DutchAuctionRebalanceAdapterTest} from "./DutchAuctionRebalanceAdapter.t
 contract IsAuctionValidTest is DutchAuctionRebalanceAdapterTest {
     function test_isAuctionValid_ReturnsFalse_WhenLeverageTokenNotEligible() public {
         // First set ratio to be over-collateralized (eligible for rebalance)
-        _setLeverageTokenCollateralRatio(3.1e8);
+        _setLeverageTokenCollateralRatio(3.1e18);
 
         _createAuction();
 
         // Now change ratio to be within bounds (not eligible)
-        _setLeverageTokenCollateralRatio(1.5e8);
+        _setLeverageTokenCollateralRatio(1.5e18);
 
         assertFalse(auctionRebalancer.isAuctionValid());
     }
 
     function test_isAuctionValid_ReturnsFalse_WhenCollateralRatioChangedDirection() public {
         // First set ratio to be over-collateralized
-        _setLeverageTokenCollateralRatio(3.1e8);
+        _setLeverageTokenCollateralRatio(3.1e18);
 
         _createAuction();
 
         // Now change ratio to be under-collateralized
-        _setLeverageTokenCollateralRatio(0.9e8);
+        _setLeverageTokenCollateralRatio(0.9e18);
 
         assertFalse(auctionRebalancer.isAuctionValid());
     }
 
     function test_isAuctionValid_ReturnsFalse_WhenAuctionExpired() public {
         // First set ratio to be over-collateralized
-        _setLeverageTokenCollateralRatio(3.1e8);
+        _setLeverageTokenCollateralRatio(3.1e18);
 
         _createAuction();
 
@@ -41,7 +41,7 @@ contract IsAuctionValidTest is DutchAuctionRebalanceAdapterTest {
     }
 
     function test_isAuctionValid_ReturnsTrue_WhenAllConditionsMet() public {
-        _setLeverageTokenCollateralRatio(3.1e8);
+        _setLeverageTokenCollateralRatio(3.1e18);
 
         _createAuction();
 
@@ -80,7 +80,7 @@ contract IsAuctionValidTest is DutchAuctionRebalanceAdapterTest {
     }
 
     function testFuzz_isAuctionValid_ReturnsFalse_WhenExpired(uint256 timeElapsed, uint256 duration) public {
-        _setLeverageTokenCollateralRatio(3.1e8); // Over-collateralized
+        _setLeverageTokenCollateralRatio(3.1e18); // Over-collateralized
 
         // Bound duration to reasonable values
         duration = bound(duration, 1 hours, 7 days);

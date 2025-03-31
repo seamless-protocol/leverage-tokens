@@ -54,12 +54,12 @@ contract RebalanceAdapter is
         uint256 _auctionDuration,
         uint256 _initialPriceMultiplier,
         uint256 _minPriceMultiplier,
-        uint256 _healthFactorThreshold,
+        uint256 _preliquidationCollateralRatioThreshold,
         uint256 _rebalanceReward
     ) external initializer {
         __DutchAuctionRebalanceAdapter_init_unchained(_auctionDuration, _initialPriceMultiplier, _minPriceMultiplier);
         __MinMaxCollateralRatioRebalanceAdapter_init_unchained(_minCollateralRatio, _maxCollateralRatio);
-        __PreLiquidationRebalanceAdapter_init(_healthFactorThreshold, _rebalanceReward);
+        __PreLiquidationRebalanceAdapter_init(_preliquidationCollateralRatioThreshold, _rebalanceReward);
         __Ownable_init(_owner);
 
         _getRebalanceAdapterStorage().authorizedCreator = _authorizedCreator;

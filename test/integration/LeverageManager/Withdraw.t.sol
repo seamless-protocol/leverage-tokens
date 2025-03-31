@@ -20,6 +20,7 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
         _deposit(user, equityInCollateralAsset, collateralToAdd);
 
         LeverageTokenState memory stateBefore = getLeverageTokenState();
+        assertEq(stateBefore.collateralRatio, 1999999999970521409); // ~2x CR
 
         uint256 equityToWithdraw = 5 ether;
         ActionData memory previewData = leverageManager.previewWithdraw(leverageToken, equityToWithdraw);
@@ -27,9 +28,9 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
 
         LeverageTokenState memory stateAfter = getLeverageTokenState();
 
-        // Ensure that collateral ratio is the same. Allow for 1 wei mistake but it must be in favour of leverage token
+        // Ensure that collateral ratio is the same (with some rounding error)
         assertGe(stateAfter.collateralRatio, stateBefore.collateralRatio);
-        assertLe(stateAfter.collateralRatio, stateBefore.collateralRatio + 1);
+        assertEq(stateAfter.collateralRatio, 2000000000058957180);
         assertEq(stateAfter.debt, stateBefore.debt - previewData.debt);
 
         assertEq(WETH.balanceOf(user), previewData.collateral);
@@ -81,6 +82,7 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
         _deposit(user, equityInCollateralAsset, collateralToAdd);
 
         LeverageTokenState memory stateBefore = getLeverageTokenState();
+        assertEq(stateBefore.collateralRatio, 1999999999950000000); // ~2x CR
 
         uint256 equityToWithdraw = 5 ether;
         ActionData memory previewData = leverageManager.previewWithdraw(leverageToken, equityToWithdraw);
@@ -89,9 +91,9 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
         LeverageTokenState memory stateAfter = getLeverageTokenState();
         uint256 equityInCollateralAssetAfter = morphoLendingAdapter.getEquityInCollateralAsset();
 
-        // Ensure that collateral ratio is the same. Allow for 1 wei mistake but it must be in favour of leverage token
+        // Ensure that collateral ratio is the same (with some rounding error)
         assertGe(stateAfter.collateralRatio, stateBefore.collateralRatio);
-        assertLe(stateAfter.collateralRatio, stateBefore.collateralRatio + 1);
+        assertEq(stateAfter.collateralRatio, 2000000000050000000);
 
         // Ensure that after withdraw debt and collateral is 50% of what was initially after deposit
         assertEq(stateAfter.debt, 20000_000000 - 1); // 2000 USDC, -1 because of rounding
@@ -110,6 +112,7 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
         vm.mockCall(address(oracle), abi.encodeWithSelector(IOracle.price.selector), abi.encode(4000e24));
 
         LeverageTokenState memory stateBefore = getLeverageTokenState();
+        assertEq(stateBefore.collateralRatio, 2358287225224640032); // ~2x CR
 
         uint256 equityToWithdraw = 5 ether;
         ActionData memory previewData = leverageManager.previewWithdraw(leverageToken, equityToWithdraw);
@@ -117,9 +120,9 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
 
         LeverageTokenState memory stateAfter = getLeverageTokenState();
 
-        // Ensure that collateral ratio is the same. Allow for 1 wei mistake but it must be in favour of leverage token
+        // Ensure that collateral ratio is the same, with some rounding error
         assertGe(stateAfter.collateralRatio, stateBefore.collateralRatio);
-        assertLe(stateAfter.collateralRatio, stateBefore.collateralRatio + 1);
+        assertEq(stateAfter.collateralRatio, 2358287225265780836);
 
         assertEq(WETH.balanceOf(user), previewData.collateral);
     }

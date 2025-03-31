@@ -94,7 +94,7 @@ abstract contract PreLiquidationRebalanceAdapter is Initializable, IPreLiquidati
     }
 
     /// @inheritdoc IPreLiquidationRebalanceAdapter
-    function isEligibleForRebalance(ILeverageToken token, LeverageTokenState memory state, address)
+    function isEligibleForRebalance(ILeverageToken, /*token*/ LeverageTokenState memory state, address)
         public
         view
         virtual

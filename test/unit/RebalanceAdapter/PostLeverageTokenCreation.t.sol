@@ -18,7 +18,7 @@ contract PostLeverageTokenCreation is Test {
     function setUp() public {
         rebalanceAdapter = new RebalanceAdapter();
         rebalanceAdapter.initialize(
-            address(this), authorizedCreator, leverageManager, 1e8, 3e8, 1 days, 1.1e18, 0.1e18, 1.1e18, 0.1e18
+            address(this), authorizedCreator, leverageManager, 1e18, 3e18, 1 days, 1.1e18, 0.1e18, 1.1e18, 0.1e18
         );
     }
 

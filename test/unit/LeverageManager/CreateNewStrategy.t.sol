@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
+// Forge imports
+import {console} from "forge-std/console.sol";
+
 // Dependency imports
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -10,6 +13,7 @@ import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol"
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
+import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
 import {LeverageManagerTest} from "./LeverageManager.t.sol";
 import {LeverageTokenConfig} from "src/types/DataTypes.sol";
 import {LeverageToken} from "src/LeverageToken.sol";
@@ -20,8 +24,13 @@ contract CreateNewLeverageTokenTest is LeverageManagerTest {
         address collateralAsset,
         address debtAsset,
         string memory name,
-        string memory symbol
+        string memory symbol,
+        string memory rebalanceAdapterName,
+        string memory lendingAdapterName
     ) public {
+        config.rebalanceAdapter = IRebalanceAdapterBase(makeAddr(rebalanceAdapterName));
+        config.lendingAdapter = ILendingAdapter(makeAddr(lendingAdapterName));
+
         config.depositTokenFee = bound(config.depositTokenFee, 0, _MAX_FEE());
         config.withdrawTokenFee = bound(config.withdrawTokenFee, 0, _MAX_FEE());
 
