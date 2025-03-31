@@ -1,5 +1,5 @@
 # ILendingAdapter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/7492e139a233e3537fefd83074042a04664dc27a/src/interfaces/ILendingAdapter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e2065c10183acb51865104847d299ff5ad4684d2/src/interfaces/ILendingAdapter.sol)
 
 
 ## Functions
@@ -35,7 +35,7 @@ function getDebtAsset() external view returns (IERC20 debtAsset);
 
 ### convertCollateralToDebtAsset
 
-Converts amount of collateral asset to debt asset amount based on lending pool oracle
+Converts an amount of collateral asset to a debt asset amount based on the lending pool oracle
 
 
 ```solidity
@@ -56,7 +56,7 @@ function convertCollateralToDebtAsset(uint256 collateral) external view returns 
 
 ### convertDebtToCollateralAsset
 
-Converts amount of debt asset to collateral asset amount based on lending pool oracle
+Converts an amount of debt asset to a collateral asset amount based on the lending pool oracle
 
 
 ```solidity
@@ -92,7 +92,7 @@ function getCollateral() external view returns (uint256 collateral);
 
 ### getCollateralInDebtAsset
 
-Returns total collateral of the position held by the lending adapter denominated in debt asset
+Returns the total collateral of the position held by the lending adapter denominated in the debt asset
 
 
 ```solidity
@@ -102,12 +102,12 @@ function getCollateralInDebtAsset() external view returns (uint256 collateral);
 
 |Name|Type|Description|
 |----|----|-----------|
-|`collateral`|`uint256`|Total collateral of the position held by the lending adapter denominated in debt asset|
+|`collateral`|`uint256`|Total collateral of the position held by the lending adapter denominated in the debt asset|
 
 
 ### getDebt
 
-Returns total debt of the position held by the lending adapter
+Returns the total debt of the position held by the lending adapter
 
 
 ```solidity
@@ -122,7 +122,7 @@ function getDebt() external view returns (uint256 debt);
 
 ### getEquityInCollateralAsset
 
-Returns total equity of the position held by the lending adapter denominated in collateral asset
+Returns the total equity of the position held by the lending adapter denominated in the collateral asset
 
 
 ```solidity
@@ -137,7 +137,7 @@ function getEquityInCollateralAsset() external view returns (uint256 equity);
 
 ### getEquityInDebtAsset
 
-Returns total equity of the position held by the lending adapter denominated in debt asset
+Returns the total equity of the position held by the lending adapter denominated in the debt asset
 
 *Equity is calculated as collateral - debt*
 
@@ -167,6 +167,25 @@ function addCollateral(uint256 amount) external;
 |`amount`|`uint256`|Amount of assets to supply|
 
 
+### postLeverageTokenCreation
+
+Post-LeverageToken creation hook. Used for any validation logic or initialization after a LeverageToken
+is created using this adapter
+
+*This function is called in `LeverageManager.createNewLeverageToken` after the new LeverageToken is created*
+
+
+```solidity
+function postLeverageTokenCreation(address creator, address leverageToken) external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`creator`|`address`|The address of the creator of the LeverageToken|
+|`leverageToken`|`address`|The address of the LeverageToken that was created|
+
+
 ### removeCollateral
 
 Withdraws collateral assets from the lending pool
@@ -179,12 +198,12 @@ function removeCollateral(uint256 amount) external;
 
 |Name|Type|Description|
 |----|----|-----------|
-|`amount`|`uint256`|Amount of assets to withdraw|
+|`amount`|`uint256`|Amount of collateral assets to withdraw|
 
 
 ### borrow
 
-Borrows assets from the lending pool
+Borrows debt assets from the lending pool
 
 
 ```solidity
@@ -194,7 +213,7 @@ function borrow(uint256 amount) external;
 
 |Name|Type|Description|
 |----|----|-----------|
-|`amount`|`uint256`|Amount of assets to borrow|
+|`amount`|`uint256`|Amount of debt assets to borrow|
 
 
 ### repay
@@ -209,7 +228,7 @@ function repay(uint256 amount) external;
 
 |Name|Type|Description|
 |----|----|-----------|
-|`amount`|`uint256`|Amount of assets of debt to repay|
+|`amount`|`uint256`|Amount of debt assets to repay|
 
 
 ## Errors

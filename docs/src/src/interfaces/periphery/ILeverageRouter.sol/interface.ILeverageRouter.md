@@ -1,21 +1,21 @@
 # ILeverageRouter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/7492e139a233e3537fefd83074042a04664dc27a/src/interfaces/periphery/ILeverageRouter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e2065c10183acb51865104847d299ff5ad4684d2/src/interfaces/periphery/ILeverageRouter.sol)
 
 
 ## Functions
 ### leverageManager
 
-The Seamless LeverageManager contract
+The LeverageManager contract
 
 
 ```solidity
-function leverageManager() external view returns (ILeverageManager leverageManager);
+function leverageManager() external view returns (ILeverageManager _leverageManager);
 ```
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`leverageManager`|`ILeverageManager`|The Seamless LeverageManager contract|
+|`_leverageManager`|`ILeverageManager`|The LeverageManager contract|
 
 
 ### morpho
@@ -50,10 +50,10 @@ function swapper() external view returns (ISwapAdapter _swapper);
 
 ### deposit
 
-Deposit equity into a strategy
+Deposit equity into a LeverageToken
 
-*Flash loans the collateral required to add the equity to the strategy, receives debt, then swaps the debt to the
-strategy's collateral asset. The swapped assets and the sender's supplied collateral are used to repay the flash loan*
+*Flash loans the collateral required to add the equity to the LeverageToken, receives debt, then swaps the debt to the
+LeverageToken's collateral asset. The swapped assets and the sender's supplied collateral are used to repay the flash loan*
 
 *The sender should approve the LeverageRouter to spend an amount of collateral assets greater than the equity being added
 to facilitate the deposit in the case that the deposit requires additional collateral to cover swap slippage when swapping
@@ -63,7 +63,7 @@ To see the preview of the deposit, `LeverageRouter.leverageManager().previewDepo
 
 ```solidity
 function deposit(
-    IStrategy strategy,
+    ILeverageToken token,
     uint256 equityInCollateralAsset,
     uint256 minShares,
     uint256 maxSwapCostInCollateralAsset,
@@ -74,21 +74,21 @@ function deposit(
 
 |Name|Type|Description|
 |----|----|-----------|
-|`strategy`|`IStrategy`|Strategy to deposit equity into|
-|`equityInCollateralAsset`|`uint256`|The amount of equity to deposit into the strategy. Denominated in the collateral asset of the strategy|
-|`minShares`|`uint256`|Minimum shares to receive from the deposit|
+|`token`|`ILeverageToken`|LeverageToken to deposit equity into|
+|`equityInCollateralAsset`|`uint256`|The amount of equity to deposit into the LeverageToken. Denominated in the collateral asset of the LeverageToken|
+|`minShares`|`uint256`|Minimum shares (LeverageTokens) to receive from the deposit|
 |`maxSwapCostInCollateralAsset`|`uint256`|The maximum amount of collateral from the sender to use to help repay the flash loan due to the swap of debt to collateral being unfavorable|
 |`swapContext`|`ISwapAdapter.SwapContext`|Swap context to use for the swap (which DEX to use, the route, tick spacing, etc.)|
 
 
 ### withdraw
 
-Withdraw equity from a strategy
+Withdraw equity from a LeverageToken
 
 
 ```solidity
 function withdraw(
-    IStrategy strategy,
+    ILeverageToken token,
     uint256 equityInCollateralAsset,
     uint256 maxShares,
     uint256 maxSwapCostInCollateralAsset,
@@ -99,10 +99,10 @@ function withdraw(
 
 |Name|Type|Description|
 |----|----|-----------|
-|`strategy`|`IStrategy`|Strategy to withdraw equity from|
-|`equityInCollateralAsset`|`uint256`|The amount of equity to withdraw from the strategy. Denominated in the collateral asset of the strategy|
-|`maxShares`|`uint256`|Maximum shares to burn for the withdrawal|
-|`maxSwapCostInCollateralAsset`|`uint256`|The maximum amount of equity received from the withdrawal from the strategy to use to help repay the debt flash loan due to the swap of debt to collateral being unfavorable|
+|`token`|`ILeverageToken`|LeverageToken to withdraw equity from|
+|`equityInCollateralAsset`|`uint256`|The amount of equity to withdraw from the LeverageToken. Denominated in the collateral asset of the LeverageToken|
+|`maxShares`|`uint256`|Maximum shares (LeverageTokens) to burn for the withdrawal|
+|`maxSwapCostInCollateralAsset`|`uint256`|The maximum amount of equity received from the withdrawal from the LeverageToken to use to help repay the debt flash loan due to the swap of debt to collateral being unfavorable|
 |`swapContext`|`ISwapAdapter.SwapContext`|Swap context to use for the swap (which DEX to use, the route, tick spacing, etc.)|
 
 
@@ -116,7 +116,7 @@ error MaxSwapCostExceeded(uint256 actualCost, uint256 maxCost);
 ```
 
 ### Unauthorized
-Error thrown when the caller is not authorized to call a function
+Error thrown when the caller is not authorized to execute a function
 
 
 ```solidity

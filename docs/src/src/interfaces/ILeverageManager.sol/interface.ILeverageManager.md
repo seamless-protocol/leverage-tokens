@@ -1,252 +1,201 @@
 # ILeverageManager
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/7492e139a233e3537fefd83074042a04664dc27a/src/interfaces/ILeverageManager.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e2065c10183acb51865104847d299ff5ad4684d2/src/interfaces/ILeverageManager.sol)
 
 **Inherits:**
 [IFeeManager](/src/interfaces/IFeeManager.sol/interface.IFeeManager.md)
 
 
 ## Functions
-### getStrategyTokenFactory
+### getLeverageTokenFactory
 
-Returns factory for creating new strategy tokens
+Returns the factory for creating new LeverageTokens
 
 
 ```solidity
-function getStrategyTokenFactory() external view returns (IBeaconProxyFactory factory);
+function getLeverageTokenFactory() external view returns (IBeaconProxyFactory factory);
 ```
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`factory`|`IBeaconProxyFactory`|Factory for creating new strategy tokens|
+|`factory`|`IBeaconProxyFactory`|Factory for creating new LeverageTokens|
 
 
-### getIsLendingAdapterUsed
+### getLeverageTokenLendingAdapter
 
-Returns if lending adapter is in use by some other strategy
-
-
-```solidity
-function getIsLendingAdapterUsed(address adapter) external view returns (bool isUsed);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`adapter`|`address`|Adapter to check|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`isUsed`|`bool`|True if adapter is used by some strategy|
-
-
-### getStrategyLendingAdapter
-
-Returns lending adapter for the strategy
+Returns the lending adapter for a LeverageToken
 
 
 ```solidity
-function getStrategyLendingAdapter(IStrategy strategy) external view returns (ILendingAdapter adapter);
+function getLeverageTokenLendingAdapter(ILeverageToken token) external view returns (ILendingAdapter adapter);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`strategy`|`IStrategy`|Strategy to get lending adapter for|
+|`token`|`ILeverageToken`|LeverageToken to get lending adapter for|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`adapter`|`ILendingAdapter`|Lending adapter for the strategy|
+|`adapter`|`ILendingAdapter`|Lending adapter for the LeverageToken|
 
 
-### getStrategyCollateralAsset
+### getLeverageTokenCollateralAsset
 
-Returns collateral asset for the strategy
+Returns the collateral asset for a LeverageToken
 
 
 ```solidity
-function getStrategyCollateralAsset(IStrategy strategy) external view returns (IERC20 collateralAsset);
+function getLeverageTokenCollateralAsset(ILeverageToken token) external view returns (IERC20 collateralAsset);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`strategy`|`IStrategy`|Strategy to get collateral asset for|
+|`token`|`ILeverageToken`|LeverageToken to get collateral asset for|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`collateralAsset`|`IERC20`|Collateral asset for the strategy|
+|`collateralAsset`|`IERC20`|Collateral asset for the LeverageToken|
 
 
-### getStrategyDebtAsset
+### getLeverageTokenDebtAsset
 
-Returns debt asset for the strategy
+Returns the debt asset for a LeverageToken
 
 
 ```solidity
-function getStrategyDebtAsset(IStrategy strategy) external view returns (IERC20 debtAsset);
+function getLeverageTokenDebtAsset(ILeverageToken token) external view returns (IERC20 debtAsset);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`strategy`|`IStrategy`|Strategy to get debt asset for|
+|`token`|`ILeverageToken`|LeverageToken to get debt asset for|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`debtAsset`|`IERC20`|Debt asset for the strategy|
+|`debtAsset`|`IERC20`|Debt asset for the LeverageToken|
 
 
-### getStrategyRebalanceRewardDistributor
+### getLeverageTokenRebalanceAdapter
 
-Returns module for distributing rewards for rebalancing strategy
+Returns the rebalance adapter for a LeverageToken
 
 
 ```solidity
-function getStrategyRebalanceRewardDistributor(IStrategy strategy)
+function getLeverageTokenRebalanceAdapter(ILeverageToken token) external view returns (IRebalanceAdapterBase adapter);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`ILeverageToken`|LeverageToken to get the rebalance adapter for|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`adapter`|`IRebalanceAdapterBase`|Rebalance adapter for the LeverageToken|
+
+
+### getLeverageTokenConfig
+
+Returns the entire configuration for a LeverageToken
+
+
+```solidity
+function getLeverageTokenConfig(ILeverageToken token) external view returns (LeverageTokenConfig memory config);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`ILeverageToken`|LeverageToken to get config for|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`config`|`LeverageTokenConfig`|LeverageToken configuration|
+
+
+### getLeverageTokenInitialCollateralRatio
+
+Returns the initial collateral ratio for a LeverageToken
+
+*Initial collateral ratio is followed when the LeverageToken has no shares and on deposits when debt is 0.*
+
+
+```solidity
+function getLeverageTokenInitialCollateralRatio(ILeverageToken token)
     external
     view
-    returns (IRebalanceRewardDistributor distributor);
+    returns (uint256 initialCollateralRatio);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`strategy`|`IStrategy`|Strategy to get module for|
+|`token`|`ILeverageToken`|LeverageToken to get initial collateral ratio for|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`distributor`|`IRebalanceRewardDistributor`|Module for distributing rewards for rebalancing strategy|
+|`initialCollateralRatio`|`uint256`|Initial collateral ratio for the LeverageToken|
 
 
-### getStrategyRebalanceWhitelist
+### getLeverageTokenState
 
-Returns rebalance whitelist module for strategy
+Returns all data required to describe current LeverageToken state - collateral, debt, equity and collateral ratio
 
 
 ```solidity
-function getStrategyRebalanceWhitelist(IStrategy strategy) external view returns (IRebalanceWhitelist whitelist);
+function getLeverageTokenState(ILeverageToken token) external view returns (LeverageTokenState memory state);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`strategy`|`IStrategy`|Strategy to get rebalance whitelist for|
-
-
-### getStrategyCollateralRatios
-
-Returns leverage config for a strategy including min, max and target
-
-
-```solidity
-function getStrategyCollateralRatios(IStrategy strategy) external view returns (CollateralRatios memory ratios);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`strategy`|`IStrategy`|Strategy to get leverage config for|
+|`token`|`ILeverageToken`|LeverageToken to query state for|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`ratios`|`CollateralRatios`|Collateral ratios for the strategy|
+|`state`|`LeverageTokenState`|LeverageToken state|
 
 
-### getStrategyTargetCollateralRatio
+### createNewLeverageToken
 
-Returns target ratio for a strategy
-
-
-```solidity
-function getStrategyTargetCollateralRatio(IStrategy strategy) external view returns (uint256 targetRatio);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`strategy`|`IStrategy`|Strategy to get target ratio for|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`targetRatio`|`uint256`|Target ratio|
-
-
-### getStrategyConfig
-
-Returns entire configuration for given strategy
+Creates a new LeverageToken with the given config
 
 
 ```solidity
-function getStrategyConfig(IStrategy strategy) external view returns (StrategyConfig memory config);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`strategy`|`IStrategy`|Address of the strategy to get config for|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`config`|`StrategyConfig`|Strategy configuration|
-
-
-### setStrategyTokenFactory
-
-Sets factory for creating new strategy tokens
-
-*Only DEFAULT_ADMIN_ROLE can call this function*
-
-
-```solidity
-function setStrategyTokenFactory(address factory) external;
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`factory`|`address`|Factory to set|
-
-
-### createNewStrategy
-
-Creates new strategy with given config
-
-
-```solidity
-function createNewStrategy(StrategyConfig memory strategyConfig, string memory name, string memory symbol)
+function createNewLeverageToken(LeverageTokenConfig memory config, string memory name, string memory symbol)
     external
-    returns (IStrategy strategy);
+    returns (ILeverageToken token);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`strategyConfig`|`StrategyConfig`|Configuration of the strategy|
-|`name`|`string`|Name of the strategy token|
-|`symbol`|`string`|Symbol of the strategy token|
+|`config`|`LeverageTokenConfig`|Configuration of the LeverageToken|
+|`name`|`string`|Name of the LeverageToken|
+|`symbol`|`string`|Symbol of the LeverageToken|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`strategy`|`IStrategy`|Address of the new strategy|
+|`token`|`ILeverageToken`|Address of the new LeverageToken|
 
 
 ### previewDeposit
@@ -257,7 +206,7 @@ Previews deposit function call and returns all required data
 
 
 ```solidity
-function previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
+function previewDeposit(ILeverageToken token, uint256 equityInCollateralAsset)
     external
     view
     returns (ActionData memory previewData);
@@ -266,14 +215,14 @@ function previewDeposit(IStrategy strategy, uint256 equityInCollateralAsset)
 
 |Name|Type|Description|
 |----|----|-----------|
-|`strategy`|`IStrategy`|Strategy to preview deposit for|
+|`token`|`ILeverageToken`|LeverageToken to preview deposit for|
 |`equityInCollateralAsset`|`uint256`|Equity to deposit denominated in collateral asset|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`previewData`|`ActionData`|Preview data for deposit - collateralToAdd Amount of collateral that sender needs to approve the LeverageManager to spend, this includes any fees - debtToBorrow Amount of debt that will be borrowed and sent to sender - equityInCollateralAsset Amount of equity that will be deposited before fees - shares Amount of shares that will be minted to the sender - strategyFee Amount of collateral asset that will be charged for the deposit to the strategy - treasuryFee Amount of collateral asset that will be charged for the deposit to the treasury|
+|`previewData`|`ActionData`|Preview data for deposit - collateralToAdd Amount of collateral that sender needs to approve the LeverageManager to spend, this includes any fees - debtToBorrow Amount of debt that will be borrowed and sent to sender - equity Amount of equity that will be deposited before fees, denominated in collateral asset - shares Amount of shares that will be minted to the sender - tokenFee Amount of collateral asset that will be charged for the deposit to the leverage token - treasuryFee Amount of collateral asset that will be charged for the deposit to the treasury|
 
 
 ### previewWithdraw
@@ -284,7 +233,7 @@ Previews withdraw function call and returns all required data
 
 
 ```solidity
-function previewWithdraw(IStrategy strategy, uint256 equityInCollateralAsset)
+function previewWithdraw(ILeverageToken token, uint256 equityInCollateralAsset)
     external
     view
     returns (ActionData memory previewData);
@@ -293,23 +242,23 @@ function previewWithdraw(IStrategy strategy, uint256 equityInCollateralAsset)
 
 |Name|Type|Description|
 |----|----|-----------|
-|`strategy`|`IStrategy`|Strategy to preview withdraw for|
+|`token`|`ILeverageToken`|LeverageToken to preview withdraw for|
 |`equityInCollateralAsset`|`uint256`|Equity to withdraw denominated in collateral asset|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`previewData`|`ActionData`|Preview data for withdraw - collateralToRemove Amount of collateral that will be removed from the strategy and sent to the sender - debtToRepay Amount of debt that will be taken from sender and repaid to the strategy - equityInCollateralAsset Amount of equity that will be withdrawn before fees - shares Amount of shares that will be burned from sender - strategyFee Amount of collateral asset that will be charged for the withdraw to the strategy - treasuryFee Amount of collateral asset that will be charged for the withdraw to the treasury|
+|`previewData`|`ActionData`|Preview data for withdraw - collateralToRemove Amount of collateral that will be removed from the LeverageToken and sent to the sender - debtToRepay Amount of debt that will be taken from sender and repaid to the LeverageToken - equity Amount of equity that will be withdrawn before fees, denominated in collateral asset - shares Amount of shares that will be burned from sender - tokenFee Amount of collateral asset that will be charged for the withdraw to the leverage token - treasuryFee Amount of collateral asset that will be charged for the withdraw to the treasury|
 
 
 ### deposit
 
-Deposits equity into a strategy and mints shares to the sender
+Deposits equity into a LeverageToken and mints shares to the sender
 
 
 ```solidity
-function deposit(IStrategy strategy, uint256 equityInCollateralAsset, uint256 minShares)
+function deposit(ILeverageToken token, uint256 equityInCollateralAsset, uint256 minShares)
     external
     returns (ActionData memory actionData);
 ```
@@ -317,24 +266,24 @@ function deposit(IStrategy strategy, uint256 equityInCollateralAsset, uint256 mi
 
 |Name|Type|Description|
 |----|----|-----------|
-|`strategy`|`IStrategy`|The strategy to deposit into|
-|`equityInCollateralAsset`|`uint256`|The amount of equity to deposit denominated in the collateral asset of the strategy|
+|`token`|`ILeverageToken`|The LeverageToken to deposit into|
+|`equityInCollateralAsset`|`uint256`|The amount of equity to deposit denominated in the collateral asset of the LeverageToken|
 |`minShares`|`uint256`|The minimum amount of shares to mint|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`actionData`|`ActionData`|Data about the deposit - collateral Amount of collateral that was added, including any fees - debt Amount of debt that was added - equityInCollateralAsset Amount of equity that was deposited before fees - shares Amount of shares minted to the sender - strategyFee Amount of collateral that was charged for the deposit to the strategy - treasuryFee Amount of collateral that was charged for the deposit to the treasury|
+|`actionData`|`ActionData`|Data about the deposit - collateral Amount of collateral that was added, including any fees - debt Amount of debt that was added - equity Amount of equity that was deposited before fees, denominated in collateral asset - shares Amount of shares minted to the sender - tokenFee Amount of collateral that was charged for the deposit to the leverage token - treasuryFee Amount of collateral that was charged for the deposit to the treasury|
 
 
 ### withdraw
 
-Withdraws equity from a strategy and burns shares from sender
+Withdraws equity from a LeverageToken and burns shares from sender
 
 
 ```solidity
-function withdraw(IStrategy strategy, uint256 equityInCollateralAsset, uint256 maxShares)
+function withdraw(ILeverageToken token, uint256 equityInCollateralAsset, uint256 maxShares)
     external
     returns (ActionData memory actionData);
 ```
@@ -342,22 +291,22 @@ function withdraw(IStrategy strategy, uint256 equityInCollateralAsset, uint256 m
 
 |Name|Type|Description|
 |----|----|-----------|
-|`strategy`|`IStrategy`|The strategy to withdraw from|
-|`equityInCollateralAsset`|`uint256`|The amount of equity to withdraw denominated in the collateral asset of the strategy|
+|`token`|`ILeverageToken`|The LeverageToken to withdraw from|
+|`equityInCollateralAsset`|`uint256`|The amount of equity to withdraw denominated in the collateral asset of the LeverageToken|
 |`maxShares`|`uint256`|The maximum amount of shares to burn|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`actionData`|`ActionData`|Data about the withdraw - collateral Amount of collateral that was removed from strategy and sent to sender - debt Amount of debt that was repaid to strategy, taken from sender - equityInCollateralAsset Amount of equity that was withdrawn before fees - shares Amount of the sender's shares that were burned for the withdrawal - strategyFee Amount of collateral that was charged for the withdraw to the strategy - treasuryFee Amount of collateral that was charged for the withdraw to the treasury|
+|`actionData`|`ActionData`|Data about the withdraw - collateral Amount of collateral that was removed from LeverageToken and sent to sender - debt Amount of debt that was repaid to LeverageToken, taken from sender - equity Amount of equity that was withdrawn before fees, denominated in collateral asset - shares Amount of the sender's shares that were burned for the withdrawal - tokenFee Amount of collateral that was charged for the withdraw to the leverage token - treasuryFee Amount of collateral that was charged for the withdraw to the treasury|
 
 
 ### rebalance
 
-Rebalances strategies based on provided actions
+Rebalances LeverageTokens based on provided actions
 
-*Anyone can call this function. At the end function will just check if all effected strategies are in the
+*Anyone can call this function. At the end function will just check if all effected LeverageTokens are in the
 better state than before rebalance. Caller needs to calculate and to provide tokens for rebalancing and he needs
 to specify tokens that he wants to receive*
 
@@ -374,62 +323,56 @@ function rebalance(
 |Name|Type|Description|
 |----|----|-----------|
 |`actions`|`RebalanceAction[]`|Array of rebalance actions to execute (add collateral, remove collateral, borrow or repay)|
-|`tokensIn`|`TokenTransfer[]`|Array of tokens to transfer in. Transfer from caller to leverage manager contract|
-|`tokensOut`|`TokenTransfer[]`|Array of tokens to transfer out. Transfer from leverage manager contract to caller|
+|`tokensIn`|`TokenTransfer[]`|Array of tokens to transfer in. Transfer from caller to the LeverageManager contract|
+|`tokensOut`|`TokenTransfer[]`|Array of tokens to transfer out. Transfer from the LeverageManager contract to caller|
 
 
 ## Events
-### StrategyTokenFactorySet
-Event emitted when strategy token factory is set
+### LeverageManagerInitialized
+Event emitted when the LeverageManager is initialized
 
 
 ```solidity
-event StrategyTokenFactorySet(address factory);
+event LeverageManagerInitialized(IBeaconProxyFactory leverageTokenFactory);
 ```
 
-### StrategyCreated
-Event emitted when new strategy is created
+### LeverageTokenCreated
+Event emitted when a new LeverageToken is created
 
 
 ```solidity
-event StrategyCreated(IStrategy indexed strategy, IERC20 collateralAsset, IERC20 debtAsset, StrategyConfig config);
+event LeverageTokenCreated(
+    ILeverageToken indexed token, IERC20 collateralAsset, IERC20 debtAsset, LeverageTokenConfig config
+);
 ```
 
 ### Deposit
-Event emitted when user deposits assets into strategy
+Event emitted when a user deposits assets into a LeverageToken
 
 
 ```solidity
-event Deposit(IStrategy indexed strategy, address indexed sender, ActionData actionData);
+event Deposit(ILeverageToken indexed token, address indexed sender, ActionData actionData);
 ```
 
 ### Withdraw
-Event emitted when user withdraws assets from strategy
+Event emitted when a user withdraws assets from a LeverageToken
 
 
 ```solidity
-event Withdraw(IStrategy indexed strategy, address indexed sender, ActionData actionData);
+event Withdraw(ILeverageToken indexed token, address indexed sender, ActionData actionData);
 ```
 
 ## Errors
-### LendingAdapterAlreadyInUse
-Error thrown when someone tries to create strategy with lending adapter that already exists
+### InvalidLeverageTokenAssets
+Error thrown when someone tries to set zero address for collateral or debt asset when creating a LeverageToken
 
 
 ```solidity
-error LendingAdapterAlreadyInUse(address adapter);
-```
-
-### InvalidStrategyAssets
-Error thrown when someone tries to set zero address for collateral or debt asset when creating strategy
-
-
-```solidity
-error InvalidStrategyAssets();
+error InvalidLeverageTokenAssets();
 ```
 
 ### InvalidCollateralRatios
-Error thrown when collateral ratios are invalid
+Error thrown when collateral ratios are invalid for an action
 
 
 ```solidity
@@ -437,7 +380,7 @@ error InvalidCollateralRatios();
 ```
 
 ### SlippageTooHigh
-Error thrown when slippage is too high during mint/redeem
+Error thrown when slippage is too high during deposit/withdraw
 
 
 ```solidity
@@ -445,58 +388,26 @@ error SlippageTooHigh(uint256 actual, uint256 expected);
 ```
 
 ### NotRebalancer
-Error thrown when caller is whitelisted for rebalance action
+Error thrown when caller is not authorized to rebalance
 
 
 ```solidity
-error NotRebalancer(IStrategy strategy, address caller);
+error NotRebalancer(ILeverageToken token, address caller);
 ```
 
-### StrategyNotEligibleForRebalance
-Error thrown when strategy is not eligible for rebalance
+### LeverageTokenNotEligibleForRebalance
+Error thrown when a LeverageToken is not eligible for rebalance
 
 
 ```solidity
-error StrategyNotEligibleForRebalance(IStrategy strategy);
+error LeverageTokenNotEligibleForRebalance(ILeverageToken token);
 ```
 
-### CollateralRatioInvalid
-Error thrown when collateral ratio after rebalance is worse than before rebalance
+### InvalidLeverageTokenStateAfterRebalance
+Error thrown when a LeverageToken's state after rebalance is invalid
 
 
 ```solidity
-error CollateralRatioInvalid();
-```
-
-### ExposureDirectionChanged
-Error thrown when collateral ratio after rebalance is on the opposite side of target ratio than before rebalance
-
-
-```solidity
-error ExposureDirectionChanged();
-```
-
-### EquityLossTooBig
-Error thrown when equity loss on rebalance is too big
-
-
-```solidity
-error EquityLossTooBig();
-```
-
-## Structs
-### StrategyConfig
-*Struct that contains entire strategy config*
-
-
-```solidity
-struct StrategyConfig {
-    ILendingAdapter lendingAdapter;
-    uint256 minCollateralRatio;
-    uint256 maxCollateralRatio;
-    uint256 targetCollateralRatio;
-    IRebalanceRewardDistributor rebalanceRewardDistributor;
-    IRebalanceWhitelist rebalanceWhitelist;
-}
+error InvalidLeverageTokenStateAfterRebalance(ILeverageToken token);
 ```
 

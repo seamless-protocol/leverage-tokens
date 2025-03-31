@@ -1,12 +1,21 @@
 # FeeManager
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/7492e139a233e3537fefd83074042a04664dc27a/src/FeeManager.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e2065c10183acb51865104847d299ff5ad4684d2/src/FeeManager.sol)
 
 **Inherits:**
 [IFeeManager](/src/interfaces/IFeeManager.sol/interface.IFeeManager.md), Initializable, AccessControlUpgradeable
 
+*The FeeManager contract is an upgradeable core contract that is responsible for managing the fees for LeverageTokens.
+There are two types of fees, both of which can be configured to be applied on deposits and withdrawals:
+- LeverageToken fees: Fees charged that accumulate towards the value of the LeverageToken for current LeverageToken holders
+- Treasury fees: Fees charged that are transferred to the configured treasury address
+The maximum fee that can be set for each action is 100_00 (100%). If the LeverageToken fee + the treasury fee is greater than
+the maximum fee, the LeverageToken fee is set to the delta of the maximum fee and the treasury fee.*
+
 
 ## State Variables
 ### MAX_FEE
+Returns the max fee that can be set
+
 
 ```solidity
 uint256 public constant MAX_FEE = 100_00;
@@ -42,31 +51,31 @@ function __FeeManager_init(address defaultAdmin) public initializer;
 function __FeeManager_init_unchained() internal onlyInitializing;
 ```
 
-### getStrategyActionFee
+### getLeverageTokenActionFee
 
-Returns fee for specific action on strategy
+Returns the LeverageToken fee for a specific action
 
 
 ```solidity
-function getStrategyActionFee(IStrategy strategy, ExternalAction action) public view returns (uint256 fee);
+function getLeverageTokenActionFee(ILeverageToken token, ExternalAction action) public view returns (uint256 fee);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`strategy`|`IStrategy`|Strategy to get fee for|
-|`action`|`ExternalAction`|Action to get fee for|
+|`token`|`ILeverageToken`||
+|`action`|`ExternalAction`|The action to get fee for|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`fee`|`uint256`|Fee for action on strategy, 100_00 is 100%|
+|`fee`|`uint256`|Fee for action, 100_00 is 100%|
 
 
 ### getTreasury
 
-Returns address of the treasury
+Returns the address of the treasury
 
 
 ```solidity
@@ -76,12 +85,12 @@ function getTreasury() public view returns (address treasury);
 
 |Name|Type|Description|
 |----|----|-----------|
-|`treasury`|`address`|Address of the treasury|
+|`treasury`|`address`|The address of the treasury|
 
 
 ### getTreasuryActionFee
 
-Returns treasury fee for specific action
+Returns the treasury fee for a specific action
 
 
 ```solidity
@@ -100,34 +109,12 @@ function getTreasuryActionFee(ExternalAction action) public view returns (uint25
 |`fee`|`uint256`|Fee for action, 100_00 is 100%|
 
 
-### setStrategyActionFee
-
-Sets fee for specific action on strategy
-
-*Only FEE_MANAGER role can call this function.
-If manager tries to set fee above 100% it reverts with FeeTooHigh error*
-
-
-```solidity
-function setStrategyActionFee(IStrategy strategy, ExternalAction action, uint256 fee)
-    external
-    onlyRole(FEE_MANAGER_ROLE);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`strategy`|`IStrategy`|Strategy to set fee for|
-|`action`|`ExternalAction`|Action to set fee for|
-|`fee`|`uint256`|Fee for action on strategy, 100_00 is 100%|
-
-
 ### setTreasury
 
-Sets address of the treasury. Treasury receives all fees from LeverageManager. If the treasury is set to
-the zero address, the treasury fees are reset to 0 as well
+Sets the address of the treasury. The treasury receives all treasury fees from the LeverageManager. If the
+treasury is set to the zero address, the treasury fees are reset to 0 as well
 
-*Only FEE_MANAGER role can call this function*
+*Only `FEE_MANAGER_ROLE` can call this function*
 
 
 ```solidity
@@ -137,15 +124,14 @@ function setTreasury(address treasury) external onlyRole(FEE_MANAGER_ROLE);
 
 |Name|Type|Description|
 |----|----|-----------|
-|`treasury`|`address`|Address of the treasury|
+|`treasury`|`address`|The address of the treasury|
 
 
 ### setTreasuryActionFee
 
-Sets fee for specific action
+Sets the treasury fee for a specific action
 
-*Only FEE_MANAGER role can call this function.
-If manager tries to set fee above 100% it reverts with FeeTooHigh error*
+*Only `FEE_MANAGER_ROLE` can call this function.*
 
 
 ```solidity
@@ -155,8 +141,8 @@ function setTreasuryActionFee(ExternalAction action, uint256 fee) external onlyR
 
 |Name|Type|Description|
 |----|----|-----------|
-|`action`|`ExternalAction`|Action to set fee for|
-|`fee`|`uint256`|Fee for action, 100_00 is 100%|
+|`action`|`ExternalAction`|The action to set fee for|
+|`fee`|`uint256`|The fee for action, 100_00 is 100%|
 
 
 ### _computeEquityFees
@@ -165,12 +151,12 @@ Computes equity fees based on action
 
 *Fees are always rounded up.*
 
-*If the sum of the strategy fee and the treasury fee is greater than the amount,
-the strategy fee is set to the delta of the amount and the treasury fee.*
+*If the sum of the LeverageToken fee and the treasury fee is greater than the amount,
+the LeverageToken fee is set to the delta of the amount and the treasury fee.*
 
 
 ```solidity
-function _computeEquityFees(IStrategy strategy, uint256 equity, ExternalAction action)
+function _computeEquityFees(ILeverageToken token, uint256 equity, ExternalAction action)
     internal
     view
     returns (uint256, uint256, uint256, uint256);
@@ -179,7 +165,7 @@ function _computeEquityFees(IStrategy strategy, uint256 equity, ExternalAction a
 
 |Name|Type|Description|
 |----|----|-----------|
-|`strategy`|`IStrategy`|Strategy to compute fees for|
+|`token`|`ILeverageToken`|LeverageToken to compute fees for|
 |`equity`|`uint256`|Amount of equity to compute fees for, denominated in collateral asset|
 |`action`|`ExternalAction`|Action to compute fees for, Deposit or Withdraw|
 
@@ -187,10 +173,10 @@ function _computeEquityFees(IStrategy strategy, uint256 equity, ExternalAction a
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`uint256`|equityToCover Equity to add / remove from the strategy after fees, denominated in collateral asset|
-|`<none>`|`uint256`|equityForShares Equity to mint / burn shares for from the strategy after fees, denominated in collateral asset|
-|`<none>`|`uint256`|strategyFee Strategy fee amount, denominated in collateral asset|
-|`<none>`|`uint256`|treasuryFee Treasury fee amount, denominated in collateral asset|
+|`<none>`|`uint256`|equityToCover Equity to add / remove from the LeverageToken after fees, denominated in the collateral asset of the LeverageToken|
+|`<none>`|`uint256`|equityForShares Equity to mint / burn shares for the LeverageToken after fees, denominated in the collateral asset of the LeverageToken|
+|`<none>`|`uint256`|tokenFee LeverageToken fee amount, denominated in the collateral asset of the LeverageToken|
+|`<none>`|`uint256`|treasuryFee Treasury fee amount, denominated in the collateral asset of the LeverageToken|
 
 
 ### _chargeTreasuryFee
@@ -209,6 +195,25 @@ function _chargeTreasuryFee(IERC20 collateralAsset, uint256 amount) internal;
 |`amount`|`uint256`|Amount of fee to charge|
 
 
+### _setLeverageTokenActionFee
+
+Sets the LeverageToken fee for a specific action
+
+*If caller tries to set fee above 100% it reverts with FeeTooHigh error*
+
+
+```solidity
+function _setLeverageTokenActionFee(ILeverageToken token, ExternalAction action, uint256 fee) internal;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`ILeverageToken`|LeverageToken to set fee for|
+|`action`|`ExternalAction`|Action to set fee for|
+|`fee`|`uint256`|Fee for action, 100_00 is 100%|
+
+
 ## Structs
 ### FeeManagerStorage
 *Struct containing all state for the FeeManager contract*
@@ -221,7 +226,7 @@ storage-location: erc7201:seamless.contracts.storage.FeeManager
 struct FeeManagerStorage {
     address treasury;
     mapping(ExternalAction action => uint256) treasuryActionFee;
-    mapping(IStrategy strategy => mapping(ExternalAction action => uint256)) strategyActionFee;
+    mapping(ILeverageToken token => mapping(ExternalAction action => uint256)) tokenActionFee;
 }
 ```
 

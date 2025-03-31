@@ -1,13 +1,27 @@
 # LeverageRouter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/7492e139a233e3537fefd83074042a04664dc27a/src/periphery/LeverageRouter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e2065c10183acb51865104847d299ff5ad4684d2/src/periphery/LeverageRouter.sol)
 
 **Inherits:**
 [ILeverageRouter](/src/interfaces/periphery/ILeverageRouter.sol/interface.ILeverageRouter.md)
 
+*The LeverageRouter contract is an immutable periphery contract that facilitates the use of Morpho flash loans and a swap adapter
+to deposit and withdraw equity from LeverageTokens.
+The high-level deposit flow is as follows:
+1. The user calls `deposit` with the amount of equity to deposit, the minimum amount of shares (LeverageTokens) to receive, the maximum
+cost to the sender for the swap of debt to collateral during the deposit to help repay the flash loan, and the swap context.
+2. The LeverageRouter will flash loan the required collateral asset from Morpho.
+3. The LeverageRouter will use the flash loaned collateral and the equity from the sender for the deposit into the LeverageToken,
+receiving LeverageTokens and debt in return.
+4. The LeverageRouter will swap the debt received from the deposit to the collateral asset.
+5. The LeverageRouter will use the swapped assets to repay the flash loan along with the collateral asset from the sender
+(the maximum swap cost)
+6. The LeverageRouter will transfer the LeverageTokens and any remaining collateral asset to the sender.
+The high-level withdrawal flow is the same as the deposit flow, but in reverse.*
+
 
 ## State Variables
 ### leverageManager
-The Seamless LeverageManager contract
+The LeverageManager contract
 
 
 ```solidity
@@ -46,22 +60,22 @@ constructor(ILeverageManager _leverageManager, IMorpho _morpho, ISwapAdapter _sw
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_leverageManager`|`ILeverageManager`|The Seamless LeverageManager contract|
+|`_leverageManager`|`ILeverageManager`|The LeverageManager contract|
 |`_morpho`|`IMorpho`|The Morpho core protocol contract|
 |`_swapper`|`ISwapAdapter`|The Swapper contract|
 
 
 ### deposit
 
-Deposit equity into a strategy
+Deposit equity into a LeverageToken
 
-*Flash loans the collateral required to add the equity to the strategy, receives debt, then swaps the debt to the
-strategy's collateral asset. The swapped assets and the sender's supplied collateral are used to repay the flash loan*
+*Flash loans the collateral required to add the equity to the LeverageToken, receives debt, then swaps the debt to the
+LeverageToken's collateral asset. The swapped assets and the sender's supplied collateral are used to repay the flash loan*
 
 
 ```solidity
 function deposit(
-    IStrategy strategy,
+    ILeverageToken token,
     uint256 equityInCollateralAsset,
     uint256 minShares,
     uint256 maxSwapCostInCollateralAsset,
@@ -72,21 +86,21 @@ function deposit(
 
 |Name|Type|Description|
 |----|----|-----------|
-|`strategy`|`IStrategy`|Strategy to deposit equity into|
-|`equityInCollateralAsset`|`uint256`|The amount of equity to deposit into the strategy. Denominated in the collateral asset of the strategy|
-|`minShares`|`uint256`|Minimum shares to receive from the deposit|
+|`token`|`ILeverageToken`|LeverageToken to deposit equity into|
+|`equityInCollateralAsset`|`uint256`|The amount of equity to deposit into the LeverageToken. Denominated in the collateral asset of the LeverageToken|
+|`minShares`|`uint256`|Minimum shares (LeverageTokens) to receive from the deposit|
 |`maxSwapCostInCollateralAsset`|`uint256`|The maximum amount of collateral from the sender to use to help repay the flash loan due to the swap of debt to collateral being unfavorable|
 |`swapContext`|`ISwapAdapter.SwapContext`|Swap context to use for the swap (which DEX to use, the route, tick spacing, etc.)|
 
 
 ### withdraw
 
-Withdraw equity from a strategy
+Withdraw equity from a LeverageToken
 
 
 ```solidity
 function withdraw(
-    IStrategy strategy,
+    ILeverageToken token,
     uint256 equityInCollateralAsset,
     uint256 maxShares,
     uint256 maxSwapCostInCollateralAsset,
@@ -97,10 +111,10 @@ function withdraw(
 
 |Name|Type|Description|
 |----|----|-----------|
-|`strategy`|`IStrategy`|Strategy to withdraw equity from|
-|`equityInCollateralAsset`|`uint256`|The amount of equity to withdraw from the strategy. Denominated in the collateral asset of the strategy|
-|`maxShares`|`uint256`|Maximum shares to burn for the withdrawal|
-|`maxSwapCostInCollateralAsset`|`uint256`|The maximum amount of equity received from the withdrawal from the strategy to use to help repay the debt flash loan due to the swap of debt to collateral being unfavorable|
+|`token`|`ILeverageToken`|LeverageToken to withdraw equity from|
+|`equityInCollateralAsset`|`uint256`|The amount of equity to withdraw from the LeverageToken. Denominated in the collateral asset of the LeverageToken|
+|`maxShares`|`uint256`|Maximum shares (LeverageTokens) to burn for the withdrawal|
+|`maxSwapCostInCollateralAsset`|`uint256`|The maximum amount of equity received from the withdrawal from the LeverageToken to use to help repay the debt flash loan due to the swap of debt to collateral being unfavorable|
 |`swapContext`|`ISwapAdapter.SwapContext`|Swap context to use for the swap (which DEX to use, the route, tick spacing, etc.)|
 
 
@@ -122,7 +136,7 @@ function onMorphoFlashLoan(uint256 loanAmount, bytes calldata data) external;
 
 ### _depositAndRepayMorphoFlashLoan
 
-Executes the deposit of equity into a strategy and the swap of debt assets to the collateral asset
+Executes the deposit of equity into a LeverageToken and the swap of debt assets to the collateral asset
 to repay the flash loan from Morpho
 
 
@@ -133,13 +147,13 @@ function _depositAndRepayMorphoFlashLoan(DepositParams memory params, uint256 co
 
 |Name|Type|Description|
 |----|----|-----------|
-|`params`|`DepositParams`|Params for the deposit of equity into a strategy|
+|`params`|`DepositParams`|Params for the deposit of equity into a LeverageToken|
 |`collateralLoanAmount`|`uint256`|Amount of collateral asset flash loaned|
 
 
 ### _withdrawAndRepayMorphoFlashLoan
 
-Executes the withdrawal of equity from a strategy and the swap of collateral assets to the debt asset
+Executes the withdrawal of equity from a LeverageToken and the swap of collateral assets to the debt asset
 to repay the flash loan from Morpho
 
 
@@ -150,7 +164,7 @@ function _withdrawAndRepayMorphoFlashLoan(WithdrawParams memory params, uint256 
 
 |Name|Type|Description|
 |----|----|-----------|
-|`params`|`WithdrawParams`|Params for the withdrawal of equity from a strategy|
+|`params`|`WithdrawParams`|Params for the withdrawal of equity from a LeverageToken|
 |`debtLoanAmount`|`uint256`|Amount of debt asset flash loaned|
 
 
@@ -161,7 +175,7 @@ Deposit related parameters to pass to the Morpho flash loan callback handler for
 
 ```solidity
 struct DepositParams {
-    IStrategy strategy;
+    ILeverageToken token;
     uint256 equityInCollateralAsset;
     uint256 minShares;
     uint256 maxSwapCostInCollateralAsset;
@@ -176,7 +190,7 @@ Withdraw related parameters to pass to the Morpho flash loan callback handler fo
 
 ```solidity
 struct WithdrawParams {
-    IStrategy strategy;
+    ILeverageToken token;
     uint256 equityInCollateralAsset;
     uint256 maxShares;
     uint256 maxSwapCostInCollateralAsset;

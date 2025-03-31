@@ -1,7 +1,7 @@
 # ActionType
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/7492e139a233e3537fefd83074042a04664dc27a/src/types/DataTypes.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e2065c10183acb51865104847d299ff5ad4684d2/src/types/DataTypes.sol)
 
-*Enum defining the type of internal action the lending adapter manager can perform on lending pool*
+*Enum defining internal actions that a LendingAdapter can perform on a lending pool*
 
 
 ```solidity

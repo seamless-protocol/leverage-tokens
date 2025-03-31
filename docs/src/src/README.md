@@ -1,11 +1,12 @@
 
 
 # Contents
-- [adapters](/src/adapters)
 - [interfaces](/src/interfaces)
+- [lending](/src/lending)
 - [periphery](/src/periphery)
+- [rebalance](/src/rebalance)
 - [types](/src/types)
 - [BeaconProxyFactory](BeaconProxyFactory.sol/contract.BeaconProxyFactory.md)
 - [FeeManager](FeeManager.sol/contract.FeeManager.md)
 - [LeverageManager](LeverageManager.sol/contract.LeverageManager.md)
-- [Strategy](Strategy.sol/contract.Strategy.md)
+- [LeverageToken](LeverageToken.sol/contract.LeverageToken.md)
