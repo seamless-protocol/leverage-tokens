@@ -10,7 +10,9 @@ import {ILeverageManager} from "./ILeverageManager.sol";
 
 interface IMorphoLendingAdapter is IPreLiquidationLendingAdapter {
     /// @notice Event emitted when the Morpho lending adapter is initialized
-    event MorphoLendingAdapterInitialized(Id morphoMarketId, MarketParams marketParams, address authorizedCreator);
+    event MorphoLendingAdapterInitialized(
+        Id indexed morphoMarketId, MarketParams marketParams, address indexed authorizedCreator
+    );
 
     /// @notice Event emitted when the Morpho lending adapter is flagged as used in post leverage token creation
     event MorphoLendingAdapterUsed();
