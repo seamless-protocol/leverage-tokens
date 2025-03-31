@@ -6,6 +6,7 @@ import {Test} from "forge-std/Test.sol";
 
 // Dependency imports
 import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 // Local imports
 import {FeeManager} from "src/FeeManager.sol";
@@ -32,6 +33,11 @@ contract FeeManagerTest is Test {
 
         assertTrue(feeManager.hasRole(feeManager.FEE_MANAGER_ROLE(), feeManagerRole));
         assertEq(feeManager.exposed_getFeeManagerStorageSlot(), expectedSlot);
+    }
+
+    function test_feeManagerInit_RevertsIfNotInitializer() public {
+        vm.expectRevert(Initializable.NotInitializing.selector);
+        feeManager.__FeeManager_init(address(this));
     }
 
     function _setTreasuryActionFee(address caller, ExternalAction action, uint256 fee) internal {

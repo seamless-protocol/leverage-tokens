@@ -12,7 +12,7 @@ contract CollateralRatiosRebalanceAdapterHarness is CollateralRatiosRebalanceAda
         external
         initializer
     {
-        __CollateralRatiosRebalanceAdapter_init_unchained(minCollateralRatio, targetCollateralRatio, maxCollateralRatio);
+        __CollateralRatiosRebalanceAdapter_init(minCollateralRatio, targetCollateralRatio, maxCollateralRatio);
     }
 
     function exposed_getCollateralRatiosRebalanceAdapterStorage() external pure returns (bytes32 slot) {
