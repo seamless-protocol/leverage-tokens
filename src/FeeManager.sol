@@ -14,7 +14,7 @@ import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 
 /**
- * @dev The FeeManager contract is an upgradeable core contract that is responsible for managing the fees for LeverageTokens created by the LeverageManager.
+ * @dev The FeeManager contract is an upgradeable core contract that is responsible for managing the fees for LeverageTokens.
  * There are two types of fees, both of which can be configured to be applied on deposits and withdrawals:
  *   - LeverageToken fees: Fees charged that accumulate towards the value of the LeverageToken for current LeverageToken holders
  *   - Treasury fees: Fees charged that are transferred to the configured treasury address

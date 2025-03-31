@@ -28,9 +28,9 @@ import {
 } from "src/types/DataTypes.sol";
 
 /**
- * @dev The LeverageManager contract is an upgradeable core contract that is responsible for managing the creation of LeverageTokens,
- * and acts as an entry point for users to deposit and withdraw equity from the position held by the LeverageToken and rebalancers
- * to rebalance LeverageTokens.
+ * @dev The LeverageManager contract is an upgradeable core contract that is responsible for managing the creation of LeverageTokens.
+ * It also acts as an entry point for users to deposit and withdraw equity from the position held by the LeverageToken, and for
+ * rebalancers to rebalance LeverageTokens.
  *
  * LeverageTokens are ERC20 tokens that are akin to shares in an ERC-4626 vault - they represent a claim on the equity held by
  * the LeverageToken. They can be created on this contract by calling `createNewLeverageToken`, and their configuration on the
