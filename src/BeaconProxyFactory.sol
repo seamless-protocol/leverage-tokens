@@ -9,6 +9,10 @@ import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/Upgradeabl
 // Internal imports
 import {IBeaconProxyFactory} from "src/interfaces/IBeaconProxyFactory.sol";
 
+/**
+ * @dev Implementation of a factory that allows for deterministic deployment of BeaconProxys from an UpgradeableBeacon
+ * using the Create2 opcode. The salt used for the Create2 deployment is the hash of the sender and the base salt.
+ */
 contract BeaconProxyFactory is IBeaconProxyFactory, UpgradeableBeacon {
     /// @inheritdoc IBeaconProxyFactory
     uint256 public numProxies;

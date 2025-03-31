@@ -13,6 +13,23 @@ import {ISwapAdapter} from "../interfaces/periphery/ISwapAdapter.sol";
 import {ILeverageRouter} from "../interfaces/periphery/ILeverageRouter.sol";
 import {ActionData, ExternalAction} from "../types/DataTypes.sol";
 
+/**
+ * @dev The LeverageRouter contract is an immutable periphery contract that facilitates the use of Morpho flash loans and a swap adapter
+ * to deposit and withdraw equity from LeverageTokens.
+ *
+ * The high-level deposit flow is as follows:
+ *   1. The user calls `deposit` with the amount of equity to deposit, the minimum amount of shares (LeverageTokens) to receive, the maximum
+ *      cost to the sender for the swap of debt to collateral during the deposit to help repay the flash loan, and the swap context.
+ *   2. The LeverageRouter will flash loan the required collateral asset from Morpho.
+ *   3. The LeverageRouter will use the flash loaned collateral and the equity from the sender for the deposit into the LeverageToken,
+ *      receiving LeverageTokens and debt in return.
+ *   4. The LeverageRouter will swap the debt received from the deposit to the collateral asset.
+ *   5. The LeverageRouter will use the swapped assets to repay the flash loan along with the collateral asset from the sender
+ *      (the maximum swap cost)
+ *   6. The LeverageRouter will transfer the LeverageTokens and any remaining collateral asset to the sender.
+ *
+ * The high-level withdrawal flow is the same as the deposit flow, but in reverse.
+ */
 contract LeverageRouter is ILeverageRouter {
     /// @notice Deposit related parameters to pass to the Morpho flash loan callback handler for deposits
     struct DepositParams {

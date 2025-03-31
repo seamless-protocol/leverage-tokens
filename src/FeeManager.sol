@@ -13,6 +13,15 @@ import {ExternalAction} from "src/types/DataTypes.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 
+/**
+ * @dev The FeeManager contract is an upgradeable core contract that is responsible for managing the fees for LeverageTokens created by the LeverageManager.
+ * There are two types of fees, both of which can be configured to be applied on deposits and withdrawals:
+ *   - LeverageToken fees: Fees charged that accumulate towards the value of the LeverageToken for current LeverageToken holders
+ *   - Treasury fees: Fees charged that are transferred to the configured treasury address
+ *
+ * The maximum fee that can be set for each action is 100_00 (100%). If the LeverageToken fee + the treasury fee is greater than
+ * the maximum fee, the LeverageToken fee is set to the delta of the maximum fee and the treasury fee.
+ */
 contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
     /// @inheritdoc IFeeManager
     uint256 public constant MAX_FEE = 100_00;

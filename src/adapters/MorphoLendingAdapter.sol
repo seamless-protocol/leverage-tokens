@@ -22,6 +22,17 @@ import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {IPreLiquidationLendingAdapter} from "src/interfaces/IPreLiquidationLendingAdapter.sol";
 
+/**
+ * @dev The MorphoLendingAdapter is an adapter to interface with Morpho markets. LeverageToken creators can configure their LeverageToken
+ * to use a MorphoLendingAdapter to use Morpho as the lending protocol for their LeverageToken.
+ *
+ * The MorphoLendingAdapter uses the underlying oracle of the Morpho market to convert between the collateral and debt asset. It also
+ * uses Morpho's libraries to calculate the collateral and debt held by the adapter, including any accrued interest.
+ *
+ * Note: `getDebt` uses `MorphoBalancesLib.expectedBorrowAssets` which calculates the total debt of the adapter based on the Morpho
+ * market's borrow shares owned by the adapter. This logic rounds up, so it is possible that `getDebt` returns a value that is
+ * greater than the actual debt owed to the Morpho market.
+ */
 contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     uint256 internal constant WAD = 1e18;
 

@@ -10,6 +10,10 @@ import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {IMorphoLendingAdapterFactory} from "src/interfaces/IMorphoLendingAdapterFactory.sol";
 import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
 
+/**
+ * @dev The MorphoLendingAdapterFactory is a factory contract for deploying deterministic minimal proxies of the
+ * MorphoLendingAdapter contract using OpenZeppelin's Clones library.
+ */
 contract MorphoLendingAdapterFactory is IMorphoLendingAdapterFactory {
     using Clones for address;
 

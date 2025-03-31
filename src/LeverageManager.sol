@@ -27,6 +27,38 @@ import {
     TokenTransfer
 } from "src/types/DataTypes.sol";
 
+/**
+ * @dev The LeverageManager contract is an upgradeable core contract that is responsible for managing the creation of LeverageTokens,
+ * and acts as an entry point for users to deposit and withdraw equity from the position held by the LeverageToken and rebalancers
+ * to rebalance LeverageTokens.
+ *
+ * LeverageTokens are ERC20 tokens that are akin to shares in an ERC-4626 vault - they represent a claim on the equity held by
+ * the LeverageToken. They can be created on this contract by calling `createNewLeverageToken`, and their configuration on the
+ * LeverageManager is immutable.
+ * Note: Although the LeverageToken configuration saved on the LeverageManager is immutable, the configured LendingAdapter and
+ *       RebalanceAdapter for the LeverageToken may be upgradeable contracts.
+ *
+ * The LeverageManager also inherits the `FeeManager` contract, which is used to manage LeverageToken fees (which accrue to
+ * the share value of the LeverageToken) and the treasury fees.
+ *
+ * For deposits of equity into a LeverageToken, the collateral and debt required is calculated by using the LeverageToken's
+ * current collateral ratio. As such, the collateral ratio after a deposit must be equal to the collateral ratio before a
+ * deposit, within some rounding error.
+ *
+ * [CAUTION]
+ * ====
+ * LeverageTokens are susceptible to inflation attacks like ERC-4626 vaults:
+ *   "In empty (or nearly empty) ERC-4626 vaults, deposits are at high risk of being stolen through frontrunning
+ *   with a "donation" to the vault that inflates the price of a share. This is variously known as a donation or inflation
+ *   attack and is essentially a problem of slippage. Vault deployers can protect against this attack by making an initial
+ *   deposit of a non-trivial amount of the asset, such that price manipulation becomes infeasible. Withdrawals may
+ *   similarly be affected by slippage. Users can protect against this attack as well as unexpected slippage in general by
+ *   verifying the amount received is as expected, using a wrapper that performs these checks such as
+ *   https://github.com/fei-protocol/ERC4626#erc4626router-and-base[ERC4626Router]."
+ *
+ * As such it is highly recommended that LeverageToken creators make an initial deposit of a non-trivial amount of equity.
+ * It is also recommended to use a router that performs slippage checks when depositing and withdrawing.
+ */
 contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManager, UUPSUpgradeable {
     // Base collateral ratio constant, 1e18 means that collateral / debt ratio is 1:1
     uint256 public constant BASE_RATIO = 1e18;

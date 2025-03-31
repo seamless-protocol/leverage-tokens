@@ -12,6 +12,9 @@ import {IUniswapSwapRouter02} from "../interfaces/periphery/IUniswapSwapRouter02
 import {IUniswapV2Router02} from "../interfaces/periphery/IUniswapV2Router02.sol";
 import {ISwapAdapter} from "../interfaces/periphery/ISwapAdapter.sol";
 
+/**
+ * @dev The SwapAdapter contract is a periphery contract that facilitates the use of various DEXes for swaps.
+ */
 contract SwapAdapter is ISwapAdapter {
     /// @inheritdoc ISwapAdapter
     function swapExactInput(

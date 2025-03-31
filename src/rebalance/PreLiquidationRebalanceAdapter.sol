@@ -12,6 +12,18 @@ import {LeverageTokenState} from "src/types/DataTypes.sol";
 import {IPreLiquidationLendingAdapter} from "src/interfaces/IPreLiquidationLendingAdapter.sol";
 import {IPreLiquidationRebalanceAdapter} from "src/interfaces/IPreLiquidationRebalanceAdapter.sol";
 
+/**
+ * @dev The PreLiquidationRebalanceAdapter is an abstract contract that implements the IPreLiquidationRebalanceAdapter interface.
+ * It is intended to be used to create pre-liquidation rebalance mechanisms for LeverageTokens.
+ *
+ * The PreLiquidationRebalanceAdapter is initialized for a LeverageToken with a collateral ratio threshold and a rebalance reward.
+ * The `isEligibleForRebalance` function will return true if the current collateral ratio of the LeverageToken is below the configured
+ * collateral ratio threshold, allowing for a rebalance action to be performed on LeverageToken on the LeverageManager.
+ *
+ * The PreLiquidationRebalanceAdapter is also initialized with a rebalance reward, which is a flat percentage that rebalancer can take
+ * from the equity of the LeverageToken. It is expected that the rebalance reward is set to a value that is less than the liquidation penalty
+ * of the LeverageToken, but high enough such that rebalancing is attractive to rebalancers.
+ */
 abstract contract PreLiquidationRebalanceAdapter is Initializable, IPreLiquidationRebalanceAdapter {
     uint256 internal constant WAD = 1e18;
     /// @notice Reward base, 100_00 means that the reward is 100%
