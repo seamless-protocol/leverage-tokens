@@ -32,6 +32,7 @@ contract SetLeverageTokenTest is Test {
     function testFuzz_setLeverageToken_RevertIf_LeverageTokenAlreadySet(ILeverageToken token1, ILeverageToken token2)
         public
     {
+        vm.assume(address(token1) != address(0));
         rebalanceAdapter.exposed_setLeverageToken(token1);
 
         vm.expectRevert(abi.encodeWithSelector(IDutchAuctionRebalanceAdapter.LeverageTokenAlreadySet.selector));

@@ -51,8 +51,6 @@ struct BaseLeverageTokenConfig {
     ILendingAdapter lendingAdapter;
     /// @dev RebalanceAdapter for the LeverageToken
     IRebalanceAdapterBase rebalanceAdapter;
-    /// @dev Target collateral ratio of the LeverageToken on 8 decimals
-    uint256 targetCollateralRatio;
 }
 
 /// @dev Struct that contains the entire LeverageToken config
@@ -61,9 +59,7 @@ struct LeverageTokenConfig {
     ILendingAdapter lendingAdapter;
     /// @dev RebalanceAdapter for the LeverageToken
     IRebalanceAdapterBase rebalanceAdapter;
-    /// @dev Target collateral ratio of the LeverageToken on 8 decimals
-    uint256 targetCollateralRatio;
-    /// @dev Fee for deposit action, defined as a percentage
+    /// @dev Fee for deposit action
     uint256 depositTokenFee;
     /// @dev Fee for withdraw action, defined as a percentage
     uint256 withdrawTokenFee;

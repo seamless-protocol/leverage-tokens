@@ -18,7 +18,19 @@ contract PostLeverageTokenCreation is Test {
     function setUp() public {
         rebalanceAdapter = new RebalanceAdapter();
         rebalanceAdapter.initialize(
-            address(this), authorizedCreator, leverageManager, 1e18, 3e18, 1 days, 1.1e18, 0.1e18, 1.1e18, 0.1e18
+            RebalanceAdapter.RebalanceAdapterInitParams({
+                owner: address(this),
+                authorizedCreator: authorizedCreator,
+                leverageManager: leverageManager,
+                minCollateralRatio: 1e18,
+                targetCollateralRatio: 2e18,
+                maxCollateralRatio: 3e18,
+                auctionDuration: 1 days,
+                initialPriceMultiplier: 1.1e18,
+                minPriceMultiplier: 0.1e18,
+                preLiquidationCollateralRatioThreshold: 1.1e18,
+                rebalanceReward: 0.1e18
+            })
         );
     }
 

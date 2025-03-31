@@ -92,9 +92,9 @@ contract LeverageManagerTest is FeeManagerTest {
         leverageToken = ILeverageToken(
             _createNewLeverageToken(
                 manager,
+                1e18,
                 LeverageTokenConfig({
                     lendingAdapter: ILendingAdapter(address(lendingAdapter)),
-                    targetCollateralRatio: _BASE_RATIO() + 1,
                     rebalanceAdapter: IRebalanceAdapter(address(0)),
                     depositTokenFee: 0,
                     withdrawTokenFee: 0
@@ -109,6 +109,7 @@ contract LeverageManagerTest is FeeManagerTest {
 
     function _createNewLeverageToken(
         address caller,
+        uint256 targetCollateralRatio,
         LeverageTokenConfig memory config,
         address collateralAsset,
         address debtAsset,
@@ -141,6 +142,13 @@ contract LeverageManagerTest is FeeManagerTest {
             address(config.rebalanceAdapter),
             abi.encodeWithSelector(IRebalanceAdapterBase.postLeverageTokenCreation.selector),
             abi.encode()
+        );
+
+        // Mock initial collateral ratio
+        vm.mockCall(
+            address(config.rebalanceAdapter),
+            abi.encodeWithSelector(IRebalanceAdapterBase.getInitialCollateralRatio.selector),
+            abi.encode(targetCollateralRatio)
         );
 
         vm.prank(caller);

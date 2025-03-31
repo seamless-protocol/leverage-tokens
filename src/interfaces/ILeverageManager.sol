@@ -78,15 +78,19 @@ interface ILeverageManager is IFeeManager {
         view
         returns (IRebalanceAdapterBase adapter);
 
-    /// @notice Returns the target collateral ratio for a LeverageToken
-    /// @param token LeverageToken to get target collateral ratio for
-    /// @return targetRatio Target collateral ratio
-    function getLeverageTokenTargetCollateralRatio(ILeverageToken token) external view returns (uint256 targetRatio);
-
-    /// @notice Returns the configuration for a LeverageToken
+    /// @notice Returns the entire configuration for a LeverageToken
     /// @param token LeverageToken to get config for
     /// @return config LeverageToken configuration
     function getLeverageTokenConfig(ILeverageToken token) external view returns (LeverageTokenConfig memory config);
+
+    /// @notice Returns the initial collateral ratio for a LeverageToken
+    /// @param token LeverageToken to get initial collateral ratio for
+    /// @return initialCollateralRatio Initial collateral ratio for the LeverageToken
+    /// @dev Initial collateral ratio is followed when the LeverageToken has no shares and on deposits when debt is 0.
+    function getLeverageTokenInitialCollateralRatio(ILeverageToken token)
+        external
+        view
+        returns (uint256 initialCollateralRatio);
 
     /// @notice Returns all data required to describe current LeverageToken state - collateral, debt, equity and collateral ratio
     /// @param token LeverageToken to query state for

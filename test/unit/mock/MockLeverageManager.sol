@@ -22,7 +22,6 @@ contract MockLeverageManager is Test {
         ILendingAdapter lendingAdapter;
         IERC20 collateralAsset;
         IERC20 debtAsset;
-        uint256 targetCollateralRatio;
     }
 
     struct DepositParams {
@@ -102,22 +101,12 @@ contract MockLeverageManager is Test {
         return leverageTokenStates[leverageToken];
     }
 
-    function getLeverageTokenTargetCollateralRatio(ILeverageToken leverageToken) external view returns (uint256) {
-        return leverageTokens[leverageToken].targetCollateralRatio;
-    }
-
     function getLeverageTokenDebtAsset(ILeverageToken leverageToken) external view returns (IERC20) {
         return leverageTokens[leverageToken].debtAsset;
     }
 
     function setLeverageTokenData(ILeverageToken leverageToken, LeverageTokenData memory _leverageTokenData) external {
         leverageTokens[leverageToken] = _leverageTokenData;
-    }
-
-    function setLeverageTokenTargetCollateralRatio(ILeverageToken leverageToken, uint256 _targetCollateralRatio)
-        external
-    {
-        leverageTokens[leverageToken].targetCollateralRatio = _targetCollateralRatio;
     }
 
     function setLeverageTokenState(ILeverageToken leverageToken, LeverageTokenState memory _leverageTokenState)

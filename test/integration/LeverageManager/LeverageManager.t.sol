@@ -20,8 +20,6 @@ contract LeverageManagerTest is IntegrationTestBase {
     function testFork_setUp() public view virtual override {
         assertEq(address(leverageManager.getLeverageTokenCollateralAsset(leverageToken)), address(WETH));
         assertEq(address(leverageManager.getLeverageTokenDebtAsset(leverageToken)), address(USDC));
-
-        assertEq(leverageManager.getLeverageTokenTargetCollateralRatio(leverageToken), 2 * BASE_RATIO);
     }
 
     function _deposit(address caller, uint256 equityInCollateralAsset, uint256 collateralToAdd)

@@ -122,7 +122,6 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
         return LeverageTokenConfig({
             lendingAdapter: baseConfig.lendingAdapter,
-            targetCollateralRatio: baseConfig.targetCollateralRatio,
             rebalanceAdapter: baseConfig.rebalanceAdapter,
             depositTokenFee: depositTokenFee,
             withdrawTokenFee: withdrawTokenFee
@@ -135,12 +134,8 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     /// @inheritdoc ILeverageManager
-    function getLeverageTokenTargetCollateralRatio(ILeverageToken token)
-        public
-        view
-        returns (uint256 targetCollateralRatio)
-    {
-        return _getLeverageManagerStorage().config[token].targetCollateralRatio;
+    function getLeverageTokenInitialCollateralRatio(ILeverageToken token) public view returns (uint256 ratio) {
+        return getLeverageTokenRebalanceAdapter(token).getInitialCollateralRatio(token);
     }
 
     /// @inheritdoc ILeverageManager
@@ -179,8 +174,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
         _getLeverageManagerStorage().config[token] = BaseLeverageTokenConfig({
             lendingAdapter: tokenConfig.lendingAdapter,
-            rebalanceAdapter: tokenConfig.rebalanceAdapter,
-            targetCollateralRatio: tokenConfig.targetCollateralRatio
+            rebalanceAdapter: tokenConfig.rebalanceAdapter
         });
         _setLeverageTokenActionFee(token, ExternalAction.Deposit, tokenConfig.depositTokenFee);
         _setLeverageTokenActionFee(token, ExternalAction.Withdraw, tokenConfig.withdrawTokenFee);
@@ -424,11 +418,12 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         uint256 shares = _convertToShares(token, equityInCollateralAsset);
 
         // If action is deposit there might be some dust in collateral but debt can be 0. In that case we should follow target ratio
-        bool shouldFollowTargetRatio = totalShares == 0 || (action == ExternalAction.Deposit && totalDebt == 0);
+        bool shouldFollowInitialRatio = totalShares == 0 || (action == ExternalAction.Deposit && totalDebt == 0);
 
-        if (shouldFollowTargetRatio) {
-            uint256 targetRatio = getLeverageTokenTargetCollateralRatio(token);
-            collateral = Math.mulDiv(equityInCollateralAsset, targetRatio, targetRatio - BASE_RATIO, collateralRounding);
+        if (shouldFollowInitialRatio) {
+            uint256 initialRatio = getLeverageTokenInitialCollateralRatio(token);
+            collateral =
+                Math.mulDiv(equityInCollateralAsset, initialRatio, initialRatio - BASE_RATIO, collateralRounding);
             debt = lendingAdapter.convertCollateralToDebtAsset(collateral - equityInCollateralAsset);
         } else {
             collateral = Math.mulDiv(lendingAdapter.getCollateral(), shares, totalShares, collateralRounding);

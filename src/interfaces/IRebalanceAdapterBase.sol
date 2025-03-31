@@ -8,8 +8,14 @@ import {LeverageTokenState} from "src/types/DataTypes.sol";
 /// @notice Interface for the base RebalanceAdapter
 /// @dev This is minimal interface required for the RebalanceAdapter to be used by the LeverageManager
 interface IRebalanceAdapterBase {
-    /// @notice Validates if LeverageToken is eligible for rebalance
-    /// @param token LeverageToken to validate
+    /// @notice Returns the initial collateral ratio for a LeverageToken
+    /// @param token LeverageToken to get initial collateral ratio for
+    /// @return initialCollateralRatio Initial collateral ratio for the LeverageToken
+    /// @dev Initial collateral ratio is followed when the LeverageToken has no shares and on deposits when debt is 0.
+    function getInitialCollateralRatio(ILeverageToken token) external view returns (uint256 initialCollateralRatio);
+
+    /// @notice Validates if a LeverageToken is eligible for rebalance
+    /// @param token LeverageToken to check eligibility for
     /// @param state State of the LeverageToken
     /// @param caller Caller of the function
     /// @return isEligible True if LeverageToken is eligible for rebalance, false otherwise

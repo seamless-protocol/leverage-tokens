@@ -11,7 +11,7 @@ import {IMorphoLendingAdapterFactory} from "src/interfaces/IMorphoLendingAdapter
 import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
 
 /**
- * @dev The MorphoLendingAdapterFactory is a factory contract for deploying deterministic minimal proxies of the
+ * @dev The MorphoLendingAdapterFactory is a factory contract for deploying ERC-1167 minimal proxies of the
  * MorphoLendingAdapter contract using OpenZeppelin's Clones library.
  */
 contract MorphoLendingAdapterFactory is IMorphoLendingAdapterFactory {

@@ -48,7 +48,6 @@ contract MorphoLendingAdapterTest is IntegrationTestBase {
             LeverageTokenConfig({
                 lendingAdapter: morphoLendingAdapter,
                 rebalanceAdapter: IRebalanceAdapterBase(address(0)),
-                targetCollateralRatio: 2e18,
                 depositTokenFee: 0,
                 withdrawTokenFee: 0
             }),

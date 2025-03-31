@@ -76,10 +76,13 @@ interface IDutchAuctionRebalanceAdapter {
     /// @return minPriceMultiplier The minimum price multiplier for all auctions
     function getMinPriceMultiplier() external view returns (uint256 minPriceMultiplier);
 
-    /// @notice Returns the rebalance status of the LeverageToken
-    /// @return _isEligibleForRebalance Whether the LeverageToken is eligible for rebalance
-    /// @return isOverCollateralized Whether the LeverageToken is over-collateralized with respect to the target collateral
-    ///         ratio of the LeverageToken
+    /// @notice Returns target collateral ratio for the LeverageToken
+    /// @return targetCollateralRatio Target collateral ratio
+    function getLeverageTokenTargetCollateralRatio() external view returns (uint256 targetCollateralRatio);
+
+    /// @notice Returns the LeverageToken's rebalance status
+    /// @return _isEligibleForRebalance True if the LeverageToken is eligible for rebalance, false otherwise
+    /// @return isOverCollateralized True if the LeverageToken is over-collateralized, false otherwise
     function getLeverageTokenRebalanceStatus()
         external
         view

@@ -122,11 +122,14 @@ abstract contract DutchAuctionRebalanceAdapter is IDutchAuctionRebalanceAdapter,
     }
 
     /// @inheritdoc IDutchAuctionRebalanceAdapter
+    function getLeverageTokenTargetCollateralRatio() public view virtual returns (uint256 targetCollateralRatio);
+
+    /// @inheritdoc IDutchAuctionRebalanceAdapter
     function getLeverageTokenRebalanceStatus() public view returns (bool isEligible, bool isOverCollateralized) {
         ILeverageToken token = getLeverageToken();
         ILeverageManager leverageManager = getLeverageManager();
 
-        uint256 targetRatio = leverageManager.getLeverageTokenTargetCollateralRatio(token);
+        uint256 targetRatio = getLeverageTokenTargetCollateralRatio();
         LeverageTokenState memory state = leverageManager.getLeverageTokenState(token);
 
         isEligible = isEligibleForRebalance(token, state, address(this));

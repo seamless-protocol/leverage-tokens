@@ -38,11 +38,14 @@ contract IntegrationTestBase is Test {
 
     address public user = makeAddr("user");
     address public treasury = makeAddr("treasury");
-    ILeverageToken public leverageToken;
 
+    RebalanceAdapter rebalanceAdapterImplementation;
+
+    ILeverageToken public leverageToken;
     IMorphoLendingAdapterFactory public morphoLendingAdapterFactory;
     ILeverageManager public leverageManager = ILeverageManager(makeAddr("leverageManager"));
     MorphoLendingAdapter public morphoLendingAdapter;
+    RebalanceAdapter public rebalanceAdapter;
 
     function setUp() public virtual {
         vm.createSelectFork(vm.envString("BASE_RPC_URL"), FORK_BLOCK_NUMBER);
@@ -69,17 +72,13 @@ contract IntegrationTestBase is Test {
             address(morphoLendingAdapterFactory.deployAdapter(WETH_USDC_MARKET_ID, address(this), bytes32(0)))
         );
 
-        vm.mockCall(
-            address(0),
-            abi.encodeWithSelector(IRebalanceAdapterBase.postLeverageTokenCreation.selector),
-            abi.encode(true)
-        );
+        rebalanceAdapterImplementation = new RebalanceAdapter();
+        rebalanceAdapter = _deployRebalanceAdapter(1.5e18, 2e18, 2.5e18, 7 minutes, 1.2e18, 0.9e18, 1.2e18, 40_00);
 
         leverageToken = leverageManager.createNewLeverageToken(
             LeverageTokenConfig({
                 lendingAdapter: ILendingAdapter(address(morphoLendingAdapter)),
-                targetCollateralRatio: 2 * BASE_RATIO,
-                rebalanceAdapter: IRebalanceAdapter(address(0)),
+                rebalanceAdapter: IRebalanceAdapter(address(rebalanceAdapter)),
                 depositTokenFee: 0,
                 withdrawTokenFee: 0
             }),
@@ -131,31 +130,16 @@ contract IntegrationTestBase is Test {
             morphoLendingAdapterFactory.deployAdapter(WETH_USDC_MARKET_ID, address(this), bytes32(vm.randomUint()))
         );
 
-        RebalanceAdapter rebalanceAdapterImplementation = new RebalanceAdapter();
-        address rebalanceAdapter = address(
-            new ERC1967Proxy(
-                address(rebalanceAdapterImplementation),
-                abi.encodeWithSelector(
-                    RebalanceAdapter.initialize.selector,
-                    address(this),
-                    address(this),
-                    leverageManager,
-                    minColRatio,
-                    maxColRatio,
-                    7 minutes,
-                    1.2 * 1e18,
-                    0.9 * 1e18,
-                    1.1e18,
-                    40_00
-                )
+        address _rebalanceAdapter = address(
+            _deployRebalanceAdapter(
+                minColRatio, targetCollateralRatio, maxColRatio, 7 minutes, 1.2 * 1e18, 0.9 * 1e18, 1.1e18, 40_00
             )
         );
 
         ILeverageToken _leverageToken = leverageManager.createNewLeverageToken(
             LeverageTokenConfig({
                 lendingAdapter: lendingAdapter,
-                targetCollateralRatio: targetCollateralRatio,
-                rebalanceAdapter: IRebalanceAdapter(rebalanceAdapter),
+                rebalanceAdapter: IRebalanceAdapter(_rebalanceAdapter),
                 depositTokenFee: depositFee,
                 withdrawTokenFee: withdrawFee
             }),
@@ -164,5 +148,38 @@ contract IntegrationTestBase is Test {
         );
 
         return _leverageToken;
+    }
+
+    function _deployRebalanceAdapter(
+        uint256 minCollateralRatio,
+        uint256 targetCollateralRatio,
+        uint256 maxCollateralRatio,
+        uint256 auctionDuration,
+        uint256 initialPriceMultiplier,
+        uint256 minPriceMultiplier,
+        uint256 collateralRatioThreshold,
+        uint256 rebalanceReward
+    ) internal returns (RebalanceAdapter) {
+        ERC1967Proxy proxy = new ERC1967Proxy(
+            address(rebalanceAdapterImplementation),
+            abi.encodeWithSelector(
+                RebalanceAdapter.initialize.selector,
+                RebalanceAdapter.RebalanceAdapterInitParams({
+                    owner: address(this),
+                    authorizedCreator: address(this),
+                    leverageManager: leverageManager,
+                    minCollateralRatio: minCollateralRatio,
+                    targetCollateralRatio: targetCollateralRatio,
+                    maxCollateralRatio: maxCollateralRatio,
+                    auctionDuration: auctionDuration,
+                    initialPriceMultiplier: initialPriceMultiplier,
+                    minPriceMultiplier: minPriceMultiplier,
+                    preLiquidationCollateralRatioThreshold: collateralRatioThreshold,
+                    rebalanceReward: rebalanceReward
+                })
+            )
+        );
+
+        return RebalanceAdapter(address(proxy));
     }
 }

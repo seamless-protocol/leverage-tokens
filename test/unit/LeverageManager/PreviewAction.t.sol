@@ -18,9 +18,9 @@ contract PreviewActionTest is LeverageManagerTest {
 
         _createNewLeverageToken(
             manager,
+            2e18,
             LeverageTokenConfig({
                 lendingAdapter: ILendingAdapter(address(lendingAdapter)),
-                targetCollateralRatio: 2 * _BASE_RATIO(), // 2x leverage
                 rebalanceAdapter: IRebalanceAdapter(address(0)),
                 depositTokenFee: 0,
                 withdrawTokenFee: 0

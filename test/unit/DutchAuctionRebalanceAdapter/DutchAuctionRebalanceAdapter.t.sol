@@ -58,8 +58,7 @@ contract DutchAuctionRebalanceAdapterTest is Test {
                 leverageToken: leverageToken,
                 lendingAdapter: ILendingAdapter(address(lendingAdapter)),
                 collateralAsset: collateralToken,
-                debtAsset: debtToken,
-                targetCollateralRatio: TARGET_RATIO
+                debtAsset: debtToken
             })
         );
 
@@ -105,7 +104,7 @@ contract DutchAuctionRebalanceAdapterTest is Test {
     }
 
     function _mockLeverageTokenTargetCollateralRatio(uint256 targetRatio) internal {
-        leverageManager.setLeverageTokenTargetCollateralRatio(leverageToken, targetRatio);
+        auctionRebalancer.mock_setTargetCollateralRatio(targetRatio);
     }
 
     function _setLeverageTokenCollateralRatio(uint256 collateralRatio) internal {
