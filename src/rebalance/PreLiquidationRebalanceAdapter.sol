@@ -13,7 +13,7 @@ import {IPreLiquidationLendingAdapter} from "src/interfaces/IPreLiquidationLendi
 import {IPreLiquidationRebalanceAdapter} from "src/interfaces/IPreLiquidationRebalanceAdapter.sol";
 
 abstract contract PreLiquidationRebalanceAdapter is Initializable, IPreLiquidationRebalanceAdapter {
-    uint256 public constant WAD = 1e18;
+    uint256 internal constant WAD = 1e18;
     /// @notice Reward base, 100_00 means that the reward is 100%
     uint256 public constant REWARD_BASE = 1e4;
 
