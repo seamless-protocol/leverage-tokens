@@ -12,7 +12,7 @@ interface IFeeManager {
     error TreasuryNotSet();
 
     /// @notice Emitted when a LeverageToken fee is set for a specific action
-    event LeverageTokenActionFeeSet(ILeverageToken leverageToken, ExternalAction action, uint256 fee);
+    event LeverageTokenActionFeeSet(ILeverageToken indexed leverageToken, ExternalAction indexed action, uint256 fee);
 
     /// @notice Emitted when a treasury fee is set for a specific action
     event TreasuryActionFeeSet(ExternalAction indexed action, uint256 fee);

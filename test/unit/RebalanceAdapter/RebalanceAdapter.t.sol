@@ -4,13 +4,13 @@ pragma solidity ^0.8.26;
 import {Test} from "forge-std/Test.sol";
 
 import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
-
 import {RebalanceAdapter} from "src/rebalance/RebalanceAdapter.sol";
 import {RebalanceAdapterHarness} from "test/unit/harness/RebalaneAdapterHarness.t.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {LeverageTokenState} from "src/types/DataTypes.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
+import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 
 contract RebalanceAdapterTest is Test {
     address public authorizedCreator = makeAddr("authorizedCreator");
@@ -30,6 +30,10 @@ contract RebalanceAdapterTest is Test {
 
     function setUp() public virtual {
         RebalanceAdapterHarness implementation = new RebalanceAdapterHarness();
+
+        vm.expectEmit(true, true, true, true);
+        emit IRebalanceAdapter.RebalanceAdapterInitialized(authorizedCreator, leverageManager);
+
         address proxy = UnsafeUpgrades.deployUUPSProxy(
             address(implementation),
             abi.encodeWithSelector(

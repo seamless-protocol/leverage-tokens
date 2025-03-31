@@ -22,6 +22,8 @@ contract LeverageToken is
         __ERC20_init(_name, _symbol);
         __ERC20Permit_init(_name);
         __Ownable_init(_owner);
+
+        emit ILeverageToken.LeverageTokenInitialized(_name, _symbol);
     }
 
     /// @inheritdoc ILeverageToken

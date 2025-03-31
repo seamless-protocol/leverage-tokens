@@ -37,6 +37,9 @@ interface ILeverageManager is IFeeManager {
     /// @notice Error thrown when a LeverageToken's state after rebalance is invalid
     error InvalidLeverageTokenStateAfterRebalance(ILeverageToken token);
 
+    /// @notice Event emitted when the LeverageManager is initialized
+    event LeverageManagerInitialized(IBeaconProxyFactory leverageTokenFactory);
+
     /// @notice Event emitted when a new LeverageToken is created
     event LeverageTokenCreated(
         ILeverageToken indexed token, IERC20 collateralAsset, IERC20 debtAsset, LeverageTokenConfig config

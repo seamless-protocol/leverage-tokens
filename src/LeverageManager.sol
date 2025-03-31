@@ -52,8 +52,8 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
     function initialize(address initialAdmin, IBeaconProxyFactory leverageTokenFactory) external initializer {
         _grantRole(DEFAULT_ADMIN_ROLE, initialAdmin);
-
         _getLeverageManagerStorage().tokenFactory = leverageTokenFactory;
+        emit LeverageManagerInitialized(leverageTokenFactory);
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}

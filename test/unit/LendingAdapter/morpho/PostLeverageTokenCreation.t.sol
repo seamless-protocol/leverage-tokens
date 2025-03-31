@@ -17,6 +17,8 @@ contract PostLeverageTokenCreation is MorphoLendingAdapterTest {
         MorphoLendingAdapter(address(lendingAdapter)).initialize(defaultMarketId, creator);
 
         vm.prank(address(leverageManager));
+        vm.expectEmit(true, true, true, true);
+        emit IMorphoLendingAdapter.MorphoLendingAdapterUsed();
         lendingAdapter.postLeverageTokenCreation(creator, token); // Should not revert
     }
 

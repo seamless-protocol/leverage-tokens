@@ -9,7 +9,7 @@ interface IRebalanceAdapter is IRebalanceAdapterBase {
     error Unauthorized();
 
     /// @notice Event emitted when the rebalance adapter is initialized
-    event RebalanceAdapterInitialized(address authorizedCreator, ILeverageManager leverageManager);
+    event RebalanceAdapterInitialized(address indexed authorizedCreator, ILeverageManager indexed leverageManager);
 
     /// @notice Returns the authorized creator of the RebalanceAdapter
     /// @return authorizedCreator The authorized creator of the RebalanceAdapter

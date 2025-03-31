@@ -37,6 +37,8 @@ contract MorphoLendingAdapterInitializeTest is MorphoLendingAdapterTest {
         assertEq(address(_lendingAdapter.morpho()), address(morpho));
 
         vm.expectEmit(true, true, true, true);
+        emit IMorphoLendingAdapter.MorphoLendingAdapterInitialized(marketId, marketParams, authorizedCreator);
+        vm.expectEmit(true, true, true, true);
         emit Initializable.Initialized(1);
         _lendingAdapter.initialize(marketId, authorizedCreator);
 
