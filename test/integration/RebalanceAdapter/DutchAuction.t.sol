@@ -10,7 +10,7 @@ import {Auction, LeverageTokenState} from "src/types/DataTypes.sol";
 import {IDutchAuctionRebalanceAdapter} from "src/interfaces/IDutchAuctionRebalanceAdapter.sol";
 import {RebalanceAdapter} from "src/rebalance/RebalanceAdapter.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
-import {IMinMaxCollateralRatioRebalanceAdapter} from "src/interfaces/IMinMaxCollateralRatioRebalanceAdapter.sol";
+import {ICollateralRatiosRebalanceAdapter} from "src/interfaces/ICollateralRatiosRebalanceAdapter.sol";
 
 contract DutchAuctionTest is RebalanceTest {
     function test_setUp() public view {
@@ -26,17 +26,17 @@ contract DutchAuctionTest is RebalanceTest {
 
     function testFork_DeployNewDutchAuctionRebalanceAdapter_RevertIf_MinPriceMultiplierTooHigh() public {
         vm.expectRevert(IDutchAuctionRebalanceAdapter.MinPriceMultiplierTooHigh.selector);
-        ethLong2xRebalanceAdapter = _deployRebalanceAdapter(1, 2, 1, 1.2e18, 1.2e18 + 1, 1.1e18, 40_00);
+        ethLong2xRebalanceAdapter = _deployRebalanceAdapter(1, 2, 2, 1, 1.2e18, 1.2e18 + 1, 1.1e18, 40_00);
     }
 
     function testFork_DeployNewDutchAuctionRebalanceAdapter_RevertIf_InvalidAuctionDuration() public {
         vm.expectRevert(IDutchAuctionRebalanceAdapter.InvalidAuctionDuration.selector);
-        ethLong2xRebalanceAdapter = _deployRebalanceAdapter(1, 2, 0, 1.2e18, 0.9e18, 1.1e18, 40_00);
+        ethLong2xRebalanceAdapter = _deployRebalanceAdapter(1, 2, 2, 0, 1.2e18, 0.9e18, 1.1e18, 40_00);
     }
 
     function testFork_DeployNewDutchAuctionRebalanceAdapter_RevertIf_MinCollateralRatioTooHigh() public {
-        vm.expectRevert(IMinMaxCollateralRatioRebalanceAdapter.MinCollateralRatioTooHigh.selector);
-        _deployRebalanceAdapter(3, 2, 1, 1.2e18, 0.9e18, 1.1e18, 40_00);
+        vm.expectRevert(ICollateralRatiosRebalanceAdapter.MinCollateralRatioTooHigh.selector);
+        _deployRebalanceAdapter(3, 2, 2, 1, 1.2e18, 0.9e18, 1.1e18, 40_00);
     }
 
     function testFork_CreateNewLeverageToken_RevertIf_LeverageTokenAlreadySet() public {
@@ -50,7 +50,6 @@ contract DutchAuctionTest is RebalanceTest {
         LeverageTokenConfig memory config = LeverageTokenConfig({
             lendingAdapter: ILendingAdapter(morphoLendingAdapter),
             rebalanceAdapter: ethLong2xRebalanceAdapter,
-            targetCollateralRatio: 2 * BASE_RATIO,
             depositTokenFee: 0,
             withdrawTokenFee: 0
         });

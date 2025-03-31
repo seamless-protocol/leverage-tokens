@@ -39,9 +39,9 @@ contract RebalanceTest is LeverageManagerTest {
 
         _createNewLeverageToken(
             manager,
+            2e18,
             LeverageTokenConfig({
                 lendingAdapter: ILendingAdapter(address(adapter)),
-                targetCollateralRatio: 2 * _BASE_RATIO(), // 2x leverage
                 rebalanceAdapter: IRebalanceAdapter(address(rebalanceAdapter)),
                 depositTokenFee: 0,
                 withdrawTokenFee: 0
