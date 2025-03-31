@@ -8,25 +8,28 @@ import {IOracle} from "@morpho-blue/interfaces/IOracle.sol";
 
 // Internal imports
 import {ExternalAction} from "src/types/DataTypes.sol";
-import {LeverageManagerBase} from "./LeverageManagerBase.t.sol";
-import {ActionData, StrategyState} from "src/types/DataTypes.sol";
+import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
+import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
+import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
+import {LeverageManagerTest} from "./LeverageManager.t.sol";
+import {ActionData, LeverageTokenState} from "src/types/DataTypes.sol";
 
-contract LeverageManagerWithdrawTest is LeverageManagerBase {
+contract LeverageManagerWithdrawTest is LeverageManagerTest {
     /// @dev In this block price on oracle 3392.292471591441746049801068
     function testFork_withdraw_NoFee() public {
         uint256 equityInCollateralAsset = 10 ether;
         uint256 collateralToAdd = 2 * equityInCollateralAsset;
         _deposit(user, equityInCollateralAsset, collateralToAdd);
 
-        StrategyState memory stateBefore = _getStrategyState();
+        LeverageTokenState memory stateBefore = getLeverageTokenState();
 
         uint256 equityToWithdraw = 5 ether;
-        ActionData memory previewData = leverageManager.previewWithdraw(strategy, equityToWithdraw);
+        ActionData memory previewData = leverageManager.previewWithdraw(leverageToken, equityToWithdraw);
         _withdraw(user, equityToWithdraw, previewData.debt);
 
-        StrategyState memory stateAfter = _getStrategyState();
+        LeverageTokenState memory stateAfter = getLeverageTokenState();
 
-        // Ensure that collateral ratio is the same. Allow for 1 wei mistake but it must be in favour of strategy
+        // Ensure that collateral ratio is the same. Allow for 1 wei mistake but it must be in favour of leverage token
         assertGe(stateAfter.collateralRatio, stateBefore.collateralRatio);
         assertLe(stateAfter.collateralRatio, stateBefore.collateralRatio + 1);
         assertEq(stateAfter.debt, stateBefore.debt - previewData.debt);
@@ -39,7 +42,7 @@ contract LeverageManagerWithdrawTest is LeverageManagerBase {
         uint256 collateralToAdd = 2 * equityInCollateralAsset;
         _deposit(user, equityInCollateralAsset, collateralToAdd);
 
-        ActionData memory previewData = leverageManager.previewWithdraw(strategy, 0);
+        ActionData memory previewData = leverageManager.previewWithdraw(leverageToken, 0);
         _withdraw(user, 0, previewData.debt);
 
         assertEq(previewData.collateral, 0);
@@ -56,11 +59,11 @@ contract LeverageManagerWithdrawTest is LeverageManagerBase {
         uint256 shares = _deposit(user, equityInCollateralAsset, collateralToAdd);
 
         uint256 sharesValue = _convertToAssets(shares);
-        uint256 debtToRepay = leverageManager.previewWithdraw(strategy, sharesValue).debt;
+        uint256 debtToRepay = leverageManager.previewWithdraw(leverageToken, sharesValue).debt;
         _withdraw(user, sharesValue, debtToRepay);
 
         // Validate that almost all shares are burned, 1 wei always left because of debt rounding up
-        assertEq(strategy.totalSupply(), 1);
+        assertEq(leverageToken.totalSupply(), 1);
 
         // Validate that almost all collateral is withdrawn, we round down collateral to withdraw so dust can be left
         assertGe(morphoLendingAdapter.getCollateral(), 0);
@@ -79,16 +82,16 @@ contract LeverageManagerWithdrawTest is LeverageManagerBase {
         uint256 collateralToAdd = 2 * equityInCollateralAsset;
         _deposit(user, equityInCollateralAsset, collateralToAdd);
 
-        StrategyState memory stateBefore = _getStrategyState();
+        LeverageTokenState memory stateBefore = getLeverageTokenState();
 
         uint256 equityToWithdraw = 5 ether;
-        ActionData memory previewData = leverageManager.previewWithdraw(strategy, equityToWithdraw);
+        ActionData memory previewData = leverageManager.previewWithdraw(leverageToken, equityToWithdraw);
         _withdraw(user, equityToWithdraw, previewData.debt);
 
-        StrategyState memory stateAfter = _getStrategyState();
+        LeverageTokenState memory stateAfter = getLeverageTokenState();
         uint256 equityInCollateralAssetAfter = morphoLendingAdapter.getEquityInCollateralAsset();
 
-        // Ensure that collateral ratio is the same. Allow for 1 wei mistake but it must be in favour of strategy
+        // Ensure that collateral ratio is the same. Allow for 1 wei mistake but it must be in favour of leverage token
         assertGe(stateAfter.collateralRatio, stateBefore.collateralRatio);
         assertLe(stateAfter.collateralRatio, stateBefore.collateralRatio + 1);
 
@@ -108,15 +111,15 @@ contract LeverageManagerWithdrawTest is LeverageManagerBase {
         (,, address oracle,,) = morphoLendingAdapter.marketParams();
         vm.mockCall(address(oracle), abi.encodeWithSelector(IOracle.price.selector), abi.encode(4000e24));
 
-        StrategyState memory stateBefore = _getStrategyState();
+        LeverageTokenState memory stateBefore = getLeverageTokenState();
 
         uint256 equityToWithdraw = 5 ether;
-        ActionData memory previewData = leverageManager.previewWithdraw(strategy, equityToWithdraw);
+        ActionData memory previewData = leverageManager.previewWithdraw(leverageToken, equityToWithdraw);
         _withdraw(user, equityToWithdraw, previewData.debt);
 
-        StrategyState memory stateAfter = _getStrategyState();
+        LeverageTokenState memory stateAfter = getLeverageTokenState();
 
-        // Ensure that collateral ratio is the same. Allow for 1 wei mistake but it must be in favour of strategy
+        // Ensure that collateral ratio is the same. Allow for 1 wei mistake but it must be in favour of leverage token
         assertGe(stateAfter.collateralRatio, stateBefore.collateralRatio);
         assertLe(stateAfter.collateralRatio, stateBefore.collateralRatio + 1);
 
@@ -131,7 +134,8 @@ contract LeverageManagerWithdrawTest is LeverageManagerBase {
 
         // Withdraw everything
         uint256 sharesValueAfterDeposit = _convertToAssets(sharesAfterDeposit);
-        ActionData memory previewDataAfterDeposit = leverageManager.previewWithdraw(strategy, sharesValueAfterDeposit);
+        ActionData memory previewDataAfterDeposit =
+            leverageManager.previewWithdraw(leverageToken, sharesValueAfterDeposit);
         _withdraw(user, sharesValueAfterDeposit, previewDataAfterDeposit.debt);
 
         // Deposit again to create the same scenario
@@ -139,12 +143,12 @@ contract LeverageManagerWithdrawTest is LeverageManagerBase {
 
         // Withdraw half of it
         uint256 equityToWithdraw = equityInCollateralAsset / 2;
-        ActionData memory previewDataFirstTime = leverageManager.previewWithdraw(strategy, equityToWithdraw);
+        ActionData memory previewDataFirstTime = leverageManager.previewWithdraw(leverageToken, equityToWithdraw);
         _withdraw(user, equityToWithdraw, previewDataFirstTime.debt);
 
         // Withdraw the rest
-        equityToWithdraw = _convertToAssets(strategy.balanceOf(user));
-        ActionData memory previewDataSecondTime = leverageManager.previewWithdraw(strategy, equityToWithdraw);
+        equityToWithdraw = _convertToAssets(leverageToken.balanceOf(user));
+        ActionData memory previewDataSecondTime = leverageManager.previewWithdraw(leverageToken, equityToWithdraw);
         _withdraw(user, equityToWithdraw, previewDataSecondTime.debt);
 
         // Validate that in both cases we get the same amount of collateral and debt
@@ -157,8 +161,11 @@ contract LeverageManagerWithdrawTest is LeverageManagerBase {
     }
 
     function testFork_withdraw_withFee() public {
-        leverageManager.setTreasuryActionFee(ExternalAction.Withdraw, 10_00); // 10%
-        leverageManager.setStrategyActionFee(strategy, ExternalAction.Withdraw, 10_00); // 10%
+        uint256 fee = 10_00; // 10%
+        leverageManager.setTreasuryActionFee(ExternalAction.Withdraw, fee); // 10%
+        leverageToken = _createNewLeverageToken(BASE_RATIO, 2 * BASE_RATIO, 3 * BASE_RATIO, fee, 0);
+        morphoLendingAdapter =
+            MorphoLendingAdapter(address(leverageManager.getLeverageTokenLendingAdapter(leverageToken)));
 
         uint256 equityInCollateralAsset = 10 ether;
         uint256 collateralToAdd = 2 * equityInCollateralAsset;
@@ -168,11 +175,11 @@ contract LeverageManagerWithdrawTest is LeverageManagerBase {
 
         // Withdraw 50% of equity
         uint256 equityToWithdraw = equityInCollateralAssetAfterDeposit / 2;
-        ActionData memory previewData = leverageManager.previewWithdraw(strategy, equityToWithdraw);
+        ActionData memory previewData = leverageManager.previewWithdraw(leverageToken, equityToWithdraw);
         _withdraw(user, equityToWithdraw, previewData.debt);
 
         // Lower or equal because or rounding, theoretically perfect would be 4.5 ether
-        assertEq(strategy.balanceOf(user), 4.5 ether + 1); // +1 because of rounding, equityToWithdraw is rounded down so shares to burn will also be a bit lower
+        assertEq(leverageToken.balanceOf(user), 4.5 ether + 1); // +1 because of rounding, equityToWithdraw is rounded down so shares to burn will also be a bit lower
 
         assertEq(WETH.balanceOf(user), previewData.collateral); // User receives the collateral asset
         assertEq(WETH.balanceOf(treasury), previewData.treasuryFee); // Treasury receives the fee

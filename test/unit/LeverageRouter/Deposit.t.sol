@@ -4,12 +4,11 @@ pragma solidity ^0.8.26;
 // Internal imports
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
-import {IStrategy} from "src/interfaces/IStrategy.sol";
+import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
-import {LeverageRouterBaseTest} from "./LeverageRouterBase.t.sol";
-import {MockLeverageManager} from "../mock/MockLeverageManager.sol";
+import {LeverageRouterTest} from "./LeverageRouter.t.sol";
 
-contract DepositTest is LeverageRouterBaseTest {
+contract DepositTest is LeverageRouterTest {
     function testFuzz_deposit_DebtSwapLessThanRequiredFlashLoanRepaymentCollateral_SenderSuppliesSufficientCollateral(
         uint256 requiredCollateral,
         uint256 equityInCollateralAsset,
@@ -48,7 +47,7 @@ contract DepositTest is LeverageRouterBaseTest {
         deal(address(collateralToken), address(this), collateralFromSender);
         collateralToken.approve(address(leverageRouter), collateralFromSender);
         leverageRouter.deposit(
-            strategy,
+            leverageToken,
             equityInCollateralAsset,
             shares,
             additionalCollateralRequiredForFlashLoanRepay,
@@ -70,8 +69,8 @@ contract DepositTest is LeverageRouterBaseTest {
         );
 
         // Sender receives the minted shares
-        assertEq(strategy.balanceOf(address(this)), shares);
-        assertEq(strategy.balanceOf(address(leverageRouter)), 0);
+        assertEq(leverageToken.balanceOf(address(this)), shares);
+        assertEq(leverageToken.balanceOf(address(leverageRouter)), 0);
 
         // The LeverageRouter has the required collateral to repay the flash loan and Morpho is approved to spend it
         assertEq(collateralToken.balanceOf(address(leverageRouter)), requiredFlashLoan);
@@ -114,7 +113,7 @@ contract DepositTest is LeverageRouterBaseTest {
         deal(address(collateralToken), address(this), requiredCollateralFromSender);
         collateralToken.approve(address(leverageRouter), requiredCollateralFromSender);
         leverageRouter.deposit(
-            strategy,
+            leverageToken,
             equityInCollateralAsset,
             shares,
             0, // Sender does not need to send any additional collateral to help repay the flash loan
@@ -136,8 +135,8 @@ contract DepositTest is LeverageRouterBaseTest {
         );
 
         // Sender receives the minted shares
-        assertEq(strategy.balanceOf(address(this)), shares);
-        assertEq(strategy.balanceOf(address(leverageRouter)), 0);
+        assertEq(leverageToken.balanceOf(address(this)), shares);
+        assertEq(leverageToken.balanceOf(address(leverageRouter)), 0);
 
         // The LeverageRouter has the required collateral to repay the flash loan and Morpho is approved to spend it
         assertEq(collateralToken.balanceOf(address(leverageRouter)), requiredFlashLoan);
@@ -195,7 +194,7 @@ contract DepositTest is LeverageRouterBaseTest {
             )
         );
         leverageRouter.deposit(
-            strategy,
+            leverageToken,
             equityInCollateralAsset,
             shares,
             collateralFromSender - equityInCollateralAsset,

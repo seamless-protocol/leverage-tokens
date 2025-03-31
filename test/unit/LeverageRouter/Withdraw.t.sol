@@ -4,14 +4,14 @@ pragma solidity ^0.8.26;
 // Internal imports
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
-import {IStrategy} from "src/interfaces/IStrategy.sol";
+import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {LeverageRouter} from "src/periphery/LeverageRouter.sol";
 import {ExternalAction} from "src/types/DataTypes.sol";
-import {LeverageRouterBaseTest} from "./LeverageRouterBase.t.sol";
+import {LeverageRouterTest} from "./LeverageRouter.t.sol";
 import {MockLeverageManager} from "../mock/MockLeverageManager.sol";
 
-contract WithdrawTest is LeverageRouterBaseTest {
+contract WithdrawTest is LeverageRouterTest {
     function testFuzz_withdraw_CollateralSwapWithinMaxCostForFlashLoanRepaymentDebt(
         uint128 requiredCollateral,
         uint128 requiredDebt,
@@ -51,9 +51,9 @@ contract WithdrawTest is LeverageRouterBaseTest {
         // Execute the withdraw
         deal(address(debtToken), address(this), requiredDebt);
         debtToken.approve(address(leverageRouter), requiredDebt);
-        strategy.approve(address(leverageRouter), withdrawShares);
+        leverageToken.approve(address(leverageRouter), withdrawShares);
         leverageRouter.withdraw(
-            strategy,
+            leverageToken,
             equityInCollateralAsset,
             withdrawShares,
             maxSwapCostInCollateralAsset,
@@ -75,7 +75,7 @@ contract WithdrawTest is LeverageRouterBaseTest {
         );
 
         // Senders shares are burned
-        assertEq(strategy.balanceOf(address(this)), depositShares - withdrawShares);
+        assertEq(leverageToken.balanceOf(address(this)), depositShares - withdrawShares);
 
         // The LeverageRouter has the required debt to repay the flash loan and Morpho is approved to spend it
         assertEq(debtToken.balanceOf(address(leverageRouter)), requiredDebt);
@@ -125,7 +125,7 @@ contract WithdrawTest is LeverageRouterBaseTest {
         // Execute the withdraw
         deal(address(debtToken), address(this), requiredDebt);
         debtToken.approve(address(leverageRouter), requiredDebt);
-        strategy.approve(address(leverageRouter), shares);
+        leverageToken.approve(address(leverageRouter), shares);
 
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -135,7 +135,7 @@ contract WithdrawTest is LeverageRouterBaseTest {
             )
         );
         leverageRouter.withdraw(
-            strategy,
+            leverageToken,
             equityInCollateralAsset,
             shares,
             maxSwapCostInCollateralAsset,

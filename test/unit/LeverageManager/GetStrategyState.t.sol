@@ -2,31 +2,31 @@
 pragma solidity ^0.8.26;
 
 // Internal imports
-import {LeverageManagerBaseTest} from "./LeverageManagerBase.t.sol";
-import {StrategyState} from "src/types/DataTypes.sol";
+import {LeverageManagerTest} from "./LeverageManager.t.sol";
+import {LeverageTokenState} from "src/types/DataTypes.sol";
 
-contract GetStrategyStateTest is LeverageManagerBaseTest {
+contract GetLeverageTokenStateTest is LeverageManagerTest {
     function setUp() public override {
         super.setUp();
 
-        _createDummyStrategy();
+        _createDummyLeverageToken();
     }
 
-    function test_getStrategyState() public {
-        _mockStrategyCollateralInDebtAsset(200 ether);
-        _mockStrategyDebt(100 ether);
+    function test_getLeverageTokenState() public {
+        _mockLeverageTokenCollateralInDebtAsset(200 ether);
+        _mockLeverageTokenDebt(100 ether);
 
-        StrategyState memory state = leverageManager.exposed_getStrategyState(strategy);
+        LeverageTokenState memory state = leverageManager.getLeverageTokenState(leverageToken);
         assertEq(state.collateralInDebtAsset, 200 ether);
         assertEq(state.debt, 100 ether);
         assertEq(state.collateralRatio, 2 * _BASE_RATIO());
     }
 
-    function test_getStrategyState_ZeroDebt() public {
-        _mockStrategyCollateralInDebtAsset(200 ether);
-        _mockStrategyDebt(0);
+    function test_getLeverageTokenState_ZeroDebt() public {
+        _mockLeverageTokenCollateralInDebtAsset(200 ether);
+        _mockLeverageTokenDebt(0);
 
-        StrategyState memory state = leverageManager.exposed_getStrategyState(strategy);
+        LeverageTokenState memory state = leverageManager.getLeverageTokenState(leverageToken);
         assertEq(state.collateralInDebtAsset, 200 ether);
         assertEq(state.debt, 0);
         assertEq(state.collateralRatio, type(uint256).max);

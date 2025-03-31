@@ -2,13 +2,13 @@
 pragma solidity ^0.8.26;
 
 // Internal imports
-import {LeverageManagerBaseTest} from "test/unit/LeverageManager/LeverageManagerBase.t.sol";
+import {LeverageManagerTest} from "test/unit/LeverageManager/LeverageManager.t.sol";
 
-contract ConvertToSharesTest is LeverageManagerBaseTest {
+contract ConvertToSharesTest is LeverageManagerTest {
     function setUp() public override {
         super.setUp();
 
-        _createDummyStrategy();
+        _createDummyLeverageToken();
     }
 
     function test_convertToShares_RoundedDown() public {
@@ -20,7 +20,7 @@ contract ConvertToSharesTest is LeverageManagerBaseTest {
             ConvertToSharesState({totalEquity: totalEquity, sharesTotalSupply: sharesTotalSupply})
         );
 
-        uint256 shares = leverageManager.exposed_convertToShares(strategy, equity);
+        uint256 shares = leverageManager.exposed_convertToShares(leverageToken, equity);
         assertEq(shares, 0);
     }
 
@@ -29,7 +29,7 @@ contract ConvertToSharesTest is LeverageManagerBaseTest {
             ConvertToSharesState({totalEquity: totalEquity, sharesTotalSupply: sharesTotalSupply})
         );
 
-        uint256 shares = leverageManager.exposed_convertToShares(strategy, equity);
+        uint256 shares = leverageManager.exposed_convertToShares(leverageToken, equity);
         uint256 expectedShares = equity * (uint256(sharesTotalSupply) + 1) / (uint256(totalEquity) + 1);
 
         assertEq(shares, expectedShares);

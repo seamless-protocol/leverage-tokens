@@ -10,12 +10,13 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
 import {ExternalAction} from "src/types/DataTypes.sol";
-import {IStrategy} from "src/interfaces/IStrategy.sol";
+import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 
 contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
-    // Max fee that can be set, 100_00 is 100%
+    /// @inheritdoc IFeeManager
     uint256 public constant MAX_FEE = 100_00;
+
     bytes32 public constant FEE_MANAGER_ROLE = keccak256("FEE_MANAGER_ROLE");
 
     /// @dev Struct containing all state for the FeeManager contract
@@ -25,8 +26,8 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
         address treasury;
         /// @dev Treasury fee for each action
         mapping(ExternalAction action => uint256) treasuryActionFee;
-        /// @dev Strategy address => Action => Fee
-        mapping(IStrategy strategy => mapping(ExternalAction action => uint256)) strategyActionFee;
+        /// @dev Leverage token fee for each action
+        mapping(ILeverageToken token => mapping(ExternalAction action => uint256)) tokenActionFee;
     }
 
     function _getFeeManagerStorage() internal pure returns (FeeManagerStorage storage $) {
@@ -47,8 +48,8 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
     function __FeeManager_init_unchained() internal onlyInitializing {}
 
     /// @inheritdoc IFeeManager
-    function getStrategyActionFee(IStrategy strategy, ExternalAction action) public view returns (uint256 fee) {
-        return _getFeeManagerStorage().strategyActionFee[strategy][action];
+    function getLeverageTokenActionFee(ILeverageToken token, ExternalAction action) public view returns (uint256 fee) {
+        return _getFeeManagerStorage().tokenActionFee[token][action];
     }
 
     /// @inheritdoc IFeeManager
@@ -59,20 +60,6 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
     /// @inheritdoc IFeeManager
     function getTreasuryActionFee(ExternalAction action) public view returns (uint256 fee) {
         return _getFeeManagerStorage().treasuryActionFee[action];
-    }
-
-    /// @inheritdoc IFeeManager
-    function setStrategyActionFee(IStrategy strategy, ExternalAction action, uint256 fee)
-        external
-        onlyRole(FEE_MANAGER_ROLE)
-    {
-        // Check if fees are not higher than 100%
-        if (fee > MAX_FEE) {
-            revert FeeTooHigh(fee, MAX_FEE);
-        }
-
-        _getFeeManagerStorage().strategyActionFee[strategy][action] = fee;
-        emit StrategyActionFeeSet(strategy, action, fee);
     }
 
     /// @inheritdoc IFeeManager
@@ -106,48 +93,47 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
     }
 
     /// @notice Computes equity fees based on action
-    /// @param strategy Strategy to compute fees for
+    /// @param token Leverage token to compute fees for
     /// @param equity Amount of equity to compute fees for, denominated in collateral asset
     /// @param action Action to compute fees for, Deposit or Withdraw
-    /// @return equityToCover Equity to add / remove from the strategy after fees, denominated in collateral asset
-    /// @return equityForShares Equity to mint / burn shares for from the strategy after fees, denominated in collateral asset
-    /// @return strategyFee Strategy fee amount, denominated in collateral asset
+    /// @return equityToCover Equity to add / remove from the leverage token after fees, denominated in collateral asset
+    /// @return equityForShares Equity to mint / burn shares for from the leverage token after fees, denominated in collateral asset
+    /// @return tokenFee Leverage token fee amount, denominated in collateral asset
     /// @return treasuryFee Treasury fee amount, denominated in collateral asset
     /// @dev Fees are always rounded up.
-    /// @dev If the sum of the strategy fee and the treasury fee is greater than the amount,
-    ///      the strategy fee is set to the delta of the amount and the treasury fee.
-    function _computeEquityFees(IStrategy strategy, uint256 equity, ExternalAction action)
+    /// @dev If the sum of the leverage token fee and the treasury fee is greater than the amount,
+    ///      the leverage token fee is set to the delta of the amount and the treasury fee.
+    function _computeEquityFees(ILeverageToken token, uint256 equity, ExternalAction action)
         internal
         view
         returns (uint256, uint256, uint256, uint256)
     {
         // A treasury fee is only applied if the treasury is set
         uint256 treasuryFee = Math.mulDiv(equity, getTreasuryActionFee(action), MAX_FEE, Math.Rounding.Ceil);
-        uint256 strategyFee = Math.mulDiv(equity, getStrategyActionFee(strategy, action), MAX_FEE, Math.Rounding.Ceil);
+        uint256 tokenFee = Math.mulDiv(equity, getLeverageTokenActionFee(token, action), MAX_FEE, Math.Rounding.Ceil);
 
-        // If the sum of the strategy fee and the treasury fee is greater than the equity amount,
-        // the strategy fee is set to the delta of the equity amount and the treasury fee.
-        strategyFee = Math.min(strategyFee, equity - treasuryFee);
+        // If the sum of the leverage token fee and the treasury fee is greater than the equity amount,
+        // the leverage token fee is set to the delta of the equity amount and the treasury fee.
+        tokenFee = Math.min(tokenFee, equity - treasuryFee);
 
-        // For the collateral and debt required by the position held by the strategy for the action, we need to use
-        // the equity amount without the strategy fee applied because the strategy fee is used to increase share value
-        // among existing strategy shares. So, the strategy fee is applied on the shares received / burned but not on
+        // For the collateral and debt required by the position held by the leverage token for the action, we need to use
+        // the equity amount without the leverage token fee applied because the leverage token fee is used to increase share value
+        // among existing leverage token shares. So, the leverage token fee is applied on the shares received / burned but not on
         // the collateral supplied / removed and debt borrowed / repaid.
         //
         // For deposits we need to subtract the treasury fee from the equity amount used for the calculation of the
-        // collateral and debt because the treasury fee should not be supplied to the position held by the strategy,
+        // collateral and debt because the treasury fee should not be supplied to the position held by the leverage token,
         // it should be simply transferred to the treasury.
         //
         // For withdrawals, the treasury fee should be included in the calculation of the collateral and debt because
-        // it comes from the collateral removed from the position held by the strategy.
+        // it comes from the collateral removed from the position held by the leverage token.
         uint256 equityToCover = action == ExternalAction.Deposit ? equity - treasuryFee : equity;
 
         // To increase share value for existing users, less shares are minted on deposits and more shares are burned on
         // withdrawals.
-        uint256 equityForShares =
-            action == ExternalAction.Deposit ? equityToCover - strategyFee : equityToCover + strategyFee;
+        uint256 equityForShares = action == ExternalAction.Deposit ? equityToCover - tokenFee : equityToCover + tokenFee;
 
-        return (equityToCover, equityForShares, strategyFee, treasuryFee);
+        return (equityToCover, equityForShares, tokenFee, treasuryFee);
     }
 
     /// @notice Charges a treasury fee if the treasury is set
@@ -158,5 +144,20 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
         if (treasury != address(0)) {
             SafeERC20.safeTransfer(collateralAsset, treasury, amount);
         }
+    }
+
+    /// @notice Sets leverage token fee for specific action
+    /// @param token Leverage token to set fee for
+    /// @param action Action to set fee for
+    /// @param fee Fee for action, 100_00 is 100%
+    /// @dev If caller tries to set fee above 100% it reverts with FeeTooHigh error
+    function _setLeverageTokenActionFee(ILeverageToken token, ExternalAction action, uint256 fee) internal {
+        // Check if fees are not higher than 100%
+        if (fee > MAX_FEE) {
+            revert FeeTooHigh(fee, MAX_FEE);
+        }
+
+        _getFeeManagerStorage().tokenActionFee[token][action] = fee;
+        emit LeverageTokenActionFeeSet(token, action, fee);
     }
 }

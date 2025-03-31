@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
 // Dependency imports
@@ -19,6 +19,8 @@ import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 
 contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
+    uint256 internal constant WAD = 1e18;
+
     /// @inheritdoc IMorphoLendingAdapter
     ILeverageManager public immutable leverageManager;
 
@@ -30,6 +32,12 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
 
     /// @inheritdoc IMorphoLendingAdapter
     MarketParams public marketParams;
+
+    /// @inheritdoc IMorphoLendingAdapter
+    address public authorizedCreator;
+
+    /// @inheritdoc IMorphoLendingAdapter
+    bool public isUsed;
 
     /// @dev Reverts if the caller is not the stored leverageManager address
     modifier onlyLeverageManager() {
@@ -47,9 +55,20 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
 
     /// @notice Initializes the Morpho lending adapter
     /// @param _morphoMarketId The Morpho market ID
-    function initialize(Id _morphoMarketId) external initializer {
+    /// @param _authorizedCreator The authorized creator of this lending adapter. The authorized creator can create a
+    /// new leverage token using this adapter on the LeverageManager
+    function initialize(Id _morphoMarketId, address _authorizedCreator) external initializer {
         morphoMarketId = _morphoMarketId;
         marketParams = morpho.idToMarketParams(_morphoMarketId);
+
+        authorizedCreator = _authorizedCreator;
+    }
+
+    /// @inheritdoc ILendingAdapter
+    function postLeverageTokenCreation(address creator, address) external onlyLeverageManager {
+        if (creator != authorizedCreator) revert Unauthorized();
+        if (isUsed) revert LendingAdapterAlreadyInUse();
+        isUsed = true;
     }
 
     /// @inheritdoc ILendingAdapter
@@ -111,6 +130,19 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
         uint256 debt = getDebt();
 
         return collateralInDebtAsset > debt ? collateralInDebtAsset - debt : 0;
+    }
+
+    /// @inheritdoc ILendingAdapter
+    function getHealthFactor() external view returns (uint256) {
+        uint256 borrowed = getDebt();
+        uint256 collateral = getCollateral();
+        uint256 collateralInDebtAsset = convertCollateralToDebtAsset(collateral);
+
+        uint256 maxBorrow = Math.mulDiv(collateralInDebtAsset, marketParams.lltv, WAD, Math.Rounding.Floor);
+
+        if (borrowed == 0) return type(uint256).max;
+
+        return Math.mulDiv(maxBorrow, WAD, borrowed, Math.Rounding.Floor);
     }
 
     /// @inheritdoc ILendingAdapter

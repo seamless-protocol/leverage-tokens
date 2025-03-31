@@ -7,9 +7,9 @@ import {SharesMathLib} from "@morpho-blue/libraries/SharesMathLib.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // Internal imports
-import {MorphoLendingAdapterBaseTest} from "./MorphoLendingAdapterBase.t.sol";
+import {MorphoLendingAdapterTest} from "./MorphoLendingAdapter.t.sol";
 
-contract GetDebt is MorphoLendingAdapterBaseTest {
+contract GetDebt is MorphoLendingAdapterTest {
     function test_getDebt() public {
         uint256 borrowShares = 10e6;
 

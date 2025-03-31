@@ -7,24 +7,23 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 // Internal imports
 import {ExternalAction} from "src/types/DataTypes.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
-import {IRebalanceRewardDistributor} from "src/interfaces/IRebalanceRewardDistributor.sol";
-import {IRebalanceWhitelist} from "src/interfaces/IRebalanceWhitelist.sol";
-import {ActionData, StrategyState} from "src/types/DataTypes.sol";
-import {LeverageManagerBaseTest} from "../LeverageManager/LeverageManagerBase.t.sol";
+import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
+import {ActionData, LeverageTokenConfig, LeverageTokenState} from "src/types/DataTypes.sol";
+import {LeverageManagerTest} from "../LeverageManager/LeverageManager.t.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 
-contract PreviewActionTest is LeverageManagerBaseTest {
+contract PreviewActionTest is LeverageManagerTest {
     function setUp() public override {
         super.setUp();
-        _createNewStrategy(
+
+        _createNewLeverageToken(
             manager,
-            ILeverageManager.StrategyConfig({
+            LeverageTokenConfig({
                 lendingAdapter: ILendingAdapter(address(lendingAdapter)),
-                minCollateralRatio: _BASE_RATIO() + 1,
-                maxCollateralRatio: 3 * _BASE_RATIO(),
                 targetCollateralRatio: 2 * _BASE_RATIO(), // 2x leverage
-                rebalanceRewardDistributor: IRebalanceRewardDistributor(address(0)),
-                rebalanceWhitelist: IRebalanceWhitelist(address(0))
+                rebalanceAdapter: IRebalanceAdapter(address(0)),
+                depositTokenFee: 0,
+                withdrawTokenFee: 0
             }),
             address(collateralToken),
             address(debtToken),
@@ -34,8 +33,8 @@ contract PreviewActionTest is LeverageManagerBaseTest {
     }
 
     function test_previewAction_WithFee() public {
-        _setStrategyActionFee(strategy, ExternalAction.Deposit, 0.05e4); // 5% fee
-        _setStrategyActionFee(strategy, ExternalAction.Withdraw, 0.05e4); // 5% fee
+        leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Deposit, 0.05e4); // 5% fee
+        leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Withdraw, 0.05e4); // 5% fee
 
         // 1:2 exchange rate
         lendingAdapter.mockConvertCollateralToDebtAssetExchangeRate(2e8);
@@ -46,26 +45,27 @@ contract PreviewActionTest is LeverageManagerBaseTest {
         _prepareLeverageManagerStateForAction(beforeState);
 
         uint256 equity = 10 ether;
-        ActionData memory previewData = leverageManager.exposed_previewAction(strategy, equity, ExternalAction.Deposit);
+        ActionData memory previewData =
+            leverageManager.exposed_previewAction(leverageToken, equity, ExternalAction.Deposit);
 
         assertEq(previewData.collateral, 20 ether - 1);
         assertEq(previewData.debt, 20 ether - 1);
         assertEq(previewData.shares, 19 ether - 1); // 5% fee
-        assertEq(previewData.strategyFee, 0.5 ether); // 5% fee on equity in collateral asset
+        assertEq(previewData.tokenFee, 0.5 ether); // 5% fee on equity in collateral asset
         assertEq(previewData.treasuryFee, 0 ether);
 
-        previewData = leverageManager.exposed_previewAction(strategy, equity, ExternalAction.Withdraw);
+        previewData = leverageManager.exposed_previewAction(leverageToken, equity, ExternalAction.Withdraw);
 
         assertEq(previewData.collateral, 20 ether - 1);
         assertEq(previewData.debt, 20 ether - 1);
         assertEq(previewData.shares, 21 ether - 1); // 5% fee
-        assertEq(previewData.strategyFee, 0.5 ether); // 5% fee on equity in collateral asset
+        assertEq(previewData.tokenFee, 0.5 ether); // 5% fee on equity in collateral asset
         assertEq(previewData.treasuryFee, 0 ether);
     }
 
     function test_previewAction_WithFee_ZeroSharesForEquity() public {
-        _setStrategyActionFee(strategy, ExternalAction.Deposit, 0.05e4); // 5% fee
-        _setStrategyActionFee(strategy, ExternalAction.Withdraw, 0.05e4); // 5% fee
+        leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Deposit, 0.05e4); // 5% fee
+        leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Withdraw, 0.05e4); // 5% fee
 
         // 1:2 exchange rate
         lendingAdapter.mockConvertCollateralToDebtAssetExchangeRate(2e8);
@@ -77,20 +77,21 @@ contract PreviewActionTest is LeverageManagerBaseTest {
 
         // 0 shares can be minted / burned for 1 wei of equity
         uint256 equity = 1;
-        ActionData memory previewData = leverageManager.exposed_previewAction(strategy, equity, ExternalAction.Deposit);
+        ActionData memory previewData =
+            leverageManager.exposed_previewAction(leverageToken, equity, ExternalAction.Deposit);
 
         assertEq(previewData.collateral, 0);
         assertEq(previewData.debt, 0);
         assertEq(previewData.shares, 0);
-        assertEq(previewData.strategyFee, 1);
+        assertEq(previewData.tokenFee, 1);
         assertEq(previewData.treasuryFee, 0);
 
-        previewData = leverageManager.exposed_previewAction(strategy, equity, ExternalAction.Withdraw);
+        previewData = leverageManager.exposed_previewAction(leverageToken, equity, ExternalAction.Withdraw);
 
         assertEq(previewData.collateral, 0);
         assertEq(previewData.debt, 0);
         assertEq(previewData.shares, 0);
-        assertEq(previewData.strategyFee, 1);
+        assertEq(previewData.tokenFee, 1);
         assertEq(previewData.treasuryFee, 0);
     }
 
@@ -102,38 +103,39 @@ contract PreviewActionTest is LeverageManagerBaseTest {
 
         uint256 equityToAdd = 10 ether;
         ActionData memory previewData =
-            leverageManager.exposed_previewAction(strategy, equityToAdd, ExternalAction.Deposit);
+            leverageManager.exposed_previewAction(leverageToken, equityToAdd, ExternalAction.Deposit);
 
         assertEq(previewData.collateral, 20 ether - 1);
         assertEq(previewData.debt, 10 ether - 1);
         assertEq(previewData.shares, 20 ether - 1);
-        assertEq(previewData.strategyFee, 0);
+        assertEq(previewData.tokenFee, 0);
         assertEq(previewData.treasuryFee, 0);
 
-        previewData = leverageManager.exposed_previewAction(strategy, equityToAdd, ExternalAction.Withdraw);
+        previewData = leverageManager.exposed_previewAction(leverageToken, equityToAdd, ExternalAction.Withdraw);
 
         assertEq(previewData.collateral, 20 ether - 1);
         assertEq(previewData.debt, 10 ether); // Rounded up
         assertEq(previewData.shares, 20 ether - 1);
-        assertEq(previewData.strategyFee, 0);
+        assertEq(previewData.tokenFee, 0);
         assertEq(previewData.treasuryFee, 0);
     }
 
     function test_previewAction_ZeroEquity() public view {
         uint256 equity = 0;
-        ActionData memory previewData = leverageManager.exposed_previewAction(strategy, equity, ExternalAction.Deposit);
+        ActionData memory previewData =
+            leverageManager.exposed_previewAction(leverageToken, equity, ExternalAction.Deposit);
 
         assertEq(previewData.collateral, 0);
         assertEq(previewData.debt, 0);
         assertEq(previewData.shares, 0);
-        assertEq(previewData.strategyFee, 0);
+        assertEq(previewData.tokenFee, 0);
         assertEq(previewData.treasuryFee, 0);
-        previewData = leverageManager.exposed_previewAction(strategy, equity, ExternalAction.Withdraw);
+        previewData = leverageManager.exposed_previewAction(leverageToken, equity, ExternalAction.Withdraw);
 
         assertEq(previewData.collateral, 0);
         assertEq(previewData.debt, 0);
         assertEq(previewData.shares, 0);
-        assertEq(previewData.strategyFee, 0);
+        assertEq(previewData.tokenFee, 0);
         assertEq(previewData.treasuryFee, 0);
     }
 
@@ -147,22 +149,23 @@ contract PreviewActionTest is LeverageManagerBaseTest {
 
         uint256 equity = 1 ether;
 
-        ActionData memory previewData = leverageManager.exposed_previewAction(strategy, equity, ExternalAction.Deposit);
+        ActionData memory previewData =
+            leverageManager.exposed_previewAction(leverageToken, equity, ExternalAction.Deposit);
 
         // Follows 2x target ratio
         assertEq(previewData.collateral, 2 ether);
         assertEq(previewData.debt, 1 ether);
 
-        uint256 expectedShares = leverageManager.exposed_convertToShares(strategy, equity);
+        uint256 expectedShares = leverageManager.exposed_convertToShares(leverageToken, equity);
         assertEq(previewData.shares, expectedShares);
-        assertEq(previewData.strategyFee, 0);
+        assertEq(previewData.tokenFee, 0);
         assertEq(previewData.treasuryFee, 0);
-        previewData = leverageManager.exposed_previewAction(strategy, equity, ExternalAction.Withdraw);
+        previewData = leverageManager.exposed_previewAction(leverageToken, equity, ExternalAction.Withdraw);
 
         assertEq(previewData.collateral, 2 ether);
         assertEq(previewData.debt, 1 ether);
         assertEq(previewData.shares, expectedShares);
-        assertEq(previewData.strategyFee, 0);
+        assertEq(previewData.tokenFee, 0);
         assertEq(previewData.treasuryFee, 0);
     }
 
@@ -176,7 +179,7 @@ contract PreviewActionTest is LeverageManagerBaseTest {
     ) public {
         ExternalAction action = ExternalAction(actionNum % 2);
         fee = uint16(bound(fee, 0, 1e4)); // 0% to 100% fee
-        _setStrategyActionFee(strategy, action, fee);
+        leverageManager.exposed_setLeverageTokenActionFee(leverageToken, action, fee);
 
         initialDebtInCollateralAsset = uint128(bound(initialDebtInCollateralAsset, 0, initialCollateral));
 
@@ -203,33 +206,34 @@ contract PreviewActionTest is LeverageManagerBaseTest {
         }
 
         // Get state prior to action
-        StrategyState memory prevState = leverageManager.exposed_getStrategyState(strategy);
+        LeverageTokenState memory prevState = leverageManager.getLeverageTokenState(leverageToken);
 
-        ActionData memory previewData = leverageManager.exposed_previewAction(strategy, equityInCollateralAsset, action);
+        ActionData memory previewData =
+            leverageManager.exposed_previewAction(leverageToken, equityInCollateralAsset, action);
 
         // Calculate state after action
-        (, uint256 newDebt, uint256 newCollateralRatio) = _getNewStrategyState(
+        (, uint256 newDebt, uint256 newCollateralRatio) = _getNewLeverageTokenState(
             initialCollateral, initialDebtInCollateralAsset, previewData.collateral, previewData.debt, action
         );
 
         {
             (
-                uint256 equityForStrategyAfterFees,
+                uint256 equityForLeverageTokenAfterFees,
                 uint256 equityForSharesAfterFees,
-                uint256 strategyFee,
+                uint256 tokenFee,
                 uint256 treasuryFee
-            ) = leverageManager.exposed_computeEquityFees(strategy, equityInCollateralAsset, action);
+            ) = leverageManager.exposed_computeEquityFees(leverageToken, equityInCollateralAsset, action);
 
-            (uint256 collateralForStrategy, uint256 debtForStrategy) =
-                leverageManager.exposed_computeCollateralAndDebtForAction(strategy, equityForStrategyAfterFees, action);
-            uint256 shares = leverageManager.exposed_convertToShares(strategy, equityForSharesAfterFees);
+            (uint256 collateralForLeverageToken, uint256 debtForLeverageToken) = leverageManager
+                .exposed_computeCollateralAndDebtForAction(leverageToken, equityForLeverageTokenAfterFees, action);
+            uint256 shares = leverageManager.exposed_convertToShares(leverageToken, equityForSharesAfterFees);
 
             // Validate if shares, collateral, debt, and fees are properly calculated and returned
             assertEq(previewData.shares, shares);
-            assertEq(previewData.collateral, collateralForStrategy);
-            assertEq(previewData.debt, debtForStrategy);
-            assertEq(previewData.strategyFee, strategyFee);
-            assertEq(previewData.treasuryFee, collateralForStrategy == 0 ? 0 : treasuryFee);
+            assertEq(previewData.collateral, collateralForLeverageToken);
+            assertEq(previewData.debt, debtForLeverageToken);
+            assertEq(previewData.tokenFee, tokenFee);
+            assertEq(previewData.treasuryFee, collateralForLeverageToken == 0 ? 0 : treasuryFee);
         }
 
         // If full withdraw is done then the collateral ratio should be max
@@ -238,13 +242,13 @@ contract PreviewActionTest is LeverageManagerBaseTest {
             return;
         }
 
-        // If strategy was initially empty then action should be done by respecting the target ratio
-        if (_isStrategyEmpty(initialCollateral)) {
+        // If leverage token was initially empty then action should be done by respecting the target ratio
+        if (_isLeverageTokenEmpty(initialCollateral)) {
             assertEq(newCollateralRatio, 2 * _BASE_RATIO());
             return;
         }
 
-        // If initially strategy had something in collateral but no debt ratio should change for the better
+        // If initially leverage token had something in collateral but no debt ratio should change for the better
         if (initialDebtInCollateralAsset == 0) {
             assertLe(newCollateralRatio, prevState.collateralRatio);
             return;
@@ -271,7 +275,7 @@ contract PreviewActionTest is LeverageManagerBaseTest {
         );
     }
 
-    function _getNewStrategyState(
+    function _getNewLeverageTokenState(
         uint256 initialCollateral,
         uint256 initialDebtInCollateralAsset,
         uint256 collateralChange,
@@ -302,7 +306,7 @@ contract PreviewActionTest is LeverageManagerBaseTest {
             action == ExternalAction.Withdraw && initialDebt == lendingAdapter.convertDebtToCollateralAsset(debtChange);
     }
 
-    function _isStrategyEmpty(uint256 collateral) private pure returns (bool) {
+    function _isLeverageTokenEmpty(uint256 collateral) private pure returns (bool) {
         return collateral == 0;
     }
 
@@ -325,8 +329,8 @@ contract PreviewActionTest is LeverageManagerBaseTest {
         );
     }
 
-    /// @dev The allowed slippage in collateral ratio of the strategy after a deposit should scale with the size of the
-    /// initial debt in the strategy, as smaller strategies may incur a higher collateral ratio delta after the
+    /// @dev The allowed slippage in collateral ratio of the leverage token after a deposit should scale with the size of the
+    /// initial debt in the leverage token, as smaller strategies may incur a higher collateral ratio delta after the
     /// deposit due to rounding.
     ///
     /// For example, if the initial collateral is 3 and the initial debt is 1 (with collateral and debt normalized) then the

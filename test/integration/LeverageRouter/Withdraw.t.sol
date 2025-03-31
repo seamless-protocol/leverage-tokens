@@ -7,16 +7,16 @@ import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.so
 // Internal imports
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {ActionData} from "src/types/DataTypes.sol";
-import {LeverageRouterBase} from "./LeverageRouterBase.t.sol";
+import {LeverageRouterTest} from "./LeverageRouter.t.sol";
 import {SwapPathLib} from "test/utils/SwapPathLib.sol";
 
-contract LeverageRouterWithdrawTest is LeverageRouterBase {
+contract LeverageRouterWithdrawTest is LeverageRouterTest {
     function testFork_withdraw_UniswapV2_FullWithdraw() public {
         uint256 equityInCollateralAsset = _deposit();
 
         uint256 collateralUsedForDebtSwap = 1.003150469473258488 ether; // Swap to 3392.292472 USDC requires 1.003150469473258488 WETH
 
-        uint256 collateralToRemove = leverageManager.previewWithdraw(strategy, equityInCollateralAsset).collateral;
+        uint256 collateralToRemove = leverageManager.previewWithdraw(leverageToken, equityInCollateralAsset).collateral;
         uint256 additionalCollateralRequired =
             equityInCollateralAsset - (collateralToRemove - collateralUsedForDebtSwap);
 
@@ -49,7 +49,7 @@ contract LeverageRouterWithdrawTest is LeverageRouterBase {
         uint256 collateralUsedForDebtSwap = 0.501454232794326784 ether; // Swap to 1696.146236 USDC requires 0.501454232794326784 WETH
 
         uint256 collateralToRemove =
-            leverageManager.previewWithdraw(strategy, equityInCollateralAssetToWithdraw).collateral;
+            leverageManager.previewWithdraw(leverageToken, equityInCollateralAssetToWithdraw).collateral;
         uint256 additionalCollateralRequired =
             equityInCollateralAssetToWithdraw - (collateralToRemove - collateralUsedForDebtSwap);
 
@@ -80,7 +80,7 @@ contract LeverageRouterWithdrawTest is LeverageRouterBase {
 
         uint256 collateralUsedForDebtSwap = 1.000932853734567851 ether; // Swap to 3392.292472 USDC requires 1.000932853734567851 WETH
 
-        uint256 collateralToRemove = leverageManager.previewWithdraw(strategy, equityInCollateralAsset).collateral;
+        uint256 collateralToRemove = leverageManager.previewWithdraw(leverageToken, equityInCollateralAsset).collateral;
         uint256 additionalCollateralRequired =
             equityInCollateralAsset - (collateralToRemove - collateralUsedForDebtSwap);
 
@@ -118,7 +118,7 @@ contract LeverageRouterWithdrawTest is LeverageRouterBase {
         uint256 collateralUsedForDebtSwap = 0.500462327543122173 ether; // Swap to 1696.146236 USDC requires 0.500462327543122173 WETH
 
         uint256 collateralToRemove =
-            leverageManager.previewWithdraw(strategy, equityInCollateralAssetToWithdraw).collateral;
+            leverageManager.previewWithdraw(leverageToken, equityInCollateralAssetToWithdraw).collateral;
         uint256 additionalCollateralRequired =
             equityInCollateralAssetToWithdraw - (collateralToRemove - collateralUsedForDebtSwap);
 
@@ -154,7 +154,7 @@ contract LeverageRouterWithdrawTest is LeverageRouterBase {
 
         uint256 collateralUsedForDebtSwap = 1.010346527757605821 ether; // Swap to 3392.292472 USDC requires 1.010346527757605821 WETH
 
-        uint256 collateralToRemove = leverageManager.previewWithdraw(strategy, equityInCollateralAsset).collateral;
+        uint256 collateralToRemove = leverageManager.previewWithdraw(leverageToken, equityInCollateralAsset).collateral;
         uint256 additionalCollateralRequired =
             equityInCollateralAsset - (collateralToRemove - collateralUsedForDebtSwap);
 
@@ -187,7 +187,7 @@ contract LeverageRouterWithdrawTest is LeverageRouterBase {
         uint256 collateralUsedForDebtSwap = 0.505102807630211971 ether; // Swap to 1696.146236 USDC requires 0.505102807630211971 WETH
 
         uint256 collateralToRemove =
-            leverageManager.previewWithdraw(strategy, equityInCollateralAssetToWithdraw).collateral;
+            leverageManager.previewWithdraw(leverageToken, equityInCollateralAssetToWithdraw).collateral;
         uint256 additionalCollateralRequired =
             equityInCollateralAssetToWithdraw - (collateralToRemove - collateralUsedForDebtSwap);
 
@@ -218,7 +218,7 @@ contract LeverageRouterWithdrawTest is LeverageRouterBase {
 
         uint256 collateralUsedForDebtSwap = 1.00090332288531026 ether; // Swap to 3392.292472 USDC requires 1.000903322885310260 WETH
 
-        uint256 collateralToRemove = leverageManager.previewWithdraw(strategy, equityInCollateralAsset).collateral;
+        uint256 collateralToRemove = leverageManager.previewWithdraw(leverageToken, equityInCollateralAsset).collateral;
         uint256 additionalCollateralRequired =
             equityInCollateralAsset - (collateralToRemove - collateralUsedForDebtSwap);
 
@@ -256,7 +256,7 @@ contract LeverageRouterWithdrawTest is LeverageRouterBase {
         uint256 collateralUsedForDebtSwap = 0.500450510128598052 ether; // Swap to 1696.146236 USDC requires 0.500450510128598052 WETH
 
         uint256 collateralToRemove =
-            leverageManager.previewWithdraw(strategy, equityInCollateralAssetToWithdraw).collateral;
+            leverageManager.previewWithdraw(leverageToken, equityInCollateralAssetToWithdraw).collateral;
         uint256 additionalCollateralRequired =
             equityInCollateralAssetToWithdraw - (collateralToRemove - collateralUsedForDebtSwap);
 
@@ -292,7 +292,7 @@ contract LeverageRouterWithdrawTest is LeverageRouterBase {
 
         uint256 collateralUsedForDebtSwap = 1.001190795778625348 ether; // Swap to 3392.292472 USDC requires 1.001190795778625348 WETH
 
-        uint256 collateralToRemove = leverageManager.previewWithdraw(strategy, equityInCollateralAsset).collateral;
+        uint256 collateralToRemove = leverageManager.previewWithdraw(leverageToken, equityInCollateralAsset).collateral;
         uint256 additionalCollateralRequired =
             equityInCollateralAsset - (collateralToRemove - collateralUsedForDebtSwap);
 
@@ -330,7 +330,7 @@ contract LeverageRouterWithdrawTest is LeverageRouterBase {
 
         uint256 collateralUsedForDebtSwap = 1.023409712556120566 ether; // Swap to 3392.292472 USDC requires 1.023409712556120566 WETH
 
-        uint256 collateralToRemove = leverageManager.previewWithdraw(strategy, equityInCollateralAsset).collateral;
+        uint256 collateralToRemove = leverageManager.previewWithdraw(leverageToken, equityInCollateralAsset).collateral;
         uint256 additionalCollateralRequired =
             equityInCollateralAsset - (collateralToRemove - collateralUsedForDebtSwap);
 
@@ -362,7 +362,7 @@ contract LeverageRouterWithdrawTest is LeverageRouterBase {
 
         uint256 collateralUsedForDebtSwap = 1.001101865694523417 ether; // Swap to 3392.292472 USDC requires 1.001101865694523417 WETH
 
-        uint256 collateralToRemove = leverageManager.previewWithdraw(strategy, equityInCollateralAsset).collateral;
+        uint256 collateralToRemove = leverageManager.previewWithdraw(leverageToken, equityInCollateralAsset).collateral;
         uint256 additionalCollateralRequired =
             equityInCollateralAsset - (collateralToRemove - collateralUsedForDebtSwap);
 
@@ -401,7 +401,7 @@ contract LeverageRouterWithdrawTest is LeverageRouterBase {
         // User tries to withdraw more equity than they have
         uint256 equityToWithdraw = equityInCollateralAsset + 1;
 
-        uint256 sharesToBurn = leverageManager.previewWithdraw(strategy, equityToWithdraw).shares;
+        uint256 sharesToBurn = leverageManager.previewWithdraw(leverageToken, equityToWithdraw).shares;
 
         address[] memory path = new address[](2);
         path[0] = address(WETH);
@@ -423,13 +423,13 @@ contract LeverageRouterWithdrawTest is LeverageRouterBase {
         });
 
         vm.startPrank(user);
-        strategy.approve(address(leverageRouter), sharesToBurn);
+        leverageToken.approve(address(leverageRouter), sharesToBurn);
         vm.expectRevert(
             abi.encodeWithSelector(
-                IERC20Errors.ERC20InsufficientBalance.selector, user, strategy.balanceOf(user), sharesToBurn
+                IERC20Errors.ERC20InsufficientBalance.selector, user, leverageToken.balanceOf(user), sharesToBurn
             )
         );
-        leverageRouter.withdraw(strategy, equityToWithdraw, sharesToBurn, type(uint256).max, swapContext);
+        leverageRouter.withdraw(leverageToken, equityToWithdraw, sharesToBurn, type(uint256).max, swapContext);
         vm.stopPrank();
     }
 
@@ -447,7 +447,7 @@ contract LeverageRouterWithdrawTest is LeverageRouterBase {
         path[0] = address(USDC);
         path[1] = address(WETH);
 
-        uint256 sharesBefore = strategy.balanceOf(user);
+        uint256 sharesBefore = leverageToken.balanceOf(user);
 
         ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
             exchange: ISwapAdapter.Exchange.UNISWAP_V2,
@@ -473,7 +473,7 @@ contract LeverageRouterWithdrawTest is LeverageRouterBase {
             swapContext
         );
 
-        uint256 sharesAfter = strategy.balanceOf(user) - sharesBefore;
+        uint256 sharesAfter = leverageToken.balanceOf(user) - sharesBefore;
         shareValueInCollateralAsset = _convertToAssets(sharesAfter);
 
         return shareValueInCollateralAsset;
@@ -488,12 +488,12 @@ contract LeverageRouterWithdrawTest is LeverageRouterBase {
         uint256 debtBeforeWithdraw = morphoLendingAdapter.getDebt();
         uint256 userBalanceOfCollateralAssetBeforeWithdraw = WETH.balanceOf(user);
 
-        ActionData memory previewData = leverageManager.previewWithdraw(strategy, equityInCollateralAsset);
+        ActionData memory previewData = leverageManager.previewWithdraw(leverageToken, equityInCollateralAsset);
 
         vm.startPrank(user);
-        strategy.approve(address(leverageRouter), previewData.shares);
+        leverageToken.approve(address(leverageRouter), previewData.shares);
         leverageRouter.withdraw(
-            strategy, equityInCollateralAsset, previewData.shares, additionalCollateralRequired, swapContext
+            leverageToken, equityInCollateralAsset, previewData.shares, additionalCollateralRequired, swapContext
         );
         vm.stopPrank();
 
@@ -503,7 +503,7 @@ contract LeverageRouterWithdrawTest is LeverageRouterBase {
         assertEq(WETH.balanceOf(address(leverageRouter)), 0);
         assertEq(USDC.balanceOf(address(leverageRouter)), 0);
 
-        // Collateral and debt are removed from the strategy
+        // Collateral and debt are removed from the leverage token
         assertEq(morphoLendingAdapter.getCollateral(), collateralBeforeWithdraw - previewData.collateral);
         assertEq(morphoLendingAdapter.getDebt(), debtBeforeWithdraw - previewData.debt);
 
