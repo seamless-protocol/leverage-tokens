@@ -147,7 +147,7 @@ contract LeverageManagerTest is FeeManagerTest {
         // Mock initial collateral ratio
         vm.mockCall(
             address(config.rebalanceAdapter),
-            abi.encodeWithSelector(IRebalanceAdapterBase.getInitialCollateralRatio.selector),
+            abi.encodeWithSelector(IRebalanceAdapterBase.getLeverageTokenInitialCollateralRatio.selector),
             abi.encode(targetCollateralRatio)
         );
 

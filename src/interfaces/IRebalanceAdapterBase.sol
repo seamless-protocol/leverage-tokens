@@ -12,7 +12,10 @@ interface IRebalanceAdapterBase {
     /// @param token LeverageToken to get initial collateral ratio for
     /// @return initialCollateralRatio Initial collateral ratio for the LeverageToken
     /// @dev Initial collateral ratio is followed when the LeverageToken has no shares and on deposits when debt is 0.
-    function getInitialCollateralRatio(ILeverageToken token) external view returns (uint256 initialCollateralRatio);
+    function getLeverageTokenInitialCollateralRatio(ILeverageToken token)
+        external
+        view
+        returns (uint256 initialCollateralRatio);
 
     /// @notice Validates if a LeverageToken is eligible for rebalance
     /// @param token LeverageToken to check eligibility for

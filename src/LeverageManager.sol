@@ -135,7 +135,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
     /// @inheritdoc ILeverageManager
     function getLeverageTokenInitialCollateralRatio(ILeverageToken token) public view returns (uint256 ratio) {
-        return getLeverageTokenRebalanceAdapter(token).getInitialCollateralRatio(token);
+        return getLeverageTokenRebalanceAdapter(token).getLeverageTokenInitialCollateralRatio(token);
     }
 
     /// @inheritdoc ILeverageManager

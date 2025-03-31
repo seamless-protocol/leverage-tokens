@@ -35,7 +35,10 @@ interface ICollateralRatiosRebalanceAdapter {
 
     /// @notice Returns the initial collateral ratio for a LeverageToken
     /// @return initialCollateralRatio Initial collateral ratio for the LeverageToken
-    function getInitialCollateralRatio(ILeverageToken token) external view returns (uint256 initialCollateralRatio);
+    function getLeverageTokenInitialCollateralRatio(ILeverageToken token)
+        external
+        view
+        returns (uint256 initialCollateralRatio);
 
     /// @notice Returns true if the LeverageToken is eligible for rebalance
     /// @param token The LeverageToken
