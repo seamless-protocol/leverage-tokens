@@ -21,8 +21,8 @@ import {IPreLiquidationRebalanceAdapter} from "src/interfaces/IPreLiquidationReb
  * collateral ratio threshold, allowing for a rebalance action to be performed on LeverageToken on the LeverageManager.
  *
  * The PreLiquidationRebalanceAdapter is also initialized with a rebalance reward, which is a flat percentage that rebalancer can take
- * from the equity of the LeverageToken. It is expected that the rebalance reward is set to a value that is less than the liquidation penalty
- * of the LeverageToken, but high enough such that rebalancing is attractive to rebalancers.
+ * from the liquidation penalty of the underlying lending pool used by the LeverageToken. It is expected that the rebalance reward
+ * is set to a value that is less than the liquidation penalty, but high enough such that rebalancing is attractive to rebalancers.
  */
 abstract contract PreLiquidationRebalanceAdapter is Initializable, IPreLiquidationRebalanceAdapter {
     uint256 internal constant WAD = 1e18;
@@ -35,8 +35,8 @@ abstract contract PreLiquidationRebalanceAdapter is Initializable, IPreLiquidati
         /// @notice Collateral ratio threshold to allow pre-liquidation rebalance. If collateral ratio is below this threshold,
         /// rebalance is allowed
         uint256 collateralRatioThreshold;
-        /// @notice Rebalance reward, a flat percentage that rebalancer can take from the equity of the LeverageToken
-        /// @dev Percentage represents percentage of debt repaid that rebalancer can take from the equity of the LeverageToken
+        /// @notice Rebalance reward, a flat percentage of the liquidation penalty that a rebalancer can take from the equity of the LeverageToken
+        /// @dev The percentage is applied to the debt repaid by the rebalancer that they can take from the equity of the LeverageToken
         /// @dev 100_00 = 100%
         uint256 rebalanceReward;
     }
