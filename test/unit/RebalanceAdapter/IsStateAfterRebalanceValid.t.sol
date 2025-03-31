@@ -9,7 +9,7 @@ import {MinMaxCollateralRatioRebalanceAdapterHarness} from
 import {PreLiquidationRebalanceAdapterHarness} from "test/unit/harness/PreLiquidationRebalanceAdapterHarness.t.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageTokenState} from "src/types/DataTypes.sol";
-import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
+import {IPreLiquidationLendingAdapter} from "src/interfaces/IPreLiquidationLendingAdapter.sol";
 
 contract IsStateAfterRebalanceValidTest is RebalanceAdapterTest {
     MinMaxCollateralRatioRebalanceAdapterHarness public minMaxCollateralRatioRebalanceAdapter;
@@ -54,7 +54,7 @@ contract IsStateAfterRebalanceValidTest is RebalanceAdapterTest {
         );
         vm.mockCall(
             address(lendingAdapter),
-            abi.encodeWithSelector(ILendingAdapter.getLiquidationPenalty.selector),
+            abi.encodeWithSelector(IPreLiquidationLendingAdapter.getLiquidationPenalty.selector),
             abi.encode(0.05e18)
         );
 

@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import {console} from "forge-std/console.sol";
-
 // Dependency imports
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -178,9 +176,6 @@ abstract contract DutchAuctionRebalanceAdapter is IDutchAuctionRebalanceAdapter,
         uint256 baseAmountIn = isOverCollateralized
             ? lendingAdapter.convertDebtToCollateralAsset(amountOut)
             : lendingAdapter.convertCollateralToDebtAsset(amountOut);
-
-        console.log("get auction multiplier", getCurrentAuctionMultiplier());
-        console.log("get min price multiplier", getMinPriceMultiplier());
 
         return Math.mulDiv(baseAmountIn, getCurrentAuctionMultiplier(), PRICE_MULTIPLIER_PRECISION);
     }

@@ -47,11 +47,6 @@ interface ILendingAdapter {
     /// @dev Equity is calculated as collateral - debt
     function getEquityInDebtAsset() external view returns (uint256 equity);
 
-    /// @notice Returns the liquidation penalty of the position held by the lending adapter
-    /// @return liquidationPenalty Liquidation penalty of the position held by the lending adapter, scaled by 1e18
-    /// @dev 1e18 means that the liquidation penalty is 100%
-    function getLiquidationPenalty() external view returns (uint256 liquidationPenalty);
-
     /// @notice Supplies collateral assets to the lending pool
     /// @param amount Amount of assets to supply
     function addCollateral(uint256 amount) external;

@@ -3,14 +3,13 @@ pragma solidity ^0.8.26;
 
 // Dependency imports
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // Internal imports
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {LeverageTokenState} from "src/types/DataTypes.sol";
+import {IPreLiquidationLendingAdapter} from "src/interfaces/IPreLiquidationLendingAdapter.sol";
 import {IPreLiquidationRebalanceAdapter} from "src/interfaces/IPreLiquidationRebalanceAdapter.sol";
 
 abstract contract PreLiquidationRebalanceAdapter is Initializable, IPreLiquidationRebalanceAdapter {
@@ -68,23 +67,23 @@ abstract contract PreLiquidationRebalanceAdapter is Initializable, IPreLiquidati
         virtual
         returns (bool)
     {
-        // If rebalance is now caused by leverage token being close to liquidation there is no reason for this adapter to check anything
+        // If the leverage token was rebalanced before meeting the collateral ratio threshold for a pre-liquidation rebalance, simply return true
         if (stateBefore.collateralRatio >= getCollateralRatioThreshold()) {
             return true;
         }
 
         ILeverageManager leverageManager = getLeverageManager();
-        IMorphoLendingAdapter lendingAdapter =
-            IMorphoLendingAdapter(address(leverageManager.getLeverageTokenLendingAdapter(token)));
+        IPreLiquidationLendingAdapter lendingAdapter =
+            IPreLiquidationLendingAdapter(address(leverageManager.getLeverageTokenLendingAdapter(token)));
 
         LeverageTokenState memory stateAfter = leverageManager.getLeverageTokenState(token);
         uint256 liquidationPenalty = lendingAdapter.getLiquidationPenalty();
 
         uint256 rebalanceRewardPercentage = Math.mulDiv(liquidationPenalty, getRebalanceReward(), REWARD_BASE);
-        uint256 debtRepaid =
+        uint256 debtDelta =
             stateBefore.debt > stateAfter.debt ? stateBefore.debt - stateAfter.debt : stateAfter.debt - stateBefore.debt;
 
-        uint256 maxEquityLoss = Math.mulDiv(debtRepaid, rebalanceRewardPercentage, 1e18);
+        uint256 maxEquityLoss = Math.mulDiv(debtDelta, rebalanceRewardPercentage, 1e18);
         return stateAfter.equity >= stateBefore.equity - maxEquityLoss;
     }
 

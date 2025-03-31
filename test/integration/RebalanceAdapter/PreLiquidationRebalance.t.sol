@@ -21,11 +21,11 @@ contract PreLiquidationRebalanceTest is RebalanceTest {
         // User is repaying 5,000 USDC debt which means that he can profit 100 USDC max
         // By taking 2.5 ETH he is profiting around 87.5 USDC which should be fine
 
-        uint256 colToAdd = 2.5e18;
+        uint256 collateralToRemove = 2.5e18;
         uint256 debtToRepay = 5_000e6;
 
         (RebalanceAction[] memory actions, TokenTransfer[] memory transfersIn, TokenTransfer[] memory transfersOut) =
-            _prepareForRebalance(ethLong2x, 0, colToAdd, 0, debtToRepay); // Give 1 ETH and take 10,000 USDC
+            _prepareForRebalance(ethLong2x, 0, collateralToRemove, 0, debtToRepay); // Give 5000 USDC and take 2.5 ETH
 
         deal(address(USDC), address(this), debtToRepay);
         USDC.approve(address(leverageManager), debtToRepay);
@@ -35,7 +35,7 @@ contract PreLiquidationRebalanceTest is RebalanceTest {
         assertLe(stateAfter.equity, stateBefore.equity);
         assertGe(stateAfter.equity, stateBefore.equity - 100e6);
 
-        assertEq(WETH.balanceOf(address(this)), colToAdd);
+        assertEq(WETH.balanceOf(address(this)), collateralToRemove);
         assertEq(USDC.balanceOf(address(this)), 0);
 
         assertGe(stateAfter.collateralRatio, stateBefore.collateralRatio);
@@ -46,11 +46,11 @@ contract PreLiquidationRebalanceTest is RebalanceTest {
 
         _moveEthPrice(-40_00);
 
-        uint256 colToAdd = 2.6e18;
+        uint256 colToRemove = 2.6e18;
         uint256 debtToRepay = 5_000e6;
 
         (RebalanceAction[] memory actions, TokenTransfer[] memory transfersIn, TokenTransfer[] memory transfersOut) =
-            _prepareForRebalance(ethLong2x, 0, colToAdd, 0, debtToRepay); // Give 1 ETH and take 10,000 USDC
+            _prepareForRebalance(ethLong2x, 0, collateralToRemove, 0, debtToRepay); // Give 5000 USDC and take 2.6 ETH
 
         deal(address(USDC), address(this), debtToRepay);
         USDC.approve(address(leverageManager), debtToRepay);

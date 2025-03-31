@@ -20,6 +20,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
+import {IPreLiquidationLendingAdapter} from "src/interfaces/IPreLiquidationLendingAdapter.sol";
 
 contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     uint256 internal constant WAD = 1e18;
@@ -135,7 +136,7 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
         return collateralInDebtAsset > debt ? collateralInDebtAsset - debt : 0;
     }
 
-    /// @inheritdoc ILendingAdapter
+    /// @inheritdoc IPreLiquidationLendingAdapter
     function getLiquidationPenalty() external view returns (uint256) {
         uint256 liquidationIncentiveFactor = MorphoUtilsLib.min(
             MAX_LIQUIDATION_INCENTIVE_FACTOR,

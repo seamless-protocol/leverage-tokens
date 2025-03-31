@@ -9,6 +9,7 @@ import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 
 // Internal imports
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
+import {IPreLiquidationLendingAdapter} from "src/interfaces/IPreLiquidationLendingAdapter.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {PreLiquidationRebalanceAdapter} from "src/rebalance/PreLiquidationRebalanceAdapter.sol";
@@ -58,7 +59,7 @@ contract PreLiquidationRebalanceAdapterTest is Test {
     function _mockLiquidationPenaltyEquityAndDebt(uint256 liquidationPenalty, uint256 equity, uint256 debt) internal {
         vm.mockCall(
             address(lendingAdapter),
-            abi.encodeWithSelector(ILendingAdapter.getLiquidationPenalty.selector),
+            abi.encodeWithSelector(IPreLiquidationLendingAdapter.getLiquidationPenalty.selector),
             abi.encode(liquidationPenalty)
         );
 
