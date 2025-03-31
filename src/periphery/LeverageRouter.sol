@@ -158,6 +158,7 @@ contract LeverageRouter is ILeverageRouter {
         IERC20 debtAsset = leverageManager.getLeverageTokenDebtAsset(params.token);
 
         // Transfer the collateral from the sender for the deposit
+        // slither-disable-next-line arbitrary-send-erc20
         SafeERC20.safeTransferFrom(
             collateralAsset,
             params.sender,
@@ -166,12 +167,14 @@ contract LeverageRouter is ILeverageRouter {
         );
 
         // Use the flash loaned collateral and the equity from the sender for the deposit into the leverage token
-        collateralAsset.approve(address(leverageManager), collateralLoanAmount + params.equityInCollateralAsset);
+        SafeERC20.forceApprove(
+            collateralAsset, address(leverageManager), collateralLoanAmount + params.equityInCollateralAsset
+        );
         ActionData memory actionData =
             leverageManager.deposit(params.token, params.equityInCollateralAsset, params.minShares);
 
         // Swap the debt asset received from the deposit to the collateral asset, used to repay the flash loan
-        debtAsset.approve(address(swapper), actionData.debt);
+        SafeERC20.forceApprove(debtAsset, address(swapper), actionData.debt);
 
         uint256 collateralFromSwap = swapper.swapExactInput(
             debtAsset,
@@ -196,7 +199,7 @@ contract LeverageRouter is ILeverageRouter {
         SafeERC20.safeTransfer(params.token, params.sender, actionData.shares);
 
         // Approve morpho to transfer assets to repay the flash loan
-        collateralAsset.approve(address(morpho), collateralLoanAmount);
+        SafeERC20.forceApprove(collateralAsset, address(morpho), collateralLoanAmount);
     }
 
     /// @notice Executes the withdrawal of equity from a leverage token and the swap of collateral assets to the debt asset
@@ -208,15 +211,16 @@ contract LeverageRouter is ILeverageRouter {
         IERC20 debtAsset = leverageManager.getLeverageTokenDebtAsset(params.token);
 
         // Transfer the shares from the sender
+        // slither-disable-next-line arbitrary-send-erc20
         SafeERC20.safeTransferFrom(params.token, params.sender, address(this), params.maxShares);
 
         // Withdraw the equity from the leverage token
-        debtAsset.approve(address(leverageManager), debtLoanAmount);
+        SafeERC20.forceApprove(debtAsset, address(leverageManager), debtLoanAmount);
         uint256 collateralWithdrawn =
             leverageManager.withdraw(params.token, params.equityInCollateralAsset, params.maxShares).collateral;
 
         // Swap the collateral asset received from the withdrawal to the debt asset, used to repay the flash loan
-        collateralAsset.approve(address(swapper), collateralWithdrawn);
+        SafeERC20.forceApprove(collateralAsset, address(swapper), collateralWithdrawn);
         uint256 collateralAmountSwapped =
             swapper.swapExactOutput(collateralAsset, debtLoanAmount, collateralWithdrawn, params.swapContext);
 
@@ -231,6 +235,6 @@ contract LeverageRouter is ILeverageRouter {
         }
 
         // Approve morpho to transfer assets to repay the flash loan
-        debtAsset.approve(address(morpho), debtLoanAmount);
+        SafeERC20.forceApprove(debtAsset, address(morpho), debtLoanAmount);
     }
 }

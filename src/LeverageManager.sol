@@ -43,6 +43,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     function _getLeverageManagerStorage() internal pure returns (LeverageManagerStorage storage $) {
+        // slither-disable-next-line assembly
         assembly {
             // keccak256(abi.encode(uint256(keccak256("seamless.contracts.storage.LeverageManager")) - 1)) & ~bytes32(uint256(0xff));
             $.slot := 0x326e20d598a681eb69bc11b5176604d340fccf9864170f09484f3c317edf3600
@@ -135,6 +136,8 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         returns (ILeverageToken token)
     {
         IBeaconProxyFactory tokenFactory = getLeverageTokenFactory();
+
+        // slither-disable-next-line reentrancy-events
         token = ILeverageToken(
             tokenFactory.createProxy(
                 abi.encodeWithSelector(LeverageToken.initialize.selector, address(this), name, symbol),
@@ -225,6 +228,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         SafeERC20.safeTransfer(getLeverageTokenDebtAsset(token), msg.sender, depositData.debt);
 
         // Mint shares to user
+        // slither-disable-next-line reentrancy-events
         token.mint(msg.sender, depositData.shares);
 
         // Emit event and explicit return statement
@@ -431,15 +435,21 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
         if (actionType == ActionType.AddCollateral) {
             IERC20 collateralAsset = lendingAdapter.getCollateralAsset();
-            collateralAsset.approve(address(lendingAdapter), amount);
+            // slither-disable-next-line reentrancy-events
+            SafeERC20.forceApprove(collateralAsset, address(lendingAdapter), amount);
+            // slither-disable-next-line reentrancy-events
             lendingAdapter.addCollateral(amount);
         } else if (actionType == ActionType.RemoveCollateral) {
+            // slither-disable-next-line reentrancy-events
             lendingAdapter.removeCollateral(amount);
         } else if (actionType == ActionType.Borrow) {
+            // slither-disable-next-line reentrancy-events
             lendingAdapter.borrow(amount);
         } else if (actionType == ActionType.Repay) {
             IERC20 debtAsset = lendingAdapter.getDebtAsset();
-            debtAsset.approve(address(lendingAdapter), amount);
+            // slither-disable-next-line reentrancy-events
+            SafeERC20.forceApprove(debtAsset, address(lendingAdapter), amount);
+            // slither-disable-next-line reentrancy-events
             lendingAdapter.repay(amount);
         }
     }

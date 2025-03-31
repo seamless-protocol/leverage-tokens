@@ -13,22 +13,22 @@ interface IMorphoLendingAdapter is IPreLiquidationLendingAdapter {
     error LendingAdapterAlreadyInUse();
 
     /// @notice The authorized creator of the lending adapter
-    /// @return authorizedCreator The authorized creator of the lending adapter
+    /// @return _authorizedCreator The authorized creator of the lending adapter
     /// @dev Only the authorized creator can create a new leverage token using this adapter on the LeverageManager
-    function authorizedCreator() external view returns (address authorizedCreator);
+    function authorizedCreator() external view returns (address _authorizedCreator);
 
     /// @notice Whether the lending adapter is in use
-    /// @return isUsed Whether the lending adapter is in use
+    /// @return _isUsed Whether the lending adapter is in use
     /// @dev If this is true, the lending adapter cannot be used to create a new leverage token
-    function isUsed() external view returns (bool isUsed);
+    function isUsed() external view returns (bool _isUsed);
 
     /// @notice The Seamless ilm-v2 LeverageManager contract
-    /// @return leverageManager The Seamless ilm-v2 LeverageManager contract
-    function leverageManager() external view returns (ILeverageManager leverageManager);
+    /// @return _leverageManager The Seamless ilm-v2 LeverageManager contract
+    function leverageManager() external view returns (ILeverageManager _leverageManager);
 
     /// @notice The ID of the Morpho market that the lending adapter manages a position in
-    /// @return morphoMarketId The ID of the Morpho market that the lending adapter manages a position in
-    function morphoMarketId() external view returns (Id morphoMarketId);
+    /// @return _morphoMarketId The ID of the Morpho market that the lending adapter manages a position in
+    function morphoMarketId() external view returns (Id _morphoMarketId);
 
     /// @notice The market parameters of the Morpho lending pool
     /// @return loanToken The loan token of the Morpho lending pool
@@ -42,6 +42,6 @@ interface IMorphoLendingAdapter is IPreLiquidationLendingAdapter {
         returns (address loanToken, address collateralToken, address oracle, address irm, uint256 lltv);
 
     /// @notice The Morpho core protocol contract
-    /// @return morpho The Morpho core protocol contract
-    function morpho() external view returns (IMorpho morpho);
+    /// @return _morpho The Morpho core protocol contract
+    function morpho() external view returns (IMorpho _morpho);
 }

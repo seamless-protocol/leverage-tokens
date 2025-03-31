@@ -58,6 +58,8 @@ contract SwapAdapter is ISwapAdapter {
 
         // Transfer back excess inputToken not used for the swap to the sender
         uint256 excessInputAmount = maxInputAmount - inputAmount;
+
+        // slither-disable-next-line timestamp
         if (excessInputAmount > 0) {
             SafeERC20.safeTransfer(inputToken, msg.sender, excessInputAmount);
         }
@@ -75,7 +77,7 @@ contract SwapAdapter is ISwapAdapter {
     ) internal returns (uint256 outputAmount) {
         IAerodromeRouter.Route[] memory routes = _generateAerodromeRoutes(path, aerodromePoolFactory);
 
-        IERC20(path[0]).approve(aerodromeRouter, inputAmount);
+        SafeERC20.forceApprove(IERC20(path[0]), address(aerodromeRouter), inputAmount);
         uint256[] memory amounts = IAerodromeRouter(aerodromeRouter).swapExactTokensForTokens(
             inputAmount, minOutputAmount, routes, receiver, block.timestamp
         );
@@ -108,7 +110,7 @@ contract SwapAdapter is ISwapAdapter {
         IAerodromeSlipstreamRouter aerodromeSlipstreamRouter =
             IAerodromeSlipstreamRouter(swapContext.exchangeAddresses.aerodromeSlipstreamRouter);
 
-        IERC20(swapContext.path[0]).approve(address(aerodromeSlipstreamRouter), inputAmount);
+        SafeERC20.forceApprove(IERC20(swapContext.path[0]), address(aerodromeSlipstreamRouter), inputAmount);
 
         if (swapContext.path.length == 2) {
             IAerodromeSlipstreamRouter.ExactInputSingleParams memory swapParams = IAerodromeSlipstreamRouter
@@ -143,7 +145,7 @@ contract SwapAdapter is ISwapAdapter {
     {
         IUniswapV2Router02 uniswapV2Router02 = IUniswapV2Router02(swapContext.exchangeAddresses.uniswapV2Router02);
 
-        IERC20(swapContext.path[0]).approve(address(uniswapV2Router02), inputAmount);
+        SafeERC20.forceApprove(IERC20(swapContext.path[0]), address(uniswapV2Router02), inputAmount);
 
         uint256[] memory amounts = uniswapV2Router02.swapExactTokensForTokens(
             inputAmount, minOutputAmount, swapContext.path, msg.sender, block.timestamp
@@ -161,7 +163,7 @@ contract SwapAdapter is ISwapAdapter {
         IUniswapSwapRouter02 uniswapSwapRouter02 =
             IUniswapSwapRouter02(swapContext.exchangeAddresses.uniswapSwapRouter02);
 
-        IERC20(swapContext.path[0]).approve(address(uniswapSwapRouter02), inputAmount);
+        SafeERC20.forceApprove(IERC20(swapContext.path[0]), address(uniswapSwapRouter02), inputAmount);
 
         if (swapContext.path.length == 2) {
             IUniswapSwapRouter02.ExactInputSingleParams memory params = IUniswapSwapRouter02.ExactInputSingleParams({
@@ -201,6 +203,7 @@ contract SwapAdapter is ISwapAdapter {
         );
 
         // We only need outputAmount of the received tokens, so we swap the surplus back to the inputToken and send it back to sender
+        // slither-disable-next-line timestamp
         if (outputAmountReceived > outputAmount) {
             uint256 surplusInputAmount = _swapAerodrome(
                 outputAmountReceived - outputAmount,
@@ -232,7 +235,7 @@ contract SwapAdapter is ISwapAdapter {
         IAerodromeSlipstreamRouter aerodromeSlipstreamRouter =
             IAerodromeSlipstreamRouter(swapContext.exchangeAddresses.aerodromeSlipstreamRouter);
 
-        IERC20(swapContext.path[0]).approve(address(aerodromeSlipstreamRouter), maxInputAmount);
+        SafeERC20.forceApprove(IERC20(swapContext.path[0]), address(aerodromeSlipstreamRouter), maxInputAmount);
 
         if (swapContext.path.length == 2) {
             IAerodromeSlipstreamRouter.ExactOutputSingleParams memory swapParams = IAerodromeSlipstreamRouter
@@ -267,7 +270,7 @@ contract SwapAdapter is ISwapAdapter {
     {
         IUniswapV2Router02 uniswapV2Router02 = IUniswapV2Router02(swapContext.exchangeAddresses.uniswapV2Router02);
 
-        IERC20(swapContext.path[0]).approve(address(uniswapV2Router02), maxInputAmount);
+        SafeERC20.forceApprove(IERC20(swapContext.path[0]), address(uniswapV2Router02), maxInputAmount);
 
         return uniswapV2Router02.swapTokensForExactTokens(
             outputAmount, maxInputAmount, swapContext.path, msg.sender, block.timestamp
@@ -284,7 +287,7 @@ contract SwapAdapter is ISwapAdapter {
         IUniswapSwapRouter02 uniswapSwapRouter02 =
             IUniswapSwapRouter02(swapContext.exchangeAddresses.uniswapSwapRouter02);
 
-        IERC20(swapContext.path[0]).approve(address(uniswapSwapRouter02), maxInputAmount);
+        SafeERC20.forceApprove(IERC20(swapContext.path[0]), address(uniswapSwapRouter02), maxInputAmount);
 
         if (swapContext.path.length == 2) {
             IUniswapSwapRouter02.ExactOutputSingleParams memory params = IUniswapSwapRouter02.ExactOutputSingleParams({

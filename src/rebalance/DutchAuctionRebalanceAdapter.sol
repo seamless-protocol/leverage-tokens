@@ -132,6 +132,7 @@ abstract contract DutchAuctionRebalanceAdapter is IDutchAuctionRebalanceAdapter,
             return false;
         }
 
+        // slither-disable-next-line timestamp
         if (block.timestamp > auction.endTimestamp) {
             return false;
         }
@@ -149,6 +150,7 @@ abstract contract DutchAuctionRebalanceAdapter is IDutchAuctionRebalanceAdapter,
         uint256 minPriceMultiplier = getMinPriceMultiplier();
         uint256 initialPriceMultiplier = getInitialPriceMultiplier();
 
+        // slither-disable-next-line timestamp
         if (elapsed > duration) {
             return minPriceMultiplier;
         }
@@ -262,7 +264,11 @@ abstract contract DutchAuctionRebalanceAdapter is IDutchAuctionRebalanceAdapter,
         tokensOut[0] = TokenTransfer({token: address(debtAsset), amount: debtAmount});
 
         SafeERC20.safeTransferFrom(collateralAsset, msg.sender, address(this), collateralAmount);
-        collateralAsset.approve(address(leverageManager), collateralAmount);
+
+        // slither-disable-next-line reentrancy-events
+        SafeERC20.forceApprove(collateralAsset, address(leverageManager), collateralAmount);
+
+        // slither-disable-next-line reentrancy-events
         leverageManager.rebalance(actions, tokensIn, tokensOut);
 
         SafeERC20.safeTransfer(debtAsset, msg.sender, debtAmount);
@@ -294,7 +300,11 @@ abstract contract DutchAuctionRebalanceAdapter is IDutchAuctionRebalanceAdapter,
         tokensOut[0] = TokenTransfer({token: address(collateralAsset), amount: collateralAmount});
 
         SafeERC20.safeTransferFrom(debtAsset, msg.sender, address(this), debtAmount);
-        debtAsset.approve(address(leverageManager), debtAmount);
+
+        // slither-disable-next-line reentrancy-events
+        SafeERC20.forceApprove(debtAsset, address(leverageManager), debtAmount);
+
+        // slither-disable-next-line reentrancy-events
         leverageManager.rebalance(actions, tokensIn, tokensOut);
 
         SafeERC20.safeTransfer(collateralAsset, msg.sender, collateralAmount);

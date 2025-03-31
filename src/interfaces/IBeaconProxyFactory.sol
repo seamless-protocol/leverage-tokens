@@ -22,8 +22,8 @@ interface IBeaconProxyFactory {
         returns (address proxy);
 
     /// @notice Returns the number of beacon proxies deployed by the factory
-    /// @return numProxies The number of beacon proxies deployed by the factory
-    function numProxies() external view returns (uint256 numProxies);
+    /// @return _numProxies The number of beacon proxies deployed by the factory
+    function numProxies() external view returns (uint256 _numProxies);
 
     /// @notice Creates a new beacon proxy
     /// @param data The initialization data passed to the proxy

@@ -17,8 +17,8 @@ interface ILeverageRouter {
     error Unauthorized();
 
     /// @notice The Seamless LeverageManager contract
-    /// @return leverageManager The Seamless LeverageManager contract
-    function leverageManager() external view returns (ILeverageManager leverageManager);
+    /// @return _leverageManager The Seamless LeverageManager contract
+    function leverageManager() external view returns (ILeverageManager _leverageManager);
 
     /// @notice The Morpho core protocol contract
     /// @return _morpho The Morpho core protocol contract
