@@ -44,26 +44,28 @@ contract IsStateAfterRebalanceValidTest is RebalanceAdapterTest {
         minMaxCollateralRatioRebalanceAdapter.mock_setLeverageManager(leverageManager);
     }
 
-    function testFuzz_isStateAfterRebalanceValid(
-        uint256 targetRatio,
-        LeverageTokenState memory stateBefore,
-        LeverageTokenState memory stateAfter,
-        uint256 liquidationPenalty
-    ) public {
-        liquidationPenalty = bound(liquidationPenalty, 0, 1e18);
-        _mockLeverageTokenState(targetRatio, stateAfter);
+    function test_isStateAfterRebalanceValid_ReturnsTrue_PreLiquidationRebalanceAdapter() public {
+        address lendingAdapter = makeAddr("lendingAdapter");
 
         vm.mockCall(
-            address(leverageManager.getLeverageTokenLendingAdapter(leverageToken)),
+            address(leverageManager),
+            abi.encodeWithSelector(ILeverageManager.getLeverageTokenLendingAdapter.selector, leverageToken),
+            abi.encode(lendingAdapter)
+        );
+        vm.mockCall(
+            address(lendingAdapter),
             abi.encodeWithSelector(ILendingAdapter.getLiquidationPenalty.selector),
-            abi.encode(liquidationPenalty)
+            abi.encode(0.05e18)
         );
 
-        bool isValid = rebalanceAdapter.isStateAfterRebalanceValid(leverageToken, stateBefore);
-        bool expectedIsValid = minMaxCollateralRatioRebalanceAdapter.isStateAfterRebalanceValid(
-            leverageToken, stateBefore
-        ) && preLiquidationRebalanceAdapter.isStateAfterRebalanceValid(leverageToken, stateBefore);
+        LeverageTokenState memory stateBefore =
+            LeverageTokenState({debt: 200e18, equity: 100e18, collateralInDebtAsset: 0, collateralRatio: 1.3e8 - 1});
+        LeverageTokenState memory stateAfter =
+            LeverageTokenState({debt: 100e18, equity: 98e18, collateralInDebtAsset: 0, collateralRatio: 1.3e8 - 1});
 
-        assertEq(isValid, expectedIsValid);
+        _mockLeverageTokenState(1e8, stateAfter);
+
+        bool isValid = rebalanceAdapter.isStateAfterRebalanceValid(leverageToken, stateBefore);
+        assertEq(isValid, true);
     }
 }

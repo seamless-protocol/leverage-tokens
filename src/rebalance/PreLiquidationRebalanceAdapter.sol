@@ -82,11 +82,18 @@ abstract contract PreLiquidationRebalanceAdapter is Initializable, IPreLiquidati
         LeverageTokenState memory stateAfter = leverageManager.getLeverageTokenState(token);
         uint256 liquidationPenalty = lendingAdapter.getLiquidationPenalty();
 
+        console.log("liquidationPenalty", liquidationPenalty);
+
         uint256 rebalanceRewardPercentage = Math.mulDiv(liquidationPenalty, getRebalanceReward(), REWARD_BASE);
+        console.log("rebalanceRewardPercentage", rebalanceRewardPercentage);
         uint256 debtRepaid =
             stateBefore.debt > stateAfter.debt ? stateBefore.debt - stateAfter.debt : stateAfter.debt - stateBefore.debt;
 
+        console.log("debtRepaid", debtRepaid);
+
         uint256 maxEquityLoss = Math.mulDiv(debtRepaid, rebalanceRewardPercentage, 1e18);
+        console.log("max equity loss", maxEquityLoss);
+        console.log("stateBefore.equity", stateBefore.equity);
         return stateAfter.equity >= stateBefore.equity - maxEquityLoss;
     }
 
