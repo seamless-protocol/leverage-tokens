@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-import {console} from "forge-std/console.sol";
-
 import {DutchAuctionTest} from "./DutchAuction.t.sol";
 import {LeverageTokenState} from "src/types/DataTypes.sol";
 import {IDutchAuctionRebalanceAdapter} from "src/interfaces/IDutchAuctionRebalanceAdapter.sol";
@@ -24,19 +22,13 @@ contract TakeTest is DutchAuctionTest {
         // Initial price is 102% or oracle. Highly unprofitable but is possible to be taken
         uint256 amountInAlice = _take_OverCollateralized(alice, 2_000 * 1e6);
 
-        console.log("1!");
-
         // Some time passes and Bob takes for better price
         vm.warp(block.timestamp + 2 minutes);
         uint256 amountInBob = _take_OverCollateralized(bob, 2_000 * 1e6);
 
-        console.log("2!");
-
         // Some more time passes and Charlie takes it for even better price
         vm.warp(block.timestamp + 4 minutes);
         uint256 amountInCharlie = _take_OverCollateralized(charlie, 2_000 * 1e6);
-
-        console.log("3!");
 
         LeverageTokenState memory stateAfter = leverageManager.getLeverageTokenState(ethLong2x);
 
@@ -80,24 +72,16 @@ contract TakeTest is DutchAuctionTest {
 
         LeverageTokenState memory stateBefore = leverageManager.getLeverageTokenState(ethLong2x);
 
-        console.log("1!");
-
         // Alice takes for big price
         uint256 amountInAlice = _take_UnderCollateralized(alice, 1e18);
-
-        console.log("2!");
 
         // Some time passes and Bob takes for better price
         vm.warp(block.timestamp + 2 minutes);
         uint256 amountInBob = _take_UnderCollateralized(bob, 1e18);
 
-        console.log("3!");
-
         // Some more time passes and Charlie takes it for even better price
         vm.warp(block.timestamp + 4 minutes);
         uint256 amountInCharlie = _take_UnderCollateralized(charlie, 1e18);
-
-        console.log("4!");
 
         LeverageTokenState memory stateAfter = leverageManager.getLeverageTokenState(ethLong2x);
 

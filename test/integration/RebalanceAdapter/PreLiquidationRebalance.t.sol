@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-import {console} from "forge-std/console.sol";
-
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {RebalanceTest} from "test/integration/LeverageManager/Rebalance.t.sol";
 import {RebalanceAction, TokenTransfer, LeverageTokenState} from "src/types/DataTypes.sol";

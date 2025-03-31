@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import {console} from "forge-std/console.sol";
-
 // Dependency imports
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
@@ -82,18 +80,11 @@ abstract contract PreLiquidationRebalanceAdapter is Initializable, IPreLiquidati
         LeverageTokenState memory stateAfter = leverageManager.getLeverageTokenState(token);
         uint256 liquidationPenalty = lendingAdapter.getLiquidationPenalty();
 
-        console.log("liquidationPenalty", liquidationPenalty);
-
         uint256 rebalanceRewardPercentage = Math.mulDiv(liquidationPenalty, getRebalanceReward(), REWARD_BASE);
-        console.log("rebalanceRewardPercentage", rebalanceRewardPercentage);
         uint256 debtRepaid =
             stateBefore.debt > stateAfter.debt ? stateBefore.debt - stateAfter.debt : stateAfter.debt - stateBefore.debt;
 
-        console.log("debtRepaid", debtRepaid);
-
         uint256 maxEquityLoss = Math.mulDiv(debtRepaid, rebalanceRewardPercentage, 1e18);
-        console.log("max equity loss", maxEquityLoss);
-        console.log("stateBefore.equity", stateBefore.equity);
         return stateAfter.equity >= stateBefore.equity - maxEquityLoss;
     }
 
@@ -104,8 +95,6 @@ abstract contract PreLiquidationRebalanceAdapter is Initializable, IPreLiquidati
         virtual
         returns (bool)
     {
-        console.log("getCollateralRatioThreshold()", getCollateralRatioThreshold());
-        console.log("state.collateralRAtio", state.collateralRatio);
         return state.collateralRatio < getCollateralRatioThreshold();
     }
 }
