@@ -64,6 +64,8 @@ contract RebalanceAdapterTest is Test {
         assertEq(address(rebalanceAdapter.getLeverageManager()), address(leverageManager));
         assertEq(rebalanceAdapter.getLeverageTokenMinCollateralRatio(), minCollateralRatio);
         assertEq(rebalanceAdapter.getLeverageTokenMaxCollateralRatio(), maxCollateralRatio);
+        assertEq(rebalanceAdapter.getLeverageTokenTargetCollateralRatio(), targetCollateralRatio);
+        assertEq(rebalanceAdapter.getInitialCollateralRatio(leverageToken), targetCollateralRatio);
         assertEq(rebalanceAdapter.getAuctionDuration(), auctionDuration);
         assertEq(rebalanceAdapter.getInitialPriceMultiplier(), initialPriceMultiplier);
         assertEq(rebalanceAdapter.getMinPriceMultiplier(), minPriceMultiplier);

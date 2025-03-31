@@ -61,5 +61,7 @@ contract CreateNewLeverageTokenTest is LeverageManagerTest {
         assertEq(
             address(leverageManager.getLeverageTokenRebalanceAdapter(leverageToken)), address(config.rebalanceAdapter)
         );
+
+        assertEq(leverageManager.getLeverageTokenInitialCollateralRatio(leverageToken), targetCollateralRatio);
     }
 }
