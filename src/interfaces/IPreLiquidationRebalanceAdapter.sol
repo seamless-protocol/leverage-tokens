@@ -8,6 +8,10 @@ import {LeverageTokenState} from "src/types/DataTypes.sol";
 
 interface IPreLiquidationRebalanceAdapter {
     /// @notice Emitted when the PreLiquidationRebalanceAdapter is initialized
+    /// @param collateralRatioThreshold The collateral ratio threshold for pre-liquidation rebalancing. If the LeverageToken
+    ///        collateral ratio is below this threshold, the LeverageToken can be pre-liquidation rebalanced
+    /// @param rebalanceReward The rebalance reward percentage. The rebalance reward represents the percentage of liquidation
+    ///        penalty that will be rewarded to the caller of the rebalance function. 10_000 means 100%
     event PreLiquidationRebalanceAdapterInitialized(uint256 collateralRatioThreshold, uint256 rebalanceReward);
 
     /// @notice Returns the LeverageManager contract

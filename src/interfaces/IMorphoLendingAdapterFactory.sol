@@ -9,6 +9,7 @@ import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 
 interface IMorphoLendingAdapterFactory {
     /// @notice Emitted when a new MorphoLendingAdapter is deployed.
+    /// @param lendingAdapter The deployed MorphoLendingAdapter
     event MorphoLendingAdapterDeployed(IMorphoLendingAdapter lendingAdapter);
 
     /// @notice Given the `sender` and `baseSalt` compute and return the address that MorphoLendingAdapter will be deployed to

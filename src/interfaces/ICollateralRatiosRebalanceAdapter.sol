@@ -13,6 +13,9 @@ interface ICollateralRatiosRebalanceAdapter {
     error InvalidCollateralRatios();
 
     /// @notice Event emitted when the collateral ratios are set
+    /// @param minCollateralRatio Minimum collateral ratio for the LeverageToken
+    /// @param targetCollateralRatio Target collateral ratio for the LeverageToken
+    /// @param maxCollateralRatio Maximum collateral ratio for the LeverageToken
     event CollateralRatiosRebalanceAdapterInitialized(
         uint256 minCollateralRatio, uint256 targetCollateralRatio, uint256 maxCollateralRatio
     );

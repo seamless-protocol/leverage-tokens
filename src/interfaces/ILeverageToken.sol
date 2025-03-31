@@ -6,6 +6,8 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface ILeverageToken is IERC20 {
     /// @notice Event emitted when the leverage token is initialized
+    /// @param name The name of the LeverageToken
+    /// @param symbol The symbol of the LeverageToken
     event LeverageTokenInitialized(string name, string symbol);
 
     /// @notice Mints new tokens to the specified address

@@ -11,6 +11,8 @@ import {ISwapAdapter} from "./ISwapAdapter.sol";
 
 interface ILeverageRouter {
     /// @notice Error thrown when the cost of a swap exceeds the maximum allowed cost
+    /// @param actualCost The actual cost of the swap
+    /// @param maxCost The maximum allowed cost of the swap
     error MaxSwapCostExceeded(uint256 actualCost, uint256 maxCost);
 
     /// @notice Error thrown when the caller is not authorized to execute a function
