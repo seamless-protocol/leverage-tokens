@@ -91,8 +91,10 @@ contract RebalanceAdapter is
         __CollateralRatiosRebalanceAdapter_init_unchained(
             params.minCollateralRatio, params.targetCollateralRatio, params.maxCollateralRatio
         );
-        __PreLiquidationRebalanceAdapter_init(params.preLiquidationCollateralRatioThreshold, params.rebalanceReward);
-        __Ownable_init(params.owner);
+        __PreLiquidationRebalanceAdapter_init_unchained(
+            params.preLiquidationCollateralRatioThreshold, params.rebalanceReward
+        );
+        __Ownable_init_unchained(params.owner);
 
         _getRebalanceAdapterStorage().authorizedCreator = params.authorizedCreator;
         _getRebalanceAdapterStorage().leverageManager = params.leverageManager;

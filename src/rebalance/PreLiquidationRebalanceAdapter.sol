@@ -56,6 +56,13 @@ abstract contract PreLiquidationRebalanceAdapter is Initializable, IPreLiquidati
         internal
         onlyInitializing
     {
+        __PreLiquidationRebalanceAdapter_init_unchained(collateralRatioThreshold, rebalanceReward);
+    }
+
+    function __PreLiquidationRebalanceAdapter_init_unchained(uint256 collateralRatioThreshold, uint256 rebalanceReward)
+        internal
+        onlyInitializing
+    {
         _getPreLiquidationRebalanceAdapterStorage().collateralRatioThreshold = collateralRatioThreshold;
         _getPreLiquidationRebalanceAdapterStorage().rebalanceReward = rebalanceReward;
         emit PreLiquidationRebalanceAdapterInitialized(collateralRatioThreshold, rebalanceReward);

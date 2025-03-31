@@ -48,6 +48,14 @@ abstract contract CollateralRatiosRebalanceAdapter is ICollateralRatiosRebalance
         }
     }
 
+    function __CollateralRatiosRebalanceAdapter_init(
+        uint256 minCollateralRatio,
+        uint256 targetCollateralRatio,
+        uint256 maxCollateralRatio
+    ) internal onlyInitializing {
+        __CollateralRatiosRebalanceAdapter_init_unchained(minCollateralRatio, targetCollateralRatio, maxCollateralRatio);
+    }
+
     function __CollateralRatiosRebalanceAdapter_init_unchained(
         uint256 minCollateralRatio,
         uint256 targetCollateralRatio,

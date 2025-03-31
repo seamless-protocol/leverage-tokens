@@ -8,7 +8,6 @@ import {Test} from "forge-std/Test.sol";
 import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 
 // Local imports
-import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {FeeManager} from "src/FeeManager.sol";
 import {FeeManagerHarness} from "test/unit/harness/FeeManagerHarness.sol";
 import {ExternalAction} from "src/types/DataTypes.sol";
@@ -20,7 +19,7 @@ contract FeeManagerTest is Test {
     function setUp() public virtual {
         address feeManagerImplementation = address(new FeeManagerHarness());
         address feeManagerProxy = UnsafeUpgrades.deployUUPSProxy(
-            feeManagerImplementation, abi.encodeWithSelector(FeeManager.__FeeManager_init.selector, address(this))
+            feeManagerImplementation, abi.encodeWithSelector(FeeManagerHarness.initialize.selector, address(this))
         );
 
         feeManager = FeeManagerHarness(feeManagerProxy);

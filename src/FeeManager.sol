@@ -47,14 +47,14 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
         }
     }
 
-    function __FeeManager_init(address defaultAdmin) public initializer {
+    function __FeeManager_init(address defaultAdmin) public onlyInitializing {
         __AccessControl_init_unchained();
-        __FeeManager_init_unchained();
-
-        _grantRole(DEFAULT_ADMIN_ROLE, defaultAdmin);
+        __FeeManager_init_unchained(defaultAdmin);
     }
 
-    function __FeeManager_init_unchained() internal onlyInitializing {}
+    function __FeeManager_init_unchained(address defaultAdmin) internal onlyInitializing {
+        _grantRole(DEFAULT_ADMIN_ROLE, defaultAdmin);
+    }
 
     /// @inheritdoc IFeeManager
     function getLeverageTokenActionFee(ILeverageToken token, ExternalAction action) public view returns (uint256 fee) {

@@ -3,7 +3,6 @@ pragma solidity ^0.8.26;
 
 // Dependency imports
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -59,7 +58,7 @@ import {
  * As such it is highly recommended that LeverageToken creators make an initial deposit of a non-trivial amount of equity.
  * It is also recommended to use a router that performs slippage checks when depositing and withdrawing.
  */
-contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManager, UUPSUpgradeable {
+contract LeverageManager is ILeverageManager, FeeManager, UUPSUpgradeable {
     // Base collateral ratio constant, 1e18 means that collateral / debt ratio is 1:1
     uint256 public constant BASE_RATIO = 1e18;
     uint256 public constant DECIMALS_OFFSET = 0;
@@ -83,7 +82,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     function initialize(address initialAdmin, IBeaconProxyFactory leverageTokenFactory) external initializer {
-        _grantRole(DEFAULT_ADMIN_ROLE, initialAdmin);
+        __FeeManager_init(initialAdmin);
         _getLeverageManagerStorage().tokenFactory = leverageTokenFactory;
         emit LeverageManagerInitialized(leverageTokenFactory);
     }
