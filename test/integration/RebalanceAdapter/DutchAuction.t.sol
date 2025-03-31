@@ -18,7 +18,7 @@ contract DutchAuctionTest is RebalanceTest {
         assertEq(address(ethLong2xRebalanceAdapter.getLeverageManager()), address(leverageManager));
         assertEq(ethLong2xRebalanceAdapter.getAuctionDuration(), 7 minutes);
         assertEq(ethLong2xRebalanceAdapter.getInitialPriceMultiplier(), 1.2e18);
-        assertEq(ethLong2xRebalanceAdapter.getMinPriceMultiplier(), 0.9e18);
+        assertEq(ethLong2xRebalanceAdapter.getMinPriceMultiplier(), 0.98e18);
         assertEq(ethLong2xRebalanceAdapter.getLeverageTokenMinCollateralRatio(), 1.8e8);
         assertEq(ethLong2xRebalanceAdapter.getLeverageTokenMaxCollateralRatio(), 2.2e8);
         assertEq(ethLong2xRebalanceAdapter.getAuthorizedCreator(), address(this));
@@ -26,17 +26,17 @@ contract DutchAuctionTest is RebalanceTest {
 
     function testFork_DeployNewDutchAuctionRebalanceAdapter_RevertIf_MinPriceMultiplierTooHigh() public {
         vm.expectRevert(IDutchAuctionRebalanceAdapter.MinPriceMultiplierTooHigh.selector);
-        ethLong2xRebalanceAdapter = _deployRebalanceAdapter(1, 2, 1, 1.2e18, 1.2e18 + 1);
+        ethLong2xRebalanceAdapter = _deployRebalanceAdapter(1, 2, 1, 1.2e18, 1.2e18 + 1, 1.1e18, 40_00);
     }
 
     function testFork_DeployNewDutchAuctionRebalanceAdapter_RevertIf_InvalidAuctionDuration() public {
         vm.expectRevert(IDutchAuctionRebalanceAdapter.InvalidAuctionDuration.selector);
-        ethLong2xRebalanceAdapter = _deployRebalanceAdapter(1, 2, 0, 1.2e18, 0.9e18);
+        ethLong2xRebalanceAdapter = _deployRebalanceAdapter(1, 2, 0, 1.2e18, 0.9e18, 1.1e18, 40_00);
     }
 
     function testFork_DeployNewDutchAuctionRebalanceAdapter_RevertIf_MinCollateralRatioTooHigh() public {
         vm.expectRevert(IMinMaxCollateralRatioRebalanceAdapter.MinCollateralRatioTooHigh.selector);
-        _deployRebalanceAdapter(3, 2, 1, 1.2e18, 0.9e18);
+        _deployRebalanceAdapter(3, 2, 1, 1.2e18, 0.9e18, 1.1e18, 40_00);
     }
 
     function testFork_CreateNewLeverageToken_RevertIf_LeverageTokenAlreadySet() public {

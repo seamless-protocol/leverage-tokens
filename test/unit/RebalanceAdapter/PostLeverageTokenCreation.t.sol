@@ -17,7 +17,9 @@ contract PostLeverageTokenCreation is Test {
 
     function setUp() public {
         rebalanceAdapter = new RebalanceAdapter();
-        rebalanceAdapter.initialize(address(this), authorizedCreator, leverageManager, 1e8, 3e8, 1 days, 1.1e18, 0.1e18);
+        rebalanceAdapter.initialize(
+            address(this), authorizedCreator, leverageManager, 1e8, 3e8, 1 days, 1.1e18, 0.1e18, 1.1e18, 0.1e18
+        );
     }
 
     // forge-config: default.fuzz.runs = 1

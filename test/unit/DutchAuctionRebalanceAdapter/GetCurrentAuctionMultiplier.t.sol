@@ -129,4 +129,20 @@ contract GetCurrentAuctionMultiplierTest is DutchAuctionRebalanceAdapterTest {
 
         assertTrue(multiplier1 > multiplier2);
     }
+
+    function testFuzz_getCurrentAuctionMultiplier_MultiplierShouldNeverBeBelowMinMultiplier(uint256 timeElapsed)
+        public
+    {
+        timeElapsed = bound(timeElapsed, 0, DEFAULT_DURATION);
+
+        // Create auction
+        _setLeverageTokenCollateralRatio(3.1e8);
+
+        _createAuction();
+
+        // Warp to timestamp
+        vm.warp(AUCTION_START_TIME + timeElapsed);
+
+        assertGe(auctionRebalancer.getCurrentAuctionMultiplier(), DEFAULT_MIN_PRICE_MULTIPLIER);
+    }
 }

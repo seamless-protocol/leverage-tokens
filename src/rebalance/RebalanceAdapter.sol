@@ -14,6 +14,7 @@ import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 import {DutchAuctionRebalanceAdapter} from "src/rebalance/DutchAuctionRebalanceAdapter.sol";
 import {MinMaxCollateralRatioRebalanceAdapter} from "src/rebalance/MinMaxCollateralRatioRebalanceAdapter.sol";
+import {PreLiquidationRebalanceAdapter} from "src/rebalance/PreLiquidationRebalanceAdapter.sol";
 import {LeverageTokenState} from "src/types/DataTypes.sol";
 
 contract RebalanceAdapter is
@@ -21,7 +22,8 @@ contract RebalanceAdapter is
     UUPSUpgradeable,
     OwnableUpgradeable,
     MinMaxCollateralRatioRebalanceAdapter,
-    DutchAuctionRebalanceAdapter
+    DutchAuctionRebalanceAdapter,
+    PreLiquidationRebalanceAdapter
 {
     /// @dev Struct containing all state for the RebalanceAdapter contract
     /// @custom:storage-location erc7201:seamless.contracts.storage.RebalanceAdapter
@@ -51,10 +53,13 @@ contract RebalanceAdapter is
         uint256 _maxCollateralRatio,
         uint256 _auctionDuration,
         uint256 _initialPriceMultiplier,
-        uint256 _minPriceMultiplier
+        uint256 _minPriceMultiplier,
+        uint256 _healthFactorThreshold,
+        uint256 _rebalanceReward
     ) external initializer {
         __DutchAuctionRebalanceAdapter_init_unchained(_auctionDuration, _initialPriceMultiplier, _minPriceMultiplier);
         __MinMaxCollateralRatioRebalanceAdapter_init_unchained(_minCollateralRatio, _maxCollateralRatio);
+        __PreLiquidationRebalanceAdapter_init(_healthFactorThreshold, _rebalanceReward);
         __Ownable_init(_owner);
 
         _getRebalanceAdapterStorage().authorizedCreator = _authorizedCreator;
@@ -77,7 +82,12 @@ contract RebalanceAdapter is
     function getLeverageManager()
         public
         view
-        override(IRebalanceAdapter, DutchAuctionRebalanceAdapter, MinMaxCollateralRatioRebalanceAdapter)
+        override(
+            IRebalanceAdapter,
+            DutchAuctionRebalanceAdapter,
+            MinMaxCollateralRatioRebalanceAdapter,
+            PreLiquidationRebalanceAdapter
+        )
         returns (ILeverageManager)
     {
         return _getRebalanceAdapterStorage().leverageManager;
@@ -87,12 +97,19 @@ contract RebalanceAdapter is
     function isEligibleForRebalance(ILeverageToken token, LeverageTokenState memory state, address caller)
         public
         view
-        override(IRebalanceAdapterBase, DutchAuctionRebalanceAdapter, MinMaxCollateralRatioRebalanceAdapter)
+        override(
+            IRebalanceAdapterBase,
+            DutchAuctionRebalanceAdapter,
+            MinMaxCollateralRatioRebalanceAdapter,
+            PreLiquidationRebalanceAdapter
+        )
         returns (bool)
     {
         return (
-            DutchAuctionRebalanceAdapter.isEligibleForRebalance(token, state, caller)
-                && MinMaxCollateralRatioRebalanceAdapter.isEligibleForRebalance(token, state, caller)
+            (
+                DutchAuctionRebalanceAdapter.isEligibleForRebalance(token, state, caller)
+                    && MinMaxCollateralRatioRebalanceAdapter.isEligibleForRebalance(token, state, caller)
+            ) || PreLiquidationRebalanceAdapter.isEligibleForRebalance(token, state, caller)
         );
     }
 
@@ -100,9 +117,17 @@ contract RebalanceAdapter is
     function isStateAfterRebalanceValid(ILeverageToken token, LeverageTokenState memory stateBefore)
         public
         view
-        override(IRebalanceAdapterBase, DutchAuctionRebalanceAdapter, MinMaxCollateralRatioRebalanceAdapter)
+        override(
+            IRebalanceAdapterBase,
+            DutchAuctionRebalanceAdapter,
+            MinMaxCollateralRatioRebalanceAdapter,
+            PreLiquidationRebalanceAdapter
+        )
         returns (bool)
     {
-        return super.isStateAfterRebalanceValid(token, stateBefore);
+        return (
+            MinMaxCollateralRatioRebalanceAdapter.isStateAfterRebalanceValid(token, stateBefore)
+                && PreLiquidationRebalanceAdapter.isStateAfterRebalanceValid(token, stateBefore)
+        );
     }
 }
