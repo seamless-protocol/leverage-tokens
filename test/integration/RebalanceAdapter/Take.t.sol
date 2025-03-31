@@ -43,6 +43,9 @@ contract TakeTest is DutchAuctionTest {
         assertEq(USDC.balanceOf(bob), 2_000 * 1e6);
         assertEq(USDC.balanceOf(charlie), 2_000 * 1e6);
 
+        // Execute one more take just to bring it back to healthy state
+        _take_OverCollateralized(alice, 1_000 * 1e6);
+
         // Auction should automatically be removed because leverage token is back into healthy state
         Auction memory auction = ethLong2xRebalanceAdapter.getAuction();
 
@@ -84,14 +87,14 @@ contract TakeTest is DutchAuctionTest {
 
         assertGe(stateAfter.collateralRatio, stateBefore.collateralRatio);
 
-        // 1% is max loss because 99% is min auction multiplier
-        uint256 maxLoss = stateBefore.equity / 100;
+        // 2% is max loss because 98% is min auction multiplier
+        uint256 maxLoss = stateBefore.equity * 2 / 100;
         assertGe(stateAfter.equity, stateBefore.equity - maxLoss);
 
         // Check if user received correct amount of collateral
         assertEq(WETH.balanceOf(alice), 1e18);
         assertEq(WETH.balanceOf(bob), 1e18);
-        assertEq(WETH.balanceOf(charlie), 1 * 1e18);
+        assertEq(WETH.balanceOf(charlie), 1e18);
 
         // Auction should automatically be removed because leverage token is back into healthy state
         Auction memory auction = ethLong2xRebalanceAdapter.getAuction();

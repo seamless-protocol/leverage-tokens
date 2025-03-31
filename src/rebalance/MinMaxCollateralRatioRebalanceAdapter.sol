@@ -84,8 +84,9 @@ abstract contract MinMaxCollateralRatioRebalanceAdapter is IMinMaxCollateralRati
         virtual
         returns (bool isValid)
     {
-        uint256 targetRatio = ILeverageManager(msg.sender).getLeverageTokenTargetCollateralRatio(token);
-        LeverageTokenState memory stateAfter = ILeverageManager(msg.sender).getLeverageTokenState(token);
+        ILeverageManager leverageManager = getLeverageManager();
+        uint256 targetRatio = leverageManager.getLeverageTokenTargetCollateralRatio(token);
+        LeverageTokenState memory stateAfter = leverageManager.getLeverageTokenState(token);
 
         uint256 ratioBefore = stateBefore.collateralRatio;
         uint256 ratioAfter = stateAfter.collateralRatio;

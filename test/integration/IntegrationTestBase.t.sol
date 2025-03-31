@@ -144,7 +144,9 @@ contract IntegrationTestBase is Test {
                     maxColRatio,
                     7 minutes,
                     1.2 * 1e18,
-                    0.9 * 1e18
+                    0.9 * 1e18,
+                    1.1e18,
+                    40_00
                 )
             )
         );

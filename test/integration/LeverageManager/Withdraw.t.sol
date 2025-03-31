@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-import "forge-std/console.sol";
-
 // Dependency imports
 import {IOracle} from "@morpho-blue/interfaces/IOracle.sol";
 

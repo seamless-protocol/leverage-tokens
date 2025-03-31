@@ -2,7 +2,6 @@
 pragma solidity ^0.8.26;
 
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
-import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageTokenState} from "src/types/DataTypes.sol";
 
 /// @title IRebalanceAdapterBase
