@@ -1,11 +1,13 @@
 # ISwapAdapter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/7492e139a233e3537fefd83074042a04664dc27a/src/interfaces/periphery/ISwapAdapter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e2065c10183acb51865104847d299ff5ad4684d2/src/interfaces/periphery/ISwapAdapter.sol)
 
 
 ## Functions
 ### swapExactInput
 
-Swap tokens from the inputToken to the outputToken using the specified provider
+Swap tokens from the `inputToken` to the `outputToken` using the specified provider
+
+*The `outputToken` must be encoded in the `swapContext` path*
 
 
 ```solidity
@@ -31,7 +33,9 @@ function swapExactInput(IERC20 inputToken, uint256 inputAmount, uint256 minOutpu
 
 ### swapExactOutput
 
-Swap tokens from the inputToken to the outputToken using the specified provider
+Swap tokens from the `inputToken` to the `outputToken` using the specified provider
+
+*The `outputToken` must be encoded in the `swapContext` path*
 
 
 ```solidity

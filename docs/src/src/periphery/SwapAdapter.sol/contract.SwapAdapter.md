@@ -1,36 +1,18 @@
 # SwapAdapter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/7492e139a233e3537fefd83074042a04664dc27a/src/periphery/SwapAdapter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e2065c10183acb51865104847d299ff5ad4684d2/src/periphery/SwapAdapter.sol)
 
 **Inherits:**
-[ISwapAdapter](/src/interfaces/periphery/ISwapAdapter.sol/interface.ISwapAdapter.md), AccessControlUpgradeable, UUPSUpgradeable
+[ISwapAdapter](/src/interfaces/periphery/ISwapAdapter.sol/interface.ISwapAdapter.md)
 
-
-## State Variables
-### UPGRADER_ROLE
-
-```solidity
-bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
-```
+*The SwapAdapter contract is a periphery contract that facilitates the use of various DEXes for swaps.*
 
 
 ## Functions
-### initialize
-
-
-```solidity
-function initialize(address initialAdmin) external initializer;
-```
-
-### _authorizeUpgrade
-
-
-```solidity
-function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE);
-```
-
 ### swapExactInput
 
-Swap tokens from the inputToken to the outputToken using the specified provider
+Swap tokens from the `inputToken` to the `outputToken` using the specified provider
+
+*The `outputToken` must be encoded in the `swapContext` path*
 
 
 ```solidity
@@ -56,7 +38,9 @@ function swapExactInput(IERC20 inputToken, uint256 inputAmount, uint256 minOutpu
 
 ### swapExactOutput
 
-Swap tokens from the inputToken to the outputToken using the specified provider
+Swap tokens from the `inputToken` to the `outputToken` using the specified provider
+
+*The `outputToken` must be encoded in the `swapContext` path*
 
 
 ```solidity

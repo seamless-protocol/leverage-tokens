@@ -1,26 +1,11 @@
 # IBeaconProxyFactory
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/7492e139a233e3537fefd83074042a04664dc27a/src/interfaces/IBeaconProxyFactory.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e2065c10183acb51865104847d299ff5ad4684d2/src/interfaces/IBeaconProxyFactory.sol)
 
 
 ## Functions
-### beacon
-
-The beacon contract
-
-
-```solidity
-function beacon() external view returns (address beacon);
-```
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`beacon`|`address`|The address of the beacon contract|
-
-
 ### computeProxyAddress
 
-Computes the address of a beacon proxy before deployment
+Computes the address of a BeaconProxy before deployment
 
 
 ```solidity
@@ -33,51 +18,30 @@ function computeProxyAddress(address sender, bytes memory data, bytes32 baseSalt
 
 |Name|Type|Description|
 |----|----|-----------|
-|`sender`|`address`|The address that will deploy the beacon proxy using the factory|
-|`data`|`bytes`|The initialization data passed to the proxy|
+|`sender`|`address`|The address that will deploy the BeaconProxy using the factory|
+|`data`|`bytes`|The initialization data passed to the BeaconProxy|
 |`baseSalt`|`bytes32`|The base salt used for deterministic deployment|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`proxy`|`address`|The predicted address of the beacon proxy|
+|`proxy`|`address`|The predicted address of the BeaconProxy|
 
 
-### getProxies
+### numProxies
 
-The list of beacon proxies deployed by the factory
+Returns the number of BeaconProxys deployed by the factory
 
 
 ```solidity
-function getProxies() external view returns (address[] memory proxies);
+function numProxies() external view returns (uint256 _numProxies);
 ```
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`proxies`|`address[]`|The list of beacon proxies|
-
-
-### proxies
-
-Returns the address of a beacon proxy by index in the stored list of beacon proxies deployed by the factory
-
-
-```solidity
-function proxies(uint256 index) external view returns (address proxy);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`index`|`uint256`|The index of the beacon proxy in the stored list of beacon proxies|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`proxy`|`address`|The address of the beacon proxy|
+|`_numProxies`|`uint256`|The number of BeaconProxys deployed by the factory|
 
 
 ### createProxy
@@ -99,12 +63,12 @@ function createProxy(bytes memory data, bytes32 baseSalt) external returns (addr
 
 |Name|Type|Description|
 |----|----|-----------|
-|`proxy`|`address`|The address of the new beacon proxy|
+|`proxy`|`address`|The address of the new BeaconProxy|
 
 
 ## Events
 ### BeaconProxyCreated
-Emitted when a new beacon proxy is created
+Emitted when a new BeaconProxy is created
 
 
 ```solidity
@@ -115,8 +79,8 @@ event BeaconProxyCreated(address indexed proxy, bytes data, bytes32 baseSalt);
 
 |Name|Type|Description|
 |----|----|-----------|
-|`proxy`|`address`|The address of the new beacon proxy|
-|`data`|`bytes`|The data used to initialize the beacon proxy|
+|`proxy`|`address`|The address of the new BeaconProxy|
+|`data`|`bytes`|The data used to initialize the BeaconProxy|
 |`baseSalt`|`bytes32`|The base salt used for deterministic deployment|
 
 ## Errors

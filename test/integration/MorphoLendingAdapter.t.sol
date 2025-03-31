@@ -17,7 +17,7 @@ import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {BeaconProxyFactory} from "src/BeaconProxyFactory.sol";
-import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
+import {MorphoLendingAdapter} from "src/lending/MorphoLendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IntegrationTestBase} from "./IntegrationTestBase.t.sol";
 import {LeverageTokenConfig} from "src/types/DataTypes.sol";

@@ -1,49 +1,43 @@
 # BeaconProxyFactory
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/7492e139a233e3537fefd83074042a04664dc27a/src/BeaconProxyFactory.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e2065c10183acb51865104847d299ff5ad4684d2/src/BeaconProxyFactory.sol)
 
 **Inherits:**
-[IBeaconProxyFactory](/src/interfaces/IBeaconProxyFactory.sol/interface.IBeaconProxyFactory.md)
+[IBeaconProxyFactory](/src/interfaces/IBeaconProxyFactory.sol/interface.IBeaconProxyFactory.md), UpgradeableBeacon
+
+*Implementation of a factory that allows for deterministic deployment of BeaconProxys from an UpgradeableBeacon
+using the Create2 opcode. The salt used for the Create2 deployment is the hash of the sender and the base salt.*
 
 
 ## State Variables
-### beacon
-The beacon contract
+### numProxies
+Returns the number of BeaconProxys deployed by the factory
 
 
 ```solidity
-address public immutable beacon;
-```
-
-
-### proxies
-Returns the address of a beacon proxy by index in the stored list of beacon proxies deployed by the factory
-
-
-```solidity
-address[] public proxies;
+uint256 public numProxies;
 ```
 
 
 ## Functions
 ### constructor
 
-Creates a new beacon proxy factory using an upgradeable beacon
+Creates a new BeaconProxyFactory
 
 
 ```solidity
-constructor(address implementation, address beaconOwner);
+constructor(address _implementation, address _owner) UpgradeableBeacon(_implementation, _owner);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`implementation`|`address`|The implementation contract|
-|`beaconOwner`|`address`|The owner of the upgradeable beacon|
+|`_implementation`|`address`|The implementation contract for the beacon that will be used by BeaconProxys created by this factory|
+|`_owner`|`address`|The owner of this factory, allowed to update the beacon implementation|
 
 
 ### computeProxyAddress
 
-Computes the address of a beacon proxy before deployment
+Computes the address of a BeaconProxy before deployment
 
 
 ```solidity
@@ -56,30 +50,15 @@ function computeProxyAddress(address sender, bytes memory data, bytes32 baseSalt
 
 |Name|Type|Description|
 |----|----|-----------|
-|`sender`|`address`|The address that will deploy the beacon proxy using the factory|
-|`data`|`bytes`|The initialization data passed to the proxy|
+|`sender`|`address`|The address that will deploy the BeaconProxy using the factory|
+|`data`|`bytes`|The initialization data passed to the BeaconProxy|
 |`baseSalt`|`bytes32`|The base salt used for deterministic deployment|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`proxy`|`address`|The predicted address of the beacon proxy|
-
-
-### getProxies
-
-The list of beacon proxies deployed by the factory
-
-
-```solidity
-function getProxies() external view returns (address[] memory _proxies);
-```
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_proxies`|`address[]`|proxies The list of beacon proxies|
+|`proxy`|`address`|The predicted address of the BeaconProxy|
 
 
 ### createProxy
@@ -101,7 +80,7 @@ function createProxy(bytes memory data, bytes32 baseSalt) external returns (addr
 
 |Name|Type|Description|
 |----|----|-----------|
-|`proxy`|`address`|The address of the new beacon proxy|
+|`proxy`|`address`|The address of the new BeaconProxy|
 
 
 ### _getDeploySalt

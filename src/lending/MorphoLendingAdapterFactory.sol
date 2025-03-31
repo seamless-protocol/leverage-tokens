@@ -8,7 +8,7 @@ import {Clones} from "openzeppelin-contracts/contracts/proxy/Clones.sol";
 // Internal imports
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {IMorphoLendingAdapterFactory} from "src/interfaces/IMorphoLendingAdapterFactory.sol";
-import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
+import {MorphoLendingAdapter} from "src/lending/MorphoLendingAdapter.sol";
 
 /**
  * @dev The MorphoLendingAdapterFactory is a factory contract for deploying ERC-1167 minimal proxies of the

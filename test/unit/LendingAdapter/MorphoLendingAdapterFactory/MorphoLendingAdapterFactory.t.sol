@@ -11,8 +11,8 @@ import {IMorpho, Id, MarketParams} from "@morpho-blue/interfaces/IMorpho.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {IMorphoLendingAdapterFactory} from "src/interfaces/IMorphoLendingAdapterFactory.sol";
-import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
-import {MorphoLendingAdapterFactory} from "src/adapters/MorphoLendingAdapterFactory.sol";
+import {MorphoLendingAdapter} from "src/lending/MorphoLendingAdapter.sol";
+import {MorphoLendingAdapterFactory} from "src/lending/MorphoLendingAdapterFactory.sol";
 import {MockMorpho} from "../../mock/MockMorpho.sol";
 import {MockERC20} from "../../mock/MockERC20.sol";
 

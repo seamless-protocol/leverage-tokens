@@ -8,7 +8,7 @@ import {IOracle} from "@morpho-blue/interfaces/IOracle.sol";
 import {ExternalAction} from "src/types/DataTypes.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
-import {MorphoLendingAdapter} from "src/adapters/MorphoLendingAdapter.sol";
+import {MorphoLendingAdapter} from "src/lending/MorphoLendingAdapter.sol";
 import {LeverageManagerTest} from "./LeverageManager.t.sol";
 import {ActionData, LeverageTokenState} from "src/types/DataTypes.sol";
 

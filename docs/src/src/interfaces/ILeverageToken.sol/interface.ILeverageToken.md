@@ -1,5 +1,5 @@
-# IStrategy
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/7492e139a233e3537fefd83074042a04664dc27a/src/interfaces/IStrategy.sol)
+# ILeverageToken
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e2065c10183acb51865104847d299ff5ad4684d2/src/interfaces/ILeverageToken.sol)
 
 **Inherits:**
 IERC20
@@ -41,4 +41,13 @@ function burn(address from, uint256 amount) external;
 |`from`|`address`|The address to burn tokens from|
 |`amount`|`uint256`|The amount of tokens to burn|
 
+
+## Events
+### LeverageTokenInitialized
+Event emitted when the leverage token is initialized
+
+
+```solidity
+event LeverageTokenInitialized(string name, string symbol);
+```
 

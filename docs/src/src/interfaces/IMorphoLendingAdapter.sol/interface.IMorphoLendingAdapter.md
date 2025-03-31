@@ -1,39 +1,73 @@
 # IMorphoLendingAdapter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/7492e139a233e3537fefd83074042a04664dc27a/src/interfaces/IMorphoLendingAdapter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e2065c10183acb51865104847d299ff5ad4684d2/src/interfaces/IMorphoLendingAdapter.sol)
 
 **Inherits:**
-[ILendingAdapter](/src/interfaces/ILendingAdapter.sol/interface.ILendingAdapter.md)
+[IPreLiquidationLendingAdapter](/src/interfaces/IPreLiquidationLendingAdapter.sol/interface.IPreLiquidationLendingAdapter.md)
 
 
 ## Functions
-### leverageManager
+### authorizedCreator
 
-The Seamless ilm-v2 LeverageManager contract
+The authorized creator of the MorphoLendingAdapter
+
+*Only the authorized creator can create a new LeverageToken using this adapter on the LeverageManager*
 
 
 ```solidity
-function leverageManager() external view returns (ILeverageManager leverageManager);
+function authorizedCreator() external view returns (address _authorizedCreator);
 ```
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`leverageManager`|`ILeverageManager`|The Seamless ilm-v2 LeverageManager contract|
+|`_authorizedCreator`|`address`|The authorized creator of the MorphoLendingAdapter|
+
+
+### isUsed
+
+Whether the MorphoLendingAdapter is in use
+
+*If this is true, the MorphoLendingAdapter cannot be used to create a new LeverageToken*
+
+
+```solidity
+function isUsed() external view returns (bool _isUsed);
+```
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_isUsed`|`bool`|Whether the MorphoLendingAdapter is in use|
+
+
+### leverageManager
+
+The LeverageManager contract
+
+
+```solidity
+function leverageManager() external view returns (ILeverageManager _leverageManager);
+```
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_leverageManager`|`ILeverageManager`|The LeverageManager contract|
 
 
 ### morphoMarketId
 
-The ID of the Morpho market that the lending adapter manages a position in
+The ID of the Morpho market that the MorphoLendingAdapter manages a position in
 
 
 ```solidity
-function morphoMarketId() external view returns (Id morphoMarketId);
+function morphoMarketId() external view returns (Id _morphoMarketId);
 ```
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`morphoMarketId`|`Id`|The ID of the Morpho market that the lending adapter manages a position in|
+|`_morphoMarketId`|`Id`|The ID of the Morpho market that the MorphoLendingAdapter manages a position in|
 
 
 ### marketParams
@@ -64,12 +98,40 @@ The Morpho core protocol contract
 
 
 ```solidity
-function morpho() external view returns (IMorpho morpho);
+function morpho() external view returns (IMorpho _morpho);
 ```
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`morpho`|`IMorpho`|The Morpho core protocol contract|
+|`_morpho`|`IMorpho`|The Morpho core protocol contract|
 
+
+## Events
+### MorphoLendingAdapterInitialized
+Event emitted when the MorphoLendingAdapter is initialized
+
+
+```solidity
+event MorphoLendingAdapterInitialized(
+    Id indexed morphoMarketId, MarketParams marketParams, address indexed authorizedCreator
+);
+```
+
+### MorphoLendingAdapterUsed
+Event emitted when the MorphoLendingAdapter is flagged as used in post LeverageToken creation
+
+
+```solidity
+event MorphoLendingAdapterUsed();
+```
+
+## Errors
+### LendingAdapterAlreadyInUse
+Thrown when someone tries to create a LeverageToken with this MorphoLendingAdapter but it is already in use
+
+
+```solidity
+error LendingAdapterAlreadyInUse();
+```
 

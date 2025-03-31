@@ -1,8 +1,11 @@
-# Strategy
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/7492e139a233e3537fefd83074042a04664dc27a/src/Strategy.sol)
+# LeverageToken
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e2065c10183acb51865104847d299ff5ad4684d2/src/LeverageToken.sol)
 
 **Inherits:**
-Initializable, ERC20Upgradeable, OwnableUpgradeable, [IStrategy](/src/interfaces/IStrategy.sol/interface.IStrategy.md)
+Initializable, ERC20Upgradeable, ERC20PermitUpgradeable, OwnableUpgradeable, [ILeverageToken](/src/interfaces/ILeverageToken.sol/interface.ILeverageToken.md)
+
+*The LeverageToken contract is an upgradeable ERC20 token that represents a claim to the equity held by the LeverageToken.
+It is used to represent a user's claim to the equity held by the LeverageToken in the LeverageManager.*
 
 
 ## Functions
@@ -10,7 +13,7 @@ Initializable, ERC20Upgradeable, OwnableUpgradeable, [IStrategy](/src/interfaces
 
 
 ```solidity
-function initialize(address owner, string memory _name, string memory _symbol) external initializer;
+function initialize(address _owner, string memory _name, string memory _symbol) external initializer;
 ```
 
 ### mint

@@ -1,10 +1,12 @@
 
 
 # Contents
-- [ExternalAction](DataTypes.sol/enum.ExternalAction.md)
 - [ActionType](DataTypes.sol/enum.ActionType.md)
+- [ExternalAction](DataTypes.sol/enum.ExternalAction.md)
 - [ActionData](DataTypes.sol/struct.ActionData.md)
-- [CollateralRatios](DataTypes.sol/struct.CollateralRatios.md)
+- [Auction](DataTypes.sol/struct.Auction.md)
+- [BaseLeverageTokenConfig](DataTypes.sol/struct.BaseLeverageTokenConfig.md)
+- [LeverageTokenConfig](DataTypes.sol/struct.LeverageTokenConfig.md)
+- [LeverageTokenState](DataTypes.sol/struct.LeverageTokenState.md)
 - [RebalanceAction](DataTypes.sol/struct.RebalanceAction.md)
-- [StrategyState](DataTypes.sol/struct.StrategyState.md)
 - [TokenTransfer](DataTypes.sol/struct.TokenTransfer.md)

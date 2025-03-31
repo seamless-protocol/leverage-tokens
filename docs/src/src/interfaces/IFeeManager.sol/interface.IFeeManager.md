@@ -1,33 +1,36 @@
 # IFeeManager
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/7492e139a233e3537fefd83074042a04664dc27a/src/interfaces/IFeeManager.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e2065c10183acb51865104847d299ff5ad4684d2/src/interfaces/IFeeManager.sol)
 
 
 ## Functions
-### getStrategyActionFee
+### getLeverageTokenActionFee
 
-Returns fee for specific action on strategy
+Returns the LeverageToken fee for a specific action
 
 
 ```solidity
-function getStrategyActionFee(IStrategy strategy, ExternalAction action) external view returns (uint256 fee);
+function getLeverageTokenActionFee(ILeverageToken leverageToken, ExternalAction action)
+    external
+    view
+    returns (uint256 fee);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`strategy`|`IStrategy`|Strategy to get fee for|
-|`action`|`ExternalAction`|Action to get fee for|
+|`leverageToken`|`ILeverageToken`|The LeverageToken to get fee for|
+|`action`|`ExternalAction`|The action to get fee for|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`fee`|`uint256`|Fee for action on strategy, 100_00 is 100%|
+|`fee`|`uint256`|Fee for action, 100_00 is 100%|
 
 
 ### getTreasury
 
-Returns address of the treasury
+Returns the address of the treasury
 
 
 ```solidity
@@ -37,12 +40,12 @@ function getTreasury() external view returns (address treasury);
 
 |Name|Type|Description|
 |----|----|-----------|
-|`treasury`|`address`|Address of the treasury|
+|`treasury`|`address`|The address of the treasury|
 
 
 ### getTreasuryActionFee
 
-Returns treasury fee for specific action
+Returns the treasury fee for a specific action
 
 
 ```solidity
@@ -61,34 +64,27 @@ function getTreasuryActionFee(ExternalAction action) external view returns (uint
 |`fee`|`uint256`|Fee for action, 100_00 is 100%|
 
 
-### setStrategyActionFee
+### MAX_FEE
 
-Sets fee for specific action on strategy
-
-*Only FEE_MANAGER role can call this function.
-If manager tries to set fee above 100% it reverts with FeeTooHigh error*
+Returns the max fee that can be set
 
 
 ```solidity
-function setStrategyActionFee(IStrategy strategy, ExternalAction action, uint256 fee) external;
+function MAX_FEE() external view returns (uint256 maxFee);
 ```
-**Parameters**
+**Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`strategy`|`IStrategy`|Strategy to set fee for|
-|`action`|`ExternalAction`|Action to set fee for|
-|`fee`|`uint256`|Fee for action on strategy, 100_00 is 100%|
+|`maxFee`|`uint256`|Max fee, 100_00 is 100%|
 
 
 ### setTreasury
 
-Sets address of the treasury. Treasury receives all fees from LeverageManager. If the treasury is set to
-the zero address, the treasury fees are reset to 0 as well
+Sets the address of the treasury. The treasury receives all treasury fees from the LeverageManager. If the
+treasury is set to the zero address, the treasury fees are reset to 0 as well
 
-*Only FEE_MANAGER role can call this function*
-
-*Emits TreasurySet event*
+*Only `FEE_MANAGER_ROLE` can call this function*
 
 
 ```solidity
@@ -98,15 +94,14 @@ function setTreasury(address treasury) external;
 
 |Name|Type|Description|
 |----|----|-----------|
-|`treasury`|`address`|Address of the treasury|
+|`treasury`|`address`|The address of the treasury|
 
 
 ### setTreasuryActionFee
 
-Sets fee for specific action
+Sets the treasury fee for a specific action
 
-*Only FEE_MANAGER role can call this function.
-If manager tries to set fee above 100% it reverts with FeeTooHigh error*
+*Only `FEE_MANAGER_ROLE` can call this function.*
 
 
 ```solidity
@@ -116,21 +111,21 @@ function setTreasuryActionFee(ExternalAction action, uint256 fee) external;
 
 |Name|Type|Description|
 |----|----|-----------|
-|`action`|`ExternalAction`|Action to set fee for|
-|`fee`|`uint256`|Fee for action, 100_00 is 100%|
+|`action`|`ExternalAction`|The action to set fee for|
+|`fee`|`uint256`|The fee for action, 100_00 is 100%|
 
 
 ## Events
-### StrategyActionFeeSet
-Emitted when fee is set for strategy for specific action
+### LeverageTokenActionFeeSet
+Emitted when a LeverageToken fee is set for a specific action
 
 
 ```solidity
-event StrategyActionFeeSet(IStrategy strategy, ExternalAction action, uint256 fee);
+event LeverageTokenActionFeeSet(ILeverageToken indexed leverageToken, ExternalAction indexed action, uint256 fee);
 ```
 
 ### TreasuryActionFeeSet
-Emitted when treasury fee is set for specific action
+Emitted when a treasury fee is set for a specific action
 
 
 ```solidity
@@ -138,7 +133,7 @@ event TreasuryActionFeeSet(ExternalAction indexed action, uint256 fee);
 ```
 
 ### TreasurySet
-Emitted when treasury is set
+Emitted when the treasury address is set
 
 
 ```solidity
@@ -147,7 +142,7 @@ event TreasurySet(address treasury);
 
 ## Errors
 ### FeeTooHigh
-Error emitted when fee manager tries to set fee higher than MAX_FEE
+Error emitted when `FEE_MANAGER_ROLE` tries to set fee higher than `MAX_FEE`
 
 
 ```solidity
@@ -155,7 +150,7 @@ error FeeTooHigh(uint256 fee, uint256 maxFee);
 ```
 
 ### TreasuryNotSet
-Error emitted when trying to set treasury fee when treasury address is not set
+Error emitted when trying to set a treasury fee when the treasury address is not set
 
 
 ```solidity
