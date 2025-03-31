@@ -86,6 +86,7 @@ interface ILeverageManager is IFeeManager {
     /// @notice Returns initial collateral ratio for given leverage token
     /// @param token Leverage token to get initial collateral ratio for
     /// @return initialCollateralRatio Initial collateral ratio for the leverage token
+    /// @dev Initial collateral ratio is followed in deposits on leverage manager when leverage token is empty
     function getLeverageTokenInitialCollateralRatio(ILeverageToken token)
         external
         view

@@ -130,7 +130,7 @@ contract IntegrationTestBase is Test {
             morphoLendingAdapterFactory.deployAdapter(WETH_USDC_MARKET_ID, address(this), bytes32(vm.randomUint()))
         );
 
-        address rebalanceAdapter = address(
+        address _rebalanceAdapter = address(
             _deployRebalanceAdapter(
                 minColRatio, targetCollateralRatio, maxColRatio, 7 minutes, 1.2 * 1e18, 0.9 * 1e18, 1.1e18, 40_00
             )
@@ -139,7 +139,7 @@ contract IntegrationTestBase is Test {
         ILeverageToken _leverageToken = leverageManager.createNewLeverageToken(
             LeverageTokenConfig({
                 lendingAdapter: lendingAdapter,
-                rebalanceAdapter: IRebalanceAdapter(rebalanceAdapter),
+                rebalanceAdapter: IRebalanceAdapter(_rebalanceAdapter),
                 depositTokenFee: depositFee,
                 withdrawTokenFee: withdrawFee
             }),
@@ -164,17 +164,19 @@ contract IntegrationTestBase is Test {
             address(rebalanceAdapterImplementation),
             abi.encodeWithSelector(
                 RebalanceAdapter.initialize.selector,
-                address(this),
-                address(this),
-                address(leverageManager),
-                minCollateralRatio,
-                targetCollateralRatio,
-                maxCollateralRatio,
-                auctionDuration,
-                initialPriceMultiplier,
-                minPriceMultiplier,
-                collateralRatioThreshold,
-                rebalanceReward
+                RebalanceAdapter.RebalanceAdapterInitParams({
+                    owner: address(this),
+                    authorizedCreator: address(this),
+                    leverageManager: leverageManager,
+                    minCollateralRatio: minCollateralRatio,
+                    targetCollateralRatio: targetCollateralRatio,
+                    maxCollateralRatio: maxCollateralRatio,
+                    auctionDuration: auctionDuration,
+                    initialPriceMultiplier: initialPriceMultiplier,
+                    minPriceMultiplier: minPriceMultiplier,
+                    preLiquidationCollateralRatioThreshold: collateralRatioThreshold,
+                    rebalanceReward: rebalanceReward
+                })
             )
         );
 
