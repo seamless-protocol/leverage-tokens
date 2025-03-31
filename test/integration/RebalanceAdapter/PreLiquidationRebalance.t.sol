@@ -50,7 +50,7 @@ contract PreLiquidationRebalanceTest is RebalanceTest {
         uint256 debtToRepay = 5_000e6;
 
         (RebalanceAction[] memory actions, TokenTransfer[] memory transfersIn, TokenTransfer[] memory transfersOut) =
-            _prepareForRebalance(ethLong2x, 0, collateralToRemove, 0, debtToRepay); // Give 5000 USDC and take 2.6 ETH
+            _prepareForRebalance(ethLong2x, 0, colToRemove, 0, debtToRepay); // Give 5000 USDC and take 2.6 ETH
 
         deal(address(USDC), address(this), debtToRepay);
         USDC.approve(address(leverageManager), debtToRepay);
