@@ -81,56 +81,6 @@ contract DepositInvariants is InvariantTestBase {
             return;
         }
 
-        // MockLendingAdapter lendingAdapter =
-        //     MockLendingAdapter(address(leverageManager.getStrategyLendingAdapter(depositData.strategy)));
-        // string memory debug = string.concat(
-        //     " stateBefore.totalSupply: ",
-        //     Strings.toString(stateBefore.totalSupply),
-        //     " stateBefore.collateral: ",
-        //     Strings.toString(stateBefore.collateral),
-        //     " stateBefore.collateralInDebtAsset: ",
-        //     Strings.toString(stateBefore.collateralInDebtAsset),
-        //     " stateBefore.debt: ",
-        //     Strings.toString(stateBefore.debt),
-        //     " stateBefore.equityInCollateralAsset: ",
-        //     Strings.toString(stateBefore.equityInCollateralAsset),
-        //     " stateBefore.collateralRatio: ",
-        //     Strings.toString(stateBefore.collateralRatio)
-        // );
-        // string memory debug2 = string.concat(
-        //     " stateAfter.collateral: ",
-        //     Strings.toString(leverageManager.getStrategyLendingAdapter(depositData.strategy).getCollateral()),
-        //     " stateAfter.collateralInDebtAsset: ",
-        //     Strings.toString(stateAfter.collateralInDebtAsset),
-        //     " stateAfter.debt: ",
-        //     Strings.toString(stateAfter.debt),
-        //     " stateAfter.equityInCollateralAsset: ",
-        //     Strings.toString(
-        //         leverageManager.getStrategyLendingAdapter(depositData.strategy).getEquityInCollateralAsset()
-        //     ),
-        //     " stateAfter.collateralRatio: ",
-        //     Strings.toString(stateAfter.collateralRatio),
-        //     " stateAfter.totalSupply: ",
-        //     Strings.toString(depositData.strategy.totalSupply())
-        // );
-        // string memory debug3 = string.concat(
-        //     " exchangeRate: ",
-        //     Strings.toString(lendingAdapter.collateralToDebtAssetExchangeRate()),
-        //     " equityInCollateralAsset deposited: ",
-        //     Strings.toString(depositData.equityInCollateralAsset)
-        // );
-
-        // assertGe(
-        //     stateAfter.collateralRatio,
-        //     stateBefore.collateralRatio,
-        //     string.concat(
-        //         "Invariant Violated: Collateral ratio after deposit into a non-empty strategy must be greater than or equal to the initial collateral ratio.",
-        //         debug,
-        //         debug2,
-        //         debug3
-        //     )
-        // );
-
         // assertApproxEqRel scales the difference by 1e18, so we can't check this if the difference is too high
         uint256 collateralRatioDiff = stdMath.delta(stateAfter.collateralRatio, stateBefore.collateralRatio);
         if (collateralRatioDiff == 0 || type(uint256).max / 1e18 >= collateralRatioDiff) {
@@ -159,11 +109,11 @@ contract DepositInvariants is InvariantTestBase {
                 // lower as the amount of equity decreases.
                 // For example:
                 //     collateral and debt are 1:1
-                //     targetCollateralRatio = 5e8
+                //     targetCollateralRatio = 5e18
                 //     equityDeposited = 583
-                //     collateralRequiredForDeposit = 583 * 5e8 / (5e8 - 1e8) = 728.75 (729 rounded up)
+                //     collateralRequiredForDeposit = 583 * 5e18 / (5e18 - 1e18) = 728.75 (729 rounded up)
                 //     debtRequiredForDeposit = 729 - 583 = 146
-                //     collateralRatioAfterDeposit = 729 / 146 = 4.9931506849 (not the target 5e8)
+                //     collateralRatioAfterDeposit = 729 / 146 = 4.9931506849 (not the target 5e18)
                 assertApproxEqRel(
                     stateAfter.collateralRatio,
                     targetCollateralRatio,
