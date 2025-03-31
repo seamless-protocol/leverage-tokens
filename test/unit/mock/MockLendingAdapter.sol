@@ -71,7 +71,7 @@ contract MockLendingAdapter {
         return debt;
     }
 
-    function preLeverageTokenCreation(address /* creator */ ) external {}
+    function postLeverageTokenCreation(address, /* creator */ address /* token */ ) external {}
 
     function addCollateral(uint256 amount) external {
         SafeERC20.safeTransferFrom(collateralAsset, msg.sender, address(this), amount);
