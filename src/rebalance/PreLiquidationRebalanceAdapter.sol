@@ -13,6 +13,7 @@ import {IPreLiquidationLendingAdapter} from "src/interfaces/IPreLiquidationLendi
 import {IPreLiquidationRebalanceAdapter} from "src/interfaces/IPreLiquidationRebalanceAdapter.sol";
 
 abstract contract PreLiquidationRebalanceAdapter is Initializable, IPreLiquidationRebalanceAdapter {
+    uint256 public constant WAD = 1e18;
     /// @notice Reward base, 100_00 means that the reward is 100%
     uint256 public constant REWARD_BASE = 1e4;
 
@@ -88,7 +89,7 @@ abstract contract PreLiquidationRebalanceAdapter is Initializable, IPreLiquidati
         uint256 debtDelta =
             stateBefore.debt > stateAfter.debt ? stateBefore.debt - stateAfter.debt : stateAfter.debt - stateBefore.debt;
 
-        uint256 maxEquityLoss = Math.mulDiv(debtDelta, rebalanceRewardPercentage, 1e18);
+        uint256 maxEquityLoss = Math.mulDiv(debtDelta, rebalanceRewardPercentage, WAD);
         return stateAfter.equity >= stateBefore.equity - maxEquityLoss;
     }
 
