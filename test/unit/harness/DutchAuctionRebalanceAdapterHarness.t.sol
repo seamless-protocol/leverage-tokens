@@ -13,6 +13,7 @@ import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 
 /// @notice Wrapper contract that exposes internal functions of DutchAuctionRebalanceAdapter for testing
 contract DutchAuctionRebalanceAdapterHarness is DutchAuctionRebalanceAdapter {
+    bool public isEligible;
     bool public isValidState;
     uint256 public targetCollateralRatio;
     ILeverageManager public leverageManager;
@@ -56,6 +57,19 @@ contract DutchAuctionRebalanceAdapterHarness is DutchAuctionRebalanceAdapter {
         _setLeverageToken(_leverageToken);
     }
 
+    function isEligibleForRebalance(ILeverageToken token, LeverageTokenState memory state, address caller)
+        public
+        view
+        override
+        returns (bool)
+    {
+        if (!isEligible) {
+            return false;
+        }
+
+        return super.isEligibleForRebalance(token, state, caller);
+    }
+
     function isStateAfterRebalanceValid(ILeverageToken, LeverageTokenState memory)
         public
         view
@@ -75,6 +89,10 @@ contract DutchAuctionRebalanceAdapterHarness is DutchAuctionRebalanceAdapter {
 
     function mock_isStateAfterRebalanceValid(bool _isValidState) external {
         isValidState = _isValidState;
+    }
+
+    function mock_isEligible(bool _isEligible) external {
+        isEligible = _isEligible;
     }
 
     function mock_setLeverageManager(ILeverageManager _leverageManager) external {
