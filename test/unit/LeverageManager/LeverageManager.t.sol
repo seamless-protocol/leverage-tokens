@@ -6,6 +6,7 @@ import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
+import {IBeaconProxyFactory} from "src/interfaces/IBeaconProxyFactory.sol";
 import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
@@ -42,6 +43,10 @@ contract LeverageManagerTest is FeeManagerTest {
         leverageTokenFactory = new BeaconProxyFactory(leverageTokenImplementation, address(this));
         lendingAdapter = new MockLendingAdapter(address(collateralToken), address(debtToken), address(this));
         address leverageManagerImplementation = address(new LeverageManagerHarness());
+
+        vm.expectEmit(true, true, true, true);
+        emit ILeverageManager.LeverageManagerInitialized(IBeaconProxyFactory(address(leverageTokenFactory)));
+
         address leverageManagerProxy = UnsafeUpgrades.deployUUPSProxy(
             leverageManagerImplementation,
             abi.encodeWithSelector(LeverageManager.initialize.selector, defaultAdmin, leverageTokenFactory)

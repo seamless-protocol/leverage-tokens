@@ -10,12 +10,17 @@ import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 
 // Internal imports
 import {LeverageToken} from "src/LeverageToken.sol";
+import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 
 contract LeverageTokenTest is Test {
     LeverageToken public leverageToken;
 
     function setUp() public virtual {
         address leverageTokenImplementation = address(new LeverageToken());
+
+        vm.expectEmit(true, true, true, true);
+        emit ILeverageToken.LeverageTokenInitialized("Test name", "Test symbol");
+
         address leverageTokenProxy = UnsafeUpgrades.deployUUPSProxy(
             leverageTokenImplementation,
             abi.encodeWithSelector(LeverageToken.initialize.selector, address(this), "Test name", "Test symbol")

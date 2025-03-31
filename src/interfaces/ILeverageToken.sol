@@ -5,6 +5,9 @@ pragma solidity ^0.8.20;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface ILeverageToken is IERC20 {
+    /// @notice Event emitted when the leverage token is initialized
+    event LeverageTokenInitialized(string name, string symbol);
+
     /// @notice Mints new tokens to the specified address
     /// @param to The address to mint tokens to
     /// @param amount The amount of tokens to mint
