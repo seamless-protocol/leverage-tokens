@@ -31,8 +31,8 @@ interface ILeverageManager is IFeeManager {
     error SlippageTooHigh(uint256 actual, uint256 expected);
 
     /// @notice Error thrown when caller is not authorized to rebalance
-    /// @param token The LeverageToken
-    /// @param caller The caller
+    /// @param token The LeverageToken to rebalance
+    /// @param caller The caller of the rebalance function
     error NotRebalancer(ILeverageToken token, address caller);
 
     /// @notice Error thrown when a LeverageToken is not eligible for rebalance
