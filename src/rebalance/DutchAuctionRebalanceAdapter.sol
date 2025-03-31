@@ -61,6 +61,14 @@ abstract contract DutchAuctionRebalanceAdapter is IDutchAuctionRebalanceAdapter,
         }
     }
 
+    function __DutchAuctionRebalanceAdapter_init(
+        uint256 _auctionDuration,
+        uint256 _initialPriceMultiplier,
+        uint256 _minPriceMultiplier
+    ) internal onlyInitializing {
+        __DutchAuctionRebalanceAdapter_init_unchained(_auctionDuration, _initialPriceMultiplier, _minPriceMultiplier);
+    }
+
     function __DutchAuctionRebalanceAdapter_init_unchained(
         uint256 _auctionDuration,
         uint256 _initialPriceMultiplier,

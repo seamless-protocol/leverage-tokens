@@ -22,7 +22,7 @@ contract DutchAuctionRebalanceAdapterHarness is DutchAuctionRebalanceAdapter {
         external
         initializer
     {
-        __DutchAuctionRebalanceAdapter_init_unchained(_auctionDuration, _initialPriceMultiplier, _minPriceMultiplier);
+        __DutchAuctionRebalanceAdapter_init(_auctionDuration, _initialPriceMultiplier, _minPriceMultiplier);
     }
 
     function exposed_getDutchAuctionRebalanceAdapterStorageSlot() external pure returns (bytes32 slot) {

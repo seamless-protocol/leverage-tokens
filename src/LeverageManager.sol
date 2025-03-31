@@ -3,10 +3,10 @@ pragma solidity ^0.8.26;
 
 // Dependency imports
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
 // Internal imports
 import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
@@ -83,6 +83,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     }
 
     function initialize(address initialAdmin, IBeaconProxyFactory leverageTokenFactory) external initializer {
+        __FeeManager_init(initialAdmin);
         _grantRole(DEFAULT_ADMIN_ROLE, initialAdmin);
         _getLeverageManagerStorage().tokenFactory = leverageTokenFactory;
         emit LeverageManagerInitialized(leverageTokenFactory);
