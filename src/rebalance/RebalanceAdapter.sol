@@ -64,6 +64,7 @@ contract RebalanceAdapter is
 
         _getRebalanceAdapterStorage().authorizedCreator = _authorizedCreator;
         _getRebalanceAdapterStorage().leverageManager = _leverageManager;
+        emit RebalanceAdapterInitialized(_authorizedCreator, _leverageManager);
     }
 
     /// @inheritdoc IRebalanceAdapterBase

@@ -67,6 +67,7 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
 
         // slither-disable-next-line missing-zero-check
         authorizedCreator = _authorizedCreator;
+        emit MorphoLendingAdapterInitialized(_morphoMarketId, marketParams, _authorizedCreator);
     }
 
     /// @inheritdoc ILendingAdapter
@@ -74,6 +75,8 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
         if (creator != authorizedCreator) revert Unauthorized();
         if (isUsed) revert LendingAdapterAlreadyInUse();
         isUsed = true;
+
+        emit MorphoLendingAdapterUsed();
     }
 
     /// @inheritdoc ILendingAdapter

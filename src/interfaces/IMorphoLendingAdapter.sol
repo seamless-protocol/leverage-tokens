@@ -2,13 +2,19 @@
 pragma solidity ^0.8.26;
 
 // Dependency imports
-import {Id, IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
+import {Id, IMorpho, MarketParams} from "@morpho-blue/interfaces/IMorpho.sol";
 
 // Internal imports
 import {IPreLiquidationLendingAdapter} from "./IPreLiquidationLendingAdapter.sol";
 import {ILeverageManager} from "./ILeverageManager.sol";
 
 interface IMorphoLendingAdapter is IPreLiquidationLendingAdapter {
+    /// @notice Event emitted when the Morpho lending adapter is initialized
+    event MorphoLendingAdapterInitialized(Id morphoMarketId, MarketParams marketParams, address authorizedCreator);
+
+    /// @notice Event emitted when the Morpho lending adapter is flagged as used in post leverage token creation
+    event MorphoLendingAdapterUsed();
+
     /// @notice Thrown when someone tries to create leverage token with this lending adapter but it is already in use
     error LendingAdapterAlreadyInUse();
 
