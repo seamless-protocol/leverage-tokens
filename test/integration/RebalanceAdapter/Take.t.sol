@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
+import {console} from "forge-std/console.sol";
+
 import {DutchAuctionTest} from "./DutchAuction.t.sol";
 import {LeverageTokenState} from "src/types/DataTypes.sol";
 import {IDutchAuctionRebalanceAdapter} from "src/interfaces/IDutchAuctionRebalanceAdapter.sol";
@@ -22,13 +24,19 @@ contract TakeTest is DutchAuctionTest {
         // Initial price is 102% or oracle. Highly unprofitable but is possible to be taken
         uint256 amountInAlice = _take_OverCollateralized(alice, 2_000 * 1e6);
 
+        console.log("1!");
+
         // Some time passes and Bob takes for better price
         vm.warp(block.timestamp + 2 minutes);
         uint256 amountInBob = _take_OverCollateralized(bob, 2_000 * 1e6);
 
+        console.log("2!");
+
         // Some more time passes and Charlie takes it for even better price
         vm.warp(block.timestamp + 4 minutes);
         uint256 amountInCharlie = _take_OverCollateralized(charlie, 2_000 * 1e6);
+
+        console.log("3!");
 
         LeverageTokenState memory stateAfter = leverageManager.getLeverageTokenState(ethLong2x);
 
@@ -42,6 +50,9 @@ contract TakeTest is DutchAuctionTest {
         assertEq(USDC.balanceOf(alice), 2_000 * 1e6);
         assertEq(USDC.balanceOf(bob), 2_000 * 1e6);
         assertEq(USDC.balanceOf(charlie), 2_000 * 1e6);
+
+        // Execute one more take just to bring it back to healthy state
+        _take_OverCollateralized(alice, 1_000 * 1e6);
 
         // Auction should automatically be removed because leverage token is back into healthy state
         Auction memory auction = ethLong2xRebalanceAdapter.getAuction();
@@ -69,29 +80,37 @@ contract TakeTest is DutchAuctionTest {
 
         LeverageTokenState memory stateBefore = leverageManager.getLeverageTokenState(ethLong2x);
 
+        console.log("1!");
+
         // Alice takes for big price
         uint256 amountInAlice = _take_UnderCollateralized(alice, 1e18);
+
+        console.log("2!");
 
         // Some time passes and Bob takes for better price
         vm.warp(block.timestamp + 2 minutes);
         uint256 amountInBob = _take_UnderCollateralized(bob, 1e18);
 
+        console.log("3!");
+
         // Some more time passes and Charlie takes it for even better price
         vm.warp(block.timestamp + 4 minutes);
         uint256 amountInCharlie = _take_UnderCollateralized(charlie, 1e18);
+
+        console.log("4!");
 
         LeverageTokenState memory stateAfter = leverageManager.getLeverageTokenState(ethLong2x);
 
         assertGe(stateAfter.collateralRatio, stateBefore.collateralRatio);
 
-        // 1% is max loss because 99% is min auction multiplier
-        uint256 maxLoss = stateBefore.equity / 100;
+        // 2% is max loss because 98% is min auction multiplier
+        uint256 maxLoss = stateBefore.equity * 2 / 100;
         assertGe(stateAfter.equity, stateBefore.equity - maxLoss);
 
         // Check if user received correct amount of collateral
         assertEq(WETH.balanceOf(alice), 1e18);
         assertEq(WETH.balanceOf(bob), 1e18);
-        assertEq(WETH.balanceOf(charlie), 1 * 1e18);
+        assertEq(WETH.balanceOf(charlie), 1e18);
 
         // Auction should automatically be removed because leverage token is back into healthy state
         Auction memory auction = ethLong2xRebalanceAdapter.getAuction();

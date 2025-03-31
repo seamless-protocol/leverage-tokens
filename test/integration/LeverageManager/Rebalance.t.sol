@@ -44,8 +44,8 @@ contract RebalanceTest is LeverageManagerTest {
         super.setUp();
 
         rebalanceAdapterImplementation = new RebalanceAdapter();
-        ethLong2xRebalanceAdapter = _deployRebalanceAdapter(1.8e8, 2.2e8, 7 minutes, 1.2e18, 0.9e18, 1.1e18, 45_66);
-        ethShort2xRebalanceAdapter = _deployRebalanceAdapter(1.3e8, 2e8, 7 minutes, 1.2e18, 0.9e18, 1.1e18, 45_66);
+        ethLong2xRebalanceAdapter = _deployRebalanceAdapter(1.8e8, 2.2e8, 7 minutes, 1.2e18, 0.98e18, 1.3e8, 45_66);
+        ethShort2xRebalanceAdapter = _deployRebalanceAdapter(1.3e8, 2e8, 7 minutes, 1.2e18, 0.9e18, 1.3e8, 45_66);
 
         ethLong2xAdapter = MorphoLendingAdapter(
             address(morphoLendingAdapterFactory.deployAdapter(WETH_USDC_MARKET_ID, address(this), bytes32(uint256(1))))
@@ -354,7 +354,7 @@ contract RebalanceTest is LeverageManagerTest {
         uint256 auctionDuration,
         uint256 initialPriceMultiplier,
         uint256 minPriceMultiplier,
-        uint256 healthFactorThreshold,
+        uint256 collateralRatioThreshold,
         uint256 rebalanceReward
     ) internal returns (RebalanceAdapter) {
         ERC1967Proxy proxy = new ERC1967Proxy(
@@ -369,7 +369,7 @@ contract RebalanceTest is LeverageManagerTest {
                 auctionDuration,
                 initialPriceMultiplier,
                 minPriceMultiplier,
-                healthFactorThreshold,
+                collateralRatioThreshold,
                 rebalanceReward
             )
         );

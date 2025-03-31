@@ -32,7 +32,7 @@ contract IsEligibleForRebalanceTest is RebalanceAdapterTest {
         address preLiquidationRebalanceAdapterProxy = UnsafeUpgrades.deployUUPSProxy(
             address(preLiquidationRebalanceAdapterHarness),
             abi.encodeWithSelector(
-                PreLiquidationRebalanceAdapterHarness.initialize.selector, healthFactorThreshold, rebalanceReward
+                PreLiquidationRebalanceAdapterHarness.initialize.selector, collateralRatioThreshold, rebalanceReward
             )
         );
 
@@ -48,12 +48,11 @@ contract IsEligibleForRebalanceTest is RebalanceAdapterTest {
         address caller,
         uint256 targetRatio,
         LeverageTokenState memory stateBefore,
-        LeverageTokenState memory stateAfter,
-        uint256 currentHealthFactor
+        LeverageTokenState memory stateAfter
     ) public {
         vm.assume(caller != address(rebalanceAdapter));
 
-        _mockLeverageTokenState(targetRatio, stateAfter, currentHealthFactor);
+        _mockLeverageTokenState(targetRatio, stateAfter);
 
         bool isEligible = rebalanceAdapter.isEligibleForRebalance(leverageToken, stateBefore, caller);
         bool expectedIsEligible =
@@ -64,10 +63,10 @@ contract IsEligibleForRebalanceTest is RebalanceAdapterTest {
     function testFuzz_isEligibleForRebalance_ReturnsSameAsMinMaxCollateralRatioRebalanceAdapter(
         uint256 targetRatio,
         LeverageTokenState memory stateBefore,
-        LeverageTokenState memory stateAfter,
-        uint256 currentHealthFactor
+        LeverageTokenState memory stateAfter
     ) public {
-        _mockLeverageTokenState(targetRatio, stateAfter, currentHealthFactor);
+        vm.assume(stateBefore.collateralRatio >= 1.3e8);
+        _mockLeverageTokenState(targetRatio, stateAfter);
 
         bool isEligible = rebalanceAdapter.isEligibleForRebalance(leverageToken, stateBefore, address(rebalanceAdapter));
         bool expectedIsEligible = minMaxCollateralRatioRebalanceAdapter.isEligibleForRebalance(

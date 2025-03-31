@@ -9,8 +9,8 @@ import {PreLiquidationRebalanceAdapter} from "src/rebalance/PreLiquidationRebala
 contract PreLiquidationRebalanceAdapterHarness is PreLiquidationRebalanceAdapter {
     ILeverageManager public leverageManager;
 
-    function initialize(uint256 healthFactorThreshold, uint256 rebalanceReward) external initializer {
-        __PreLiquidationRebalanceAdapter_init(healthFactorThreshold, rebalanceReward);
+    function initialize(uint256 collateralRatioThreshold, uint256 rebalanceReward) external initializer {
+        __PreLiquidationRebalanceAdapter_init(collateralRatioThreshold, rebalanceReward);
     }
 
     function exposed_getPreLiquidationRebalanceAdapterStorageSlot() external pure returns (bytes32 slot) {

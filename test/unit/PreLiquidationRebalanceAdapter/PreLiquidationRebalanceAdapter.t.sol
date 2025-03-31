@@ -45,7 +45,7 @@ contract PreLiquidationRebalanceAdapterTest is Test {
     }
 
     function test_setUp() public view {
-        assertEq(adapter.getHealthFactorThreshold(), 1.1e18);
+        assertEq(adapter.getCollateralRatioThreshold(), 1.1e18);
         assertEq(adapter.getRebalanceReward(), 50_00);
         assertEq(address(adapter.getLeverageManager()), leverageManager);
 
@@ -55,7 +55,7 @@ contract PreLiquidationRebalanceAdapterTest is Test {
         assertEq(adapter.exposed_getPreLiquidationRebalanceAdapterStorageSlot(), expectedSlot);
     }
 
-    function _mockLiquidationPenaltyAndEquity(uint256 liquidationPenalty, uint256 equity) internal {
+    function _mockLiquidationPenaltyEquityAndDebt(uint256 liquidationPenalty, uint256 equity, uint256 debt) internal {
         vm.mockCall(
             address(lendingAdapter),
             abi.encodeWithSelector(ILendingAdapter.getLiquidationPenalty.selector),
@@ -63,7 +63,7 @@ contract PreLiquidationRebalanceAdapterTest is Test {
         );
 
         LeverageTokenState memory stateBefore =
-            LeverageTokenState({collateralRatio: 0, collateralInDebtAsset: 0, debt: 0, equity: equity});
+            LeverageTokenState({collateralRatio: 0, collateralInDebtAsset: 0, debt: debt, equity: equity});
 
         vm.mockCall(
             address(leverageManager),

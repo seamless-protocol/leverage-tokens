@@ -8,16 +8,16 @@ import {LeverageTokenState} from "src/types/DataTypes.sol";
 
 interface IPreLiquidationRebalanceAdapter {
     /// @notice Emitted when the PreLiquidationRebalanceAdapter is initialized
-    event PreLiquidationRebalanceAdapterInitialized(uint256 healthFactorThreshold, uint256 rebalanceReward);
+    event PreLiquidationRebalanceAdapterInitialized(uint256 collateralRatioThreshold, uint256 rebalanceReward);
 
     /// @notice Returns the leverage manager contract
     /// @return leverageManager The leverage manager contract
     function getLeverageManager() external view returns (ILeverageManager leverageManager);
 
-    /// @notice Returns the health factor threshold for rebalancing
-    /// @return healthFactorThreshold The health factor threshold for rebalancing
-    /// @dev When leverage token health factor is below this threshold, the leverage token will be rebalanced
-    function getHealthFactorThreshold() external view returns (uint256 healthFactorThreshold);
+    /// @notice Returns the collateral ratio threshold for rebalancing
+    /// @return collateralRatioThreshold The collateral ratio threshold for rebalancing
+    /// @dev When leverage token collateral ratio is below this threshold, the leverage token will be rebalanced
+    function getCollateralRatioThreshold() external view returns (uint256 collateralRatioThreshold);
 
     /// @notice Returns the rebalance reward percentage
     /// @return rebalanceRewardPercentage The rebalance reward percentage

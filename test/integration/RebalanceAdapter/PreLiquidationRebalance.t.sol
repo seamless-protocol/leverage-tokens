@@ -15,10 +15,6 @@ contract PreLiquidationRebalanceTest is RebalanceTest {
         _moveEthPrice(-40_00);
 
         // ETH price is now 2035$
-        uint256 healthFactor = ethLong2xAdapter.getHealthFactor();
-        assertLe(healthFactor, 1.1e18);
-        assertGe(healthFactor, 1e18);
-
         LeverageTokenState memory stateBefore = getLeverageTokenState(ethLong2x);
 
         // On this market liquidation penalty is 4.38% which means that our rebalance reward is 45.66% of it which is 2%
@@ -45,7 +41,6 @@ contract PreLiquidationRebalanceTest is RebalanceTest {
         assertEq(USDC.balanceOf(address(this)), 0);
 
         assertGe(stateAfter.collateralRatio, stateBefore.collateralRatio);
-        assertGe(ethLong2xAdapter.getHealthFactor(), healthFactor);
     }
 
     function testFork_RebalanceStrategyOutsideOfDutchAuctionIfCloseToLiquidation_RevertIfEquityLossIsTooHigh() public {

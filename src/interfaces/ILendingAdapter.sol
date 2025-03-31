@@ -47,11 +47,6 @@ interface ILendingAdapter {
     /// @dev Equity is calculated as collateral - debt
     function getEquityInDebtAsset() external view returns (uint256 equity);
 
-    /// @notice Returns the health factor of the position held by the lending adapter
-    /// @return healthFactor Health factor of the position held by the lending adapter, scaled by 1e18
-    /// @dev If the debt is 0, `type(uint256).max` is returned
-    function getHealthFactor() external view returns (uint256 healthFactor);
-
     /// @notice Returns the liquidation penalty of the position held by the lending adapter
     /// @return liquidationPenalty Liquidation penalty of the position held by the lending adapter, scaled by 1e18
     /// @dev 1e18 means that the liquidation penalty is 100%

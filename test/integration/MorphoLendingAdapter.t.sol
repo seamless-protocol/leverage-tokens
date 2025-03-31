@@ -220,31 +220,6 @@ contract MorphoLendingAdapterTest is IntegrationTestBase {
         assertEq(USDC.balanceOf(caller), 0);
     }
 
-    function testFork_getHealthFactor() public {
-        assertEq(MORPHO.idToMarketParams(WETH_USDC_MARKET_ID).lltv, 0.86e18);
-
-        // Initial health factor is max
-        assertEq(morphoLendingAdapter.getHealthFactor(), type(uint256).max);
-
-        // Add some collateral
-        _addCollateral(address(this), 1e18);
-        // Health factor is still max
-        assertEq(morphoLendingAdapter.getHealthFactor(), type(uint256).max);
-
-        // Borrow some debt, a bit more than half of the allowed amount (some error due to rounding in conversion)
-        // and rounding down in getHealthFactor()
-        _borrow(address(leverageManager), morphoLendingAdapter.convertCollateralToDebtAsset(0.43e18));
-        assertEq(morphoLendingAdapter.getHealthFactor(), 1999999999314451388);
-
-        // Borrow remaining allowed amount
-        _borrow(address(leverageManager), morphoLendingAdapter.convertCollateralToDebtAsset(0.43e18));
-        assertEq(morphoLendingAdapter.getHealthFactor(), 1000000000000000000);
-
-        // Cannot borrow more debt due to health factor
-        vm.expectRevert("insufficient collateral");
-        _borrow(address(leverageManager), 1);
-    }
-
     function _addCollateral(address caller, uint256 amount) internal {
         deal(address(WETH), caller, amount);
 

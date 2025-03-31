@@ -32,7 +32,7 @@ contract IsStateAfterRebalanceValidTest is RebalanceAdapterTest {
         address preLiquidationRebalanceAdapterProxy = UnsafeUpgrades.deployUUPSProxy(
             address(preLiquidationRebalanceAdapterHarness),
             abi.encodeWithSelector(
-                PreLiquidationRebalanceAdapterHarness.initialize.selector, healthFactorThreshold, rebalanceReward
+                PreLiquidationRebalanceAdapterHarness.initialize.selector, collateralRatioThreshold, rebalanceReward
             )
         );
 
@@ -48,11 +48,10 @@ contract IsStateAfterRebalanceValidTest is RebalanceAdapterTest {
         uint256 targetRatio,
         LeverageTokenState memory stateBefore,
         LeverageTokenState memory stateAfter,
-        uint256 currentHealthFactor,
         uint256 liquidationPenalty
     ) public {
         liquidationPenalty = bound(liquidationPenalty, 0, 1e18);
-        _mockLeverageTokenState(targetRatio, stateAfter, currentHealthFactor);
+        _mockLeverageTokenState(targetRatio, stateAfter);
 
         vm.mockCall(
             address(leverageManager.getLeverageTokenLendingAdapter(leverageToken)),

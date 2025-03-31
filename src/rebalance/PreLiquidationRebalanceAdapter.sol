@@ -22,8 +22,8 @@ abstract contract PreLiquidationRebalanceAdapter is Initializable, IPreLiquidati
     /// @dev Struct containing all state for the PreLiquidationRebalanceAdapter contract
     /// @custom:storage-location erc7201:seamless.contracts.storage.PreLiquidationRebalanceAdapter
     struct PreLiquidationRebalanceAdapterStorage {
-        /// @notice Health factor threshold to allow rebalance
-        uint256 healthFactorThreshold;
+        /// @notice Collateral ratio threshold to allow rebalance
+        uint256 collateralRatioThreshold;
         /// @notice Rebalance reward, flat percentage that rebalancer can take from equity
         /// @dev Percentage represents percentage of debt repaid that rebalancer can take from equity
         /// @dev 100_00 = 100%
@@ -41,21 +41,21 @@ abstract contract PreLiquidationRebalanceAdapter is Initializable, IPreLiquidati
         }
     }
 
-    function __PreLiquidationRebalanceAdapter_init(uint256 healthFactorThreshold, uint256 rebalanceReward)
+    function __PreLiquidationRebalanceAdapter_init(uint256 collateralRatioThreshold, uint256 rebalanceReward)
         internal
         onlyInitializing
     {
-        _getPreLiquidationRebalanceAdapterStorage().healthFactorThreshold = healthFactorThreshold;
+        _getPreLiquidationRebalanceAdapterStorage().collateralRatioThreshold = collateralRatioThreshold;
         _getPreLiquidationRebalanceAdapterStorage().rebalanceReward = rebalanceReward;
-        emit PreLiquidationRebalanceAdapterInitialized(healthFactorThreshold, rebalanceReward);
+        emit PreLiquidationRebalanceAdapterInitialized(collateralRatioThreshold, rebalanceReward);
     }
 
     /// @inheritdoc IPreLiquidationRebalanceAdapter
     function getLeverageManager() public view virtual returns (ILeverageManager);
 
     /// @inheritdoc IPreLiquidationRebalanceAdapter
-    function getHealthFactorThreshold() public view returns (uint256) {
-        return _getPreLiquidationRebalanceAdapterStorage().healthFactorThreshold;
+    function getCollateralRatioThreshold() public view returns (uint256) {
+        return _getPreLiquidationRebalanceAdapterStorage().collateralRatioThreshold;
     }
 
     /// @inheritdoc IPreLiquidationRebalanceAdapter
@@ -70,14 +70,19 @@ abstract contract PreLiquidationRebalanceAdapter is Initializable, IPreLiquidati
         virtual
         returns (bool)
     {
+        // If rebalance is now caused by leverage token being close to liquidation there is no reason for this adapter to check anything
+        if (stateBefore.collateralRatio >= getCollateralRatioThreshold()) {
+            return true;
+        }
+
         ILeverageManager leverageManager = getLeverageManager();
         IMorphoLendingAdapter lendingAdapter =
             IMorphoLendingAdapter(address(leverageManager.getLeverageTokenLendingAdapter(token)));
 
         LeverageTokenState memory stateAfter = leverageManager.getLeverageTokenState(token);
         uint256 liquidationPenalty = lendingAdapter.getLiquidationPenalty();
-        uint256 rebalanceRewardPercentage = Math.mulDiv(liquidationPenalty, getRebalanceReward(), REWARD_BASE);
 
+        uint256 rebalanceRewardPercentage = Math.mulDiv(liquidationPenalty, getRebalanceReward(), REWARD_BASE);
         uint256 debtRepaid =
             stateBefore.debt > stateAfter.debt ? stateBefore.debt - stateAfter.debt : stateAfter.debt - stateBefore.debt;
 
@@ -86,17 +91,14 @@ abstract contract PreLiquidationRebalanceAdapter is Initializable, IPreLiquidati
     }
 
     /// @inheritdoc IPreLiquidationRebalanceAdapter
-    function isEligibleForRebalance(ILeverageToken token, LeverageTokenState memory, address)
+    function isEligibleForRebalance(ILeverageToken token, LeverageTokenState memory state, address)
         public
         view
         virtual
         returns (bool)
     {
-        IMorphoLendingAdapter lendingAdapter =
-            IMorphoLendingAdapter(address(getLeverageManager().getLeverageTokenLendingAdapter(token)));
-        uint256 healthFactorThreshold = getHealthFactorThreshold();
-        uint256 currentHealthFactor = lendingAdapter.getHealthFactor();
-
-        return currentHealthFactor <= healthFactorThreshold;
+        console.log("getCollateralRatioThreshold()", getCollateralRatioThreshold());
+        console.log("state.collateralRAtio", state.collateralRatio);
+        return state.collateralRatio < getCollateralRatioThreshold();
     }
 }

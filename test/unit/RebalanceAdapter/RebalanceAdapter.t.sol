@@ -23,7 +23,7 @@ contract RebalanceAdapterTest is Test {
     uint256 public auctionDuration = 7 minutes;
     uint256 public initialPriceMultiplier = 1.02 * 1e18;
     uint256 public minPriceMultiplier = 0.99 * 1e18;
-    uint256 public healthFactorThreshold = 1.1e18;
+    uint256 public collateralRatioThreshold = 1.3e8;
     uint256 public rebalanceReward = 50_00;
 
     RebalanceAdapterHarness public rebalanceAdapter;
@@ -42,7 +42,7 @@ contract RebalanceAdapterTest is Test {
                 auctionDuration,
                 initialPriceMultiplier,
                 minPriceMultiplier,
-                healthFactorThreshold,
+                collateralRatioThreshold,
                 rebalanceReward
             )
         );
@@ -68,9 +68,7 @@ contract RebalanceAdapterTest is Test {
         assertEq(rebalanceAdapter.exposed_getRebalanceAdapterStorageSlot(), expectedSlot);
     }
 
-    function _mockLeverageTokenState(uint256 targetRatio, LeverageTokenState memory state, uint256 healthFactor)
-        internal
-    {
+    function _mockLeverageTokenState(uint256 targetRatio, LeverageTokenState memory state) internal {
         vm.mockCall(
             address(leverageManager),
             abi.encodeWithSelector(ILeverageManager.getLeverageTokenTargetCollateralRatio.selector, leverageToken),
@@ -87,11 +85,6 @@ contract RebalanceAdapterTest is Test {
             address(leverageManager),
             abi.encodeWithSelector(ILeverageManager.getLeverageTokenLendingAdapter.selector, leverageToken),
             abi.encode(lendingAdapter)
-        );
-        vm.mockCall(
-            address(lendingAdapter),
-            abi.encodeWithSelector(ILendingAdapter.getHealthFactor.selector),
-            abi.encode(healthFactor)
         );
     }
 }

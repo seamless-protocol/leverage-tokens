@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
+import {console} from "forge-std/console.sol";
+
 // Dependency imports
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -105,6 +107,19 @@ contract RebalanceAdapter is
         )
         returns (bool)
     {
+        console.log(
+            "DutchAuctionRebalanceAdapter.isEligibleForRebalance",
+            DutchAuctionRebalanceAdapter.isEligibleForRebalance(token, state, caller)
+        );
+        console.log(
+            "MinMaxCollateralRatioRebalanceAdapter.isEligibleForRebalance",
+            MinMaxCollateralRatioRebalanceAdapter.isEligibleForRebalance(token, state, caller)
+        );
+        console.log(
+            "PreLiquidationRebalanceAdapter.isEligibleForRebalance",
+            PreLiquidationRebalanceAdapter.isEligibleForRebalance(token, state, caller)
+        );
+
         return (
             (
                 DutchAuctionRebalanceAdapter.isEligibleForRebalance(token, state, caller)

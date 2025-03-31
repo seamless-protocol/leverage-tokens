@@ -6,53 +6,20 @@ import {PreLiquidationRebalanceAdapterTest} from "./PreLiquidationRebalanceAdapt
 import {LeverageTokenState} from "src/types/DataTypes.sol";
 
 contract IsEligibleForRebalanceTest is PreLiquidationRebalanceAdapterTest {
-    function test_isEligibleForRebalance_HealthFactorAboveThreshold() public {
-        // Mock health factor to 1.11
-        vm.mockCall(
-            address(lendingAdapter),
-            abi.encodeWithSelector(ILendingAdapter.getHealthFactor.selector),
-            abi.encode(1.11e18)
-        );
+    function test_isEligibleForRebalance_CollateralRatioAboveThreshold() public {
+        LeverageTokenState memory state =
+            LeverageTokenState({collateralRatio: 1.14e18, collateralInDebtAsset: 0, debt: 0, equity: 0});
 
-        bool isEligible = adapter.isEligibleForRebalance(
-            leverageToken,
-            LeverageTokenState({collateralRatio: 0, collateralInDebtAsset: 0, debt: 0, equity: 0}),
-            address(0)
-        );
+        bool isEligible = adapter.isEligibleForRebalance(leverageToken, state, address(0));
 
         assertEq(isEligible, false);
     }
 
-    function test_isEligibleForRebalance_HealthFactorBelowThreshold() public {
-        // Mock health factor to 1.09
-        vm.mockCall(
-            address(lendingAdapter),
-            abi.encodeWithSelector(ILendingAdapter.getHealthFactor.selector),
-            abi.encode(1.09e18)
-        );
+    function test_isEligibleForRebalance_CollateralRatioBelowThreshold() public {
+        LeverageTokenState memory state =
+            LeverageTokenState({collateralRatio: 1.3e8 - 1, collateralInDebtAsset: 0, debt: 0, equity: 0});
 
-        bool isEligible = adapter.isEligibleForRebalance(
-            leverageToken,
-            LeverageTokenState({collateralRatio: 0, collateralInDebtAsset: 0, debt: 0, equity: 0}),
-            address(0)
-        );
-
-        assertEq(isEligible, true);
-    }
-
-    function test_isEligibleForRebalance_HealthFactorAtThreshold() public {
-        // Mock health factor to 1.1
-        vm.mockCall(
-            address(lendingAdapter),
-            abi.encodeWithSelector(ILendingAdapter.getHealthFactor.selector),
-            abi.encode(1.1e18)
-        );
-
-        bool isEligible = adapter.isEligibleForRebalance(
-            leverageToken,
-            LeverageTokenState({collateralRatio: 0, collateralInDebtAsset: 0, debt: 0, equity: 0}),
-            address(0)
-        );
+        bool isEligible = adapter.isEligibleForRebalance(leverageToken, state, address(0));
 
         assertEq(isEligible, true);
     }
