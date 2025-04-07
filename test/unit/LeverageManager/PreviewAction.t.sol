@@ -156,7 +156,7 @@ contract PreviewActionTest is LeverageManagerTest {
         assertEq(previewData.collateral, 2 ether);
         assertEq(previewData.debt, 1 ether);
 
-        uint256 expectedShares = leverageManager.exposed_convertToShares(leverageToken, equity);
+        uint256 expectedShares = leverageManager.exposed_convertToShares(leverageToken, equity, Math.Rounding.Floor);
         assertEq(previewData.shares, expectedShares);
         assertEq(previewData.tokenFee, 0);
         assertEq(previewData.treasuryFee, 0);
@@ -226,7 +226,7 @@ contract PreviewActionTest is LeverageManagerTest {
 
             (uint256 collateralForLeverageToken, uint256 debtForLeverageToken) = leverageManager
                 .exposed_computeCollateralAndDebtForAction(leverageToken, equityForLeverageTokenAfterFees, action);
-            uint256 shares = leverageManager.exposed_convertToShares(leverageToken, equityForSharesAfterFees);
+            uint256 shares = leverageManager.exposed_convertToShares(leverageToken, equityForSharesAfterFees, action == ExternalAction.Deposit ? Math.Rounding.Floor : Math.Rounding.Ceil);
 
             // Validate if shares, collateral, debt, and fees are properly calculated and returned
             assertEq(previewData.shares, shares);

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.26;
 
 // Dependency imports
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IOracle} from "@morpho-blue/interfaces/IOracle.sol";
 
 // Internal imports
@@ -62,7 +63,7 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
         _withdraw(user, sharesValue, debtToRepay);
 
         // Validate that almost all shares are burned, 1 wei always left because of debt rounding up
-        assertEq(leverageToken.totalSupply(), 1);
+        assertEq(leverageToken.totalSupply(), 0);
 
         // Validate that almost all collateral is withdrawn, we round down collateral to withdraw so dust can be left
         assertGe(morphoLendingAdapter.getCollateral(), 0);
@@ -186,5 +187,93 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
         assertEq(WETH.balanceOf(treasury), previewData.treasuryFee); // Treasury receives the fee
 
         assertEq(WETH.balanceOf(user), previewData.collateral);
+    }
+
+    function testFork_withdraw_RoundsSharesDown() public {
+        address userA = makeAddr("userA");
+        // Mock ETH price to be 4000 USDC
+        (,, address oracle,,) = morphoLendingAdapter.marketParams();
+        vm.mockCall(address(oracle), abi.encodeWithSelector(IOracle.price.selector), abi.encode(4000e24));
+
+        uint256 equityInCollateralAsset = 10 ether;
+        uint256 collateralToAdd = 2 * equityInCollateralAsset;
+
+        // user deposits 10 ether of collateral
+        _deposit(userA, equityInCollateralAsset, collateralToAdd);
+
+        LeverageTokenState memory stateBefore = getLeverageTokenState();
+        assertEq(stateBefore.collateralRatio, 1999999999950000000); // ~2x CR
+        assertEq(leverageToken.balanceOf(userA), equityInCollateralAsset);
+
+        // user withdraws as much equity as they can
+        ActionData memory previewData = leverageManager.previewWithdraw(leverageToken, 9999999999750000000);
+        _withdraw(userA, 9999999999750000000, previewData.debt);
+        assertEq(leverageToken.balanceOf(userA), 1);
+
+        LeverageTokenState memory stateAfter = getLeverageTokenState();
+        assertEq(stateAfter.collateralInDebtAsset, 0);
+        assertEq(stateAfter.debt, 0);
+        assertEq(stateAfter.equity, 0);
+
+        // Another user deposits 10 ether of equity
+        address userB = makeAddr("userB");
+        _deposit(userB, equityInCollateralAsset, collateralToAdd);
+
+        // userA withdraws as much equity as they can
+        ActionData memory previewDataB = leverageManager.previewWithdraw(leverageToken, 2);
+        assertEq(previewDataB.collateral, 3);
+        _withdraw(userA, 2, previewDataB.debt);
+        assertEq(leverageToken.balanceOf(userA), 0);
+
+        // userB withdraws as much equity as they can
+        ActionData memory previewDataC = leverageManager.previewWithdraw(leverageToken, 9999999999999999998);
+        _withdraw(userB, 9999999999999999998, previewDataC.debt);
+        assertEq(leverageToken.balanceOf(userB), 1);
+
+        LeverageTokenState memory stateAfterB = getLeverageTokenState();
+        assertEq(stateAfterB.collateralInDebtAsset, 0);
+        assertEq(stateAfterB.debt, 0);
+        assertEq(stateAfterB.equity, 0);
+    }
+
+    function testFork_withdraw_RoundsSharesUp() public {
+        address userA = makeAddr("userA");
+        // Mock ETH price to be 4000 USDC
+        (,, address oracle,,) = morphoLendingAdapter.marketParams();
+        vm.mockCall(address(oracle), abi.encodeWithSelector(IOracle.price.selector), abi.encode(4000e24));
+
+        uint256 equityInCollateralAsset = 10 ether;
+        uint256 collateralToAdd = 2 * equityInCollateralAsset;
+
+        // userA deposits 10 ether of collateral
+        _deposit(userA, equityInCollateralAsset, collateralToAdd);
+
+        LeverageTokenState memory stateBefore = getLeverageTokenState();
+        assertEq(stateBefore.collateralRatio, 1999999999950000000); // ~2x CR
+        assertEq(leverageToken.balanceOf(userA), equityInCollateralAsset);
+
+        // userA withdraws as much equity as they can
+        ActionData memory previewData = leverageManager.previewWithdraw(leverageToken, 9999999999750000000);
+        _withdraw(userA, 9999999999750000000, previewData.debt);
+        assertEq(leverageToken.balanceOf(userA), 0);
+
+        LeverageTokenState memory stateAfter = getLeverageTokenState();
+        assertEq(stateAfter.collateralInDebtAsset, 0);
+        assertEq(stateAfter.debt, 0);
+        assertEq(stateAfter.equity, 0);
+
+        // userB deposits 10 ether of equity
+        address userB = makeAddr("userB");
+        _deposit(userB, equityInCollateralAsset, collateralToAdd);
+
+        // userB withdraws as much equity as they can
+        ActionData memory previewDataC = leverageManager.previewWithdraw(leverageToken, 9999999999750000000);
+        _withdraw(userB, 9999999999750000000, previewDataC.debt);
+        assertEq(leverageToken.balanceOf(userB), 0);
+
+        LeverageTokenState memory stateAfterB = getLeverageTokenState();
+        assertEq(stateAfterB.collateralInDebtAsset, 0);
+        assertEq(stateAfterB.debt, 0);
+        assertEq(stateAfterB.equity, 0);
     }
 }
