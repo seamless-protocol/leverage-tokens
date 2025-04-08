@@ -1,5 +1,5 @@
 # DutchAuctionRebalanceAdapter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e2065c10183acb51865104847d299ff5ad4684d2/src/rebalance/DutchAuctionRebalanceAdapter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e940fa5a38a4ecdb2ab814caac34ad52528360be/src/rebalance/DutchAuctionRebalanceAdapter.sol)
 
 **Inherits:**
 [IDutchAuctionRebalanceAdapter](/src/interfaces/IDutchAuctionRebalanceAdapter.sol/interface.IDutchAuctionRebalanceAdapter.md), Initializable
@@ -37,12 +37,23 @@ function _getDutchAuctionRebalanceAdapterStorage()
     returns (DutchAuctionRebalanceAdapterStorage storage $);
 ```
 
+### __DutchAuctionRebalanceAdapter_init
+
+
+```solidity
+function __DutchAuctionRebalanceAdapter_init(
+    uint120 _auctionDuration,
+    uint256 _initialPriceMultiplier,
+    uint256 _minPriceMultiplier
+) internal onlyInitializing;
+```
+
 ### __DutchAuctionRebalanceAdapter_init_unchained
 
 
 ```solidity
 function __DutchAuctionRebalanceAdapter_init_unchained(
-    uint256 _auctionDuration,
+    uint120 _auctionDuration,
     uint256 _initialPriceMultiplier,
     uint256 _minPriceMultiplier
 ) internal onlyInitializing;
@@ -374,7 +385,7 @@ storage-location: erc7201:seamless.contracts.storage.DutchAuctionRebalanceAdapte
 struct DutchAuctionRebalanceAdapterStorage {
     ILeverageToken leverageToken;
     Auction auction;
-    uint256 auctionDuration;
+    uint120 auctionDuration;
     uint256 initialPriceMultiplier;
     uint256 minPriceMultiplier;
 }

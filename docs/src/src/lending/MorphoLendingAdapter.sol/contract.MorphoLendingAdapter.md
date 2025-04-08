@@ -1,5 +1,5 @@
 # MorphoLendingAdapter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e2065c10183acb51865104847d299ff5ad4684d2/src/lending/MorphoLendingAdapter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e940fa5a38a4ecdb2ab814caac34ad52528360be/src/lending/MorphoLendingAdapter.sol)
 
 **Inherits:**
 [IMorphoLendingAdapter](/src/interfaces/IMorphoLendingAdapter.sol/interface.IMorphoLendingAdapter.md), Initializable

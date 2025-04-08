@@ -1,5 +1,5 @@
 # BeaconProxyFactory
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e2065c10183acb51865104847d299ff5ad4684d2/src/BeaconProxyFactory.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e940fa5a38a4ecdb2ab814caac34ad52528360be/src/BeaconProxyFactory.sol)
 
 **Inherits:**
 [IBeaconProxyFactory](/src/interfaces/IBeaconProxyFactory.sol/interface.IBeaconProxyFactory.md), UpgradeableBeacon
