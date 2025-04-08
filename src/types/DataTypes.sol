@@ -40,9 +40,9 @@ struct Auction {
     /// @dev Whether the LeverageToken is over-collateralized
     bool isOverCollateralized;
     /// @dev Timestamp when the auction started
-    uint120 startTimestamp;
+    uint256 startTimestamp;
     /// @dev Timestamp when the auction ends/ended
-    uint120 endTimestamp;
+    uint256 endTimestamp;
 }
 
 /// @dev Struct that contains the base LeverageToken config stored in LeverageManager
