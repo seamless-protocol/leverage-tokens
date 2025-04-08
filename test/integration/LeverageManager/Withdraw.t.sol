@@ -13,6 +13,8 @@ import {MorphoLendingAdapter} from "src/lending/MorphoLendingAdapter.sol";
 import {LeverageManagerTest} from "./LeverageManager.t.sol";
 import {ActionData, LeverageTokenState} from "src/types/DataTypes.sol";
 
+import {console2} from "forge-std/console2.sol";
+
 contract LeverageManagerWithdrawTest is LeverageManagerTest {
     /// @dev In this block price on oracle 3392.292471591441746049801068
     function testFork_withdraw_NoFee() public {
@@ -215,14 +217,25 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
         assertEq(stateAfter.debt, 0);
         assertEq(stateAfter.equity, 0);
 
+        assertEq(morphoLendingAdapter.getCollateral(), 2);
+        assertEq(morphoLendingAdapter.getDebt(), 0);
+
         // Another user deposits 10 ether of equity
         address userB = makeAddr("userB");
         _deposit(userB, equityInCollateralAsset, collateralToAdd);
+        console2.log("morpho collateral after userB deposit", morphoLendingAdapter.getCollateral());
+        console2.log("morpho debt after userB deposit", morphoLendingAdapter.getDebt());
 
         // userA withdraws as much equity as they can
         ActionData memory previewDataB = leverageManager.previewWithdraw(leverageToken, 2);
         assertEq(previewDataB.collateral, 3);
+        assertEq(previewDataB.debt, 1, "debt should be 2");
+        assertEq(previewDataB.shares, 1, "shares should be 1");
+        console2.log("leverage token total supply before userA second withdraw", leverageToken.totalSupply());
+        console2.log("collateral ratio before userA second withdraw", getLeverageTokenState().collateralRatio);
         _withdraw(userA, 2, previewDataB.debt);
+        console2.log("morpho collateral after userA second withdraw", morphoLendingAdapter.getCollateral());
+        console2.log("morpho debt after userA second withdraw", morphoLendingAdapter.getDebt());
         assertEq(leverageToken.balanceOf(userA), 0);
 
         // userB withdraws as much equity as they can
