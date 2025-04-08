@@ -62,7 +62,8 @@ contract ConvertToSharesTest is LeverageManagerTest {
         );
 
         uint256 shares = leverageManager.exposed_convertToShares(leverageToken, equity, ExternalAction.Withdraw);
-        uint256 expectedShares = Math.mulDiv(equity, uint256(sharesTotalSupply) + 1, uint256(totalEquity) + 1, Math.Rounding.Ceil);
+        uint256 expectedShares =
+            Math.mulDiv(equity, uint256(sharesTotalSupply) + 1, uint256(totalEquity) + 1, Math.Rounding.Ceil);
 
         assertEq(shares, expectedShares);
     }

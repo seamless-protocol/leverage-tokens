@@ -356,8 +356,8 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
         return Math.mulDiv(
             equityInCollateralAsset,
-            token.totalSupply() + 10 ** DECIMALS_OFFSET, // 1
-            lendingAdapter.getEquityInCollateralAsset() + 1, // 1
+            token.totalSupply() + 10 ** DECIMALS_OFFSET,
+            lendingAdapter.getEquityInCollateralAsset() + 1,
             action == ExternalAction.Deposit ? Math.Rounding.Floor : Math.Rounding.Ceil
         );
     }
