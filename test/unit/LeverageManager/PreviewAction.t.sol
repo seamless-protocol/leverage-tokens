@@ -75,7 +75,7 @@ contract PreviewActionTest is LeverageManagerTest {
 
         _prepareLeverageManagerStateForAction(beforeState);
 
-        // 0 shares can be minted / burned for 1 wei of equity
+        // 0 shares can be minted for 1 wei of equity
         uint256 equity = 1;
         ActionData memory previewData =
             leverageManager.exposed_previewAction(leverageToken, equity, ExternalAction.Deposit);
@@ -86,8 +86,8 @@ contract PreviewActionTest is LeverageManagerTest {
         assertEq(previewData.tokenFee, 1);
         assertEq(previewData.treasuryFee, 0);
 
+        // 1 share can be burned for 1 wei of equity because of shares rounding up for withdraws
         previewData = leverageManager.exposed_previewAction(leverageToken, equity, ExternalAction.Withdraw);
-
         assertEq(previewData.collateral, 10);
         assertEq(previewData.debt, 10);
         assertEq(previewData.shares, 1);
