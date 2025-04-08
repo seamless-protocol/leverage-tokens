@@ -2,6 +2,7 @@
 pragma solidity ^0.8.26;
 
 // Dependency imports
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -82,6 +83,15 @@ contract LeverageManagerTest is FeeManagerTest {
 
     function _DECIMALS_OFFSET() internal view returns (uint256) {
         return leverageManager.DECIMALS_OFFSET();
+    }
+
+    function _convertToAssets(uint256 shares, ExternalAction action) internal view returns (uint256) {
+        return Math.mulDiv(
+            shares,
+            lendingAdapter.getEquityInCollateralAsset() + 1,
+            leverageToken.totalSupply() + 1,
+            action == ExternalAction.Deposit ? Math.Rounding.Ceil : Math.Rounding.Floor
+        );
     }
 
     function _getLendingAdapter() internal view returns (ILendingAdapter) {

@@ -344,9 +344,10 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     /// @notice Function uses OZ formula for calculating shares
     /// @param token LeverageToken to convert equity for
     /// @param equityInCollateralAsset Equity to convert to shares, denominated in collateral asset
+    /// @param action Action to convert equity for
     /// @return shares Shares
     /// @dev Function should be used to calculate how much shares user should receive for their equity
-    function _convertToShares(ILeverageToken token, uint256 equityInCollateralAsset)
+    function _convertToShares(ILeverageToken token, uint256 equityInCollateralAsset, ExternalAction action)
         internal
         view
         returns (uint256 shares)
@@ -355,9 +356,9 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
 
         return Math.mulDiv(
             equityInCollateralAsset,
-            token.totalSupply() + 10 ** DECIMALS_OFFSET,
-            lendingAdapter.getEquityInCollateralAsset() + 1,
-            Math.Rounding.Floor
+            token.totalSupply() + 10 ** DECIMALS_OFFSET, // 1
+            lendingAdapter.getEquityInCollateralAsset() + 1, // 1
+            action == ExternalAction.Deposit ? Math.Rounding.Floor : Math.Rounding.Ceil
         );
     }
 
@@ -378,7 +379,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         (uint256 equityToCover, uint256 equityForShares, uint256 tokenFee, uint256 treasuryFee) =
             _computeEquityFees(token, equityInCollateralAsset, action);
 
-        uint256 shares = _convertToShares(token, equityForShares);
+        uint256 shares = _convertToShares(token, equityForShares, action);
 
         (uint256 collateral, uint256 debt) = _computeCollateralAndDebtForAction(token, equityToCover, action);
 
@@ -416,7 +417,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         Math.Rounding collateralRounding = action == ExternalAction.Deposit ? Math.Rounding.Ceil : Math.Rounding.Floor;
         Math.Rounding debtRounding = action == ExternalAction.Deposit ? Math.Rounding.Floor : Math.Rounding.Ceil;
 
-        uint256 shares = _convertToShares(token, equityInCollateralAsset);
+        uint256 shares = _convertToShares(token, equityInCollateralAsset, action);
 
         // If action is deposit there might be some dust in collateral but debt can be 0. In that case we should follow target ratio
         bool shouldFollowInitialRatio = totalShares == 0 || (action == ExternalAction.Deposit && totalDebt == 0);
