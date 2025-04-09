@@ -48,9 +48,9 @@ contract PreviewActionTest is LeverageManagerTest {
         ActionData memory previewData =
             leverageManager.exposed_previewAction(leverageToken, equity, ExternalAction.Deposit);
 
-        assertEq(previewData.collateral, 20 ether - 1);
-        assertEq(previewData.debt, 20 ether - 1);
-        assertEq(previewData.shares, 19 ether - 1); // 5% fee
+        assertEq(previewData.collateral, 20 ether);
+        assertEq(previewData.debt, 20 ether);
+        assertEq(previewData.shares, 19 ether); // 5% fee
         assertEq(previewData.tokenFee, 0.5 ether); // 5% fee on equity in collateral asset
         assertEq(previewData.treasuryFee, 0 ether);
 
@@ -105,9 +105,9 @@ contract PreviewActionTest is LeverageManagerTest {
         ActionData memory previewData =
             leverageManager.exposed_previewAction(leverageToken, equityToAdd, ExternalAction.Deposit);
 
-        assertEq(previewData.collateral, 20 ether - 1);
-        assertEq(previewData.debt, 10 ether - 1);
-        assertEq(previewData.shares, 20 ether - 1);
+        assertEq(previewData.collateral, 20 ether);
+        assertEq(previewData.debt, 10 ether);
+        assertEq(previewData.shares, 20 ether);
         assertEq(previewData.tokenFee, 0);
         assertEq(previewData.treasuryFee, 0);
 
