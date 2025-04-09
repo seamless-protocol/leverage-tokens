@@ -65,7 +65,7 @@ interface IDutchAuctionRebalanceAdapter {
 
     /// @notice Returns the maximum duration of all auctions in seconds
     /// @return auctionDuration The maximum duration of all auctions in seconds
-    function getAuctionDuration() external view returns (uint256 auctionDuration);
+    function getAuctionDuration() external view returns (uint120 auctionDuration);
 
     /// @notice Returns the initial price multiplier for all auctions
     /// @return initialPriceMultiplier The initial price multiplier for all auctions

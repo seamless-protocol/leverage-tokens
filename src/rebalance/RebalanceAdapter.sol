@@ -73,7 +73,7 @@ contract RebalanceAdapter is
         /// @notice The maximum collateral ratio for the rebalance adapter
         uint256 maxCollateralRatio;
         /// @notice The duration of the auction for the rebalance adapter
-        uint256 auctionDuration;
+        uint120 auctionDuration;
         /// @notice The initial price multiplier for the rebalance adapter
         uint256 initialPriceMultiplier;
         /// @notice The minimum price multiplier for the rebalance adapter

@@ -42,7 +42,7 @@ abstract contract DutchAuctionRebalanceAdapter is IDutchAuctionRebalanceAdapter,
         /// @notice The current auction, or uninitialized if there is no on-going auction
         Auction auction;
         /// @notice Duration for all auctions in seconds
-        uint256 auctionDuration;
+        uint120 auctionDuration;
         /// @notice Initial price multiplier for all auctions relative to the current oracle price
         uint256 initialPriceMultiplier;
         /// @notice Minimum price multiplier for all auctions relative to the current oracle price
@@ -62,7 +62,7 @@ abstract contract DutchAuctionRebalanceAdapter is IDutchAuctionRebalanceAdapter,
     }
 
     function __DutchAuctionRebalanceAdapter_init(
-        uint256 _auctionDuration,
+        uint120 _auctionDuration,
         uint256 _initialPriceMultiplier,
         uint256 _minPriceMultiplier
     ) internal onlyInitializing {
@@ -70,7 +70,7 @@ abstract contract DutchAuctionRebalanceAdapter is IDutchAuctionRebalanceAdapter,
     }
 
     function __DutchAuctionRebalanceAdapter_init_unchained(
-        uint256 _auctionDuration,
+        uint120 _auctionDuration,
         uint256 _initialPriceMultiplier,
         uint256 _minPriceMultiplier
     ) internal onlyInitializing {
@@ -115,7 +115,7 @@ abstract contract DutchAuctionRebalanceAdapter is IDutchAuctionRebalanceAdapter,
     }
 
     /// @inheritdoc IDutchAuctionRebalanceAdapter
-    function getAuctionDuration() public view returns (uint256) {
+    function getAuctionDuration() public view returns (uint120) {
         return _getDutchAuctionRebalanceAdapterStorage().auctionDuration;
     }
 
@@ -222,8 +222,8 @@ abstract contract DutchAuctionRebalanceAdapter is IDutchAuctionRebalanceAdapter,
         }
 
         // Create new auction
-        uint256 startTimestamp = block.timestamp;
-        uint256 endTimestamp = startTimestamp + getAuctionDuration();
+        uint120 startTimestamp = uint120(block.timestamp);
+        uint120 endTimestamp = startTimestamp + getAuctionDuration();
 
         Auction memory auction = Auction({
             isOverCollateralized: isOverCollateralized,

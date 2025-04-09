@@ -18,7 +18,7 @@ contract DutchAuctionRebalanceAdapterHarness is DutchAuctionRebalanceAdapter {
     uint256 public targetCollateralRatio;
     ILeverageManager public leverageManager;
 
-    function initialize(uint256 _auctionDuration, uint256 _initialPriceMultiplier, uint256 _minPriceMultiplier)
+    function initialize(uint120 _auctionDuration, uint256 _initialPriceMultiplier, uint256 _minPriceMultiplier)
         external
         initializer
     {
@@ -41,7 +41,7 @@ contract DutchAuctionRebalanceAdapterHarness is DutchAuctionRebalanceAdapter {
         _executeRebalanceDown(collateralAmount, debtAmount);
     }
 
-    function exposed_setAuctionDuration(uint256 newDuration) external {
+    function exposed_setAuctionDuration(uint120 newDuration) external {
         _getDutchAuctionRebalanceAdapterStorage().auctionDuration = newDuration;
     }
 

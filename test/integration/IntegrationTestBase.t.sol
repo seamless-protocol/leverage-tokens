@@ -154,7 +154,7 @@ contract IntegrationTestBase is Test {
         uint256 minCollateralRatio,
         uint256 targetCollateralRatio,
         uint256 maxCollateralRatio,
-        uint256 auctionDuration,
+        uint120 auctionDuration,
         uint256 initialPriceMultiplier,
         uint256 minPriceMultiplier,
         uint256 collateralRatioThreshold,
