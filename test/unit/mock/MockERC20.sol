@@ -56,7 +56,7 @@ contract MockERC20 is ERC20Mock {
     }
 
     function _executeDummyReentrancyCall() internal {
-        if (leverageManager == ILeverageManager(address(0))) {
+        if (leverageManager == ILeverageManager(address(0)) || reentrancyCallType == ReentrancyCallType.None) {
             return;
         }
 
