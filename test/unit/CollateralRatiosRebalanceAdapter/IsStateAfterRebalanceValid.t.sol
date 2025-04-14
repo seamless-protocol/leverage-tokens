@@ -104,4 +104,19 @@ contract IsStateAfterRebalanceValidTest is CollateralRatiosRebalanceAdapterTest 
         bool isValid = rebalanceAdapter.isStateAfterRebalanceValid(leverageToken, stateBefore);
         assertFalse(isValid);
     }
+
+    function testFuzz_isStateAfterRebalanceValid_FalseIf_NoCollateralRatioChange(uint256 ratioBefore) public {
+        LeverageTokenState memory stateBefore = LeverageTokenState({
+            collateralInDebtAsset: 0, // Not important for this test
+            debt: 0, // Not important for this test
+            equity: 0, // Not important for this test
+            collateralRatio: ratioBefore
+        });
+
+        _mockCollateralRatio(ratioBefore);
+
+        vm.prank(address(leverageManager));
+        bool isValid = rebalanceAdapter.isStateAfterRebalanceValid(leverageToken, stateBefore);
+        assertFalse(isValid);
+    }
 }
