@@ -8,7 +8,6 @@ import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 import {IEtherFiL2ModeSyncPoolETH} from "./IEtherFiL2ModeSyncPoolETH.sol";
 import {ILeverageManager} from "../ILeverageManager.sol";
 import {ILeverageToken} from "../ILeverageToken.sol";
-import {ISwapAdapter} from "./ISwapAdapter.sol";
 
 interface IEtherFiLeverageRouter {
     /// @notice Error thrown when the caller is not authorized to execute a function
