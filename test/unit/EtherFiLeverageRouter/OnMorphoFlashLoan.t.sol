@@ -35,10 +35,7 @@ contract OnMorphoFlashLoanTest is EtherFiLeverageRouterTest {
         etherFiL2ModeSyncPoolETH.mockSetAmountOut(flashLoanAmount);
 
         vm.prank(address(morpho));
-        etherFiLeverageRouter.onMorphoFlashLoan(
-            flashLoanAmount,
-            abi.encode(EtherFiLeverageRouter.MorphoCallbackData({action: ExternalAction.Deposit, data: depositData}))
-        );
+        etherFiLeverageRouter.onMorphoFlashLoan(flashLoanAmount, depositData);
         assertEq(leverageToken.balanceOf(address(this)), shares);
     }
 

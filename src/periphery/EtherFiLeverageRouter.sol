@@ -45,12 +45,6 @@ contract EtherFiLeverageRouter is IEtherFiLeverageRouter {
         address sender;
     }
 
-    /// @notice Morpho flash loan callback data to pass to the Morpho flash loan callback handler
-    struct MorphoCallbackData {
-        ExternalAction action;
-        bytes data;
-    }
-
     /// @notice The ETH address per the EtherFi L2 Mode Sync Pool contract
     address internal constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
@@ -95,7 +89,7 @@ contract EtherFiLeverageRouter is IEtherFiLeverageRouter {
         morpho.flashLoan(
             address(leverageManager.getLeverageTokenCollateralAsset(token)),
             collateralToAdd - equityInCollateralAsset,
-            abi.encode(MorphoCallbackData({action: ExternalAction.Deposit, data: depositData}))
+            depositData
         );
     }
 
@@ -105,12 +99,8 @@ contract EtherFiLeverageRouter is IEtherFiLeverageRouter {
     function onMorphoFlashLoan(uint256 loanAmount, bytes calldata data) external {
         if (msg.sender != address(morpho)) revert Unauthorized();
 
-        MorphoCallbackData memory callbackData = abi.decode(data, (MorphoCallbackData));
-
-        if (callbackData.action == ExternalAction.Deposit) {
-            DepositParams memory params = abi.decode(callbackData.data, (DepositParams));
-            _depositAndRepayMorphoFlashLoan(params, loanAmount);
-        }
+        DepositParams memory params = abi.decode(data, (DepositParams));
+        _depositAndRepayMorphoFlashLoan(params, loanAmount);
     }
 
     /// @notice Executes the deposit of weETH equity into a LeverageToken and the swap of WETH debt assets to the weETH
