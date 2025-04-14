@@ -129,11 +129,16 @@ abstract contract CollateralRatiosRebalanceAdapter is ICollateralRatiosRebalance
         uint256 minRatioAfter = ratioBefore > targetRatio ? targetRatio : ratioBefore;
         uint256 maxRatioAfter = ratioBefore > targetRatio ? ratioBefore : targetRatio;
 
-        // Do not allow worse or the same state, force it to be better
-        if (ratioAfter <= minRatioAfter || ratioAfter >= maxRatioAfter) {
+        if (ratioAfter < minRatioAfter || ratioAfter > maxRatioAfter) {
             return false;
         }
 
+        // Do not allow worse or the same state, force it to be better
+        if (ratioAfter == ratioBefore) {
+            return false;
+        }
+
+        console.log("true");
         return true;
     }
 }
