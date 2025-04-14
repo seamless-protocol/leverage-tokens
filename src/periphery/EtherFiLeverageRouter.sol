@@ -29,9 +29,8 @@ import {ActionData, ExternalAction} from "../types/DataTypes.sol";
  *   5. The weETH received from the EtherFi L2 Mode Sync Pool is used to repay the flash loan to Morpho.
  *   6. The EtherFiLeverageRouter will transfer the LeverageTokens and any remaining weETH to the sender.
  *
- * @dev Note: This router is intended to be used for LeverageTokens that use weETH as collateral and WETH as debt. The router
- *   will revert if the collateral asset is not supported by the EtherFi L2 Mode Sync Pool or if the debt asset does
- *   not conform to the WETH9 interface.
+ * @dev Note: This router is intended to be used for LeverageTokens that use weETH as collateral and WETH as debt and will
+ *   otherwise revert.
  */
 contract EtherFiLeverageRouter is IEtherFiLeverageRouter {
     /// @notice Deposit related parameters to pass to the Morpho flash loan callback handler for deposits
