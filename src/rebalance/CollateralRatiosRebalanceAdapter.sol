@@ -138,7 +138,6 @@ abstract contract CollateralRatiosRebalanceAdapter is ICollateralRatiosRebalance
             return false;
         }
 
-        console.log("true");
         return true;
     }
 }
