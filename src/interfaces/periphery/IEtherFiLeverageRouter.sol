@@ -29,8 +29,8 @@ interface IEtherFiLeverageRouter {
     /// @param token LeverageToken to deposit equity into
     /// @param equityInCollateralAsset The amount of weETH equity to deposit into the LeverageToken.
     /// @param minShares Minimum shares (LeverageTokens) to receive from the deposit
-    /// @dev Flash loans the weETH collateral required to add the equity to the LeverageToken, receives WETH debt, then
-    ///      unwraps the WETH debt to ETH and deposits the ETH into the EtherFi L2 Mode Sync Pool to obtain weETH. The
-    ///      received weETH is used to repay the flash loan
+    /// @dev Transfers `equityInCollateralAsset` of weETH to the LeverageRouter, flash loans the additional weETH collateral
+    ///      required to add the equity to the LeverageToken, receives WETH debt, then unwraps the WETH debt to ETH and deposits
+    ///      the ETH into the EtherFi L2 Mode Sync Pool to obtain weETH. The received weETH is used to repay the flash loan
     function deposit(ILeverageToken token, uint256 equityInCollateralAsset, uint256 minShares) external;
 }
