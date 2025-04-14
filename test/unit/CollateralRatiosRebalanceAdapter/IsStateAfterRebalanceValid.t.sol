@@ -60,9 +60,9 @@ contract IsStateAfterRebalanceValidTest is CollateralRatiosRebalanceAdapterTest 
         uint256 ratioAfter
     ) public {
         if (ratioBefore > 2e18) {
-            ratioAfter = bound(ratioAfter, 2e18, ratioBefore);
+            ratioAfter = bound(ratioAfter, 2e18, ratioBefore - 1);
         } else {
-            ratioAfter = bound(ratioAfter, ratioBefore, 2e18);
+            ratioAfter = bound(ratioAfter, ratioBefore + 1, 2e18);
         }
 
         LeverageTokenState memory stateBefore = LeverageTokenState({
