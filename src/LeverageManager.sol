@@ -7,6 +7,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 // Internal imports
@@ -73,7 +74,13 @@ import {
  *   - Aave v3: Allows rehypothecation of collateral, which may lead to reverts when trying to remove collateral from the
  *     market during withdrawals and rebalances.
  */
-contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManager, UUPSUpgradeable {
+contract LeverageManager is
+    ILeverageManager,
+    AccessControlUpgradeable,
+    ReentrancyGuardUpgradeable,
+    FeeManager,
+    UUPSUpgradeable
+{
     // Base collateral ratio constant, 1e18 means that collateral / debt ratio is 1:1
     uint256 public constant BASE_RATIO = 1e18;
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
@@ -174,6 +181,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     /// @inheritdoc ILeverageManager
     function createNewLeverageToken(LeverageTokenConfig calldata tokenConfig, string memory name, string memory symbol)
         external
+        nonReentrant
         returns (ILeverageToken token)
     {
         IBeaconProxyFactory tokenFactory = getLeverageTokenFactory();
@@ -245,6 +253,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     /// @inheritdoc ILeverageManager
     function deposit(ILeverageToken token, uint256 equityInCollateralAsset, uint256 minShares)
         external
+        nonReentrant
         returns (ActionData memory actionData)
     {
         ActionData memory depositData = previewDeposit(token, equityInCollateralAsset);
@@ -279,6 +288,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     /// @inheritdoc ILeverageManager
     function withdraw(ILeverageToken token, uint256 equityInCollateralAsset, uint256 maxShares)
         external
+        nonReentrant
         returns (ActionData memory actionData)
     {
         ActionData memory withdrawData = previewWithdraw(token, equityInCollateralAsset);
@@ -316,7 +326,7 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
         RebalanceAction[] calldata actions,
         TokenTransfer[] calldata tokensIn,
         TokenTransfer[] calldata tokensOut
-    ) external {
+    ) external nonReentrant {
         _transferTokens(tokensIn, msg.sender, address(this));
 
         LeverageTokenState[] memory leverageTokensStateBefore = new LeverageTokenState[](actions.length);
