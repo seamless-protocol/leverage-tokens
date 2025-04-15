@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
+// Internal imports
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {FeeManagerHarness} from "test/unit/harness/FeeManagerHarness.sol";
@@ -46,12 +47,12 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
         _executeLendingAdapterAction(leverageToken, actionType, amount);
     }
 
-    function exposed_convertToShares(ILeverageToken leverageToken, uint256 equity)
+    function exposed_convertToShares(ILeverageToken leverageToken, uint256 equity, ExternalAction action)
         external
         view
         returns (uint256 shares)
     {
-        return _convertToShares(leverageToken, equity);
+        return _convertToShares(leverageToken, equity, action);
     }
 
     function exposed_previewAction(ILeverageToken leverageToken, uint256 equityInCollateralAsset, ExternalAction action)
