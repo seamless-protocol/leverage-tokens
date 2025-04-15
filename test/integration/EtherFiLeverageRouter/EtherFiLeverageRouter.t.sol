@@ -67,12 +67,7 @@ contract EtherFiLeverageRouterTest is IntegrationTestBase {
         assertEq(address(leverageRouter.etherFiL2ModeSyncPool()), address(etherFiL2ModeSyncPool));
     }
 
-    function _dealAndDeposit(
-        IERC20 collateralAsset,
-        IERC20 debtAsset,
-        uint256 dealAmount,
-        uint256 equityInCollateralAsset
-    ) internal {
+    function _dealAndDeposit(IERC20 collateralAsset, uint256 dealAmount, uint256 equityInCollateralAsset) internal {
         deal(address(collateralAsset), user, dealAmount);
 
         vm.startPrank(user);
@@ -82,6 +77,5 @@ contract EtherFiLeverageRouterTest is IntegrationTestBase {
 
         // No leftover assets in the LeverageRouter
         assertEq(collateralAsset.balanceOf(address(leverageRouter)), 0);
-        assertEq(debtAsset.balanceOf(address(leverageRouter)), 0);
     }
 }

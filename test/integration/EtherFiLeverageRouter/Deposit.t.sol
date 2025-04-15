@@ -10,12 +10,12 @@ import {EtherFiLeverageRouterTest} from "./EtherFiLeverageRouter.t.sol";
 import {SwapPathLib} from "../../utils/SwapPathLib.sol";
 
 contract EtherFiLeverageRouterDepositTest is EtherFiLeverageRouterTest {
-    function testFork_etherFiDeposit() public {
+    function testFork_Deposit() public {
         uint256 equityInCollateralAsset = 1 ether;
         uint256 collateralToAdd = 2 * equityInCollateralAsset;
         uint256 userBalanceOfCollateralAsset = 4 ether; // User has more than enough assets for the deposit of equity
 
-        _dealAndDeposit(WEETH, WETH, userBalanceOfCollateralAsset, equityInCollateralAsset);
+        _dealAndDeposit(WEETH, userBalanceOfCollateralAsset, equityInCollateralAsset);
 
         // Initial deposit results in 1:1 shares to equity
         assertEq(leverageToken.balanceOf(user), equityInCollateralAsset);
