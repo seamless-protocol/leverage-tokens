@@ -23,7 +23,7 @@ contract DepositTest is EtherFiLeverageRouterTest {
 
         _mockEtherFiLeverageManagerDeposit(requiredCollateral, equityInCollateralAsset, requiredDebt, shares);
 
-        etherFiL2ModeSyncPoolETH.mockSetAmountOut(requiredFlashLoan);
+        etherFiL2ModeSyncPool.mockSetAmountOut(requiredFlashLoan);
 
         // Execute the deposit
         deal(address(collateralToken), address(this), equityInCollateralAsset);
@@ -51,7 +51,7 @@ contract DepositTest is EtherFiLeverageRouterTest {
 
         _mockEtherFiLeverageManagerDeposit(requiredCollateral, equityInCollateralAsset, requiredDebt, shares);
 
-        etherFiL2ModeSyncPoolETH.mockSetAmountOut(requiredFlashLoan + 1); // Surplus of 1 wei of weETH
+        etherFiL2ModeSyncPool.mockSetAmountOut(requiredFlashLoan + 1); // Surplus of 1 wei of weETH
 
         // Execute the deposit
         deal(address(collateralToken), address(this), equityInCollateralAsset);

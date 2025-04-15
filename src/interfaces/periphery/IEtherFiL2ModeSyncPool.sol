@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-interface IEtherFiL2ModeSyncPoolETH {
+interface IEtherFiL2ModeSyncPool {
     /// @notice Deposits `tokenIn` into the EtherFi L2 Mode Sync Pool and returns `minAmountOut` of weETH
     /// @param tokenIn The address of the token to deposit. The token must be whitelisted
     /// @param amountIn The amount of `tokenIn` to deposit

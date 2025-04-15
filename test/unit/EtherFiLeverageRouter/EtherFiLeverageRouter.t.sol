@@ -9,7 +9,7 @@ import {Id, MarketParams, IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 import {MarketParamsLib} from "@morpho-blue/libraries/MarketParamsLib.sol";
 
 // Internal imports
-import {IEtherFiL2ModeSyncPoolETH} from "src/interfaces/periphery/IEtherFiL2ModeSyncPoolETH.sol";
+import {IEtherFiL2ModeSyncPool} from "src/interfaces/periphery/IEtherFiL2ModeSyncPool.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
@@ -19,7 +19,7 @@ import {MockWETH} from "../mock/MockWETH.sol";
 import {MockLendingAdapter} from "../mock/MockLendingAdapter.sol";
 import {MockLeverageManager} from "../mock/MockLeverageManager.sol";
 import {MockMorpho} from "../mock/MockMorpho.sol";
-import {MockEtherFiL2ModeSyncPoolETH} from "../mock/MockEtherFiL2ModeSyncPoolETH.sol";
+import {MockEtherFiL2ModeSyncPool} from "../mock/MockEtherFiL2ModeSyncPool.sol";
 
 contract EtherFiLeverageRouterTest is Test {
     MockERC20 public collateralToken = new MockERC20();
@@ -28,7 +28,7 @@ contract EtherFiLeverageRouterTest is Test {
 
     MockMorpho public morpho;
 
-    MockEtherFiL2ModeSyncPoolETH public etherFiL2ModeSyncPoolETH;
+    MockEtherFiL2ModeSyncPool public etherFiL2ModeSyncPool;
 
     // Mocked Morpho protocol is setup with a market with some default market params
     Id public defaultMarketId;
@@ -61,13 +61,13 @@ contract EtherFiLeverageRouterTest is Test {
                 debtAsset: debtToken
             })
         );
-        etherFiL2ModeSyncPoolETH = new MockEtherFiL2ModeSyncPoolETH(collateralToken);
+        etherFiL2ModeSyncPool = new MockEtherFiL2ModeSyncPool(collateralToken);
 
         // Setup the leverage router
         etherFiLeverageRouter = new EtherFiLeverageRouter(
             ILeverageManager(address(leverageManager)),
             IMorpho(address(morpho)),
-            IEtherFiL2ModeSyncPoolETH(address(etherFiL2ModeSyncPoolETH))
+            IEtherFiL2ModeSyncPool(address(etherFiL2ModeSyncPool))
         );
 
         vm.label(address(collateralToken), "CollateralToken");
@@ -78,7 +78,7 @@ contract EtherFiLeverageRouterTest is Test {
     function test_setUp() public view {
         assertEq(address(etherFiLeverageRouter.leverageManager()), address(leverageManager));
         assertEq(address(etherFiLeverageRouter.morpho()), address(morpho));
-        assertEq(address(etherFiLeverageRouter.etherFiL2ModeSyncPoolETH()), address(etherFiL2ModeSyncPoolETH));
+        assertEq(address(etherFiLeverageRouter.etherFiL2ModeSyncPool()), address(etherFiL2ModeSyncPool));
     }
 
     function _mockEtherFiLeverageManagerDeposit(

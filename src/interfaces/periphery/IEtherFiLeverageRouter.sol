@@ -5,7 +5,7 @@ pragma solidity ^0.8.26;
 import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 
 // Internal imports
-import {IEtherFiL2ModeSyncPoolETH} from "./IEtherFiL2ModeSyncPoolETH.sol";
+import {IEtherFiL2ModeSyncPool} from "./IEtherFiL2ModeSyncPool.sol";
 import {ILeverageManager} from "../ILeverageManager.sol";
 import {ILeverageToken} from "../ILeverageToken.sol";
 
@@ -14,8 +14,8 @@ interface IEtherFiLeverageRouter {
     error Unauthorized();
 
     /// @notice The EtherFi L2 Mode Sync Pool contract
-    /// @return _etherFiL2ModeSyncPoolETH The EtherFi L2 Mode Sync Pool contract
-    function etherFiL2ModeSyncPoolETH() external view returns (IEtherFiL2ModeSyncPoolETH _etherFiL2ModeSyncPoolETH);
+    /// @return _etherFiL2ModeSyncPool The EtherFi L2 Mode Sync Pool contract
+    function etherFiL2ModeSyncPool() external view returns (IEtherFiL2ModeSyncPool _etherFiL2ModeSyncPool);
 
     /// @notice The LeverageManager contract
     /// @return _leverageManager The LeverageManager contract

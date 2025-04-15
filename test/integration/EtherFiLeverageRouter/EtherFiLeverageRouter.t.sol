@@ -7,7 +7,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Id} from "@morpho-blue/interfaces/IMorpho.sol";
 
 // Internal imports
-import {IEtherFiL2ModeSyncPoolETH} from "src/interfaces/periphery/IEtherFiL2ModeSyncPoolETH.sol";
+import {IEtherFiL2ModeSyncPool} from "src/interfaces/periphery/IEtherFiL2ModeSyncPool.sol";
 import {IEtherFiLeverageRouter} from "src/interfaces/periphery/IEtherFiLeverageRouter.sol";
 import {EtherFiLeverageRouter} from "src/periphery/EtherFiLeverageRouter.sol";
 import {LeverageManager} from "src/LeverageManager.sol";
@@ -23,8 +23,8 @@ import {IntegrationTestBase} from "../IntegrationTestBase.t.sol";
 contract EtherFiLeverageRouterTest is IntegrationTestBase {
     IERC20 public constant WEETH = IERC20(0x04C0599Ae5A44757c0af6F9eC3b93da8976c150A);
 
-    IEtherFiL2ModeSyncPoolETH public constant etherFiL2ModeSyncPoolETH =
-        IEtherFiL2ModeSyncPoolETH(0xc38e046dFDAdf15f7F56853674242888301208a5);
+    IEtherFiL2ModeSyncPool public constant etherFiL2ModeSyncPool =
+        IEtherFiL2ModeSyncPool(0xc38e046dFDAdf15f7F56853674242888301208a5);
 
     IEtherFiLeverageRouter public leverageRouter;
 
@@ -52,10 +52,10 @@ contract EtherFiLeverageRouterTest is IntegrationTestBase {
             "ltWEETH/WETH-2x"
         );
 
-        leverageRouter = new EtherFiLeverageRouter(leverageManager, MORPHO, etherFiL2ModeSyncPoolETH);
+        leverageRouter = new EtherFiLeverageRouter(leverageManager, MORPHO, etherFiL2ModeSyncPool);
 
         vm.label(address(leverageRouter), "leverageRouter");
-        vm.label(address(etherFiL2ModeSyncPoolETH), "etherFiL2ModeSyncPoolETH");
+        vm.label(address(etherFiL2ModeSyncPool), "etherFiL2ModeSyncPool");
     }
 
     function testFork_setUp() public view virtual override {
@@ -64,7 +64,7 @@ contract EtherFiLeverageRouterTest is IntegrationTestBase {
 
         assertEq(address(leverageRouter.leverageManager()), address(leverageManager));
         assertEq(address(leverageRouter.morpho()), address(MORPHO));
-        assertEq(address(leverageRouter.etherFiL2ModeSyncPoolETH()), address(etherFiL2ModeSyncPoolETH));
+        assertEq(address(leverageRouter.etherFiL2ModeSyncPool()), address(etherFiL2ModeSyncPool));
     }
 
     function _dealAndDeposit(

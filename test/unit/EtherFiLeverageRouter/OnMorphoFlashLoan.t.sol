@@ -32,7 +32,7 @@ contract OnMorphoFlashLoanTest is EtherFiLeverageRouterTest {
         uint256 flashLoanAmount = requiredCollateral - equityInCollateralAsset;
         deal(address(collateralToken), address(etherFiLeverageRouter), flashLoanAmount);
 
-        etherFiL2ModeSyncPoolETH.mockSetAmountOut(flashLoanAmount);
+        etherFiL2ModeSyncPool.mockSetAmountOut(flashLoanAmount);
 
         vm.prank(address(morpho));
         etherFiLeverageRouter.onMorphoFlashLoan(flashLoanAmount, depositData);

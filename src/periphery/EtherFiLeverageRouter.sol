@@ -7,7 +7,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // Internal imports
-import {IEtherFiL2ModeSyncPoolETH} from "../interfaces/periphery/IEtherFiL2ModeSyncPoolETH.sol";
+import {IEtherFiL2ModeSyncPool} from "../interfaces/periphery/IEtherFiL2ModeSyncPool.sol";
 import {IEtherFiLeverageRouter} from "../interfaces/periphery/IEtherFiLeverageRouter.sol";
 import {ILeverageManager} from "../interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "../interfaces/ILeverageToken.sol";
@@ -55,20 +55,16 @@ contract EtherFiLeverageRouter is IEtherFiLeverageRouter {
     IMorpho public immutable morpho;
 
     /// @inheritdoc IEtherFiLeverageRouter
-    IEtherFiL2ModeSyncPoolETH public immutable etherFiL2ModeSyncPoolETH;
+    IEtherFiL2ModeSyncPool public immutable etherFiL2ModeSyncPool;
 
     /// @notice Creates a new LeverageRouter
     /// @param _leverageManager The LeverageManager contract
     /// @param _morpho The Morpho core protocol contract
-    /// @param _etherFiL2ModeSyncPoolETH The EtherFi L2 Mode Sync Pool contract
-    constructor(
-        ILeverageManager _leverageManager,
-        IMorpho _morpho,
-        IEtherFiL2ModeSyncPoolETH _etherFiL2ModeSyncPoolETH
-    ) {
+    /// @param _etherFiL2ModeSyncPool The EtherFi L2 Mode Sync Pool contract
+    constructor(ILeverageManager _leverageManager, IMorpho _morpho, IEtherFiL2ModeSyncPool _etherFiL2ModeSyncPool) {
         leverageManager = _leverageManager;
         morpho = _morpho;
-        etherFiL2ModeSyncPoolETH = _etherFiL2ModeSyncPoolETH;
+        etherFiL2ModeSyncPool = _etherFiL2ModeSyncPool;
     }
 
     /// @inheritdoc IEtherFiLeverageRouter
@@ -127,7 +123,7 @@ contract EtherFiLeverageRouter is IEtherFiLeverageRouter {
 
         // Deposit the ETH into the EtherFi L2 Mode Sync Pool to obtain weETH
         // Note: The EtherFi L2 Mode Sync Pool requires ETH to mint weETH. WETH is unsupported
-        uint256 collateralFromEtherFi = etherFiL2ModeSyncPoolETH.deposit{value: actionData.debt}(
+        uint256 collateralFromEtherFi = etherFiL2ModeSyncPool.deposit{value: actionData.debt}(
             ETH_ADDRESS, actionData.debt, collateralLoanAmount, address(0)
         );
 
