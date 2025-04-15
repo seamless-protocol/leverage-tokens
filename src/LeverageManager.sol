@@ -7,6 +7,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 // Internal imports
 import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
@@ -75,7 +76,6 @@ import {
 contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManager, UUPSUpgradeable {
     // Base collateral ratio constant, 1e18 means that collateral / debt ratio is 1:1
     uint256 public constant BASE_RATIO = 1e18;
-    uint256 public constant DECIMALS_OFFSET = 0;
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
 
     /// @dev Struct containing all state for the LeverageManager contract
@@ -367,12 +367,28 @@ contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManag
     {
         ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
 
-        return Math.mulDiv(
-            equityInCollateralAsset,
-            token.totalSupply() + 10 ** DECIMALS_OFFSET,
-            lendingAdapter.getEquityInCollateralAsset() + 1,
-            action == ExternalAction.Deposit ? Math.Rounding.Floor : Math.Rounding.Ceil
-        );
+        uint256 totalSupply = token.totalSupply();
+        uint256 totalEquityInCollateralAsset = lendingAdapter.getEquityInCollateralAsset();
+
+        // If leverage token is empty we mint it in 1:1 ratio with collateral asset but we align it on 18 decimals always
+        if (totalSupply == 0 || totalEquityInCollateralAsset == 0) {
+            uint256 leverageTokenDecimals = IERC20Metadata(address(token)).decimals();
+            uint256 collateralDecimals = IERC20Metadata(address(lendingAdapter.getCollateralAsset())).decimals();
+
+            // If collateral asset has more decimals than leverage token, we scale down the equity in collateral asset
+            // Otherwise we scale up the equity in collateral asset
+
+            if (collateralDecimals > leverageTokenDecimals) {
+                uint256 scalingFactor = 10 ** (collateralDecimals - leverageTokenDecimals);
+                return equityInCollateralAsset / scalingFactor;
+            } else {
+                uint256 scalingFactor = 10 ** (leverageTokenDecimals - collateralDecimals);
+                return equityInCollateralAsset * scalingFactor;
+            }
+        }
+
+        Math.Rounding rounding = action == ExternalAction.Deposit ? Math.Rounding.Floor : Math.Rounding.Ceil;
+        return Math.mulDiv(equityInCollateralAsset, totalSupply, totalEquityInCollateralAsset, rounding);
     }
 
     /// @notice Previews parameters related to a deposit action

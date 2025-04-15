@@ -110,12 +110,7 @@ contract DepositTest is PreviewActionTest {
         uint256 equityToAddInCollateralAsset = 1 ether;
         uint256 expectedCollateralToAdd = 2 ether; // 2x target CR
         uint256 expectedDebtToBorrow = 1 ether;
-        uint256 expectedShares = Math.mulDiv(
-            equityToAddInCollateralAsset,
-            10 ** _DECIMALS_OFFSET(),
-            beforeState.collateral - beforeState.debt + 1, // 1:1 collateral to debt exchange rate in this test
-            Math.Rounding.Floor
-        );
+        uint256 expectedShares = equityToAddInCollateralAsset;
 
         deal(address(collateralToken), address(this), expectedCollateralToAdd);
         collateralToken.approve(address(leverageManager), expectedCollateralToAdd);
