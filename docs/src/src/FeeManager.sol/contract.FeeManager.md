@@ -1,5 +1,5 @@
 # FeeManager
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e2065c10183acb51865104847d299ff5ad4684d2/src/FeeManager.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e940fa5a38a4ecdb2ab814caac34ad52528360be/src/FeeManager.sol)
 
 **Inherits:**
 [IFeeManager](/src/interfaces/IFeeManager.sol/interface.IFeeManager.md), Initializable, AccessControlUpgradeable
@@ -41,14 +41,14 @@ function _getFeeManagerStorage() internal pure returns (FeeManagerStorage storag
 
 
 ```solidity
-function __FeeManager_init(address defaultAdmin) public initializer;
+function __FeeManager_init(address defaultAdmin) public onlyInitializing;
 ```
 
 ### __FeeManager_init_unchained
 
 
 ```solidity
-function __FeeManager_init_unchained() internal onlyInitializing;
+function __FeeManager_init_unchained(address defaultAdmin) internal onlyInitializing;
 ```
 
 ### getLeverageTokenActionFee

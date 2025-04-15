@@ -48,7 +48,7 @@ import {
  *
  * [CAUTION]
  * ====
- * LeverageTokens are susceptible to inflation attacks like ERC-4626 vaults:
+ * - LeverageTokens are susceptible to inflation attacks like ERC-4626 vaults:
  *   "In empty (or nearly empty) ERC-4626 vaults, deposits are at high risk of being stolen through frontrunning
  *   with a "donation" to the vault that inflates the price of a share. This is variously known as a donation or inflation
  *   attack and is essentially a problem of slippage. Vault deployers can protect against this attack by making an initial
@@ -57,8 +57,21 @@ import {
  *   verifying the amount received is as expected, using a wrapper that performs these checks such as
  *   https://github.com/fei-protocol/ERC4626#erc4626router-and-base[ERC4626Router]."
  *
- * As such it is highly recommended that LeverageToken creators make an initial deposit of a non-trivial amount of equity.
- * It is also recommended to use a router that performs slippage checks when depositing and withdrawing.
+ *   As such it is highly recommended that LeverageToken creators make an initial deposit of a non-trivial amount of equity.
+ *   It is also recommended to use a router that performs slippage checks when depositing and withdrawing.
+ *
+ * - LeverageToken creation is permissionless and can be configured with arbitrary lending adapters, rebalance adapters, and
+ *   underlying collateral and debt assets. As such, the adapters and tokens used by a LeverageToken are part of the risk
+ *   profile of the LeverageToken, and should be carefully considered by users before using a LeverageToken.
+ *
+ * - LeverageTokens can be configured with arbitrary lending adapters, thus LeverageTokens are directly affected by the
+ *   specific mechanisms of the underlying lending market that their lending adapter integrates with. As mentioned above,
+ *   it is highly recommended that users research and understand the lending adapter used by the LeverageToken they are
+ *   considering using. Some examples:
+ *   - Morpho: Users should be aware that Morpho market creation is permissionless, and that the price oracle used by
+ *     by the market may be manipulatable.
+ *   - Aave v3: Allows rehypothecation of collateral, which may lead to reverts when trying to remove collateral from the
+ *     market during withdrawals and rebalances.
  */
 contract LeverageManager is ILeverageManager, AccessControlUpgradeable, FeeManager, UUPSUpgradeable {
     // Base collateral ratio constant, 1e18 means that collateral / debt ratio is 1:1

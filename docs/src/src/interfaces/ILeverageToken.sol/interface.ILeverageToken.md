@@ -1,5 +1,5 @@
 # ILeverageToken
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e2065c10183acb51865104847d299ff5ad4684d2/src/interfaces/ILeverageToken.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e940fa5a38a4ecdb2ab814caac34ad52528360be/src/interfaces/ILeverageToken.sol)
 
 **Inherits:**
 IERC20
@@ -50,4 +50,11 @@ Event emitted when the leverage token is initialized
 ```solidity
 event LeverageTokenInitialized(string name, string symbol);
 ```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`name`|`string`|The name of the LeverageToken|
+|`symbol`|`string`|The symbol of the LeverageToken|
 

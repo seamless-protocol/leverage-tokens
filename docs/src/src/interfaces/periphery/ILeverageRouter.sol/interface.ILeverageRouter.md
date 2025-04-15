@@ -1,5 +1,5 @@
 # ILeverageRouter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e2065c10183acb51865104847d299ff5ad4684d2/src/interfaces/periphery/ILeverageRouter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e940fa5a38a4ecdb2ab814caac34ad52528360be/src/interfaces/periphery/ILeverageRouter.sol)
 
 
 ## Functions
@@ -114,6 +114,13 @@ Error thrown when the cost of a swap exceeds the maximum allowed cost
 ```solidity
 error MaxSwapCostExceeded(uint256 actualCost, uint256 maxCost);
 ```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`actualCost`|`uint256`|The actual cost of the swap|
+|`maxCost`|`uint256`|The maximum allowed cost of the swap|
 
 ### Unauthorized
 Error thrown when the caller is not authorized to execute a function

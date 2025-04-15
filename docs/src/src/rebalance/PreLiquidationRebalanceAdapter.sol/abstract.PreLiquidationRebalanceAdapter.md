@@ -1,5 +1,5 @@
 # PreLiquidationRebalanceAdapter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e2065c10183acb51865104847d299ff5ad4684d2/src/rebalance/PreLiquidationRebalanceAdapter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e940fa5a38a4ecdb2ab814caac34ad52528360be/src/rebalance/PreLiquidationRebalanceAdapter.sol)
 
 **Inherits:**
 Initializable, [IPreLiquidationRebalanceAdapter](/src/interfaces/IPreLiquidationRebalanceAdapter.sol/interface.IPreLiquidationRebalanceAdapter.md)
@@ -9,9 +9,10 @@ It is intended to be used to create pre-liquidation rebalance mechanisms for Lev
 The PreLiquidationRebalanceAdapter is initialized for a LeverageToken with a collateral ratio threshold and a rebalance reward.
 The `isEligibleForRebalance` function will return true if the current collateral ratio of the LeverageToken is below the configured
 collateral ratio threshold, allowing for a rebalance action to be performed on LeverageToken on the LeverageManager.
-The PreLiquidationRebalanceAdapter is also initialized with a rebalance reward, which is a flat percentage that rebalancer can take
-from the liquidation penalty of the underlying lending pool used by the LeverageToken. It is expected that the rebalance reward
-is set to a value that is less than the liquidation penalty, but high enough such that rebalancing is attractive to rebalancers.*
+The PreLiquidationRebalanceAdapter is also initialized with a rebalance reward, which is a flat percentage that is applied to the
+liquidation penalty of the underlying lending pool used by the LeverageToken. The result is the amount of equity that the rebalancer
+can earn for rebalancing the LeverageToken. It is expected that the rebalance reward is set to a value that is less than the liquidation penalty,
+but high enough such that rebalancing is attractive to rebalancers.*
 
 
 ## State Variables
@@ -47,6 +48,15 @@ function _getPreLiquidationRebalanceAdapterStorage()
 
 ```solidity
 function __PreLiquidationRebalanceAdapter_init(uint256 collateralRatioThreshold, uint256 rebalanceReward)
+    internal
+    onlyInitializing;
+```
+
+### __PreLiquidationRebalanceAdapter_init_unchained
+
+
+```solidity
+function __PreLiquidationRebalanceAdapter_init_unchained(uint256 collateralRatioThreshold, uint256 rebalanceReward)
     internal
     onlyInitializing;
 ```
