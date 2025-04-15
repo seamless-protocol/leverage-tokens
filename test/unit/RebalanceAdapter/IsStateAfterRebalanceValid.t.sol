@@ -63,7 +63,7 @@ contract IsStateAfterRebalanceValidTest is RebalanceAdapterTest {
         LeverageTokenState memory stateBefore =
             LeverageTokenState({debt: 200e18, equity: 100e18, collateralInDebtAsset: 0, collateralRatio: 1.3e8 - 1});
         LeverageTokenState memory stateAfter =
-            LeverageTokenState({debt: 100e18, equity: 98e18, collateralInDebtAsset: 0, collateralRatio: 1.3e8 - 1});
+            LeverageTokenState({debt: 100e18, equity: 98e18, collateralInDebtAsset: 0, collateralRatio: 1.3e8});
 
         _mockLeverageTokenState(stateAfter);
 

@@ -133,6 +133,11 @@ abstract contract CollateralRatiosRebalanceAdapter is ICollateralRatiosRebalance
             return false;
         }
 
+        // Do not allow worse or the same state, force it to be better
+        if (ratioAfter == ratioBefore) {
+            return false;
+        }
+
         return true;
     }
 }

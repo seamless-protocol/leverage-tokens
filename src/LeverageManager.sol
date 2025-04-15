@@ -8,6 +8,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 // Internal imports
 import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
@@ -48,7 +49,7 @@ import {
  *
  * [CAUTION]
  * ====
- * LeverageTokens are susceptible to inflation attacks like ERC-4626 vaults:
+ * - LeverageTokens are susceptible to inflation attacks like ERC-4626 vaults:
  *   "In empty (or nearly empty) ERC-4626 vaults, deposits are at high risk of being stolen through frontrunning
  *   with a "donation" to the vault that inflates the price of a share. This is variously known as a donation or inflation
  *   attack and is essentially a problem of slippage. Vault deployers can protect against this attack by making an initial
@@ -57,8 +58,21 @@ import {
  *   verifying the amount received is as expected, using a wrapper that performs these checks such as
  *   https://github.com/fei-protocol/ERC4626#erc4626router-and-base[ERC4626Router]."
  *
- * As such it is highly recommended that LeverageToken creators make an initial deposit of a non-trivial amount of equity.
- * It is also recommended to use a router that performs slippage checks when depositing and withdrawing.
+ *   As such it is highly recommended that LeverageToken creators make an initial deposit of a non-trivial amount of equity.
+ *   It is also recommended to use a router that performs slippage checks when depositing and withdrawing.
+ *
+ * - LeverageToken creation is permissionless and can be configured with arbitrary lending adapters, rebalance adapters, and
+ *   underlying collateral and debt assets. As such, the adapters and tokens used by a LeverageToken are part of the risk
+ *   profile of the LeverageToken, and should be carefully considered by users before using a LeverageToken.
+ *
+ * - LeverageTokens can be configured with arbitrary lending adapters, thus LeverageTokens are directly affected by the
+ *   specific mechanisms of the underlying lending market that their lending adapter integrates with. As mentioned above,
+ *   it is highly recommended that users research and understand the lending adapter used by the LeverageToken they are
+ *   considering using. Some examples:
+ *   - Morpho: Users should be aware that Morpho market creation is permissionless, and that the price oracle used by
+ *     by the market may be manipulatable.
+ *   - Aave v3: Allows rehypothecation of collateral, which may lead to reverts when trying to remove collateral from the
+ *     market during withdrawals and rebalances.
  */
 contract LeverageManager is
     ILeverageManager,
@@ -69,7 +83,6 @@ contract LeverageManager is
 {
     // Base collateral ratio constant, 1e18 means that collateral / debt ratio is 1:1
     uint256 public constant BASE_RATIO = 1e18;
-    uint256 public constant DECIMALS_OFFSET = 0;
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
 
     /// @dev Struct containing all state for the LeverageManager contract
@@ -354,21 +367,38 @@ contract LeverageManager is
     /// @notice Function uses OZ formula for calculating shares
     /// @param token LeverageToken to convert equity for
     /// @param equityInCollateralAsset Equity to convert to shares, denominated in collateral asset
+    /// @param action Action to convert equity for
     /// @return shares Shares
     /// @dev Function should be used to calculate how much shares user should receive for their equity
-    function _convertToShares(ILeverageToken token, uint256 equityInCollateralAsset)
+    function _convertToShares(ILeverageToken token, uint256 equityInCollateralAsset, ExternalAction action)
         internal
         view
         returns (uint256 shares)
     {
         ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
 
-        return Math.mulDiv(
-            equityInCollateralAsset,
-            token.totalSupply() + 10 ** DECIMALS_OFFSET,
-            lendingAdapter.getEquityInCollateralAsset() + 1,
-            Math.Rounding.Floor
-        );
+        uint256 totalSupply = token.totalSupply();
+        uint256 totalEquityInCollateralAsset = lendingAdapter.getEquityInCollateralAsset();
+
+        // If leverage token is empty we mint it in 1:1 ratio with collateral asset but we align it on 18 decimals always
+        if (totalSupply == 0 || totalEquityInCollateralAsset == 0) {
+            uint256 leverageTokenDecimals = IERC20Metadata(address(token)).decimals();
+            uint256 collateralDecimals = IERC20Metadata(address(lendingAdapter.getCollateralAsset())).decimals();
+
+            // If collateral asset has more decimals than leverage token, we scale down the equity in collateral asset
+            // Otherwise we scale up the equity in collateral asset
+
+            if (collateralDecimals > leverageTokenDecimals) {
+                uint256 scalingFactor = 10 ** (collateralDecimals - leverageTokenDecimals);
+                return equityInCollateralAsset / scalingFactor;
+            } else {
+                uint256 scalingFactor = 10 ** (leverageTokenDecimals - collateralDecimals);
+                return equityInCollateralAsset * scalingFactor;
+            }
+        }
+
+        Math.Rounding rounding = action == ExternalAction.Deposit ? Math.Rounding.Floor : Math.Rounding.Ceil;
+        return Math.mulDiv(equityInCollateralAsset, totalSupply, totalEquityInCollateralAsset, rounding);
     }
 
     /// @notice Previews parameters related to a deposit action
@@ -388,7 +418,7 @@ contract LeverageManager is
         (uint256 equityToCover, uint256 equityForShares, uint256 tokenFee, uint256 treasuryFee) =
             _computeEquityFees(token, equityInCollateralAsset, action);
 
-        uint256 shares = _convertToShares(token, equityForShares);
+        uint256 shares = _convertToShares(token, equityForShares, action);
 
         (uint256 collateral, uint256 debt) = _computeCollateralAndDebtForAction(token, equityToCover, action);
 
@@ -426,7 +456,7 @@ contract LeverageManager is
         Math.Rounding collateralRounding = action == ExternalAction.Deposit ? Math.Rounding.Ceil : Math.Rounding.Floor;
         Math.Rounding debtRounding = action == ExternalAction.Deposit ? Math.Rounding.Floor : Math.Rounding.Ceil;
 
-        uint256 shares = _convertToShares(token, equityInCollateralAsset);
+        uint256 shares = _convertToShares(token, equityInCollateralAsset, action);
 
         // If action is deposit there might be some dust in collateral but debt can be 0. In that case we should follow target ratio
         bool shouldFollowInitialRatio = totalShares == 0 || (action == ExternalAction.Deposit && totalDebt == 0);

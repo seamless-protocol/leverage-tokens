@@ -76,11 +76,12 @@ contract PreviewWithdrawTest is PreviewActionTest {
             })
         );
 
-        uint256 expectedSharesBeforeFees = leverageManager.exposed_convertToShares(leverageToken, equityToPreview);
-        assertEq(expectedSharesBeforeFees, 1338908411);
+        uint256 expectedSharesBeforeFees =
+            leverageManager.exposed_convertToShares(leverageToken, equityToPreview, ExternalAction.Withdraw);
+        assertEq(expectedSharesBeforeFees, 1338908412);
 
         uint256 collateralToRemove = initialCollateral * expectedSharesBeforeFees / sharesTotalSupply;
-        assertEq(collateralToRemove, 2);
+        assertEq(collateralToRemove, 3);
 
         // The treasury fee is rounded up, so it's possible for it to be greater than the calculated collateral to be removed
         // which is calculated by rounding down

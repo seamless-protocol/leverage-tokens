@@ -193,6 +193,9 @@ interface ILeverageManager is IFeeManager {
     /// @dev Anyone can call this function. At the end function will just check if all effected LeverageTokens are in the
     ///      better state than before rebalance. Caller needs to calculate and to provide tokens for rebalancing and he needs
     ///      to specify tokens that he wants to receive
+    /// @dev Note: If the sender specifies less tokensOut than the maximum amount they can retrieve for their specified
+    ///      rebalance actions, the rebalance will still be successful. The remaining amount that could have been taken
+    ///      out can be claimed by anyone by executing rebalance with that remaining amount in tokensOut.
     function rebalance(
         RebalanceAction[] calldata actions,
         TokenTransfer[] calldata tokensIn,
