@@ -79,11 +79,11 @@ contract IsAuctionValidTest is DutchAuctionRebalanceAdapterTest {
         assertTrue(auctionRebalancer.isAuctionValid());
     }
 
-    function testFuzz_isAuctionValid_ReturnsFalse_WhenExpired(uint256 timeElapsed, uint256 duration) public {
+    function testFuzz_isAuctionValid_ReturnsFalse_WhenExpired(uint120 timeElapsed, uint120 duration) public {
         _setLeverageTokenCollateralRatio(3.1e18); // Over-collateralized
 
         // Bound duration to reasonable values
-        duration = bound(duration, 1 hours, 7 days);
+        duration = uint120(bound(duration, 1 hours, 7 days));
 
         // Set duration
         vm.prank(owner);
@@ -92,7 +92,7 @@ contract IsAuctionValidTest is DutchAuctionRebalanceAdapterTest {
         _createAuction();
 
         // Ensure timeElapsed is greater than duration
-        timeElapsed = bound(timeElapsed, duration + 1, duration + 7 days);
+        timeElapsed = uint120(bound(timeElapsed, duration + 1, duration + 7 days));
         vm.warp(AUCTION_START_TIME + timeElapsed);
 
         assertFalse(auctionRebalancer.isAuctionValid());
