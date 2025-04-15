@@ -1,29 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-// Dependency imports
-import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
-
 // Internal imports
 import {IEtherFiL2ModeSyncPool} from "./IEtherFiL2ModeSyncPool.sol";
-import {ILeverageManager} from "../ILeverageManager.sol";
 import {ILeverageToken} from "../ILeverageToken.sol";
+import {ILeverageRouterBase} from "./ILeverageRouterBase.sol";
 
-interface IEtherFiLeverageRouter {
-    /// @notice Error thrown when the caller is not authorized to execute a function
-    error Unauthorized();
-
+interface IEtherFiLeverageRouter is ILeverageRouterBase {
     /// @notice The EtherFi L2 Mode Sync Pool contract
     /// @return _etherFiL2ModeSyncPool The EtherFi L2 Mode Sync Pool contract
     function etherFiL2ModeSyncPool() external view returns (IEtherFiL2ModeSyncPool _etherFiL2ModeSyncPool);
-
-    /// @notice The LeverageManager contract
-    /// @return _leverageManager The LeverageManager contract
-    function leverageManager() external view returns (ILeverageManager _leverageManager);
-
-    /// @notice The Morpho core protocol contract
-    /// @return _morpho The Morpho core protocol contract
-    function morpho() external view returns (IMorpho _morpho);
 
     /// @notice Deposit equity into a LeverageToken that uses weETH as collateral and WETH as debt
     /// @param token LeverageToken to deposit equity into

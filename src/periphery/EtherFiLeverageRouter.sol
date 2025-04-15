@@ -4,7 +4,6 @@ pragma solidity ^0.8.26;
 // Dependency imports
 import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // Internal imports
 import {IEtherFiL2ModeSyncPool} from "../interfaces/periphery/IEtherFiL2ModeSyncPool.sol";
@@ -12,7 +11,7 @@ import {IEtherFiLeverageRouter} from "../interfaces/periphery/IEtherFiLeverageRo
 import {ILeverageManager} from "../interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "../interfaces/ILeverageToken.sol";
 import {IWETH9} from "../interfaces/periphery/IWETH9.sol";
-import {ActionData, ExternalAction} from "../types/DataTypes.sol";
+import {LeverageRouterDepositBase} from "./LeverageRouterDepositBase.sol";
 
 /**
  * @dev The EtherFiLeverageRouter contract is an immutable periphery contract that facilitates the use of Morpho flash loans
@@ -32,38 +31,20 @@ import {ActionData, ExternalAction} from "../types/DataTypes.sol";
  * @dev Note: This router is intended to be used for LeverageTokens that use weETH as collateral and WETH as debt and will
  *   otherwise revert.
  */
-contract EtherFiLeverageRouter is IEtherFiLeverageRouter {
-    /// @notice Deposit related parameters to pass to the Morpho flash loan callback handler for deposits
-    struct DepositParams {
-        // LeverageToken to deposit into
-        ILeverageToken token;
-        // Amount of equity to deposit, denominated in the collateral asset (weETH)
-        uint256 equityInCollateralAsset;
-        // Minimum amount of shares (LeverageTokens) to receive
-        uint256 minShares;
-        // Address of the sender of the deposit, who will also receive the shares
-        address sender;
-    }
-
+contract EtherFiLeverageRouter is LeverageRouterDepositBase, IEtherFiLeverageRouter {
     /// @notice The ETH address per the EtherFi L2 Mode Sync Pool contract
     address internal constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     /// @inheritdoc IEtherFiLeverageRouter
-    ILeverageManager public immutable leverageManager;
-
-    /// @inheritdoc IEtherFiLeverageRouter
-    IMorpho public immutable morpho;
-
-    /// @inheritdoc IEtherFiLeverageRouter
     IEtherFiL2ModeSyncPool public immutable etherFiL2ModeSyncPool;
 
-    /// @notice Creates a new LeverageRouter
+    /// @notice Creates a new EtherFiLeverageRouter
     /// @param _leverageManager The LeverageManager contract
     /// @param _morpho The Morpho core protocol contract
     /// @param _etherFiL2ModeSyncPool The EtherFi L2 Mode Sync Pool contract
-    constructor(ILeverageManager _leverageManager, IMorpho _morpho, IEtherFiL2ModeSyncPool _etherFiL2ModeSyncPool) {
-        leverageManager = _leverageManager;
-        morpho = _morpho;
+    constructor(ILeverageManager _leverageManager, IMorpho _morpho, IEtherFiL2ModeSyncPool _etherFiL2ModeSyncPool)
+        LeverageRouterDepositBase(_leverageManager, _morpho)
+    {
         etherFiL2ModeSyncPool = _etherFiL2ModeSyncPool;
     }
 
@@ -76,7 +57,8 @@ contract EtherFiLeverageRouter is IEtherFiLeverageRouter {
                 token: token,
                 equityInCollateralAsset: equityInCollateralAsset,
                 minShares: minShares,
-                sender: msg.sender
+                sender: msg.sender,
+                additionalData: ""
             })
         );
 
@@ -99,46 +81,24 @@ contract EtherFiLeverageRouter is IEtherFiLeverageRouter {
         _depositAndRepayMorphoFlashLoan(params, loanAmount);
     }
 
-    /// @notice Executes the deposit of weETH equity into a LeverageToken and the swap of WETH debt assets to the weETH
-    ///         collateral assets to repay the flash loan from Morpho
-    /// @param params Params for the deposit of weETH equity into a LeverageToken
-    /// @param collateralLoanAmount Amount of weETH collateral asset flash loaned
-    function _depositAndRepayMorphoFlashLoan(DepositParams memory params, uint256 collateralLoanAmount) internal {
-        IERC20 collateralAsset = leverageManager.getLeverageTokenCollateralAsset(params.token);
-        IWETH9 debtAsset = IWETH9(address(leverageManager.getLeverageTokenDebtAsset(params.token)));
-
-        // Transfer the weETHcollateral from the sender for the deposit
-        // slither-disable-next-line arbitrary-send-erc20
-        SafeERC20.safeTransferFrom(collateralAsset, params.sender, address(this), params.equityInCollateralAsset);
-
-        // Use the flash loaned weETH collateral and the weETH equity from the sender for the deposit into the LeverageToken
-        SafeERC20.forceApprove(
-            collateralAsset, address(leverageManager), collateralLoanAmount + params.equityInCollateralAsset
-        );
-        ActionData memory actionData =
-            leverageManager.deposit(params.token, params.equityInCollateralAsset, params.minShares);
-
-        // Unwrap the WETH debt asset received from the deposit
-        debtAsset.withdraw(actionData.debt);
+    /// @notice Performs logic to obtain weETH collateral from WETH debt
+    /// @param weth The WETH contract
+    /// @param wethAmount The amount of WETH debt to convert to weETH collateral
+    /// @param weethLoanAmount The amount of weETH flash loaned
+    /// @return The amount of weETH collateral obtained
+    function _getCollateralFromDebt(
+        IERC20 weth,
+        uint256 wethAmount,
+        uint256 weethLoanAmount,
+        bytes memory /* additionalData */
+    ) internal override returns (uint256) {
+        IWETH9(address(weth)).withdraw(wethAmount);
 
         // Deposit the ETH into the EtherFi L2 Mode Sync Pool to obtain weETH
         // Note: The EtherFi L2 Mode Sync Pool requires ETH to mint weETH. WETH is unsupported
-        uint256 collateralFromEtherFi = etherFiL2ModeSyncPool.deposit{value: actionData.debt}(
-            ETH_ADDRESS, actionData.debt, collateralLoanAmount, address(0)
-        );
+        uint256 collateralFromEtherFi =
+            etherFiL2ModeSyncPool.deposit{value: wethAmount}(ETH_ADDRESS, wethAmount, weethLoanAmount, address(0));
 
-        // Return any surplus collateral assets received from the EtherFi L2 Mode Sync Pool to the sender
-        uint256 collateralAssetSurplus = collateralFromEtherFi - collateralLoanAmount;
-        if (collateralAssetSurplus > 0) {
-            SafeERC20.safeTransfer(collateralAsset, params.sender, collateralAssetSurplus);
-        }
-
-        // Transfer shares received from the deposit to the deposit sender
-        SafeERC20.safeTransfer(params.token, params.sender, actionData.shares);
-
-        // Approve morpho to transfer assets to repay the flash loan
-        SafeERC20.forceApprove(collateralAsset, address(morpho), collateralLoanAmount);
+        return collateralFromEtherFi;
     }
-
-    receive() external payable {}
 }

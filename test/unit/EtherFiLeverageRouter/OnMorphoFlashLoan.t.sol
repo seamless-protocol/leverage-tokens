@@ -3,7 +3,9 @@ pragma solidity ^0.8.26;
 
 // Internal imports
 import {EtherFiLeverageRouter} from "src/periphery/EtherFiLeverageRouter.sol";
+import {LeverageRouterDepositBase} from "src/periphery/LeverageRouterDepositBase.sol";
 import {IEtherFiLeverageRouter} from "src/interfaces/periphery/IEtherFiLeverageRouter.sol";
+import {ILeverageRouterBase} from "src/interfaces/periphery/ILeverageRouterBase.sol";
 import {ExternalAction} from "src/types/DataTypes.sol";
 import {EtherFiLeverageRouterTest} from "./EtherFiLeverageRouter.t.sol";
 
@@ -17,11 +19,12 @@ contract OnMorphoFlashLoanTest is EtherFiLeverageRouterTest {
         _mockEtherFiLeverageManagerDeposit(requiredCollateral, equityInCollateralAsset, requiredDebt, shares);
 
         bytes memory depositData = abi.encode(
-            EtherFiLeverageRouter.DepositParams({
+            LeverageRouterDepositBase.DepositParams({
                 token: leverageToken,
                 equityInCollateralAsset: equityInCollateralAsset,
                 minShares: shares,
-                sender: address(this)
+                sender: address(this),
+                additionalData: ""
             })
         );
 
@@ -42,7 +45,7 @@ contract OnMorphoFlashLoanTest is EtherFiLeverageRouterTest {
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_onMorphoFlashLoan_RevertIf_Unauthorized(address caller) public {
         vm.assume(caller != address(morpho));
-        vm.expectRevert(IEtherFiLeverageRouter.Unauthorized.selector);
+        vm.expectRevert(ILeverageRouterBase.Unauthorized.selector);
         EtherFiLeverageRouter(payable(address(etherFiLeverageRouter))).onMorphoFlashLoan(0, "");
     }
 }
