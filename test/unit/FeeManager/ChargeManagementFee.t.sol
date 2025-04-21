@@ -81,6 +81,7 @@ contract ChargeManagementFeeTest is FeeManagerTest {
         // should not be updated
         totalSupplyAfter = leverageToken.totalSupply();
         assertEq(totalSupplyAfter, totalSupply);
+        assertEq(feeManager.exposed_getFeeAdjustedTotalSupply(leverageToken), totalSupply + 100);
         assertEq(leverageToken.balanceOf(treasury), 0);
         assertEq(feeManager.getLastManagementFeeAccrualTimestamp(leverageToken), block.timestamp - SECONDS_ONE_YEAR);
 
@@ -92,6 +93,7 @@ contract ChargeManagementFeeTest is FeeManagerTest {
         // should be updated
         totalSupplyAfter = leverageToken.totalSupply();
         assertEq(totalSupplyAfter, totalSupply + 100);
+        assertEq(feeManager.exposed_getFeeAdjustedTotalSupply(leverageToken), totalSupplyAfter);
         assertEq(leverageToken.balanceOf(treasury), 100);
         assertEq(feeManager.getLastManagementFeeAccrualTimestamp(leverageToken), block.timestamp);
     }
