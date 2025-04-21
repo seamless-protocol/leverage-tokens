@@ -55,4 +55,12 @@ contract FeeManagerHarness is FeeManager {
     function exposed_setLastManagementFeeAccrualTimestamp(ILeverageToken token) external {
         _setLastManagementFeeAccrualTimestamp(token);
     }
+
+    function exposed_validateFee(uint256 fee) external pure {
+        _validateFee(fee);
+    }
+
+    function exposed_validateTreasurySet() external view {
+        _validateTreasurySet();
+    }
 }

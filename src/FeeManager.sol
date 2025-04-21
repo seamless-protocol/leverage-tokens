@@ -91,17 +91,12 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
 
     /// @inheritdoc IFeeManager
     function setManagementFee(uint128 fee) external onlyRole(FEE_MANAGER_ROLE) {
+        _validateFee(fee);
+        _validateTreasurySet();
+
         FeeManagerStorage storage $ = _getFeeManagerStorage();
-
-        if (fee > MAX_FEE) {
-            revert FeeTooHigh(fee, MAX_FEE);
-        }
-
-        if ($.treasury == address(0)) {
-            revert TreasuryNotSet();
-        }
-
         $.managementFee = fee;
+
         emit ManagementFeeSet(fee);
     }
 
@@ -121,17 +116,12 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
 
     /// @inheritdoc IFeeManager
     function setTreasuryActionFee(ExternalAction action, uint256 fee) external onlyRole(FEE_MANAGER_ROLE) {
+        _validateFee(fee);
+        _validateTreasurySet();
+
         FeeManagerStorage storage $ = _getFeeManagerStorage();
-
-        if (fee > MAX_FEE) {
-            revert FeeTooHigh(fee, MAX_FEE);
-        }
-
-        if ($.treasury == address(0)) {
-            revert TreasuryNotSet();
-        }
-
         $.treasuryActionFee[action] = fee;
+
         emit TreasuryActionFeeSet(action, fee);
     }
 
@@ -233,10 +223,7 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
     /// @param fee Fee for action, 100_00 is 100%
     /// @dev If caller tries to set fee above 100% it reverts with FeeTooHigh error
     function _setLeverageTokenActionFee(ILeverageToken token, ExternalAction action, uint256 fee) internal {
-        // Check if fees are not higher than 100%
-        if (fee > MAX_FEE) {
-            revert FeeTooHigh(fee, MAX_FEE);
-        }
+        _validateFee(fee);
 
         _getFeeManagerStorage().tokenActionFee[token][action] = fee;
         emit LeverageTokenActionFeeSet(token, action, fee);
@@ -247,5 +234,20 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
     function _setLastManagementFeeAccrualTimestamp(ILeverageToken token) internal {
         _getFeeManagerStorage().lastManagementFeeAccrualTimestamp[token] = uint120(block.timestamp);
         emit LastManagementFeeAccrualTimestampSet(token, block.timestamp);
+    }
+
+    /// @notice Validates that the fee is not higher than 100%
+    /// @param fee Fee to validate
+    function _validateFee(uint256 fee) internal pure {
+        if (fee > MAX_FEE) {
+            revert FeeTooHigh(fee, MAX_FEE);
+        }
+    }
+
+    /// @notice Validates that the treasury address is set
+    function _validateTreasurySet() internal view {
+        if (getTreasury() == address(0)) {
+            revert TreasuryNotSet();
+        }
     }
 }
