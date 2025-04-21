@@ -51,4 +51,11 @@ contract TransferTokensTest is LeverageManagerTest {
         assertEq(token1.balanceOf(address(leverageManager)), token1TransferAmount);
         assertEq(token1.balanceOf(address(this)), token1BalanceBefore - token1TransferAmount);
     }
+
+    function test_transferTokens_ZeroAddress() public {
+        TokenTransfer memory transfer = TokenTransfer({token: address(0), amount: 100 ether});
+
+        // No-op, does not revert
+        leverageManager.exposed_transferTokens(transfer, address(this), address(this));
+    }
 }
