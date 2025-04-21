@@ -1,5 +1,5 @@
 # IFeeManager
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e2065c10183acb51865104847d299ff5ad4684d2/src/interfaces/IFeeManager.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e940fa5a38a4ecdb2ab814caac34ad52528360be/src/interfaces/IFeeManager.sol)
 
 
 ## Functions
@@ -124,6 +124,14 @@ Emitted when a LeverageToken fee is set for a specific action
 event LeverageTokenActionFeeSet(ILeverageToken indexed leverageToken, ExternalAction indexed action, uint256 fee);
 ```
 
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`leverageToken`|`ILeverageToken`|The LeverageToken that the fee was set for|
+|`action`|`ExternalAction`|The action that the fee was set for|
+|`fee`|`uint256`|The fee that was set|
+
 ### TreasuryActionFeeSet
 Emitted when a treasury fee is set for a specific action
 
@@ -131,6 +139,13 @@ Emitted when a treasury fee is set for a specific action
 ```solidity
 event TreasuryActionFeeSet(ExternalAction indexed action, uint256 fee);
 ```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`action`|`ExternalAction`|The action that the fee was set for|
+|`fee`|`uint256`|The fee that was set|
 
 ### TreasurySet
 Emitted when the treasury address is set
@@ -140,6 +155,12 @@ Emitted when the treasury address is set
 event TreasurySet(address treasury);
 ```
 
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`treasury`|`address`|The address of the treasury|
+
 ## Errors
 ### FeeTooHigh
 Error emitted when `FEE_MANAGER_ROLE` tries to set fee higher than `MAX_FEE`
@@ -148,6 +169,13 @@ Error emitted when `FEE_MANAGER_ROLE` tries to set fee higher than `MAX_FEE`
 ```solidity
 error FeeTooHigh(uint256 fee, uint256 maxFee);
 ```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`fee`|`uint256`|The fee that was set|
+|`maxFee`|`uint256`|The maximum fee that can be set|
 
 ### TreasuryNotSet
 Error emitted when trying to set a treasury fee when the treasury address is not set

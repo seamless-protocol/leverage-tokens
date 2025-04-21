@@ -12,7 +12,7 @@ import {DutchAuctionRebalanceAdapterTest} from "./DutchAuctionRebalanceAdapter.t
 import {DutchAuctionRebalanceAdapterHarness} from "test/unit/harness/DutchAuctionRebalanceAdapterHarness.t.sol";
 
 contract InitializeTest is DutchAuctionRebalanceAdapterTest {
-    function test_Fuzz_Initialize(uint256 auctionDuration, uint256 initialPriceMultiplier, uint256 minPriceMultiplier)
+    function test_Fuzz_Initialize(uint120 auctionDuration, uint256 initialPriceMultiplier, uint256 minPriceMultiplier)
         public
     {
         vm.assume(auctionDuration > 0);
@@ -54,7 +54,7 @@ contract InitializeTest is DutchAuctionRebalanceAdapterTest {
     }
 
     function test_Fuzz_Initialize_RevertIf_MinPriceMultiplierTooHigh(
-        uint256 auctionDuration,
+        uint120 auctionDuration,
         uint256 initialPriceMultiplier,
         uint256 minPriceMultiplier
     ) public {

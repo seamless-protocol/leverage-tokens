@@ -152,7 +152,7 @@ contract LeverageRouterWithdrawTest is LeverageRouterTest {
     function testFork_withdraw_Aerodrome_FullWithdraw() public {
         uint256 equityInCollateralAsset = _deposit();
 
-        uint256 collateralUsedForDebtSwap = 1.010346527757605821 ether; // Swap to 3392.292472 USDC requires 1.010346527757605821 WETH
+        uint256 collateralUsedForDebtSwap = 1.010346527757605823 ether; // Swap to 3392.292472 USDC requires 1.010346527757605823 WETH
 
         uint256 collateralToRemove = leverageManager.previewWithdraw(leverageToken, equityInCollateralAsset).collateral;
         uint256 additionalCollateralRequired =
@@ -184,7 +184,7 @@ contract LeverageRouterWithdrawTest is LeverageRouterTest {
         uint256 equityInCollateralAssetDeposited = _deposit();
         uint256 equityInCollateralAssetToWithdraw = equityInCollateralAssetDeposited / 2;
 
-        uint256 collateralUsedForDebtSwap = 0.505102807630211971 ether; // Swap to 1696.146236 USDC requires 0.505102807630211971 WETH
+        uint256 collateralUsedForDebtSwap = 0.505102807630211973 ether; // Swap to 1696.146236 USDC requires 0.505102807630211973 WETH
 
         uint256 collateralToRemove =
             leverageManager.previewWithdraw(leverageToken, equityInCollateralAssetToWithdraw).collateral;
@@ -328,7 +328,7 @@ contract LeverageRouterWithdrawTest is LeverageRouterTest {
     function testFork_withdraw_Aerodrome_MultiHop() public {
         uint256 equityInCollateralAsset = _deposit();
 
-        uint256 collateralUsedForDebtSwap = 1.023409712556120566 ether; // Swap to 3392.292472 USDC requires 1.023409712556120566 WETH
+        uint256 collateralUsedForDebtSwap = 1.023409712556120568 ether; // Swap to 3392.292472 USDC requires 1.023409712556120568 WETH
 
         uint256 collateralToRemove = leverageManager.previewWithdraw(leverageToken, equityInCollateralAsset).collateral;
         uint256 additionalCollateralRequired =

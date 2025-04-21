@@ -61,8 +61,8 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
         uint256 debtToRepay = leverageManager.previewWithdraw(leverageToken, sharesValue).debt;
         _withdraw(user, sharesValue, debtToRepay);
 
-        // Validate that almost all shares are burned, 1 wei always left because of debt rounding up
-        assertEq(leverageToken.totalSupply(), 1);
+        // Validate that all shares are burned
+        assertEq(leverageToken.totalSupply(), 0);
 
         // Validate that almost all collateral is withdrawn, we round down collateral to withdraw so dust can be left
         assertGe(morphoLendingAdapter.getCollateral(), 0);
@@ -84,20 +84,23 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
         LeverageTokenState memory stateBefore = getLeverageTokenState();
         assertEq(stateBefore.collateralRatio, 1999999999950000000); // ~2x CR
 
-        uint256 equityToWithdraw = 5 ether;
+        uint256 equityInCollateralAssetBeforeWithdraw = morphoLendingAdapter.getEquityInCollateralAsset();
+        assertEq(equityInCollateralAssetBeforeWithdraw, 9999999999750000000);
+
+        uint256 equityToWithdraw = equityInCollateralAssetBeforeWithdraw / 2;
         ActionData memory previewData = leverageManager.previewWithdraw(leverageToken, equityToWithdraw);
         _withdraw(user, equityToWithdraw, previewData.debt);
 
         LeverageTokenState memory stateAfter = getLeverageTokenState();
-        uint256 equityInCollateralAssetAfter = morphoLendingAdapter.getEquityInCollateralAsset();
+        uint256 equityInCollateralAssetAfterWithdraw = morphoLendingAdapter.getEquityInCollateralAsset();
 
-        // Ensure that collateral ratio is the same (with some rounding error)
+        // Ensure that collateral ratio is the same
         assertGe(stateAfter.collateralRatio, stateBefore.collateralRatio);
-        assertEq(stateAfter.collateralRatio, 2000000000050000000);
+        assertEq(stateAfter.collateralRatio, 2000000000000000000);
 
         // Ensure that after withdraw debt and collateral is 50% of what was initially after deposit
-        assertEq(stateAfter.debt, 20000_000000 - 1); // 2000 USDC, -1 because of rounding
-        assertEq(equityInCollateralAssetAfter, 5 ether);
+        assertEq(stateAfter.debt, 20000_000000); // 2000 USDC
+        assertEq(equityInCollateralAssetAfterWithdraw, equityInCollateralAsset / 2);
 
         assertEq(WETH.balanceOf(user), previewData.collateral);
     }
@@ -180,7 +183,7 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
         _withdraw(user, equityToWithdraw, previewData.debt);
 
         // Lower or equal because or rounding, theoretically perfect would be 4.5 ether
-        assertEq(leverageToken.balanceOf(user), 4.5 ether + 1); // +1 because of rounding, equityToWithdraw is rounded down so shares to burn will also be a bit lower
+        assertEq(leverageToken.balanceOf(user), 4.5 ether);
 
         assertEq(WETH.balanceOf(user), previewData.collateral); // User receives the collateral asset
         assertEq(WETH.balanceOf(treasury), previewData.treasuryFee); // Treasury receives the fee

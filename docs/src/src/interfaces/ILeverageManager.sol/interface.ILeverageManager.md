@@ -1,5 +1,5 @@
 # ILeverageManager
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e2065c10183acb51865104847d299ff5ad4684d2/src/interfaces/ILeverageManager.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e940fa5a38a4ecdb2ab814caac34ad52528360be/src/interfaces/ILeverageManager.sol)
 
 **Inherits:**
 [IFeeManager](/src/interfaces/IFeeManager.sol/interface.IFeeManager.md)
@@ -310,6 +310,10 @@ Rebalances LeverageTokens based on provided actions
 better state than before rebalance. Caller needs to calculate and to provide tokens for rebalancing and he needs
 to specify tokens that he wants to receive*
 
+*Note: If the sender specifies less tokensOut than the maximum amount they can retrieve for their specified
+rebalance actions, the rebalance will still be successful. The remaining amount that could have been taken
+out can be claimed by anyone by executing rebalance with that remaining amount in tokensOut.*
+
 
 ```solidity
 function rebalance(
@@ -336,6 +340,12 @@ Event emitted when the LeverageManager is initialized
 event LeverageManagerInitialized(IBeaconProxyFactory leverageTokenFactory);
 ```
 
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`leverageTokenFactory`|`IBeaconProxyFactory`|The factory for creating new LeverageTokens|
+
 ### LeverageTokenCreated
 Event emitted when a new LeverageToken is created
 
@@ -346,6 +356,15 @@ event LeverageTokenCreated(
 );
 ```
 
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`ILeverageToken`|The new LeverageToken|
+|`collateralAsset`|`IERC20`|The collateral asset of the LeverageToken|
+|`debtAsset`|`IERC20`|The debt asset of the LeverageToken|
+|`config`|`LeverageTokenConfig`|The config of the LeverageToken|
+
 ### Deposit
 Event emitted when a user deposits assets into a LeverageToken
 
@@ -354,6 +373,14 @@ Event emitted when a user deposits assets into a LeverageToken
 event Deposit(ILeverageToken indexed token, address indexed sender, ActionData actionData);
 ```
 
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`ILeverageToken`|The LeverageToken|
+|`sender`|`address`|The sender of the deposit|
+|`actionData`|`ActionData`|The action data of the deposit|
+
 ### Withdraw
 Event emitted when a user withdraws assets from a LeverageToken
 
@@ -361,6 +388,14 @@ Event emitted when a user withdraws assets from a LeverageToken
 ```solidity
 event Withdraw(ILeverageToken indexed token, address indexed sender, ActionData actionData);
 ```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`ILeverageToken`|The LeverageToken|
+|`sender`|`address`|The sender of the withdraw|
+|`actionData`|`ActionData`|The action data of the withdraw|
 
 ## Errors
 ### InvalidLeverageTokenAssets
@@ -387,6 +422,13 @@ Error thrown when slippage is too high during deposit/withdraw
 error SlippageTooHigh(uint256 actual, uint256 expected);
 ```
 
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`actual`|`uint256`|The actual amount of tokens received|
+|`expected`|`uint256`|The expected amount of tokens to receive|
+
 ### NotRebalancer
 Error thrown when caller is not authorized to rebalance
 
@@ -394,6 +436,13 @@ Error thrown when caller is not authorized to rebalance
 ```solidity
 error NotRebalancer(ILeverageToken token, address caller);
 ```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`ILeverageToken`|The LeverageToken to rebalance|
+|`caller`|`address`|The caller of the rebalance function|
 
 ### LeverageTokenNotEligibleForRebalance
 Error thrown when a LeverageToken is not eligible for rebalance
@@ -403,6 +452,12 @@ Error thrown when a LeverageToken is not eligible for rebalance
 error LeverageTokenNotEligibleForRebalance(ILeverageToken token);
 ```
 
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`ILeverageToken`|The LeverageToken that is not eligible for rebalance|
+
 ### InvalidLeverageTokenStateAfterRebalance
 Error thrown when a LeverageToken's state after rebalance is invalid
 
@@ -410,4 +465,10 @@ Error thrown when a LeverageToken's state after rebalance is invalid
 ```solidity
 error InvalidLeverageTokenStateAfterRebalance(ILeverageToken token);
 ```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`ILeverageToken`|The LeverageToken that has invalid state after rebalance|
 

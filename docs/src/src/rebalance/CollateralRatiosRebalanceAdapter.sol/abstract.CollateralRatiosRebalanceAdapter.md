@@ -1,5 +1,5 @@
 # CollateralRatiosRebalanceAdapter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e2065c10183acb51865104847d299ff5ad4684d2/src/rebalance/CollateralRatiosRebalanceAdapter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e940fa5a38a4ecdb2ab814caac34ad52528360be/src/rebalance/CollateralRatiosRebalanceAdapter.sol)
 
 **Inherits:**
 [ICollateralRatiosRebalanceAdapter](/src/interfaces/ICollateralRatiosRebalanceAdapter.sol/interface.ICollateralRatiosRebalanceAdapter.md), Initializable
@@ -23,6 +23,17 @@ function _getCollateralRatiosRebalanceAdapterStorage()
     internal
     pure
     returns (CollateralRatiosRebalanceAdapterStorage storage $);
+```
+
+### __CollateralRatiosRebalanceAdapter_init
+
+
+```solidity
+function __CollateralRatiosRebalanceAdapter_init(
+    uint256 minCollateralRatio,
+    uint256 targetCollateralRatio,
+    uint256 maxCollateralRatio
+) internal onlyInitializing;
 ```
 
 ### __CollateralRatiosRebalanceAdapter_init_unchained
