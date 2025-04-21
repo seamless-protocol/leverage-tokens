@@ -13,6 +13,11 @@ interface IFeeManager {
     /// @notice Error emitted when trying to set a treasury fee when the treasury address is not set
     error TreasuryNotSet();
 
+    /// @notice Emitted when the last management fee accrual timestamp is set for a LeverageToken
+    /// @param leverageToken The LeverageToken that the timestamp was set for
+    /// @param timestamp The timestamp that was set
+    event LastManagementFeeAccrualTimestampSet(ILeverageToken indexed leverageToken, uint256 timestamp);
+
     /// @notice Emitted when a LeverageToken fee is set for a specific action
     /// @param leverageToken The LeverageToken that the fee was set for
     /// @param action The action that the fee was set for
@@ -31,6 +36,14 @@ interface IFeeManager {
     /// @notice Emitted when the treasury address is set
     /// @param treasury The address of the treasury
     event TreasurySet(address treasury);
+
+    /// @notice Returns the timestamp of the most recent management fee accrual for a LeverageToken
+    /// @param leverageToken The LeverageToken to get the timestamp for
+    /// @return timestamp The timestamp of the most recent management fee accrual
+    function getLastManagementFeeAccrualTimestamp(ILeverageToken leverageToken)
+        external
+        view
+        returns (uint120 timestamp);
 
     /// @notice Returns the LeverageToken fee for a specific action
     /// @param leverageToken The LeverageToken to get fee for

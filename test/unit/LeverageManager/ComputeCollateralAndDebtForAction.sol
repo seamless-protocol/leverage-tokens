@@ -21,9 +21,8 @@ contract ComputeCollateralAndDebtForActionTest is PreviewActionTest {
         assertEq(computedDebt, 20 ether);
     }
 
-    /// forge-config: default.fuzz.runs = 1
     function testFuzz_computeCollateralAndDebtForAction_Deposit_WithManagementFee(uint128 managementFee) public {
-        managementFee = uint128(bound(managementFee, 0, 1e4));
+        managementFee = uint128(bound(managementFee, 0, _MAX_FEE()));
 
         vm.prank(feeManagerRole);
         feeManager.setManagementFee(managementFee);
@@ -61,9 +60,8 @@ contract ComputeCollateralAndDebtForActionTest is PreviewActionTest {
         assertEq(computedDebt, 20 ether);
     }
 
-    /// forge-config: default.fuzz.runs = 1
     function testFuzz_computeCollateralAndDebtForAction_Withdraw_WithManagementFee(uint128 managementFee) public {
-        managementFee = uint128(bound(managementFee, 0, 1e4));
+        managementFee = uint128(bound(managementFee, 0, _MAX_FEE()));
 
         vm.prank(feeManagerRole);
         feeManager.setManagementFee(managementFee);

@@ -5,9 +5,7 @@ pragma solidity ^0.8.26;
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // Internal imports
-import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {FeeManagerTest} from "test/unit/FeeManager/FeeManager.t.sol";
-import {MockERC20} from "test/unit/mock/MockERC20.sol";
 
 contract GetManagementFeeSharesTest is FeeManagerTest {
     function test_getManagementFeeShares() public {

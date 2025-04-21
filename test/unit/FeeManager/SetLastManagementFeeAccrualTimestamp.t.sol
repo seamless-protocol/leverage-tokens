@@ -2,6 +2,7 @@
 pragma solidity ^0.8.26;
 
 // Internal imports
+import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {FeeManagerTest} from "test/unit/FeeManager/FeeManager.t.sol";
 
@@ -9,7 +10,11 @@ contract SetLastManagementFeeAccrualTimestampTest is FeeManagerTest {
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_setLastManagementFeeAccrualTimestamp(ILeverageToken _leverageToken, uint120 timestamp) public {
         vm.warp(timestamp);
+
+        vm.expectEmit(true, true, true, true);
+        emit IFeeManager.LastManagementFeeAccrualTimestampSet(_leverageToken, timestamp);
         feeManager.exposed_setLastManagementFeeAccrualTimestamp(_leverageToken);
+
         assertEq(feeManager.getLastManagementFeeAccrualTimestamp(_leverageToken), timestamp);
     }
 }

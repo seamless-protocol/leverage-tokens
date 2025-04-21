@@ -12,7 +12,7 @@ import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {MorphoLendingAdapter} from "src/lending/MorphoLendingAdapter.sol";
 import {LeverageManagerTest} from "./LeverageManager.t.sol";
-import {ActionData, LeverageTokenState, ExternalAction} from "src/types/DataTypes.sol";
+import {LeverageTokenState, ExternalAction} from "src/types/DataTypes.sol";
 
 contract LeverageManagerDepositTest is LeverageManagerTest {
     /// @dev In this block price on oracle 3392.292471591441746049801068
