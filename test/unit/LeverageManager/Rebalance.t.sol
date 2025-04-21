@@ -183,9 +183,7 @@ contract RebalanceTest is LeverageManagerTest {
 
         WETH.approve(address(leverageManager), amountToSupply);
 
-        vm.expectRevert(
-            abi.encodeWithSelector(ILeverageManager.LeverageTokenNotEligibleForRebalance.selector, leverageToken)
-        );
+        vm.expectRevert(ILeverageManager.LeverageTokenNotEligibleForRebalance.selector);
         leverageManager.rebalance(leverageToken, actions, transfersIn, transfersOut);
     }
 

@@ -35,9 +35,8 @@ interface ILeverageManager is IFeeManager {
     /// @param caller The caller of the rebalance function
     error NotRebalancer(ILeverageToken token, address caller);
 
-    /// @notice Error thrown when a LeverageToken is not eligible for rebalance
-    /// @param token The LeverageToken that is not eligible for rebalance
-    error LeverageTokenNotEligibleForRebalance(ILeverageToken token);
+    /// @notice Error thrown when attempting to rebalance a LeverageToken that is not eligible for rebalance
+    error LeverageTokenNotEligibleForRebalance();
 
     /// @notice Error thrown when a LeverageToken's state after rebalance is invalid
     /// @param token The LeverageToken that has invalid state after rebalance
