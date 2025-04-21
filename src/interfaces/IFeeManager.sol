@@ -39,7 +39,10 @@ interface IFeeManager {
 
     /// @notice Function that charges any accrued management fees for the LeverageToken by minting shares to the treasury
     /// @param token LeverageToken to charge management fee for
+    /// @dev If the treasury is not set, the management fee is not charged (shares are not minted to the treasury) but
+    /// still accrues
     function chargeManagementFee(ILeverageToken token) external;
+
     /// @notice Returns the timestamp of the most recent management fee accrual for a LeverageToken
     /// @param leverageToken The LeverageToken to get the timestamp for
     /// @return timestamp The timestamp of the most recent management fee accrual
