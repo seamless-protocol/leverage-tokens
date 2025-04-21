@@ -74,6 +74,8 @@ contract IsStateAfterRebalanceValidTest is CollateralRatiosRebalanceAdapterTest 
 
         _mockCollateralRatio(ratioAfter);
 
+        uint256 targetRatio = rebalanceAdapter.getLeverageTokenTargetCollateralRatio();
+
         vm.prank(address(leverageManager));
         bool isValid = rebalanceAdapter.isStateAfterRebalanceValid(leverageToken, stateBefore);
         assertTrue(isValid);
