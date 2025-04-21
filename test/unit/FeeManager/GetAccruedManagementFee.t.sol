@@ -7,8 +7,8 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 // Internal imports
 import {FeeManagerTest} from "test/unit/FeeManager/FeeManager.t.sol";
 
-contract GetManagementFeeSharesTest is FeeManagerTest {
-    function test_getManagementFeeShares() public {
+contract GetAccruedManagementFeeTest is FeeManagerTest {
+    function test_getAccruedManagementFee() public {
         vm.prank(feeManagerRole);
         feeManager.setManagementFee(0.1e4);
 
@@ -18,18 +18,18 @@ contract GetManagementFeeSharesTest is FeeManagerTest {
         feeManager.exposed_setLastManagementFeeAccrualTimestamp(leverageToken);
         skip(SECONDS_ONE_YEAR / 2);
 
-        uint256 sharesFee = feeManager.exposed_getManagementFeeShares(leverageToken);
+        uint256 sharesFee = feeManager.exposed_getAccruedManagementFee(leverageToken);
 
         assertEq(sharesFee, 50); // half of 10% of 1000 total supply
 
         feeManager.exposed_setLastManagementFeeAccrualTimestamp(leverageToken);
         skip(SECONDS_ONE_YEAR / 2);
 
-        sharesFee = feeManager.exposed_getManagementFeeShares(leverageToken);
+        sharesFee = feeManager.exposed_getAccruedManagementFee(leverageToken);
         assertEq(sharesFee, 50); // other half of 10% of 1000 total supply
     }
 
-    function testFuzz_getManagementFeeShares_RoundsUp(uint128 totalSupply, uint128 managementFee) public {
+    function testFuzz_getAccruedManagementFee_RoundsUp(uint128 totalSupply, uint128 managementFee) public {
         managementFee = uint128(bound(managementFee, 1, feeManager.MAX_FEE()));
 
         vm.prank(feeManagerRole);
@@ -40,13 +40,13 @@ contract GetManagementFeeSharesTest is FeeManagerTest {
         feeManager.exposed_setLastManagementFeeAccrualTimestamp(leverageToken);
         skip(SECONDS_ONE_YEAR);
 
-        uint256 sharesFee = feeManager.exposed_getManagementFeeShares(leverageToken);
+        uint256 sharesFee = feeManager.exposed_getAccruedManagementFee(leverageToken);
 
         assertEq(sharesFee, Math.mulDiv(totalSupply, managementFee, feeManager.MAX_FEE(), Math.Rounding.Ceil));
     }
 
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_getManagementFeeShares_ZeroDuration(uint256 totalSupply, uint128 managementFee) public {
+    function testFuzz_getAccruedManagementFee_ZeroDuration(uint256 totalSupply, uint128 managementFee) public {
         managementFee = uint128(bound(managementFee, 1, feeManager.MAX_FEE()));
 
         leverageToken.mint(address(this), totalSupply);
@@ -56,13 +56,13 @@ contract GetManagementFeeSharesTest is FeeManagerTest {
         vm.prank(feeManagerRole);
         feeManager.setManagementFee(managementFee);
 
-        uint256 shares = feeManager.exposed_getManagementFeeShares(leverageToken);
+        uint256 shares = feeManager.exposed_getAccruedManagementFee(leverageToken);
 
         assertEq(shares, 0);
     }
 
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_getManagementFeeShares_ZeroManagementFee(uint256 totalSupply, uint120 deltaT) public {
+    function testFuzz_getAccruedManagementFee_ZeroManagementFee(uint256 totalSupply, uint120 deltaT) public {
         vm.prank(feeManagerRole);
         feeManager.setManagementFee(0);
 
@@ -71,12 +71,12 @@ contract GetManagementFeeSharesTest is FeeManagerTest {
         feeManager.exposed_setLastManagementFeeAccrualTimestamp(leverageToken);
         skip(deltaT);
 
-        uint256 shares = feeManager.exposed_getManagementFeeShares(leverageToken);
+        uint256 shares = feeManager.exposed_getAccruedManagementFee(leverageToken);
         assertEq(shares, 0);
     }
 
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_getManagementFeeShares_ZeroTotalSupply(uint128 managementFee, uint120 deltaT) public {
+    function testFuzz_getAccruedManagementFee_ZeroTotalSupply(uint128 managementFee, uint120 deltaT) public {
         managementFee = uint128(bound(managementFee, 1, feeManager.MAX_FEE()));
         deltaT = uint120(bound(deltaT, 1, type(uint120).max));
 
@@ -86,7 +86,7 @@ contract GetManagementFeeSharesTest is FeeManagerTest {
         vm.prank(feeManagerRole);
         feeManager.setManagementFee(managementFee);
 
-        uint256 shares = feeManager.exposed_getManagementFeeShares(leverageToken);
+        uint256 shares = feeManager.exposed_getAccruedManagementFee(leverageToken);
 
         assertEq(shares, 0);
     }

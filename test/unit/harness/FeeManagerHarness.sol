@@ -40,8 +40,8 @@ contract FeeManagerHarness is FeeManager {
         _setLeverageTokenActionFee(token, action, fee);
     }
 
-    function exposed_getManagementFeeShares(ILeverageToken token) external view returns (uint256) {
-        return _getManagementFeeShares(token);
+    function exposed_getAccruedManagementFee(ILeverageToken token) external view returns (uint256) {
+        return _getAccruedManagementFee(token);
     }
 
     function exposed_getFeeAdjustedTotalSupply(ILeverageToken token) external view returns (uint256) {

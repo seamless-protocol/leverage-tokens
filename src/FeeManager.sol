@@ -136,7 +136,7 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
             return;
         }
 
-        uint256 sharesFee = _getManagementFeeShares(token);
+        uint256 sharesFee = _getAccruedManagementFee(token);
 
         _setLastManagementFeeAccrualTimestamp(token);
 
@@ -204,21 +204,21 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
     /// @return totalSupply Fee adjusted total supply of the LeverageToken
     function _getFeeAdjustedTotalSupply(ILeverageToken token) internal view returns (uint256) {
         uint256 totalSupply = token.totalSupply();
-        uint256 accruedManagementFee = _getManagementFeeShares(token);
+        uint256 accruedManagementFee = _getAccruedManagementFee(token);
         return totalSupply + accruedManagementFee;
     }
 
     /// @notice Function that calculates how many shares to mint for the accrued management fee at the current timestamp
     /// @param token LeverageToken to calculate management fee shares for
     /// @return shares Shares to mint
-    function _getManagementFeeShares(ILeverageToken token) internal view returns (uint256) {
+    function _getAccruedManagementFee(ILeverageToken token) internal view returns (uint256) {
         uint128 managementFee = getManagementFee();
         uint120 lastManagementFeeAccrualTimestamp = getLastManagementFeeAccrualTimestamp(token);
-        uint256 totalSupply = token.totalSupply();
 
         uint256 duration = block.timestamp - lastManagementFeeAccrualTimestamp;
         if (duration == 0 || managementFee == 0) return 0;
 
+        uint256 totalSupply = token.totalSupply();
         uint256 sharesFee =
             Math.mulDiv(managementFee * totalSupply, duration, MAX_FEE * SECS_PER_YEAR, Math.Rounding.Ceil);
         return sharesFee;
