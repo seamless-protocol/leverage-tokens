@@ -186,12 +186,12 @@ interface ILeverageManager is IFeeManager {
         external
         returns (ActionData memory actionData);
 
-    /// @notice Rebalances LeverageTokens based on provided actions
+    /// @notice Rebalances a LeverageToken based on provided actions
     /// @param leverageToken LeverageToken to rebalance
     /// @param actions Rebalance actions to execute (add collateral, remove collateral, borrow or repay)
     /// @param tokensIn Tokens to transfer in. Transfer from caller to the LeverageManager contract
     /// @param tokensOut Tokens to transfer out. Transfer from the LeverageManager contract to caller
-    /// @dev Anyone can call this function. At the end function will just check if the effected LeverageToken is in a
+    /// @dev Anyone can call this function. At the end function will just check if the affected LeverageToken is in a
     ///      better state than before rebalance. Caller needs to calculate and to provide tokens for rebalancing and he needs
     ///      to specify tokens that he wants to receive
     /// @dev Note: If the sender specifies less tokensOut than the maximum amount they can retrieve for their specified

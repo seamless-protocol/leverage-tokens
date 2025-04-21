@@ -330,7 +330,7 @@ contract LeverageManager is
     ) external nonReentrant {
         _transferTokens(tokensIn, msg.sender, address(this));
 
-        // Check if the LeverageToken is eligible for rebalance if it has not been checked yet in a previous iteration of the loop
+        // Check if the LeverageToken is eligible for rebalance
         LeverageTokenState memory stateBefore = getLeverageTokenState(leverageToken);
 
         IRebalanceAdapterBase rebalanceAdapter = getLeverageTokenRebalanceAdapter(leverageToken);
