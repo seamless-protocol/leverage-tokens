@@ -344,7 +344,7 @@ contract LeverageManager is
 
         IRebalanceAdapterBase rebalanceAdapter = getLeverageTokenRebalanceAdapter(leverageToken);
         if (!rebalanceAdapter.isEligibleForRebalance(leverageToken, stateBefore, msg.sender)) {
-            revert LeverageTokenNotEligibleForRebalance(leverageToken);
+            revert LeverageTokenNotEligibleForRebalance();
         }
 
         for (uint256 i = 0; i < actions.length; i++) {
