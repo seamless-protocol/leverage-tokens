@@ -117,11 +117,12 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
     function setTreasuryActionFee(ExternalAction action, uint256 fee) external onlyRole(FEE_MANAGER_ROLE) {
         _validateFee(fee);
 
-        if (getTreasury() == address(0)) {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+
+        if ($.treasury == address(0)) {
             revert TreasuryNotSet();
         }
 
-        FeeManagerStorage storage $ = _getFeeManagerStorage();
         $.treasuryActionFee[action] = fee;
 
         emit TreasuryActionFeeSet(action, fee);
