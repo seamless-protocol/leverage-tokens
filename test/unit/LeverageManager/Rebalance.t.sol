@@ -68,24 +68,17 @@ contract RebalanceTest is LeverageManagerTest {
         WETH.mint(address(this), amountToSupply);
 
         // Rebalancer gives collateral that will be supplied
-        TokenTransfer[] memory transfersIn = new TokenTransfer[](1);
-        transfersIn[0] = TokenTransfer({token: address(WETH), amount: amountToSupply});
+        TokenTransfer memory transfersIn = TokenTransfer({token: address(WETH), amount: amountToSupply});
 
         // Rebalancer takes debt that will be borrowed and will swap it on his own
-        TokenTransfer[] memory transfersOut = new TokenTransfer[](1);
-        transfersOut[0] = TokenTransfer({token: address(USDC), amount: amountToBorrow});
+        TokenTransfer memory transfersOut = TokenTransfer({token: address(USDC), amount: amountToBorrow});
 
         RebalanceAction[] memory actions = new RebalanceAction[](2);
-        actions[0] = RebalanceAction({
-            leverageToken: leverageToken,
-            actionType: ActionType.AddCollateral,
-            amount: amountToSupply
-        });
-        actions[1] =
-            RebalanceAction({leverageToken: leverageToken, actionType: ActionType.Borrow, amount: amountToBorrow});
+        actions[0] = RebalanceAction({actionType: ActionType.AddCollateral, amount: amountToSupply});
+        actions[1] = RebalanceAction({actionType: ActionType.Borrow, amount: amountToBorrow});
 
         WETH.approve(address(leverageManager), amountToSupply);
-        leverageManager.rebalance(actions, transfersIn, transfersOut);
+        leverageManager.rebalance(leverageToken, actions, transfersIn, transfersOut);
 
         LeverageTokenState memory state = leverageManager.getLeverageTokenState(leverageToken);
         assertEq(state.collateralInDebtAsset, 30_000 ether); // 15 ETH = 30,000 USDC
@@ -110,24 +103,17 @@ contract RebalanceTest is LeverageManagerTest {
         WETH.mint(address(this), amountToSupply);
 
         // Rebalancer gives collateral that will be supplied
-        TokenTransfer[] memory transfersIn = new TokenTransfer[](1);
-        transfersIn[0] = TokenTransfer({token: address(WETH), amount: amountToSupply});
+        TokenTransfer memory transfersIn = TokenTransfer({token: address(WETH), amount: amountToSupply});
 
         // Rebalancer takes debt that will be borrowed and will swap it on his own
-        TokenTransfer[] memory transfersOut = new TokenTransfer[](1);
-        transfersOut[0] = TokenTransfer({token: address(USDC), amount: amountToBorrow});
+        TokenTransfer memory transfersOut = TokenTransfer({token: address(USDC), amount: amountToBorrow});
 
         RebalanceAction[] memory actions = new RebalanceAction[](2);
-        actions[0] = RebalanceAction({
-            leverageToken: leverageToken,
-            actionType: ActionType.AddCollateral,
-            amount: amountToSupply
-        });
-        actions[1] =
-            RebalanceAction({leverageToken: leverageToken, actionType: ActionType.Borrow, amount: amountToBorrow});
+        actions[0] = RebalanceAction({actionType: ActionType.AddCollateral, amount: amountToSupply});
+        actions[1] = RebalanceAction({actionType: ActionType.Borrow, amount: amountToBorrow});
 
         WETH.approve(address(leverageManager), amountToSupply);
-        leverageManager.rebalance(actions, transfersIn, transfersOut);
+        leverageManager.rebalance(leverageToken, actions, transfersIn, transfersOut);
 
         LeverageTokenState memory state = leverageManager.getLeverageTokenState(leverageToken);
         assertEq(state.collateralInDebtAsset, 24_500 ether); // 12,25 ETH = 24,500 USDC
@@ -152,24 +138,17 @@ contract RebalanceTest is LeverageManagerTest {
         USDC.mint(address(this), amountToRepay);
 
         // Rebalancer gives debt that will be repaid
-        TokenTransfer[] memory transfersIn = new TokenTransfer[](1);
-        transfersIn[0] = TokenTransfer({token: address(USDC), amount: amountToRepay});
+        TokenTransfer memory transfersIn = TokenTransfer({token: address(USDC), amount: amountToRepay});
 
         // Rebalancer takes collateral that will be withdrawn
-        TokenTransfer[] memory transfersOut = new TokenTransfer[](1);
-        transfersOut[0] = TokenTransfer({token: address(WETH), amount: amountToWithdraw});
+        TokenTransfer memory transfersOut = TokenTransfer({token: address(WETH), amount: amountToWithdraw});
 
         RebalanceAction[] memory actions = new RebalanceAction[](2);
-        actions[0] =
-            RebalanceAction({leverageToken: leverageToken, actionType: ActionType.Repay, amount: amountToRepay});
-        actions[1] = RebalanceAction({
-            leverageToken: leverageToken,
-            actionType: ActionType.RemoveCollateral,
-            amount: amountToWithdraw
-        });
+        actions[0] = RebalanceAction({actionType: ActionType.Repay, amount: amountToRepay});
+        actions[1] = RebalanceAction({actionType: ActionType.RemoveCollateral, amount: amountToWithdraw});
 
         USDC.approve(address(leverageManager), amountToRepay);
-        leverageManager.rebalance(actions, transfersIn, transfersOut);
+        leverageManager.rebalance(leverageToken, actions, transfersIn, transfersOut);
 
         LeverageTokenState memory state = leverageManager.getLeverageTokenState(leverageToken);
         assertEq(state.collateralInDebtAsset, 9_000 ether); // 4,5 ETH = 9,000 USDC
@@ -193,28 +172,21 @@ contract RebalanceTest is LeverageManagerTest {
         WETH.mint(address(this), amountToSupply);
 
         // Rebalancer gives collateral that will be supplied
-        TokenTransfer[] memory transfersIn = new TokenTransfer[](1);
-        transfersIn[0] = TokenTransfer({token: address(WETH), amount: amountToSupply});
+        TokenTransfer memory transfersIn = TokenTransfer({token: address(WETH), amount: amountToSupply});
 
         // Rebalancer takes debt that will be borrowed and will swap it on his own
-        TokenTransfer[] memory transfersOut = new TokenTransfer[](1);
-        transfersOut[0] = TokenTransfer({token: address(USDC), amount: amountToBorrow});
+        TokenTransfer memory transfersOut = TokenTransfer({token: address(USDC), amount: amountToBorrow});
 
         RebalanceAction[] memory actions = new RebalanceAction[](2);
-        actions[0] = RebalanceAction({
-            leverageToken: leverageToken,
-            actionType: ActionType.AddCollateral,
-            amount: amountToSupply
-        });
-        actions[1] =
-            RebalanceAction({leverageToken: leverageToken, actionType: ActionType.Borrow, amount: amountToBorrow});
+        actions[0] = RebalanceAction({actionType: ActionType.AddCollateral, amount: amountToSupply});
+        actions[1] = RebalanceAction({actionType: ActionType.Borrow, amount: amountToBorrow});
 
         WETH.approve(address(leverageManager), amountToSupply);
 
         vm.expectRevert(
             abi.encodeWithSelector(ILeverageManager.LeverageTokenNotEligibleForRebalance.selector, leverageToken)
         );
-        leverageManager.rebalance(actions, transfersIn, transfersOut);
+        leverageManager.rebalance(leverageToken, actions, transfersIn, transfersOut);
     }
 
     function test_rebalance_RevertIf_InvalidStateAfterRebalance() external {
@@ -232,27 +204,20 @@ contract RebalanceTest is LeverageManagerTest {
         WETH.mint(address(this), amountToSupply);
 
         // Rebalancer gives collateral that will be supplied
-        TokenTransfer[] memory transfersIn = new TokenTransfer[](1);
-        transfersIn[0] = TokenTransfer({token: address(WETH), amount: amountToSupply});
+        TokenTransfer memory transfersIn = TokenTransfer({token: address(WETH), amount: amountToSupply});
 
         // Rebalancer takes debt that will be borrowed and will swap it on his own
-        TokenTransfer[] memory transfersOut = new TokenTransfer[](1);
-        transfersOut[0] = TokenTransfer({token: address(USDC), amount: amountToBorrow});
+        TokenTransfer memory transfersOut = TokenTransfer({token: address(USDC), amount: amountToBorrow});
 
         RebalanceAction[] memory actions = new RebalanceAction[](2);
-        actions[0] = RebalanceAction({
-            leverageToken: leverageToken,
-            actionType: ActionType.AddCollateral,
-            amount: amountToSupply
-        });
-        actions[1] =
-            RebalanceAction({leverageToken: leverageToken, actionType: ActionType.Borrow, amount: amountToBorrow});
+        actions[0] = RebalanceAction({actionType: ActionType.AddCollateral, amount: amountToSupply});
+        actions[1] = RebalanceAction({actionType: ActionType.Borrow, amount: amountToBorrow});
 
         WETH.approve(address(leverageManager), amountToSupply);
 
         vm.expectRevert(
             abi.encodeWithSelector(ILeverageManager.InvalidLeverageTokenStateAfterRebalance.selector, leverageToken)
         );
-        leverageManager.rebalance(actions, transfersIn, transfersOut);
+        leverageManager.rebalance(leverageToken, actions, transfersIn, transfersOut);
     }
 }

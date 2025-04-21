@@ -29,16 +29,8 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
         _authorizeUpgrade(newImplementation);
     }
 
-    function exposed_isElementInSlice(
-        RebalanceAction[] calldata actions,
-        ILeverageToken leverageToken,
-        uint256 untilIndex
-    ) external pure returns (bool) {
-        return _isElementInSlice(actions, leverageToken, untilIndex);
-    }
-
-    function exposed_transferTokens(TokenTransfer[] calldata transfers, address from, address to) external {
-        _transferTokens(transfers, from, to);
+    function exposed_transferTokens(TokenTransfer calldata transfer, address from, address to) external {
+        _transferTokens(transfer, from, to);
     }
 
     function exposed_executeLendingAdapterAction(ILeverageToken leverageToken, ActionType actionType, uint256 amount)

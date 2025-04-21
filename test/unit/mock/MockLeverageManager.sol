@@ -277,17 +277,15 @@ contract MockLeverageManager is Test {
     }
 
     function rebalance(
+        ILeverageToken leverageToken,
         RebalanceAction[] calldata actions,
-        TokenTransfer[] calldata tokensIn,
-        TokenTransfer[] calldata tokensOut
+        TokenTransfer calldata tokensIn,
+        TokenTransfer calldata tokensOut
     ) external {
         // Transfer tokens in from caller to this contract
-        for (uint256 i = 0; i < tokensIn.length; i++) {
-            IERC20(tokensIn[i].token).transferFrom(msg.sender, address(this), tokensIn[i].amount);
-        }
+        IERC20(tokensIn.token).transferFrom(msg.sender, address(this), tokensIn.amount);
 
         for (uint256 i = 0; i < actions.length; i++) {
-            ILeverageToken leverageToken = actions[i].leverageToken;
             address rebalanceAdapter = getLeverageTokenRebalanceAdapter(leverageToken);
 
             bool isEligible = IRebalanceAdapter(rebalanceAdapter).isEligibleForRebalance(
@@ -299,8 +297,6 @@ contract MockLeverageManager is Test {
         }
 
         // Transfer tokens out from this contract to caller
-        for (uint256 i = 0; i < tokensOut.length; i++) {
-            IERC20(tokensOut[i].token).transfer(msg.sender, tokensOut[i].amount);
-        }
+        IERC20(tokensOut.token).transfer(msg.sender, tokensOut.amount);
     }
 }

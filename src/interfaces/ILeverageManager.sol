@@ -187,18 +187,20 @@ interface ILeverageManager is IFeeManager {
         returns (ActionData memory actionData);
 
     /// @notice Rebalances LeverageTokens based on provided actions
-    /// @param actions Array of rebalance actions to execute (add collateral, remove collateral, borrow or repay)
-    /// @param tokensIn Array of tokens to transfer in. Transfer from caller to the LeverageManager contract
-    /// @param tokensOut Array of tokens to transfer out. Transfer from the LeverageManager contract to caller
-    /// @dev Anyone can call this function. At the end function will just check if all effected LeverageTokens are in the
+    /// @param leverageToken LeverageToken to rebalance
+    /// @param actions Rebalance actions to execute (add collateral, remove collateral, borrow or repay)
+    /// @param tokensIn Tokens to transfer in. Transfer from caller to the LeverageManager contract
+    /// @param tokensOut Tokens to transfer out. Transfer from the LeverageManager contract to caller
+    /// @dev Anyone can call this function. At the end function will just check if the effected LeverageToken is in a
     ///      better state than before rebalance. Caller needs to calculate and to provide tokens for rebalancing and he needs
     ///      to specify tokens that he wants to receive
     /// @dev Note: If the sender specifies less tokensOut than the maximum amount they can retrieve for their specified
-    ///      rebalance actions, the rebalance will still be successful. The remaining amount that could have been taken
+    ///      rebalance action, the rebalance will still be successful. The remaining amount that could have been taken
     ///      out can be claimed by anyone by executing rebalance with that remaining amount in tokensOut.
     function rebalance(
+        ILeverageToken leverageToken,
         RebalanceAction[] calldata actions,
-        TokenTransfer[] calldata tokensIn,
-        TokenTransfer[] calldata tokensOut
+        TokenTransfer calldata tokensIn,
+        TokenTransfer calldata tokensOut
     ) external;
 }
