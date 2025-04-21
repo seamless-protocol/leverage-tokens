@@ -245,7 +245,6 @@ contract LeverageManager is
         //       based on the initial equity amount rounded up. In this case, we set the collateral to 0 and the treasury fee to
         //       the computed collateral amount
         data.treasuryFee = Math.min(data.collateral, data.treasuryFee);
-        // slither-disable-next-line timestamp
         data.collateral = data.collateral > data.treasuryFee ? data.collateral - data.treasuryFee : 0;
 
         return data;
@@ -259,7 +258,6 @@ contract LeverageManager is
     {
         ActionData memory depositData = previewDeposit(token, equityInCollateralAsset);
 
-        // slither-disable-next-line timestamp
         if (depositData.shares < minShares) {
             revert SlippageTooHigh(depositData.shares, minShares);
         }
@@ -295,7 +293,6 @@ contract LeverageManager is
     {
         ActionData memory withdrawData = previewWithdraw(token, equityInCollateralAsset);
 
-        // slither-disable-next-line timestamp
         if (withdrawData.shares > maxShares) {
             revert SlippageTooHigh(withdrawData.shares, maxShares);
         }
@@ -371,7 +368,6 @@ contract LeverageManager is
         uint256 totalEquityInCollateralAsset = lendingAdapter.getEquityInCollateralAsset();
 
         // If leverage token is empty we mint it in 1:1 ratio with collateral asset but we align it on 18 decimals always
-        // slither-disable-next-line incorrect-equality,timestamp
         if (totalSupply == 0 || totalEquityInCollateralAsset == 0) {
             uint256 leverageTokenDecimals = IERC20Metadata(address(token)).decimals();
             uint256 collateralDecimals = IERC20Metadata(address(lendingAdapter.getCollateralAsset())).decimals();
@@ -417,7 +413,6 @@ contract LeverageManager is
         // cannot be exchanged for at least 1 LeverageToken share due to rounding down in the exchange rate calculation.
         // The treasury fee returned by `_computeEquityFees` is wrt the equity amount, not the share amount, thus it's possible
         // for it to be non-zero even if the collateral amount is zero. In this case, the treasury fee should be set to 0
-        // slither-disable-next-line incorrect-equality,timestamp
         treasuryFee = collateral == 0 ? 0 : treasuryFee;
 
         return ActionData({
@@ -451,7 +446,6 @@ contract LeverageManager is
         uint256 shares = _convertToShares(token, equityInCollateralAsset, action);
 
         // If action is deposit there might be some dust in collateral but debt can be 0. In that case we should follow target ratio
-        // slither-disable-next-line incorrect-equality,timestamp
         bool shouldFollowInitialRatio = totalShares == 0 || (action == ExternalAction.Deposit && totalDebt == 0);
 
         if (shouldFollowInitialRatio) {
