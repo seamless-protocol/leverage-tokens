@@ -65,16 +65,11 @@ contract MockERC20 is ERC20Mock {
         } else if (reentrancyCallType == ReentrancyCallType.Withdraw) {
             leverageManager.withdraw(ILeverageToken(address(0)), 10 ether, 10 ether);
         } else if (reentrancyCallType == ReentrancyCallType.Rebalance) {
-            TokenTransfer[] memory transfersIn = new TokenTransfer[](1);
-            transfersIn[0] = TokenTransfer({token: address(this), amount: 10 ether});
-            TokenTransfer[] memory transfersOut = new TokenTransfer[](0);
+            TokenTransfer memory transfersIn = TokenTransfer({token: address(this), amount: 10 ether});
+            TokenTransfer memory transfersOut = TokenTransfer({token: address(0), amount: 0}); // Empty TokenTransfer
             RebalanceAction[] memory actions = new RebalanceAction[](1);
-            actions[0] = RebalanceAction({
-                leverageToken: ILeverageToken(address(0)),
-                actionType: ActionType.AddCollateral,
-                amount: 10 ether
-            });
-            leverageManager.rebalance(actions, transfersIn, transfersOut);
+            actions[0] = RebalanceAction({actionType: ActionType.AddCollateral, amount: 10 ether});
+            leverageManager.rebalance(ILeverageToken(address(0)), actions, transfersIn, transfersOut);
         } else if (reentrancyCallType == ReentrancyCallType.CreateNewLeverageToken) {
             leverageManager.createNewLeverageToken(
                 LeverageTokenConfig({

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.26;
 
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {RebalanceTest} from "test/integration/LeverageManager/Rebalance.t.sol";
+import {RebalanceTest, RebalanceType} from "test/integration/LeverageManager/Rebalance.t.sol";
 import {RebalanceAction, TokenTransfer, LeverageTokenState} from "src/types/DataTypes.sol";
 
 contract PreLiquidationRebalanceTest is RebalanceTest {
@@ -24,12 +24,12 @@ contract PreLiquidationRebalanceTest is RebalanceTest {
         uint256 collateralToRemove = 2.5e18;
         uint256 debtToRepay = 5_000e6;
 
-        (RebalanceAction[] memory actions, TokenTransfer[] memory transfersIn, TokenTransfer[] memory transfersOut) =
-            _prepareForRebalance(ethLong2x, 0, collateralToRemove, 0, debtToRepay); // Give 5000 USDC and take 2.5 ETH
+        (RebalanceAction[] memory actions, TokenTransfer memory transferIn, TokenTransfer memory transferOut) =
+            _prepareForRebalance(ethLong2x, RebalanceType.DOWN, 0, collateralToRemove, 0, debtToRepay); // Give 5000 USDC and take 2.5 ETH
 
         deal(address(USDC), address(this), debtToRepay);
         USDC.approve(address(leverageManager), debtToRepay);
-        leverageManager.rebalance(actions, transfersIn, transfersOut);
+        leverageManager.rebalance(ethLong2x, actions, transferIn, transferOut);
 
         LeverageTokenState memory stateAfter = getLeverageTokenState(ethLong2x);
         assertLe(stateAfter.equity, stateBefore.equity);
@@ -49,8 +49,8 @@ contract PreLiquidationRebalanceTest is RebalanceTest {
         uint256 colToRemove = 2.6e18;
         uint256 debtToRepay = 5_000e6;
 
-        (RebalanceAction[] memory actions, TokenTransfer[] memory transfersIn, TokenTransfer[] memory transfersOut) =
-            _prepareForRebalance(ethLong2x, 0, colToRemove, 0, debtToRepay); // Give 5000 USDC and take 2.6 ETH
+        (RebalanceAction[] memory actions, TokenTransfer memory transferIn, TokenTransfer memory transferOut) =
+            _prepareForRebalance(ethLong2x, RebalanceType.DOWN, 0, colToRemove, 0, debtToRepay); // Give 5000 USDC and take 2.6 ETH
 
         deal(address(USDC), address(this), debtToRepay);
         USDC.approve(address(leverageManager), debtToRepay);
@@ -58,6 +58,6 @@ contract PreLiquidationRebalanceTest is RebalanceTest {
         vm.expectRevert(
             abi.encodeWithSelector(ILeverageManager.InvalidLeverageTokenStateAfterRebalance.selector, ethLong2x)
         );
-        leverageManager.rebalance(actions, transfersIn, transfersOut);
+        leverageManager.rebalance(ethLong2x, actions, transferIn, transferOut);
     }
 }

@@ -332,41 +332,28 @@ contract LeverageManager is
 
     /// @inheritdoc ILeverageManager
     function rebalance(
+        ILeverageToken leverageToken,
         RebalanceAction[] calldata actions,
-        TokenTransfer[] calldata tokensIn,
-        TokenTransfer[] calldata tokensOut
+        TokenTransfer calldata tokensIn,
+        TokenTransfer calldata tokensOut
     ) external nonReentrant {
         _transferTokens(tokensIn, msg.sender, address(this));
 
-        LeverageTokenState[] memory leverageTokensStateBefore = new LeverageTokenState[](actions.length);
+        // Check if the LeverageToken is eligible for rebalance if it has not been checked yet in a previous iteration of the loop
+        LeverageTokenState memory stateBefore = getLeverageTokenState(leverageToken);
 
-        for (uint256 i = 0; i < actions.length; i++) {
-            ILeverageToken leverageToken = actions[i].leverageToken;
-
-            // Check if the LeverageToken is eligible for rebalance if it has not been checked yet in a previous iteration of the loop
-            if (!_isElementInSlice(actions, leverageToken, i)) {
-                LeverageTokenState memory state = getLeverageTokenState(leverageToken);
-                leverageTokensStateBefore[i] = state;
-
-                IRebalanceAdapterBase rebalanceAdapter = getLeverageTokenRebalanceAdapter(leverageToken);
-                if (!rebalanceAdapter.isEligibleForRebalance(leverageToken, state, msg.sender)) {
-                    revert LeverageTokenNotEligibleForRebalance(leverageToken);
-                }
-            }
-
-            _executeLendingAdapterAction(leverageToken, actions[i].actionType, actions[i].amount);
+        IRebalanceAdapterBase rebalanceAdapter = getLeverageTokenRebalanceAdapter(leverageToken);
+        if (!rebalanceAdapter.isEligibleForRebalance(leverageToken, stateBefore, msg.sender)) {
+            revert LeverageTokenNotEligibleForRebalance(leverageToken);
         }
 
         for (uint256 i = 0; i < actions.length; i++) {
-            // Validate the LeverageToken state after rebalancing if it has not been validated yet in a previous iteration of the loop
-            if (!_isElementInSlice(actions, actions[i].leverageToken, i)) {
-                ILeverageToken leverageToken = actions[i].leverageToken;
-                IRebalanceAdapterBase rebalanceAdapter = getLeverageTokenRebalanceAdapter(leverageToken);
+            _executeLendingAdapterAction(leverageToken, actions[i].actionType, actions[i].amount);
+        }
 
-                if (!rebalanceAdapter.isStateAfterRebalanceValid(leverageToken, leverageTokensStateBefore[i])) {
-                    revert InvalidLeverageTokenStateAfterRebalance(leverageToken);
-                }
-            }
+        // Validate the LeverageToken state after rebalancing
+        if (!rebalanceAdapter.isStateAfterRebalanceValid(leverageToken, stateBefore)) {
+            revert InvalidLeverageTokenStateAfterRebalance(leverageToken);
         }
 
         _transferTokens(tokensOut, address(this), msg.sender);
@@ -482,26 +469,6 @@ contract LeverageManager is
         return (collateral, debt);
     }
 
-    /// @notice Helper function that checks if a specific element has already been processed in the slice up to the given index
-    /// @param actions Entire array to go through
-    /// @param token Element to search for
-    /// @param untilIndex Search until this specific index
-    /// @dev This function is used to check if we already stored the state of the LeverageToken before rebalance.
-    ///      This function is used to check if LeverageToken state has been already validated after rebalance
-    function _isElementInSlice(RebalanceAction[] calldata actions, ILeverageToken token, uint256 untilIndex)
-        internal
-        pure
-        returns (bool)
-    {
-        for (uint256 i = 0; i < untilIndex; i++) {
-            if (address(actions[i].leverageToken) == address(token)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     /// @notice Executes actions on the LendingAdapter for a specific LeverageToken
     /// @param token LeverageToken to execute action for
     /// @param actionType Type of the action to execute
@@ -531,19 +498,19 @@ contract LeverageManager is
     }
 
     /// @notice Used for batching token transfers
-    /// @param transfers Array of transfer data. Transfer data consist of token to transfer and amount
+    /// @param transfer Transfer data. Transfer data consist of token to transfer and amount
     /// @param from Address to transfer tokens from
     /// @param to Address to transfer tokens to
     /// @dev If from address is this smart contract it will use the regular transfer function otherwise it will use transferFrom
-    function _transferTokens(TokenTransfer[] calldata transfers, address from, address to) internal {
-        for (uint256 i = 0; i < transfers.length; i++) {
-            TokenTransfer calldata transfer = transfers[i];
+    function _transferTokens(TokenTransfer calldata transfer, address from, address to) internal {
+        if (transfer.token == address(0)) {
+            return;
+        }
 
-            if (from == address(this)) {
-                SafeERC20.safeTransfer(IERC20(transfer.token), to, transfer.amount);
-            } else {
-                SafeERC20.safeTransferFrom(IERC20(transfer.token), from, to, transfer.amount);
-            }
+        if (from == address(this)) {
+            SafeERC20.safeTransfer(IERC20(transfer.token), to, transfer.amount);
+        } else {
+            SafeERC20.safeTransferFrom(IERC20(transfer.token), from, to, transfer.amount);
         }
     }
 }

@@ -79,8 +79,6 @@ struct LeverageTokenState {
 
 /// @dev Struct that contains all data related to a rebalance action
 struct RebalanceAction {
-    /// @dev LeverageToken to perform the action on
-    ILeverageToken leverageToken;
     /// @dev Type of action to perform
     ActionType actionType;
     /// @dev Amount to perform the action with
