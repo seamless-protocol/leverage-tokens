@@ -259,7 +259,7 @@ contract LeverageManager is
     {
         // Management fee is calculated from the total supply of the LeverageToken, so we need to claim it first
         // before total supply is updated due to the deposit
-        _chargeManagementFee(token);
+        chargeManagementFee(token);
 
         ActionData memory depositData = previewDeposit(token, equityInCollateralAsset);
 
@@ -298,7 +298,7 @@ contract LeverageManager is
     {
         // Management fee is calculated from the total supply of the LeverageToken, so we need to claim it first
         // before total supply is updated due to the withdraw
-        _chargeManagementFee(token);
+        chargeManagementFee(token);
 
         ActionData memory withdrawData = previewWithdraw(token, equityInCollateralAsset);
 

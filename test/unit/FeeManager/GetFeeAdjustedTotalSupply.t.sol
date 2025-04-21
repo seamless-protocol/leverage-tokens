@@ -23,10 +23,10 @@ contract GetFeeAdjustedTotalSupplyTest is FeeManagerTest {
         feeAdjustedTotalSupply = feeManager.exposed_getFeeAdjustedTotalSupply(leverageToken);
         assertEq(feeAdjustedTotalSupply, totalSupply + 100);
 
-        feeManager.exposed_chargeManagementFee(leverageToken);
+        feeManager.chargeManagementFee(leverageToken);
 
         // Charging the management fee should not affect the fee adjusted total supply if no time has passed
-        feeManager.exposed_chargeManagementFee(leverageToken);
+        feeManager.chargeManagementFee(leverageToken);
         feeAdjustedTotalSupply = feeManager.exposed_getFeeAdjustedTotalSupply(leverageToken);
         assertEq(feeAdjustedTotalSupply, totalSupply + 100);
     }

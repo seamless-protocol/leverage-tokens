@@ -92,7 +92,6 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
     /// @inheritdoc IFeeManager
     function setManagementFee(uint128 fee) external onlyRole(FEE_MANAGER_ROLE) {
         _validateFee(fee);
-        _validateTreasurySet();
 
         FeeManagerStorage storage $ = _getFeeManagerStorage();
         $.managementFee = fee;
@@ -117,12 +116,34 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
     /// @inheritdoc IFeeManager
     function setTreasuryActionFee(ExternalAction action, uint256 fee) external onlyRole(FEE_MANAGER_ROLE) {
         _validateFee(fee);
-        _validateTreasurySet();
+
+        if (getTreasury() == address(0)) {
+            revert TreasuryNotSet();
+        }
 
         FeeManagerStorage storage $ = _getFeeManagerStorage();
         $.treasuryActionFee[action] = fee;
 
         emit TreasuryActionFeeSet(action, fee);
+    }
+
+    /// @inheritdoc IFeeManager
+    function chargeManagementFee(ILeverageToken token) public {
+        address treasury = getTreasury();
+
+        // If the treasury is not set, do nothing. Management fee will continue to accrue
+        // but cannot be minted until the treasury is set
+        if (treasury == address(0)) {
+            return;
+        }
+
+        uint256 sharesFee = _getManagementFeeShares(token);
+
+        _setLastManagementFeeAccrualTimestamp(token);
+
+        if (sharesFee > 0) {
+            token.mint(treasury, sharesFee);
+        }
     }
 
     /// @notice Computes equity fees based on action
@@ -167,19 +188,6 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
         uint256 equityForShares = action == ExternalAction.Deposit ? equityToCover - tokenFee : equityToCover + tokenFee;
 
         return (equityToCover, equityForShares, tokenFee, treasuryFee);
-    }
-
-    /// @notice Function that charges any accrued management fees for the LeverageToken by minting shares to the treasury
-    /// @param token LeverageToken to charge management fee for
-    function _chargeManagementFee(ILeverageToken token) internal {
-        uint256 sharesFee = _getManagementFeeShares(token);
-        address treasury = getTreasury();
-
-        _setLastManagementFeeAccrualTimestamp(token);
-
-        if (sharesFee > 0) {
-            token.mint(treasury, sharesFee);
-        }
     }
 
     /// @notice Charges a treasury fee if the treasury is set
@@ -241,13 +249,6 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
     function _validateFee(uint256 fee) internal pure {
         if (fee > MAX_FEE) {
             revert FeeTooHigh(fee, MAX_FEE);
-        }
-    }
-
-    /// @notice Validates that the treasury address is set
-    function _validateTreasurySet() internal view {
-        if (getTreasury() == address(0)) {
-            revert TreasuryNotSet();
         }
     }
 }

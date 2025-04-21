@@ -12,9 +12,7 @@ contract ChargeTreasuryFeeTest is FeeManagerTest {
     function test_chargeTreasuryFee() public {
         IERC20 token = new MockERC20();
         uint256 treasuryFeeAmount = 100;
-        address treasury = makeAddr("treasury");
 
-        _setTreasury(feeManagerRole, treasury);
         deal(address(token), address(feeManager), treasuryFeeAmount);
 
         feeManager.exposed_chargeTreasuryFee(token, treasuryFeeAmount);
@@ -25,8 +23,8 @@ contract ChargeTreasuryFeeTest is FeeManagerTest {
     function test_chargeTreasuryFee_NoTreasury() public {
         IERC20 token = new MockERC20();
         uint256 treasuryFeeAmount = 100;
-
         _setTreasury(feeManagerRole, address(0));
+
         deal(address(token), address(feeManager), treasuryFeeAmount);
 
         feeManager.exposed_chargeTreasuryFee(token, treasuryFeeAmount);

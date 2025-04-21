@@ -14,13 +14,13 @@ contract ChargeManagementFeeTest is FeeManagerTest {
 
         feeManager.exposed_setLastManagementFeeAccrualTimestamp(leverageToken);
 
-        feeManager.exposed_chargeManagementFee(leverageToken);
+        feeManager.chargeManagementFee(leverageToken);
 
         uint256 totalSupplyAfter = leverageToken.totalSupply();
         assertEq(totalSupplyAfter, totalSupply); // No time has passed yet, total supply should be the same
 
         skip(SECONDS_ONE_YEAR); // One year passes and management fee is charged
-        feeManager.exposed_chargeManagementFee(leverageToken);
+        feeManager.chargeManagementFee(leverageToken);
 
         // 10% of 1000 total supply should be minted to the treasury and the last management fee accrual timestamp
         // should be updated
@@ -31,7 +31,7 @@ contract ChargeManagementFeeTest is FeeManagerTest {
 
         // Another year passes and management fee is charged again
         skip(SECONDS_ONE_YEAR);
-        feeManager.exposed_chargeManagementFee(leverageToken);
+        feeManager.chargeManagementFee(leverageToken);
 
         // 10% of 1100 total supply should be minted to the treasury and the last management fee accrual timestamp
         // should be updated
@@ -52,7 +52,7 @@ contract ChargeManagementFeeTest is FeeManagerTest {
 
         skip(SECONDS_ONE_YEAR);
 
-        feeManager.exposed_chargeManagementFee(leverageToken);
+        feeManager.chargeManagementFee(leverageToken);
 
         assertEq(leverageToken.balanceOf(treasury), 0);
         assertEq(leverageToken.totalSupply(), totalSupply);
