@@ -12,7 +12,7 @@ import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {MorphoLendingAdapter} from "src/lending/MorphoLendingAdapter.sol";
 import {LeverageManagerTest} from "./LeverageManager.t.sol";
-import {LeverageTokenState, ExternalAction} from "src/types/DataTypes.sol";
+import {ActionData, LeverageTokenState, ExternalAction} from "src/types/DataTypes.sol";
 
 contract LeverageManagerDepositTest is LeverageManagerTest {
     /// @dev In this block price on oracle 3392.292471591441746049801068
@@ -44,6 +44,10 @@ contract LeverageManagerDepositTest is LeverageManagerTest {
     function testFork_deposit_WithFees() public {
         uint256 fee = 10_00; // 10%
         leverageManager.setTreasuryActionFee(ExternalAction.Deposit, fee);
+
+        uint128 managementFee = 10_00; // 10%
+        leverageManager.setManagementFee(managementFee);
+
         leverageToken = _createNewLeverageToken(BASE_RATIO, 2 * BASE_RATIO, 3 * BASE_RATIO, fee, 0);
         morphoLendingAdapter =
             MorphoLendingAdapter(address(leverageManager.getLeverageTokenLendingAdapter(leverageToken)));
@@ -60,7 +64,18 @@ contract LeverageManagerDepositTest is LeverageManagerTest {
         assertEq(leverageToken.balanceOf(user), leverageToken.totalSupply());
 
         assertEq(WETH.balanceOf(treasury), 1 ether); // Treasury receives 10% of the equity in collateral asset
-        assertEq(WETH.balanceOf(user), 1 ether); // User receives 10% of the equity in collateral asset
+        assertEq(WETH.balanceOf(user), 1 ether); // User keeps 10% of the equity in collateral asset
+
+        // One year passes, same deposit amount occurs
+        skip(SECONDS_ONE_YEAR);
+        _deposit(user, equityInCollateralAsset, collateralToAdd); // Same collateral is required for the deposit
+
+        // Slightly less than 8 ether of shares are minted to the user because of the share dilution from the management fee
+        // and morpho borrow interest
+        assertEq(leverageToken.balanceOf(user), 15924523833507237152);
+        assertEq(leverageToken.balanceOf(treasury), 0.8 ether);
+        assertEq(leverageToken.totalSupply(), leverageToken.balanceOf(user) + leverageToken.balanceOf(treasury));
+        assertEq(WETH.balanceOf(treasury), 2 ether); // Treasury receives an additional 10% of the equity in collateral asset
     }
 
     /// @dev In this block price on oracle 3392.292471591441746049801068

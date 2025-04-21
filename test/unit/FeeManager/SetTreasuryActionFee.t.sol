@@ -12,14 +12,6 @@ import {FeeManagerTest} from "test/unit/FeeManager/FeeManager.t.sol";
 import {FeeManager} from "src/FeeManager.sol";
 
 contract SetTreasuryActionFeeTest is FeeManagerTest {
-    address public treasury = makeAddr("treasury");
-
-    function setUp() public override {
-        super.setUp();
-
-        _setTreasury(feeManagerRole, treasury);
-    }
-
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_setTreasuryActionFee(uint256 actionNum, uint256 fee) public {
         ExternalAction action = ExternalAction(actionNum % 2);

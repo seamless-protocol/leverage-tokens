@@ -21,6 +21,31 @@ contract ComputeCollateralAndDebtForActionTest is PreviewActionTest {
         assertEq(computedDebt, 20 ether);
     }
 
+    /// forge-config: default.fuzz.runs = 1
+    function testFuzz_computeCollateralAndDebtForAction_Deposit_WithManagementFee(uint128 managementFee) public {
+        managementFee = uint128(bound(managementFee, 0, 1e4));
+
+        vm.prank(feeManagerRole);
+        feeManager.setManagementFee(managementFee);
+
+        uint256 equityInCollateralAsset = 80 ether;
+        MockLeverageManagerStateForAction memory beforeState =
+            MockLeverageManagerStateForAction({collateral: 100 ether, debt: 20 ether, sharesTotalSupply: 80 ether});
+
+        _prepareLeverageManagerStateForAction(beforeState);
+
+        // 1 year passes
+        skip(SECONDS_ONE_YEAR);
+
+        (uint256 computedCollateral, uint256 computedDebt) = leverageManager.exposed_computeCollateralAndDebtForAction(
+            leverageToken, equityInCollateralAsset, ExternalAction.Deposit
+        );
+
+        // The amount of collateral and debt should be the same as before, regardless of the management fee
+        assertEq(computedCollateral, 100 ether);
+        assertEq(computedDebt, 20 ether);
+    }
+
     function test_computeCollateralAndDebtForAction_Withdraw() public {
         uint256 equityInCollateralAsset = 80 ether;
         MockLeverageManagerStateForAction memory beforeState =
@@ -32,6 +57,31 @@ contract ComputeCollateralAndDebtForActionTest is PreviewActionTest {
             leverageToken, equityInCollateralAsset, ExternalAction.Withdraw
         );
 
+        assertEq(computedCollateral, 100 ether);
+        assertEq(computedDebt, 20 ether);
+    }
+
+    /// forge-config: default.fuzz.runs = 1
+    function testFuzz_computeCollateralAndDebtForAction_Withdraw_WithManagementFee(uint128 managementFee) public {
+        managementFee = uint128(bound(managementFee, 0, 1e4));
+
+        vm.prank(feeManagerRole);
+        feeManager.setManagementFee(managementFee);
+
+        uint256 equityInCollateralAsset = 80 ether;
+        MockLeverageManagerStateForAction memory beforeState =
+            MockLeverageManagerStateForAction({collateral: 100 ether, debt: 20 ether, sharesTotalSupply: 80 ether});
+
+        _prepareLeverageManagerStateForAction(beforeState);
+
+        // 1 year passes
+        skip(SECONDS_ONE_YEAR);
+
+        (uint256 computedCollateral, uint256 computedDebt) = leverageManager.exposed_computeCollateralAndDebtForAction(
+            leverageToken, equityInCollateralAsset, ExternalAction.Withdraw
+        );
+
+        // The amount of collateral and debt should be the same as before, regardless of the management fee
         assertEq(computedCollateral, 100 ether);
         assertEq(computedDebt, 20 ether);
     }

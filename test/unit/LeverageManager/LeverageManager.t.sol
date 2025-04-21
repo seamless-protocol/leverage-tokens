@@ -25,10 +25,8 @@ import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 
 contract LeverageManagerTest is FeeManagerTest {
-    ILeverageToken public leverageToken;
     address public defaultAdmin = makeAddr("defaultAdmin");
     address public manager = makeAddr("manager");
-    address public treasury = makeAddr("treasury");
 
     MockERC20 public collateralToken = new MockERC20();
     MockERC20 public debtToken = new MockERC20();

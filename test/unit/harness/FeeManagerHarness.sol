@@ -6,6 +6,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
 import {ExternalAction} from "src/types/DataTypes.sol";
+import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {FeeManager} from "src/FeeManager.sol";
 
@@ -31,11 +32,27 @@ contract FeeManagerHarness is FeeManager {
         return _computeEquityFees(token, equityAmount, action);
     }
 
+    function exposed_chargeManagementFee(ILeverageToken token) external {
+        _chargeManagementFee(token);
+    }
+
     function exposed_chargeTreasuryFee(IERC20 collateralAsset, uint256 amount) external {
         _chargeTreasuryFee(collateralAsset, amount);
     }
 
     function exposed_setLeverageTokenActionFee(ILeverageToken token, ExternalAction action, uint256 fee) external {
         _setLeverageTokenActionFee(token, action, fee);
+    }
+
+    function exposed_getManagementFeeShares(ILeverageToken token) external view returns (uint256) {
+        return _getManagementFeeShares(token);
+    }
+
+    function exposed_getFeeAdjustedTotalSupply(ILeverageToken token) external view returns (uint256) {
+        return _getFeeAdjustedTotalSupply(token);
+    }
+
+    function exposed_setLastManagementFeeAccrualTimestamp(ILeverageToken token) external {
+        _setLastManagementFeeAccrualTimestamp(token);
     }
 }

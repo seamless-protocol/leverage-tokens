@@ -10,15 +10,6 @@ import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {FeeManagerTest} from "test/unit/FeeManager/FeeManager.t.sol";
 
 contract ComputeEquityFeesTest is FeeManagerTest {
-    address public treasury = makeAddr("treasury");
-    ILeverageToken public leverageToken = ILeverageToken(makeAddr("leverageToken"));
-
-    function setUp() public override {
-        super.setUp();
-
-        _setTreasury(feeManagerRole, treasury);
-    }
-
     function test_computeEquityFees_Deposit() public {
         ExternalAction action = ExternalAction.Deposit;
         uint256 equity = 1 ether;

@@ -200,6 +200,7 @@ contract LeverageManager is
         });
         _setLeverageTokenActionFee(token, ExternalAction.Deposit, tokenConfig.depositTokenFee);
         _setLeverageTokenActionFee(token, ExternalAction.Withdraw, tokenConfig.withdrawTokenFee);
+        _setLastManagementFeeAccrualTimestamp(token);
 
         tokenConfig.lendingAdapter.postLeverageTokenCreation(msg.sender, address(token));
         tokenConfig.rebalanceAdapter.postLeverageTokenCreation(msg.sender, address(token));
@@ -256,6 +257,10 @@ contract LeverageManager is
         nonReentrant
         returns (ActionData memory actionData)
     {
+        // Management fee is calculated from the total supply of the LeverageToken, so we need to claim it first
+        // before total supply is updated due to the deposit
+        _chargeManagementFee(token);
+
         ActionData memory depositData = previewDeposit(token, equityInCollateralAsset);
 
         if (depositData.shares < minShares) {
@@ -291,6 +296,10 @@ contract LeverageManager is
         nonReentrant
         returns (ActionData memory actionData)
     {
+        // Management fee is calculated from the total supply of the LeverageToken, so we need to claim it first
+        // before total supply is updated due to the withdraw
+        _chargeManagementFee(token);
+
         ActionData memory withdrawData = previewWithdraw(token, equityInCollateralAsset);
 
         if (withdrawData.shares > maxShares) {
@@ -377,7 +386,7 @@ contract LeverageManager is
     {
         ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
 
-        uint256 totalSupply = token.totalSupply();
+        uint256 totalSupply = _getFeeAdjustedTotalSupply(token);
         uint256 totalEquityInCollateralAsset = lendingAdapter.getEquityInCollateralAsset();
 
         // If leverage token is empty we mint it in 1:1 ratio with collateral asset but we align it on 18 decimals always
@@ -387,7 +396,6 @@ contract LeverageManager is
 
             // If collateral asset has more decimals than leverage token, we scale down the equity in collateral asset
             // Otherwise we scale up the equity in collateral asset
-
             if (collateralDecimals > leverageTokenDecimals) {
                 uint256 scalingFactor = 10 ** (collateralDecimals - leverageTokenDecimals);
                 return equityInCollateralAsset / scalingFactor;
@@ -451,7 +459,7 @@ contract LeverageManager is
     ) internal view returns (uint256 collateral, uint256 debt) {
         ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
         uint256 totalDebt = lendingAdapter.getDebt();
-        uint256 totalShares = token.totalSupply();
+        uint256 totalShares = _getFeeAdjustedTotalSupply(token);
 
         Math.Rounding collateralRounding = action == ExternalAction.Deposit ? Math.Rounding.Ceil : Math.Rounding.Floor;
         Math.Rounding debtRounding = action == ExternalAction.Deposit ? Math.Rounding.Floor : Math.Rounding.Ceil;

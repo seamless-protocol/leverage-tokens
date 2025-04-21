@@ -29,11 +29,17 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
 
     bytes32 public constant FEE_MANAGER_ROLE = keccak256("FEE_MANAGER_ROLE");
 
+    uint256 internal constant SECS_PER_YEAR = 31536000;
+
     /// @dev Struct containing all state for the FeeManager contract
     /// @custom:storage-location erc7201:seamless.contracts.storage.FeeManager
     struct FeeManagerStorage {
         /// @dev Treasury address that receives treasury fees
         address treasury;
+        /// @dev Management fee for the LeverageManager
+        uint128 managementFee;
+        /// @dev Timestamp when the management fee was most recently accrued for each LeverageToken
+        mapping(ILeverageToken token => uint120) lastManagementFeeAccrualTimestamp;
         /// @dev Treasury fee for each action
         mapping(ExternalAction action => uint256) treasuryActionFee;
         /// @dev LeverageToken fee for each action
@@ -58,9 +64,18 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
         _grantRole(DEFAULT_ADMIN_ROLE, defaultAdmin);
     }
 
+    function getLastManagementFeeAccrualTimestamp(ILeverageToken token) public view returns (uint120) {
+        return _getFeeManagerStorage().lastManagementFeeAccrualTimestamp[token];
+    }
+
     /// @inheritdoc IFeeManager
     function getLeverageTokenActionFee(ILeverageToken token, ExternalAction action) public view returns (uint256 fee) {
         return _getFeeManagerStorage().tokenActionFee[token][action];
+    }
+
+    /// @inheritdoc IFeeManager
+    function getManagementFee() public view returns (uint128 fee) {
+        return _getFeeManagerStorage().managementFee;
     }
 
     /// @inheritdoc IFeeManager
@@ -71,6 +86,22 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
     /// @inheritdoc IFeeManager
     function getTreasuryActionFee(ExternalAction action) public view returns (uint256 fee) {
         return _getFeeManagerStorage().treasuryActionFee[action];
+    }
+
+    /// @inheritdoc IFeeManager
+    function setManagementFee(uint128 fee) external onlyRole(FEE_MANAGER_ROLE) {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+
+        if (fee > MAX_FEE) {
+            revert FeeTooHigh(fee, MAX_FEE);
+        }
+
+        if ($.treasury == address(0)) {
+            revert TreasuryNotSet();
+        }
+
+        $.managementFee = fee;
+        emit ManagementFeeSet(fee);
     }
 
     /// @inheritdoc IFeeManager
@@ -147,6 +178,19 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
         return (equityToCover, equityForShares, tokenFee, treasuryFee);
     }
 
+    /// @notice Function that claims management fee for the LeverageToken to the treasury
+    /// @param token LeverageToken to claim management fee for
+    function _chargeManagementFee(ILeverageToken token) internal {
+        uint256 sharesFee = _getManagementFeeShares(token);
+        address treasury = getTreasury();
+
+        _setLastManagementFeeAccrualTimestamp(token);
+
+        if (sharesFee > 0) {
+            token.mint(treasury, sharesFee);
+        }
+    }
+
     /// @notice Charges a treasury fee if the treasury is set
     /// @param collateralAsset Collateral asset to charge the fee from
     /// @param amount Amount of fee to charge
@@ -155,6 +199,31 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
         if (treasury != address(0)) {
             SafeERC20.safeTransfer(collateralAsset, treasury, amount);
         }
+    }
+
+    /// @notice Function that returns the total supply of the LeverageToken adjusted for the accrued management fee
+    /// @param token LeverageToken to get fee adjusted total supply for
+    /// @return totalSupply Fee adjusted total supply of the LeverageToken
+    function _getFeeAdjustedTotalSupply(ILeverageToken token) internal view returns (uint256) {
+        uint256 totalSupply = token.totalSupply();
+        uint256 accruedManagementFee = _getManagementFeeShares(token);
+        return totalSupply + accruedManagementFee;
+    }
+
+    /// @notice Function that calculates how much shares to mint for the management fee at the current timestamp
+    /// @param token LeverageToken to calculate management fee shares for
+    /// @return shares Shares to mint
+    function _getManagementFeeShares(ILeverageToken token) internal view returns (uint256) {
+        uint128 managementFee = getManagementFee();
+        uint120 lastManagementFeeAccrualTimestamp = getLastManagementFeeAccrualTimestamp(token);
+        uint256 totalSupply = token.totalSupply();
+
+        uint256 duration = block.timestamp - lastManagementFeeAccrualTimestamp;
+        if (duration == 0 || managementFee == 0) return 0;
+
+        uint256 sharesFee =
+            Math.mulDiv(managementFee * totalSupply, duration, MAX_FEE * SECS_PER_YEAR, Math.Rounding.Ceil);
+        return sharesFee;
     }
 
     /// @notice Sets the LeverageToken fee for a specific action
@@ -170,5 +239,11 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
 
         _getFeeManagerStorage().tokenActionFee[token][action] = fee;
         emit LeverageTokenActionFeeSet(token, action, fee);
+    }
+
+    /// @notice Function that sets the last management fee accrual timestamp for the LeverageToken to the current timestamp
+    /// @param token LeverageToken to set last management fee accrual timestamp for
+    function _setLastManagementFeeAccrualTimestamp(ILeverageToken token) internal {
+        _getFeeManagerStorage().lastManagementFeeAccrualTimestamp[token] = uint120(block.timestamp);
     }
 }

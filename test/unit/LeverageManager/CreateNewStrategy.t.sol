@@ -60,5 +60,6 @@ contract CreateNewLeverageTokenTest is LeverageManagerTest {
         );
 
         assertEq(leverageManager.getLeverageTokenInitialCollateralRatio(leverageToken), targetCollateralRatio);
+        assertEq(leverageManager.getLastManagementFeeAccrualTimestamp(leverageToken), block.timestamp);
     }
 }
