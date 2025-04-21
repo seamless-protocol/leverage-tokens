@@ -140,6 +140,7 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
 
         _setLastManagementFeeAccrualTimestamp(token);
 
+        // slither-disable-next-line timestamp
         if (sharesFee > 0) {
             token.mint(treasury, sharesFee);
         }
@@ -216,6 +217,7 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
         uint120 lastManagementFeeAccrualTimestamp = getLastManagementFeeAccrualTimestamp(token);
 
         uint256 duration = block.timestamp - lastManagementFeeAccrualTimestamp;
+        // slither-disable-next-line incorrect-equality,timestamp
         if (duration == 0 || managementFee == 0) return 0;
 
         uint256 totalSupply = token.totalSupply();
