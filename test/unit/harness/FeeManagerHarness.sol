@@ -51,4 +51,8 @@ contract FeeManagerHarness is FeeManager {
     function exposed_validateFee(uint256 fee) external pure {
         _validateFee(fee);
     }
+
+    function exposed_chargeTreasuryFee(ILeverageToken token, uint256 shares) external {
+        _chargeTreasuryFee(token, shares);
+    }
 }

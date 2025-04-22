@@ -262,10 +262,7 @@ contract LeverageManager is
         SafeERC20.safeTransfer(getLeverageTokenDebtAsset(token), msg.sender, depositData.debt);
 
         // Mint shares to the treasury for the treasury fee
-        address treasury = getTreasury();
-        if (treasury != address(0)) {
-            token.mint(treasury, depositData.treasuryFee);
-        }
+        _chargeTreasuryFee(token, depositData.treasuryFee);
 
         // Mint shares to user
         // slither-disable-next-line reentrancy-events
@@ -296,10 +293,7 @@ contract LeverageManager is
         token.burn(msg.sender, withdrawData.shares);
 
         // Mint shares to the treasury for the treasury fee
-        address treasury = getTreasury();
-        if (treasury != address(0)) {
-            token.mint(treasury, withdrawData.treasuryFee);
-        }
+        _chargeTreasuryFee(token, withdrawData.treasuryFee);
 
         // Take assets from sender and repay the debt
         SafeERC20.safeTransferFrom(getLeverageTokenDebtAsset(token), msg.sender, address(this), withdrawData.debt);

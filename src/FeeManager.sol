@@ -145,6 +145,18 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
         }
     }
 
+    /// @notice Function that mints shares to the treasury for the treasury fee, if the treasury is set
+    /// @param token LeverageToken to mint shares to treasury for
+    /// @param shares Shares to mint
+    /// @dev If the treasury is not set, this function does not mint any shares and does not revert
+    /// @dev This contract must be authorized to mint shares for the LeverageToken
+    function _chargeTreasuryFee(ILeverageToken token, uint256 shares) internal {
+        address treasury = getTreasury();
+        if (treasury != address(0)) {
+            token.mint(treasury, shares);
+        }
+    }
+
     /// @notice Computes equity fees based on action
     /// @param token LeverageToken to compute fees for
     /// @param equity Amount of equity to compute fees for, denominated in collateral asset
