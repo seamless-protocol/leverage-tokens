@@ -490,7 +490,7 @@ contract LeverageManager is
         }
     }
 
-    /// @notice Used for batching token transfers
+    /// @notice Helper function for transferring tokens, or no-op if token is 0 address
     /// @param token Token to transfer
     /// @param from Address to transfer tokens from
     /// @param to Address to transfer tokens to
