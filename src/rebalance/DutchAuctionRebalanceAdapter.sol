@@ -284,8 +284,8 @@ abstract contract DutchAuctionRebalanceAdapter is IDutchAuctionRebalanceAdapter,
         actions[1] = RebalanceAction({actionType: ActionType.Borrow, amount: debtAmount});
 
         // Prepare token transfers
-        TokenTransfer memory tokensIn = TokenTransfer({token: address(collateralAsset), amount: collateralAmount});
-        TokenTransfer memory tokensOut = TokenTransfer({token: address(debtAsset), amount: debtAmount});
+        TokenTransfer memory tokenIn = TokenTransfer({token: address(collateralAsset), amount: collateralAmount});
+        TokenTransfer memory tokenOut = TokenTransfer({token: address(debtAsset), amount: debtAmount});
 
         SafeERC20.safeTransferFrom(collateralAsset, msg.sender, address(this), collateralAmount);
 
@@ -293,7 +293,7 @@ abstract contract DutchAuctionRebalanceAdapter is IDutchAuctionRebalanceAdapter,
         SafeERC20.forceApprove(collateralAsset, address(leverageManager), collateralAmount);
 
         // slither-disable-next-line reentrancy-events
-        leverageManager.rebalance(token, actions, tokensIn, tokensOut);
+        leverageManager.rebalance(token, actions, tokenIn, tokenOut);
 
         SafeERC20.safeTransfer(debtAsset, msg.sender, debtAmount);
     }
@@ -316,8 +316,8 @@ abstract contract DutchAuctionRebalanceAdapter is IDutchAuctionRebalanceAdapter,
         actions[1] = RebalanceAction({actionType: ActionType.RemoveCollateral, amount: collateralAmount});
 
         // Prepare token transfers
-        TokenTransfer memory tokensIn = TokenTransfer({token: address(debtAsset), amount: debtAmount});
-        TokenTransfer memory tokensOut = TokenTransfer({token: address(collateralAsset), amount: collateralAmount});
+        TokenTransfer memory tokenIn = TokenTransfer({token: address(debtAsset), amount: debtAmount});
+        TokenTransfer memory tokenOut = TokenTransfer({token: address(collateralAsset), amount: collateralAmount});
 
         SafeERC20.safeTransferFrom(debtAsset, msg.sender, address(this), debtAmount);
 
@@ -325,7 +325,7 @@ abstract contract DutchAuctionRebalanceAdapter is IDutchAuctionRebalanceAdapter,
         SafeERC20.forceApprove(debtAsset, address(leverageManager), debtAmount);
 
         // slither-disable-next-line reentrancy-events
-        leverageManager.rebalance(token, actions, tokensIn, tokensOut);
+        leverageManager.rebalance(token, actions, tokenIn, tokenOut);
 
         SafeERC20.safeTransfer(collateralAsset, msg.sender, collateralAmount);
     }

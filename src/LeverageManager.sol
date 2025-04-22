@@ -325,10 +325,10 @@ contract LeverageManager is
     function rebalance(
         ILeverageToken leverageToken,
         RebalanceAction[] calldata actions,
-        TokenTransfer calldata tokensIn,
-        TokenTransfer calldata tokensOut
+        TokenTransfer calldata tokenIn,
+        TokenTransfer calldata tokenOut
     ) external nonReentrant {
-        _transferTokens(tokensIn, msg.sender, address(this));
+        _transferTokens(tokenIn, msg.sender, address(this));
 
         // Check if the LeverageToken is eligible for rebalance
         LeverageTokenState memory stateBefore = getLeverageTokenState(leverageToken);
@@ -347,7 +347,7 @@ contract LeverageManager is
             revert InvalidLeverageTokenStateAfterRebalance(leverageToken);
         }
 
-        _transferTokens(tokensOut, address(this), msg.sender);
+        _transferTokens(tokenOut, address(this), msg.sender);
     }
 
     /// @notice Function that converts user's equity to shares
