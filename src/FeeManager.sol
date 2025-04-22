@@ -7,7 +7,6 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 // Internal imports
 import {ExternalAction} from "src/types/DataTypes.sol";
@@ -23,7 +22,7 @@ import {IFeeManager} from "src/interfaces/IFeeManager.sol";
  * The maximum fee that can be set for each action is 100_00 (100%). If the LeverageToken fee + the treasury fee is greater than
  * the maximum fee, the LeverageToken fee is set to the delta of the maximum fee and the treasury fee.
  */
-contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, ReentrancyGuardUpgradeable {
+contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
     /// @inheritdoc IFeeManager
     uint256 public constant MAX_FEE = 100_00;
 
@@ -50,7 +49,6 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
 
     function __FeeManager_init(address defaultAdmin) public onlyInitializing {
         __AccessControl_init_unchained();
-        __ReentrancyGuard_init_unchained();
         __FeeManager_init_unchained(defaultAdmin);
     }
 

@@ -7,7 +7,8 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import {ReentrancyGuardTransientUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 // Internal imports
@@ -77,7 +78,7 @@ import {
 contract LeverageManager is
     ILeverageManager,
     AccessControlUpgradeable,
-    ReentrancyGuardUpgradeable,
+    ReentrancyGuardTransientUpgradeable,
     FeeManager,
     UUPSUpgradeable
 {
@@ -104,6 +105,7 @@ contract LeverageManager is
 
     function initialize(address initialAdmin, IBeaconProxyFactory leverageTokenFactory) external initializer {
         __FeeManager_init(initialAdmin);
+        __ReentrancyGuardTransient_init();
         _grantRole(DEFAULT_ADMIN_ROLE, initialAdmin);
         _getLeverageManagerStorage().tokenFactory = leverageTokenFactory;
         emit LeverageManagerInitialized(leverageTokenFactory);
