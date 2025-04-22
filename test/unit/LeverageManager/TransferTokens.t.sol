@@ -7,13 +7,13 @@ import {Test} from "forge-std/Test.sol";
 // Dependency imports
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageManagerTest} from "./LeverageManager.t.sol";
 import {MockLendingAdapter} from "test/unit/mock/MockLendingAdapter.sol";
-import {TokenTransfer} from "src/types/DataTypes.sol";
 
 contract TransferTokensTest is LeverageManagerTest {
     function test_transferTokens_FromLeverageManager() public {
@@ -25,9 +25,9 @@ contract TransferTokensTest is LeverageManagerTest {
 
         uint256 token1TransferAmount = 50 ether;
 
-        TokenTransfer memory transfer = TokenTransfer({token: address(token1), amount: token1TransferAmount});
-
-        leverageManager.exposed_transferTokens(transfer, address(leverageManager), address(this));
+        leverageManager.exposed_transferTokens(
+            IERC20(address(token1)), address(leverageManager), address(this), token1TransferAmount
+        );
 
         assertEq(token1.balanceOf(address(this)), token1TransferAmount);
         assertEq(token1.balanceOf(address(leverageManager)), token1BalanceBefore - token1TransferAmount);
@@ -42,20 +42,18 @@ contract TransferTokensTest is LeverageManagerTest {
 
         uint256 token1TransferAmount = 50 ether;
 
-        TokenTransfer memory transfer = TokenTransfer({token: address(token1), amount: token1TransferAmount});
-
         token1.approve(address(leverageManager), token1TransferAmount);
 
-        leverageManager.exposed_transferTokens(transfer, address(this), address(leverageManager));
+        leverageManager.exposed_transferTokens(
+            IERC20(address(token1)), address(this), address(leverageManager), token1TransferAmount
+        );
 
         assertEq(token1.balanceOf(address(leverageManager)), token1TransferAmount);
         assertEq(token1.balanceOf(address(this)), token1BalanceBefore - token1TransferAmount);
     }
 
     function test_transferTokens_ZeroAddress() public {
-        TokenTransfer memory transfer = TokenTransfer({token: address(0), amount: 100 ether});
-
         // No-op, does not revert
-        leverageManager.exposed_transferTokens(transfer, address(this), address(this));
+        leverageManager.exposed_transferTokens(IERC20(address(0)), address(this), address(this), 100 ether);
     }
 }

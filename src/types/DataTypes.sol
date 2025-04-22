@@ -84,11 +84,3 @@ struct RebalanceAction {
     /// @dev Amount to perform the action with
     uint256 amount;
 }
-
-/// @dev Struct that contains all data related to a token transfer
-struct TokenTransfer {
-    /// @dev Token to transfer
-    address token;
-    /// @dev Amount to transfer
-    uint256 amount;
-}

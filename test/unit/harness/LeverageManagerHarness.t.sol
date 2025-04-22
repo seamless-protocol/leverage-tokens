@@ -1,19 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
+// Dependency imports
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 // Internal imports
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {FeeManagerHarness} from "test/unit/harness/FeeManagerHarness.sol";
 import {LeverageManager} from "src/LeverageManager.sol";
-import {
-    ActionData,
-    ActionType,
-    ExternalAction,
-    RebalanceAction,
-    TokenTransfer,
-    LeverageTokenState
-} from "src/types/DataTypes.sol";
+import {ActionData, ActionType, ExternalAction, LeverageTokenState} from "src/types/DataTypes.sol";
 
 /// @notice Wrapper contract that exposes all internal functions of LeverageManager
 contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
@@ -29,8 +25,8 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
         _authorizeUpgrade(newImplementation);
     }
 
-    function exposed_transferTokens(TokenTransfer calldata transfer, address from, address to) external {
-        _transferTokens(transfer, from, to);
+    function exposed_transferTokens(IERC20 token, address from, address to, uint256 amount) external {
+        _transferTokens(token, from, to, amount);
     }
 
     function exposed_executeLendingAdapterAction(ILeverageToken leverageToken, ActionType actionType, uint256 amount)

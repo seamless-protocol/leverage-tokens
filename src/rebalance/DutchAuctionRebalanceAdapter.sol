@@ -12,7 +12,7 @@ import {IDutchAuctionRebalanceAdapter} from "src/interfaces/IDutchAuctionRebalan
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
-import {RebalanceAction, TokenTransfer, ActionType, LeverageTokenState, Auction} from "src/types/DataTypes.sol";
+import {RebalanceAction, ActionType, LeverageTokenState, Auction} from "src/types/DataTypes.sol";
 
 /**
  * @dev The DutchAuctionRebalanceAdapter is a periphery abstract contract that implements the IDutchAuctionRebalanceAdapter interface.
@@ -283,17 +283,13 @@ abstract contract DutchAuctionRebalanceAdapter is IDutchAuctionRebalanceAdapter,
         actions[0] = RebalanceAction({actionType: ActionType.AddCollateral, amount: collateralAmount});
         actions[1] = RebalanceAction({actionType: ActionType.Borrow, amount: debtAmount});
 
-        // Prepare token transfers
-        TokenTransfer memory tokenIn = TokenTransfer({token: address(collateralAsset), amount: collateralAmount});
-        TokenTransfer memory tokenOut = TokenTransfer({token: address(debtAsset), amount: debtAmount});
-
         SafeERC20.safeTransferFrom(collateralAsset, msg.sender, address(this), collateralAmount);
 
         // slither-disable-next-line reentrancy-events
         SafeERC20.forceApprove(collateralAsset, address(leverageManager), collateralAmount);
 
         // slither-disable-next-line reentrancy-events
-        leverageManager.rebalance(token, actions, tokenIn, tokenOut);
+        leverageManager.rebalance(token, actions, collateralAsset, debtAsset, collateralAmount, debtAmount);
 
         SafeERC20.safeTransfer(debtAsset, msg.sender, debtAmount);
     }
@@ -315,17 +311,13 @@ abstract contract DutchAuctionRebalanceAdapter is IDutchAuctionRebalanceAdapter,
         actions[0] = RebalanceAction({actionType: ActionType.Repay, amount: debtAmount});
         actions[1] = RebalanceAction({actionType: ActionType.RemoveCollateral, amount: collateralAmount});
 
-        // Prepare token transfers
-        TokenTransfer memory tokenIn = TokenTransfer({token: address(debtAsset), amount: debtAmount});
-        TokenTransfer memory tokenOut = TokenTransfer({token: address(collateralAsset), amount: collateralAmount});
-
         SafeERC20.safeTransferFrom(debtAsset, msg.sender, address(this), debtAmount);
 
         // slither-disable-next-line reentrancy-events
         SafeERC20.forceApprove(debtAsset, address(leverageManager), debtAmount);
 
         // slither-disable-next-line reentrancy-events
-        leverageManager.rebalance(token, actions, tokenIn, tokenOut);
+        leverageManager.rebalance(token, actions, debtAsset, collateralAsset, debtAmount, collateralAmount);
 
         SafeERC20.safeTransfer(collateralAsset, msg.sender, collateralAmount);
     }

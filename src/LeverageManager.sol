@@ -25,8 +25,7 @@ import {
     ExternalAction,
     LeverageTokenConfig,
     BaseLeverageTokenConfig,
-    RebalanceAction,
-    TokenTransfer
+    RebalanceAction
 } from "src/types/DataTypes.sol";
 
 /**
@@ -325,10 +324,12 @@ contract LeverageManager is
     function rebalance(
         ILeverageToken leverageToken,
         RebalanceAction[] calldata actions,
-        TokenTransfer calldata tokenIn,
-        TokenTransfer calldata tokenOut
+        IERC20 tokenIn,
+        IERC20 tokenOut,
+        uint256 amountIn,
+        uint256 amountOut
     ) external nonReentrant {
-        _transferTokens(tokenIn, msg.sender, address(this));
+        _transferTokens(tokenIn, msg.sender, address(this), amountIn);
 
         // Check if the LeverageToken is eligible for rebalance
         LeverageTokenState memory stateBefore = getLeverageTokenState(leverageToken);
@@ -347,7 +348,7 @@ contract LeverageManager is
             revert InvalidLeverageTokenStateAfterRebalance(leverageToken);
         }
 
-        _transferTokens(tokenOut, address(this), msg.sender);
+        _transferTokens(tokenOut, address(this), msg.sender, amountOut);
     }
 
     /// @notice Function that converts user's equity to shares
@@ -490,19 +491,19 @@ contract LeverageManager is
     }
 
     /// @notice Used for batching token transfers
-    /// @param transfer Transfer data. Transfer data consist of token to transfer and amount
+    /// @param token Token to transfer
     /// @param from Address to transfer tokens from
     /// @param to Address to transfer tokens to
     /// @dev If from address is this smart contract it will use the regular transfer function otherwise it will use transferFrom
-    function _transferTokens(TokenTransfer calldata transfer, address from, address to) internal {
-        if (transfer.token == address(0)) {
+    function _transferTokens(IERC20 token, address from, address to, uint256 amount) internal {
+        if (address(token) == address(0)) {
             return;
         }
 
         if (from == address(this)) {
-            SafeERC20.safeTransfer(IERC20(transfer.token), to, transfer.amount);
+            SafeERC20.safeTransfer(token, to, amount);
         } else {
-            SafeERC20.safeTransferFrom(IERC20(transfer.token), from, to, transfer.amount);
+            SafeERC20.safeTransferFrom(token, from, to, amount);
         }
     }
 }
