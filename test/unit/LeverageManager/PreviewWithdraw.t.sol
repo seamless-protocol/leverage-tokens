@@ -39,23 +39,11 @@ contract PreviewWithdrawTest is PreviewActionTest {
         ActionData memory actualPreviewData =
             leverageManager.previewWithdraw(leverageToken, equityToWithdrawInCollateralAsset);
 
-        assertEq(
-            actualPreviewData.collateral,
-            previewActionData.collateral > previewActionData.treasuryFee
-                ? previewActionData.collateral - previewActionData.treasuryFee
-                : 0,
-            "Collateral to remove mismatch"
-        );
+        assertEq(actualPreviewData.collateral, previewActionData.collateral, "Collateral to remove mismatch");
         assertEq(actualPreviewData.debt, previewActionData.debt, "Debt to repay mismatch");
         assertEq(actualPreviewData.shares, previewActionData.shares, "Shares after fee mismatch");
         assertEq(actualPreviewData.tokenFee, previewActionData.tokenFee, "Shares fee mismatch");
-        assertEq(
-            actualPreviewData.treasuryFee,
-            previewActionData.collateral <= previewActionData.treasuryFee
-                ? previewActionData.collateral
-                : previewActionData.treasuryFee,
-            "Treasury fee mismatch"
-        );
+        assertEq(actualPreviewData.treasuryFee, previewActionData.treasuryFee, "Treasury fee mismatch");
         assertEq(actualPreviewData.equity, previewActionData.equity, "Equity mismatch");
     }
 
@@ -90,9 +78,9 @@ contract PreviewWithdrawTest is PreviewActionTest {
 
         ActionData memory previewData = leverageManager.previewWithdraw(leverageToken, equityToPreview);
 
-        // The treasury fee is capped to the collateral amount if it is larger than the collateral to be removed from
-        // the leverage token
-        assertEq(previewData.collateral, 0);
-        assertEq(previewData.treasuryFee, collateralToRemove);
+        assertEq(previewData.collateral, collateralToRemove);
+        assertEq(
+            previewData.treasuryFee, Math.mulDiv(expectedSharesBeforeFees, treasuryFee, _MAX_FEE(), Math.Rounding.Ceil)
+        );
     }
 }

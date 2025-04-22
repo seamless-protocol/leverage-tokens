@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
+// External imports
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+
 // Internal imports
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ActionData, ExternalAction} from "src/types/DataTypes.sol";
@@ -38,6 +41,7 @@ contract WithdrawTest is PreviewActionTest {
     }
 
     function test_withdraw_TreasuryNotSet() public {
+        _setTreasuryActionFee(ExternalAction.Withdraw, 0.05e4); // 5% fee
         _setTreasury(feeManagerRole, address(0));
 
         MockLeverageManagerStateForAction memory beforeState =
@@ -48,7 +52,8 @@ contract WithdrawTest is PreviewActionTest {
         uint256 equityToWithdraw = 10 ether;
         _testWithdraw(equityToWithdraw, type(uint256).max);
 
-        assertEq(collateralToken.balanceOf(address(treasury)), 0);
+        // Treasury (zero address) should not receive any shares, even though there is a treasury action fee
+        assertEq(leverageToken.balanceOf(address(treasury)), 0);
     }
 
     function test_withdraw_ZeroEquity() public {
@@ -143,6 +148,7 @@ contract WithdrawTest is PreviewActionTest {
 
         uint256 collateralBalanceBefore = collateralToken.balanceOf(address(this));
         uint256 debtBalanceBefore = debtToken.balanceOf(address(this));
+        uint256 sharesBalanceBefore = leverageToken.balanceOf(address(this));
 
         // Execute withdrawal
         ActionData memory withdrawData =
@@ -160,11 +166,14 @@ contract WithdrawTest is PreviewActionTest {
         assertEq(debtBalanceBefore - debtToken.balanceOf(address(this)), withdrawData.debt);
 
         // Validate leverage token total supply and balance
-        assertEq(leverageToken.totalSupply(), shareTotalSupplyBefore - withdrawData.shares);
+        assertEq(leverageToken.totalSupply(), shareTotalSupplyBefore - withdrawData.shares + withdrawData.treasuryFee);
         assertEq(leverageToken.balanceOf(address(this)), 0);
 
-        // Verify that the treasury received the fee
-        assertEq(collateralToken.balanceOf(treasury), withdrawData.treasuryFee);
+        // Verify the shares burned are from the user
+        assertEq(sharesBalanceBefore - leverageToken.balanceOf(address(this)), withdrawData.shares);
+
+        // Verify that the treasury received the treasury action fee
+        assertEq(leverageToken.balanceOf(treasury), withdrawData.treasuryFee);
 
         // Verify that if any collateral is returned, the amount of shares burned must be non-zero
         if (withdrawData.collateral > 0) {
@@ -172,7 +181,10 @@ contract WithdrawTest is PreviewActionTest {
             assertLt(leverageToken.totalSupply(), shareTotalSupplyBefore);
         }
 
-        // Fees should be less than or equal to the equity to withdraw
-        assertLe(withdrawData.tokenFee + withdrawData.treasuryFee, equityToWithdrawInCollateralAsset);
+        // Token action fee should be less than or equal to the equity to withdraw
+        assertLe(withdrawData.tokenFee, equityToWithdrawInCollateralAsset);
+
+        // Treasury action fee should be less than or equal to the shares burned from the user
+        assertLe(withdrawData.treasuryFee, withdrawData.shares);
     }
 }

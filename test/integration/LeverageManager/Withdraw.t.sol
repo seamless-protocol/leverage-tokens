@@ -3,6 +3,7 @@ pragma solidity ^0.8.26;
 
 // Dependency imports
 import {IOracle} from "@morpho-blue/interfaces/IOracle.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // Internal imports
 import {ExternalAction} from "src/types/DataTypes.sol";
@@ -165,19 +166,24 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
     }
 
     function testFork_withdraw_withFee() public {
-        uint256 fee = 10_00; // 10%
-        leverageManager.setTreasuryActionFee(ExternalAction.Withdraw, fee); // 10%
+        uint256 treasuryActionFee = 10_00; // 10%
+        leverageManager.setTreasuryActionFee(ExternalAction.Withdraw, treasuryActionFee); // 10%
 
         uint128 managementFee = 10_00; // 10%
         leverageManager.setManagementFee(managementFee);
 
-        leverageToken = _createNewLeverageToken(BASE_RATIO, 2 * BASE_RATIO, 3 * BASE_RATIO, fee, 0);
+        uint256 tokenActionFee = 10_00; // 10%
+        leverageToken = _createNewLeverageToken(BASE_RATIO, 2 * BASE_RATIO, 3 * BASE_RATIO, tokenActionFee, 0);
         morphoLendingAdapter =
             MorphoLendingAdapter(address(leverageManager.getLeverageTokenLendingAdapter(leverageToken)));
 
         uint256 equityInCollateralAsset = 10 ether;
         uint256 collateralToAdd = 2 * equityInCollateralAsset;
         _deposit(user, equityInCollateralAsset, collateralToAdd);
+
+        // 10% of equity goes to share dilution (token action fee), so 9 ether shares are minted instead of 10 ether
+        assertEq(leverageToken.balanceOf(user), 9 ether);
+        assertEq(leverageToken.totalSupply(), 9 ether);
 
         uint256 equityInCollateralAssetAfterDeposit = morphoLendingAdapter.getEquityInCollateralAsset();
 
@@ -186,18 +192,38 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
         ActionData memory previewData = leverageManager.previewWithdraw(leverageToken, equityToWithdraw);
         _withdraw(user, equityToWithdraw, previewData.debt);
 
-        // Lower or equal because or rounding, theoretically perfect would be 4.5 ether
-        assertEq(leverageToken.balanceOf(user), 4.5 ether);
+        // Half of the equity is withdrawn, so half of the shares are burned
+        assertEq(leverageToken.totalSupply(), 4.5 ether);
+        // An additional 10% of shares are burned from the user to cover the treasury fee
+        assertEq(leverageToken.balanceOf(user), 4.05 ether);
+        // 10% of the total shares are minted to the treasury, taken from the user
+        assertEq(leverageToken.balanceOf(treasury), 0.45 ether);
 
         assertEq(WETH.balanceOf(user), previewData.collateral); // User receives the collateral asset
-        assertEq(WETH.balanceOf(treasury), previewData.treasuryFee); // Treasury receives the fee
-
-        assertEq(WETH.balanceOf(user), previewData.collateral);
+        assertEq(previewData.collateral, 10 ether); // Half of the shares were burned, so half of the collateral is withdrawn
 
         // One year passes, to withdraw the same amount of equity we need to burn more shares because
-        // of the share dilution from the management fee and morpho borrow interest
+        // of the share dilution from the management fee, morpho borrow interest, and token action fee
         skip(SECONDS_ONE_YEAR);
         previewData = leverageManager.previewWithdraw(leverageToken, equityToWithdraw);
-        assertEq(previewData.shares, 5014660246516138175);
+        assertEq(previewData.shares, 5.516126271167751993 ether);
+
+        // An additional 10% of shares are required to be burned from the user to cover the treasury action fee
+        uint256 shareValue = Math.mulDiv(
+            Math.mulDiv(leverageToken.balanceOf(user), 1e18, 1.1e18, Math.Rounding.Floor),
+            morphoLendingAdapter.getEquityInCollateralAsset(),
+            _getFeeAdjustedTotalSupply(leverageToken),
+            Math.Rounding.Floor
+        );
+        // The share value is less than half of the initial equity deposited due to the share dilution from the management fee and
+        // morpho borrow interest
+        assertEq(shareValue, 3.671054469110626624 ether);
+
+        previewData = leverageManager.previewWithdraw(leverageToken, shareValue);
+        assertEq(previewData.shares, 4.05 ether);
+
+        // Withdraw the share equity
+        _withdraw(user, shareValue, previewData.debt);
+        assertEq(leverageToken.balanceOf(user), 0);
     }
 }

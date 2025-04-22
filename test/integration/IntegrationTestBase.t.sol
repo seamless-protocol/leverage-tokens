@@ -115,9 +115,29 @@ contract IntegrationTestBase is Test {
         return Math.mulDiv(
             shares,
             morphoLendingAdapter.getEquityInCollateralAsset() + 1,
-            leverageToken.totalSupply() + 1,
+            _getFeeAdjustedTotalSupply(leverageToken) + 1,
             Math.Rounding.Floor
         );
+    }
+
+    function _getFeeAdjustedTotalSupply(ILeverageToken token) internal view returns (uint256) {
+        uint256 totalSupply = token.totalSupply();
+        uint256 accruedManagementFee = _getAccruedManagementFee(token);
+        return totalSupply + accruedManagementFee;
+    }
+
+    function _getAccruedManagementFee(ILeverageToken token) internal view returns (uint256) {
+        uint128 managementFee = leverageManager.getManagementFee();
+        uint120 lastManagementFeeAccrualTimestamp = leverageManager.getLastManagementFeeAccrualTimestamp(token);
+
+        uint256 duration = block.timestamp - lastManagementFeeAccrualTimestamp;
+        if (duration == 0 || managementFee == 0) return 0;
+
+        uint256 totalSupply = token.totalSupply();
+        uint256 sharesFee = Math.mulDiv(
+            managementFee * totalSupply, duration, leverageManager.MAX_FEE() * SECONDS_ONE_YEAR, Math.Rounding.Ceil
+        );
+        return sharesFee;
     }
 
     function _createNewLeverageToken(
