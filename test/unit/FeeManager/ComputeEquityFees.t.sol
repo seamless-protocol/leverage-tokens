@@ -26,8 +26,8 @@ contract ComputeEquityFeesTest is FeeManagerTest {
             uint256 treasuryFee
         ) = feeManager.exposed_computeEquityFees(leverageToken, equity, action);
 
-        uint256 expectedTokenFee = Math.mulDiv(equity, depositTokenFee, feeManager.MAX_FEE(), Math.Rounding.Ceil);
-        uint256 expectedTreasuryFee = Math.mulDiv(equity, depositTreasuryFee, feeManager.MAX_FEE(), Math.Rounding.Ceil);
+        uint256 expectedTokenFee = Math.mulDiv(equity, depositTokenFee, MAX_FEE, Math.Rounding.Ceil);
+        uint256 expectedTreasuryFee = Math.mulDiv(equity, depositTreasuryFee, MAX_FEE, Math.Rounding.Ceil);
         assertEq(tokenFee, expectedTokenFee);
         assertEq(treasuryFee, expectedTreasuryFee);
 
@@ -51,8 +51,8 @@ contract ComputeEquityFeesTest is FeeManagerTest {
             uint256 treasuryFee
         ) = feeManager.exposed_computeEquityFees(leverageToken, equity, action);
 
-        uint256 expectedTokenFee = Math.mulDiv(equity, withdrawTokenFee, feeManager.MAX_FEE(), Math.Rounding.Ceil);
-        uint256 expectedTreasuryFee = Math.mulDiv(equity, withdrawTreasuryFee, feeManager.MAX_FEE(), Math.Rounding.Ceil);
+        uint256 expectedTokenFee = Math.mulDiv(equity, withdrawTokenFee, MAX_FEE, Math.Rounding.Ceil);
+        uint256 expectedTreasuryFee = Math.mulDiv(equity, withdrawTreasuryFee, MAX_FEE, Math.Rounding.Ceil);
         assertEq(tokenFee, expectedTokenFee);
         assertEq(treasuryFee, expectedTreasuryFee);
 
@@ -74,7 +74,7 @@ contract ComputeEquityFeesTest is FeeManagerTest {
             uint256 treasuryFee
         ) = feeManager.exposed_computeEquityFees(leverageToken, equity, action);
 
-        uint256 expectedTreasuryFee = Math.mulDiv(equity, depositTreasuryFee, feeManager.MAX_FEE(), Math.Rounding.Ceil);
+        uint256 expectedTreasuryFee = Math.mulDiv(equity, depositTreasuryFee, MAX_FEE, Math.Rounding.Ceil);
         assertEq(treasuryFee, expectedTreasuryFee);
 
         uint256 expectedTokenFee = equity - expectedTreasuryFee;
@@ -110,10 +110,10 @@ contract ComputeEquityFeesTest is FeeManagerTest {
         uint256 withdrawTokenFee
     ) public {
         ExternalAction action = ExternalAction.Deposit;
-        depositTreasuryFee = bound(depositTreasuryFee, 0, feeManager.MAX_FEE());
-        depositTokenFee = bound(depositTokenFee, 0, feeManager.MAX_FEE());
-        withdrawTreasuryFee = bound(withdrawTreasuryFee, 0, feeManager.MAX_FEE());
-        withdrawTokenFee = bound(withdrawTokenFee, 0, feeManager.MAX_FEE());
+        depositTreasuryFee = bound(depositTreasuryFee, 0, MAX_FEE);
+        depositTokenFee = bound(depositTokenFee, 0, MAX_FEE);
+        withdrawTreasuryFee = bound(withdrawTreasuryFee, 0, MAX_FEE);
+        withdrawTokenFee = bound(withdrawTokenFee, 0, MAX_FEE);
         _setFees(depositTreasuryFee, depositTokenFee, withdrawTreasuryFee, withdrawTokenFee);
 
         (
@@ -126,16 +126,13 @@ contract ComputeEquityFeesTest is FeeManagerTest {
         uint256 expectedTreasuryFee = Math.mulDiv(
             equity,
             action == ExternalAction.Deposit ? depositTreasuryFee : withdrawTreasuryFee,
-            feeManager.MAX_FEE(),
+            MAX_FEE,
             Math.Rounding.Ceil
         );
         assertEq(treasuryFee, expectedTreasuryFee);
 
         uint256 expectedTokenFee = Math.mulDiv(
-            equity,
-            action == ExternalAction.Deposit ? depositTokenFee : withdrawTokenFee,
-            feeManager.MAX_FEE(),
-            Math.Rounding.Ceil
+            equity, action == ExternalAction.Deposit ? depositTokenFee : withdrawTokenFee, MAX_FEE, Math.Rounding.Ceil
         );
         if (expectedTokenFee + expectedTreasuryFee > equity) {
             expectedTokenFee = equity - expectedTreasuryFee;

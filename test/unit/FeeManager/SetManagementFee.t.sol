@@ -12,7 +12,7 @@ import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 contract SetManagementFeeTest is FeeManagerTest {
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_setManagementFee(uint128 managementFee) public {
-        managementFee = uint128(bound(managementFee, 0, feeManager.MAX_FEE()));
+        managementFee = uint128(bound(managementFee, 0, MAX_FEE));
 
         vm.expectEmit(true, true, true, true);
         emit IFeeManager.ManagementFeeSet(managementFee);
@@ -24,9 +24,9 @@ contract SetManagementFeeTest is FeeManagerTest {
 
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_setManagementFee_RevertIf_FeeTooHigh(uint128 managementFee) public {
-        managementFee = uint128(bound(managementFee, feeManager.MAX_FEE() + 1, type(uint128).max));
+        managementFee = uint128(bound(managementFee, MAX_FEE + 1, type(uint128).max));
 
-        vm.expectRevert(abi.encodeWithSelector(IFeeManager.FeeTooHigh.selector, managementFee, feeManager.MAX_FEE()));
+        vm.expectRevert(abi.encodeWithSelector(IFeeManager.FeeTooHigh.selector, managementFee, MAX_FEE));
         vm.prank(feeManagerRole);
         feeManager.setManagementFee(managementFee);
     }

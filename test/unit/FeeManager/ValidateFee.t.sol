@@ -8,7 +8,7 @@ import {FeeManagerTest} from "test/unit/FeeManager/FeeManager.t.sol";
 contract ValidateFeeTest is FeeManagerTest {
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_validateFee(uint256 fee) public view {
-        fee = bound(fee, 0, feeManager.MAX_FEE());
+        fee = bound(fee, 0, MAX_FEE);
 
         // Does not revert
         feeManager.exposed_validateFee(fee);
@@ -16,8 +16,8 @@ contract ValidateFeeTest is FeeManagerTest {
 
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_validateFee_RevertIf_FeeTooHigh(uint256 fee) public {
-        fee = bound(fee, feeManager.MAX_FEE() + 1, type(uint256).max);
-        vm.expectRevert(abi.encodeWithSelector(IFeeManager.FeeTooHigh.selector, fee, feeManager.MAX_FEE()));
+        fee = bound(fee, MAX_FEE + 1, type(uint256).max);
+        vm.expectRevert(abi.encodeWithSelector(IFeeManager.FeeTooHigh.selector, fee, MAX_FEE));
         feeManager.exposed_validateFee(fee);
     }
 }

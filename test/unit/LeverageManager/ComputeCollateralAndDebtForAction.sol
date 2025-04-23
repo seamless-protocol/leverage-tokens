@@ -22,7 +22,7 @@ contract ComputeCollateralAndDebtForActionTest is PreviewActionTest {
     }
 
     function testFuzz_computeCollateralAndDebtForAction_Deposit_WithManagementFee(uint128 managementFee) public {
-        managementFee = uint128(bound(managementFee, 0, _MAX_FEE()));
+        managementFee = uint128(bound(managementFee, 0, MAX_FEE));
 
         vm.prank(feeManagerRole);
         feeManager.setManagementFee(managementFee);
@@ -61,7 +61,7 @@ contract ComputeCollateralAndDebtForActionTest is PreviewActionTest {
     }
 
     function testFuzz_computeCollateralAndDebtForAction_Withdraw_WithManagementFee(uint128 managementFee) public {
-        managementFee = uint128(bound(managementFee, 0, _MAX_FEE()));
+        managementFee = uint128(bound(managementFee, 0, MAX_FEE));
 
         vm.prank(feeManagerRole);
         feeManager.setManagementFee(managementFee);

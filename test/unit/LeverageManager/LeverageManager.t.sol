@@ -75,10 +75,6 @@ contract LeverageManagerTest is FeeManagerTest {
         return leverageManager.BASE_RATIO();
     }
 
-    function _MAX_FEE() internal view returns (uint256) {
-        return IFeeManager(address(leverageManager)).MAX_FEE();
-    }
-
     function _convertToAssets(uint256 shares, ExternalAction action) internal view returns (uint256) {
         return Math.mulDiv(
             shares,

@@ -73,10 +73,6 @@ interface IFeeManager {
     /// @return fee Fee for action, 100_00 is 100%
     function getTreasuryActionFee(ExternalAction action) external view returns (uint256 fee);
 
-    /// @notice Returns the max fee that can be set
-    /// @return maxFee Max fee, 100_00 is 100%
-    function MAX_FEE() external view returns (uint256 maxFee);
-
     /// @notice Sets the management fee
     /// @param fee Management fee, 100_00 is 100%
     /// @dev Only `FEE_MANAGER_ROLE` can call this function

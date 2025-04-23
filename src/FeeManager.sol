@@ -24,10 +24,9 @@ import {IFeeManager} from "src/interfaces/IFeeManager.sol";
  * the maximum fee, the LeverageToken fee is set to the delta of the maximum fee and the treasury fee.
  */
 contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, ReentrancyGuardUpgradeable {
-    /// @inheritdoc IFeeManager
-    uint256 public constant MAX_FEE = 100_00;
-
     bytes32 public constant FEE_MANAGER_ROLE = keccak256("FEE_MANAGER_ROLE");
+
+    uint256 internal constant MAX_FEE = 100_00;
 
     uint256 internal constant SECS_PER_YEAR = 31536000;
 

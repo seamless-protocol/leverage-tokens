@@ -16,6 +16,7 @@ import {ExternalAction} from "src/types/DataTypes.sol";
 import {MockERC20} from "test/unit/mock/MockERC20.sol";
 
 contract FeeManagerTest is Test {
+    uint256 public constant MAX_FEE = 100_00;
     uint256 public constant SECONDS_ONE_YEAR = 31536000;
 
     address public feeManagerRole = makeAddr("feeManagerRole");
