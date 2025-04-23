@@ -63,6 +63,9 @@ contract LeverageManagerDepositTest is LeverageManagerTest {
         assertEq(morphoLendingAdapter.getEquityInCollateralAsset(), 8999999999800422784);
         assertEq(leverageToken.balanceOf(user), leverageToken.totalSupply());
 
+        // No shares fee minted to the treasury, as no management fee has accrued yet
+        assertEq(leverageToken.balanceOf(treasury), 0);
+
         assertEq(WETH.balanceOf(treasury), 1 ether); // Treasury receives 10% of the equity in collateral asset
         assertEq(WETH.balanceOf(user), 1 ether); // User keeps 10% of the equity in collateral asset
 
@@ -72,8 +75,11 @@ contract LeverageManagerDepositTest is LeverageManagerTest {
 
         // Slightly less than 8 ether of shares are minted to the user because of the share dilution from the management fee
         // and morpho borrow interest
-        assertEq(leverageToken.balanceOf(user), 15924523833507237152);
+        assertEq(leverageToken.balanceOf(user), 8 ether + 7.924523833507237152 ether);
+
+        // Management fee has been accrued and charged as a year has passed
         assertEq(leverageToken.balanceOf(treasury), 0.8 ether);
+
         assertEq(leverageToken.totalSupply(), leverageToken.balanceOf(user) + leverageToken.balanceOf(treasury));
         assertEq(WETH.balanceOf(treasury), 2 ether); // Treasury receives an additional 10% of the equity in collateral asset
     }
