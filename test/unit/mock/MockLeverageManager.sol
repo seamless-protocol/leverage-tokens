@@ -12,7 +12,7 @@ import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
-import {LeverageTokenState, ActionData, RebalanceAction, TokenTransfer} from "src/types/DataTypes.sol";
+import {LeverageTokenState, ActionData, RebalanceAction} from "src/types/DataTypes.sol";
 
 contract MockLeverageManager is Test {
     uint256 public BASE_RATIO = 1e18;
@@ -277,17 +277,17 @@ contract MockLeverageManager is Test {
     }
 
     function rebalance(
+        ILeverageToken leverageToken,
         RebalanceAction[] calldata actions,
-        TokenTransfer[] calldata tokensIn,
-        TokenTransfer[] calldata tokensOut
+        IERC20 tokenIn,
+        IERC20 tokenOut,
+        uint256 amountIn,
+        uint256 amountOut
     ) external {
         // Transfer tokens in from caller to this contract
-        for (uint256 i = 0; i < tokensIn.length; i++) {
-            IERC20(tokensIn[i].token).transferFrom(msg.sender, address(this), tokensIn[i].amount);
-        }
+        tokenIn.transferFrom(msg.sender, address(this), amountIn);
 
         for (uint256 i = 0; i < actions.length; i++) {
-            ILeverageToken leverageToken = actions[i].leverageToken;
             address rebalanceAdapter = getLeverageTokenRebalanceAdapter(leverageToken);
 
             bool isEligible = IRebalanceAdapter(rebalanceAdapter).isEligibleForRebalance(
@@ -299,8 +299,6 @@ contract MockLeverageManager is Test {
         }
 
         // Transfer tokens out from this contract to caller
-        for (uint256 i = 0; i < tokensOut.length; i++) {
-            IERC20(tokensOut[i].token).transfer(msg.sender, tokensOut[i].amount);
-        }
+        tokenOut.transfer(msg.sender, amountOut);
     }
 }
