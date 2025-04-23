@@ -10,19 +10,18 @@ import {IOracle} from "@morpho-blue/interfaces/IOracle.sol";
 // Internal imports
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageManagerHarness} from "test/unit/harness/LeverageManagerHarness.t.sol";
-import {
-    LeverageTokenState,
-    RebalanceAction,
-    ActionType,
-    LeverageTokenConfig,
-    TokenTransfer
-} from "src/types/DataTypes.sol";
+import {LeverageTokenState, RebalanceAction, ActionType, LeverageTokenConfig} from "src/types/DataTypes.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {LeverageManagerTest} from "test/integration/LeverageManager/LeverageManager.t.sol";
 import {MorphoLendingAdapter} from "src/lending/MorphoLendingAdapter.sol";
 import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 import {RebalanceAdapter} from "src/rebalance/RebalanceAdapter.sol";
+
+enum RebalanceType {
+    UP,
+    DOWN
+}
 
 contract RebalanceTest is LeverageManagerTest {
     int256 public constant MAX_PERCENTAGE = 100_00; // 100%
@@ -100,7 +99,7 @@ contract RebalanceTest is LeverageManagerTest {
 
         // User rebalances the leverage token but still leaves it out of bounds
         // User adds 1 ETH collateral and borrows 4100 USDC
-        _rebalance(ethLong2x, 1e18, 0, 4100 * 1e6, 0);
+        _rebalance(ethLong2x, RebalanceType.UP, 1e18, 0, 4100 * 1e6, 0);
 
         // Validate that ratio is better (leans towards 2x)
         LeverageTokenState memory stateAfter = getLeverageTokenState(ethLong2x);
@@ -135,7 +134,7 @@ contract RebalanceTest is LeverageManagerTest {
         uint256 debtBefore = ethLong2xAdapter.getDebt();
 
         // User repays 2800 USDC and removes 1 ETH collateral
-        _rebalance(ethLong2x, 0, 1e18, 0, 2800 * 1e6);
+        _rebalance(ethLong2x, RebalanceType.DOWN, 0, 1e18, 0, 2800 * 1e6);
 
         // Validate that ratio is better (leans towards 2x)
         LeverageTokenState memory stateAfter = getLeverageTokenState(ethLong2x);
@@ -162,14 +161,14 @@ contract RebalanceTest is LeverageManagerTest {
         _moveEthPrice(-20_00);
 
         // User comes and rebalances it in a way that he only adds collateral so leverage token becomes over-collateralized
-        (RebalanceAction[] memory actions, TokenTransfer[] memory transfersIn, TokenTransfer[] memory transfersOut) =
-            _prepareForRebalance(ethLong2x, 10 * 1e18, 0, 0, 0);
+        (RebalanceAction[] memory actions, IERC20 tokenIn, IERC20 tokenOut, uint256 amountIn, uint256 amountOut) =
+            _prepareForRebalance(ethLong2x, RebalanceType.UP, 10 * 1e18, 0, 0, 0);
 
         vm.prank(address(ethLong2xRebalanceAdapter));
         vm.expectRevert(
             abi.encodeWithSelector(ILeverageManager.InvalidLeverageTokenStateAfterRebalance.selector, ethLong2x)
         );
-        leverageManager.rebalance(actions, transfersIn, transfersOut);
+        leverageManager.rebalance(ethLong2x, actions, tokenIn, tokenOut, amountIn, amountOut);
     }
 
     struct RebalanceData {
@@ -187,20 +186,21 @@ contract RebalanceTest is LeverageManagerTest {
     /// @param debtToRepay Amount of debt to repay
     function _rebalance(
         ILeverageToken leverageToken,
+        RebalanceType rebalanceType,
         uint256 collToAdd,
         uint256 collToTake,
         uint256 debtToBorrow,
         uint256 debtToRepay
     ) internal {
-        (RebalanceAction[] memory actions, TokenTransfer[] memory transfersIn, TokenTransfer[] memory transfersOut) =
-            _prepareForRebalance(leverageToken, collToAdd, collToTake, debtToBorrow, debtToRepay);
+        (RebalanceAction[] memory actions, IERC20 tokenIn, IERC20 tokenOut, uint256 amountIn, uint256 amountOut) =
+            _prepareForRebalance(leverageToken, rebalanceType, collToAdd, collToTake, debtToBorrow, debtToRepay);
 
         vm.prank(
             address(leverageToken) == address(ethLong2x)
                 ? address(ethLong2xRebalanceAdapter)
                 : address(ethShort2xRebalanceAdapter)
         );
-        leverageManager.rebalance(actions, transfersIn, transfersOut);
+        leverageManager.rebalance(leverageToken, actions, tokenIn, tokenOut, amountIn, amountOut);
     }
 
     /// @notice Prepares the state for the rebalance which means prepares the parameters for function call but also mint tokens to rebalancer
@@ -210,46 +210,45 @@ contract RebalanceTest is LeverageManagerTest {
     /// @param debtToBorrow Amount of debt to borrow
     /// @param debtToRepay Amount of debt to repay
     /// @return actions Actions to execute
-    /// @return transfersIn Transfers in tokens parameters for function call
-    /// @return transfersOut Transfers out tokens parameters for function call
+    /// @return tokenIn Token to transfer in
+    /// @return tokenOut Token to transfer out
+    /// @return amountIn Amount of tokenIn to transfer in
+    /// @return amountOut Amount of tokenOut to transfer out
     function _prepareForRebalance(
         ILeverageToken leverageToken,
+        RebalanceType rebalanceType,
         uint256 collToAdd,
         uint256 collToTake,
         uint256 debtToBorrow,
         uint256 debtToRepay
     )
         internal
-        returns (
-            RebalanceAction[] memory actions,
-            TokenTransfer[] memory transfersIn,
-            TokenTransfer[] memory transfersOut
-        )
+        returns (RebalanceAction[] memory actions, IERC20 tokenIn, IERC20 tokenOut, uint256 amountIn, uint256 amountOut)
     {
         address rebalancer = address(leverageToken) == address(ethLong2x)
             ? address(ethLong2xRebalanceAdapter)
             : address(ethShort2xRebalanceAdapter);
 
-        actions = new RebalanceAction[](4);
-        actions[0] =
-            RebalanceAction({leverageToken: leverageToken, actionType: ActionType.AddCollateral, amount: collToAdd});
-        actions[1] = RebalanceAction({leverageToken: leverageToken, actionType: ActionType.Repay, amount: debtToRepay});
-        actions[2] =
-            RebalanceAction({leverageToken: leverageToken, actionType: ActionType.RemoveCollateral, amount: collToTake});
-        actions[3] =
-            RebalanceAction({leverageToken: leverageToken, actionType: ActionType.Borrow, amount: debtToBorrow});
-
         address collateralToken = address(leverageManager.getLeverageTokenCollateralAsset(leverageToken));
         address debtToken = address(leverageManager.getLeverageTokenDebtAsset(leverageToken));
 
-        // Give collateral token to add collateral and give debt token to repay debt
-        transfersIn = new TokenTransfer[](2);
-        transfersIn[0] = TokenTransfer({token: collateralToken, amount: collToAdd});
-        transfersIn[1] = TokenTransfer({token: debtToken, amount: debtToRepay});
+        actions = new RebalanceAction[](4);
+        actions[0] = RebalanceAction({actionType: ActionType.AddCollateral, amount: collToAdd});
+        actions[1] = RebalanceAction({actionType: ActionType.Repay, amount: debtToRepay});
+        actions[2] = RebalanceAction({actionType: ActionType.RemoveCollateral, amount: collToTake});
+        actions[3] = RebalanceAction({actionType: ActionType.Borrow, amount: debtToBorrow});
 
-        transfersOut = new TokenTransfer[](2);
-        transfersOut[0] = TokenTransfer({token: collateralToken, amount: collToTake});
-        transfersOut[1] = TokenTransfer({token: debtToken, amount: debtToBorrow});
+        if (rebalanceType == RebalanceType.UP) {
+            tokenIn = IERC20(collateralToken);
+            tokenOut = IERC20(debtToken);
+            amountIn = collToAdd;
+            amountOut = debtToBorrow;
+        } else {
+            tokenIn = IERC20(debtToken);
+            tokenOut = IERC20(collateralToken);
+            amountIn = debtToRepay;
+            amountOut = collToTake;
+        }
 
         // Mint collateral token to add collateral and debt token to repay debt
         deal(address(collateralToken), rebalancer, collToAdd);
@@ -263,7 +262,7 @@ contract RebalanceTest is LeverageManagerTest {
 
         vm.stopPrank();
 
-        return (actions, transfersIn, transfersOut);
+        return (actions, tokenIn, tokenOut, amountIn, amountOut);
     }
 
     function _supplyWETHForETHShortLeverageToken() internal {
