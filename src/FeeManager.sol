@@ -214,11 +214,10 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
     function _getAccruedManagementFee(ILeverageToken token) internal view returns (uint256) {
         uint128 managementFee = getManagementFee();
         uint120 lastManagementFeeAccrualTimestamp = getLastManagementFeeAccrualTimestamp(token);
+        uint256 totalSupply = token.totalSupply();
 
         uint256 duration = block.timestamp - lastManagementFeeAccrualTimestamp;
-        if (duration == 0 || managementFee == 0) return 0;
 
-        uint256 totalSupply = token.totalSupply();
         uint256 sharesFee =
             Math.mulDiv(managementFee * totalSupply, duration, MAX_FEE * SECS_PER_YEAR, Math.Rounding.Ceil);
         return sharesFee;
