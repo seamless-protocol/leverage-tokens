@@ -29,8 +29,8 @@ contract CreateNewLeverageTokenTest is LeverageManagerTest {
         config.rebalanceAdapter = IRebalanceAdapterBase(makeAddr(rebalanceAdapterName));
         config.lendingAdapter = ILendingAdapter(makeAddr(lendingAdapterName));
 
-        config.depositTokenFee = bound(config.depositTokenFee, 0, _MAX_FEE());
-        config.withdrawTokenFee = bound(config.withdrawTokenFee, 0, _MAX_FEE());
+        config.depositTokenFee = bound(config.depositTokenFee, 0, MAX_FEE);
+        config.withdrawTokenFee = bound(config.withdrawTokenFee, 0, MAX_FEE);
 
         address expectedLeverageTokenAddress = leverageTokenFactory.computeProxyAddress(
             address(leverageManager),
@@ -60,5 +60,6 @@ contract CreateNewLeverageTokenTest is LeverageManagerTest {
         );
 
         assertEq(leverageManager.getLeverageTokenInitialCollateralRatio(leverageToken), targetCollateralRatio);
+        assertEq(leverageManager.getLastManagementFeeAccrualTimestamp(leverageToken), block.timestamp);
     }
 }

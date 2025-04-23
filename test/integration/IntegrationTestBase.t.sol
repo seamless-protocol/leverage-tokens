@@ -30,6 +30,7 @@ import {RebalanceAdapter} from "src/rebalance/RebalanceAdapter.sol";
 contract IntegrationTestBase is Test {
     uint256 public constant FORK_BLOCK_NUMBER = 25473904;
     uint256 public constant BASE_RATIO = 1e18;
+    uint256 public constant SECONDS_ONE_YEAR = 31536000;
 
     IERC20 public constant WETH = IERC20(0x4200000000000000000000000000000000000006);
     IERC20 public constant USDC = IERC20(0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913);

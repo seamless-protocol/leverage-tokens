@@ -136,4 +136,55 @@ contract ConvertToSharesTest is LeverageManagerTest {
 
         assertEq(shares, expectedShares);
     }
+
+    function test_convertToShares_Deposit_WithManagementFee() public {
+        uint128 equity = 10;
+        uint128 sharesTotalSupply = 99;
+        uint128 totalEquity = 100;
+
+        uint128 managementFee = 0.1e4; // 10%
+        vm.prank(feeManagerRole);
+        leverageManager.setManagementFee(managementFee);
+        feeManager.chargeManagementFee(leverageToken);
+
+        _mockState_ConvertToShares(
+            ConvertToSharesState({totalEquity: totalEquity, sharesTotalSupply: sharesTotalSupply})
+        );
+
+        uint256 shares = leverageManager.exposed_convertToShares(leverageToken, equity, ExternalAction.Deposit);
+        assertEq(shares, 9);
+
+        // One year passes
+        skip(SECONDS_ONE_YEAR);
+
+        // Shares should be slightly more than 10 because of the management fee increasing the virtual total supply
+        shares = leverageManager.exposed_convertToShares(leverageToken, equity, ExternalAction.Deposit);
+        assertEq(shares, 10);
+    }
+
+    function test_convertToShares_Withdraw_WithManagementFee() public {
+        uint128 equity = 10;
+        uint128 sharesTotalSupply = 99;
+        uint128 totalEquity = 100;
+
+        uint128 managementFee = 0.1e4; // 10%
+
+        vm.prank(feeManagerRole);
+        leverageManager.setManagementFee(managementFee);
+        feeManager.chargeManagementFee(leverageToken);
+
+        _mockState_ConvertToShares(
+            ConvertToSharesState({totalEquity: totalEquity, sharesTotalSupply: sharesTotalSupply})
+        );
+
+        uint256 shares = leverageManager.exposed_convertToShares(leverageToken, equity, ExternalAction.Withdraw);
+        assertEq(shares, 10);
+
+        // One year passes
+        skip(SECONDS_ONE_YEAR);
+
+        // Shares should be slightly more than 10 because of the management fee increasing the virtual total supply
+        shares = leverageManager.exposed_convertToShares(leverageToken, equity, ExternalAction.Withdraw);
+        assertEq(shares, 11);
+    }
 }

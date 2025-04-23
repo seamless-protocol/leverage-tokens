@@ -44,6 +44,10 @@ contract LeverageManagerDepositTest is LeverageManagerTest {
     function testFork_deposit_WithFees() public {
         uint256 fee = 10_00; // 10%
         leverageManager.setTreasuryActionFee(ExternalAction.Deposit, fee);
+
+        uint128 managementFee = 10_00; // 10%
+        leverageManager.setManagementFee(managementFee);
+
         leverageToken = _createNewLeverageToken(BASE_RATIO, 2 * BASE_RATIO, 3 * BASE_RATIO, fee, 0);
         morphoLendingAdapter =
             MorphoLendingAdapter(address(leverageManager.getLeverageTokenLendingAdapter(leverageToken)));
@@ -59,8 +63,25 @@ contract LeverageManagerDepositTest is LeverageManagerTest {
         assertEq(morphoLendingAdapter.getEquityInCollateralAsset(), 8999999999800422784);
         assertEq(leverageToken.balanceOf(user), leverageToken.totalSupply());
 
+        // No shares fee minted to the treasury, as no management fee has accrued yet
+        assertEq(leverageToken.balanceOf(treasury), 0);
+
         assertEq(WETH.balanceOf(treasury), 1 ether); // Treasury receives 10% of the equity in collateral asset
-        assertEq(WETH.balanceOf(user), 1 ether); // User receives 10% of the equity in collateral asset
+        assertEq(WETH.balanceOf(user), 1 ether); // User keeps 10% of the equity in collateral asset
+
+        // One year passes, same deposit amount occurs
+        skip(SECONDS_ONE_YEAR);
+        _deposit(user, equityInCollateralAsset, collateralToAdd); // Same collateral is required for the deposit
+
+        // Slightly less than 8 ether of shares are minted to the user because of the share dilution from the management fee
+        // and morpho borrow interest
+        assertEq(leverageToken.balanceOf(user), 8 ether + 7.924523833507237152 ether);
+
+        // Management fee has been accrued and charged as a year has passed
+        assertEq(leverageToken.balanceOf(treasury), 0.8 ether);
+
+        assertEq(leverageToken.totalSupply(), leverageToken.balanceOf(user) + leverageToken.balanceOf(treasury));
+        assertEq(WETH.balanceOf(treasury), 2 ether); // Treasury receives an additional 10% of the equity in collateral asset
     }
 
     /// @dev In this block price on oracle 3392.292471591441746049801068

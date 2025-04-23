@@ -19,6 +19,15 @@ interface IFeeManager {
     /// @param fee The fee that was set
     event LeverageTokenActionFeeSet(ILeverageToken indexed leverageToken, ExternalAction indexed action, uint256 fee);
 
+    /// @notice Emitted when the management fee is charged for a LeverageToken
+    /// @param leverageToken The LeverageToken that the management fee was charged for
+    /// @param sharesFee The amount of shares that were minted to the treasury
+    event ManagementFeeCharged(ILeverageToken indexed leverageToken, uint256 sharesFee);
+
+    /// @notice Emitted when the management fee is set
+    /// @param fee The fee that was set
+    event ManagementFeeSet(uint128 fee);
+
     /// @notice Emitted when a treasury fee is set for a specific action
     /// @param action The action that the fee was set for
     /// @param fee The fee that was set
@@ -27,6 +36,20 @@ interface IFeeManager {
     /// @notice Emitted when the treasury address is set
     /// @param treasury The address of the treasury
     event TreasurySet(address treasury);
+
+    /// @notice Function that charges any accrued management fees for the LeverageToken by minting shares to the treasury
+    /// @param token LeverageToken to charge management fee for
+    /// @dev If the treasury is not set, the management fee is not charged (shares are not minted to the treasury) but
+    /// still accrues
+    function chargeManagementFee(ILeverageToken token) external;
+
+    /// @notice Returns the timestamp of the most recent management fee accrual for a LeverageToken
+    /// @param leverageToken The LeverageToken to get the timestamp for
+    /// @return timestamp The timestamp of the most recent management fee accrual
+    function getLastManagementFeeAccrualTimestamp(ILeverageToken leverageToken)
+        external
+        view
+        returns (uint120 timestamp);
 
     /// @notice Returns the LeverageToken fee for a specific action
     /// @param leverageToken The LeverageToken to get fee for
@@ -37,6 +60,10 @@ interface IFeeManager {
         view
         returns (uint256 fee);
 
+    /// @notice Returns the management fee for the LeverageManager
+    /// @return fee Management fee for the LeverageManager, 100_00 is 100%
+    function getManagementFee() external view returns (uint256 fee);
+
     /// @notice Returns the address of the treasury
     /// @return treasury The address of the treasury
     function getTreasury() external view returns (address treasury);
@@ -46,9 +73,10 @@ interface IFeeManager {
     /// @return fee Fee for action, 100_00 is 100%
     function getTreasuryActionFee(ExternalAction action) external view returns (uint256 fee);
 
-    /// @notice Returns the max fee that can be set
-    /// @return maxFee Max fee, 100_00 is 100%
-    function MAX_FEE() external view returns (uint256 maxFee);
+    /// @notice Sets the management fee
+    /// @param fee Management fee, 100_00 is 100%
+    /// @dev Only `FEE_MANAGER_ROLE` can call this function
+    function setManagementFee(uint128 fee) external;
 
     /// @notice Sets the address of the treasury. The treasury receives all treasury fees from the LeverageManager. If the
     ///         treasury is set to the zero address, the treasury fees are reset to 0 as well

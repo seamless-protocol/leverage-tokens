@@ -12,18 +12,10 @@ import {FeeManagerTest} from "test/unit/FeeManager/FeeManager.t.sol";
 import {FeeManager} from "src/FeeManager.sol";
 
 contract SetTreasuryActionFeeTest is FeeManagerTest {
-    address public treasury = makeAddr("treasury");
-
-    function setUp() public override {
-        super.setUp();
-
-        _setTreasury(feeManagerRole, treasury);
-    }
-
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_setTreasuryActionFee(uint256 actionNum, uint256 fee) public {
         ExternalAction action = ExternalAction(actionNum % 2);
-        fee = bound(fee, 0, feeManager.MAX_FEE());
+        fee = bound(fee, 0, MAX_FEE);
 
         vm.expectEmit(true, true, true, true);
         emit IFeeManager.TreasuryActionFeeSet(action, fee);
@@ -51,9 +43,9 @@ contract SetTreasuryActionFeeTest is FeeManagerTest {
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_setTreasuryActionFee_RevertIf_FeeTooHigh(uint256 actionNum, uint256 fee) public {
         ExternalAction action = ExternalAction(actionNum % 2);
-        fee = bound(fee, feeManager.MAX_FEE() + 1, type(uint256).max);
+        fee = bound(fee, MAX_FEE + 1, type(uint256).max);
 
-        vm.expectRevert(abi.encodeWithSelector(IFeeManager.FeeTooHigh.selector, fee, feeManager.MAX_FEE()));
+        vm.expectRevert(abi.encodeWithSelector(IFeeManager.FeeTooHigh.selector, fee, MAX_FEE));
         _setTreasuryActionFee(feeManagerRole, action, fee);
     }
 

@@ -23,12 +23,16 @@ contract DepositTest is PreviewActionTest {
         _prepareLeverageManagerStateForAction(beforeState);
 
         uint256 equityToAddInCollateralAsset = 10 ether;
-        _testDeposit(equityToAddInCollateralAsset, 0);
+        _testDeposit(equityToAddInCollateralAsset, 0, SECONDS_ONE_YEAR);
     }
 
     function test_deposit_WithFees() public {
         leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Deposit, 0.05e4); // 5% fee
         _setTreasuryActionFee(ExternalAction.Deposit, 0.1e4); // 10% fee
+
+        vm.prank(feeManagerRole);
+        leverageManager.setManagementFee(0.1e4); // 10% management fee
+        feeManager.chargeManagementFee(leverageToken);
 
         MockLeverageManagerStateForAction memory beforeState =
             MockLeverageManagerStateForAction({collateral: 200 ether, debt: 50 ether, sharesTotalSupply: 100 ether});
@@ -36,7 +40,7 @@ contract DepositTest is PreviewActionTest {
         _prepareLeverageManagerStateForAction(beforeState);
 
         uint256 equityToAddInCollateralAsset = 10 ether;
-        _testDeposit(equityToAddInCollateralAsset, 0);
+        _testDeposit(equityToAddInCollateralAsset, 0, SECONDS_ONE_YEAR);
     }
 
     function testFuzz_deposit_SharesTotalSupplyGreaterThanZero(
@@ -62,7 +66,7 @@ contract DepositTest is PreviewActionTest {
         equityToAddInCollateralAsset = uint128(bound(equityToAddInCollateralAsset, 1, type(uint96).max));
 
         uint256 allowedSlippage = _getAllowedCollateralRatioSlippage(initialDebtInCollateralAsset);
-        _testDeposit(equityToAddInCollateralAsset, allowedSlippage);
+        _testDeposit(equityToAddInCollateralAsset, allowedSlippage, 0);
     }
 
     function test_deposit_EquityToDepositIsZero() public {
@@ -77,7 +81,7 @@ contract DepositTest is PreviewActionTest {
         assertEq(previewData.collateral, 0);
         assertEq(previewData.debt, 0);
 
-        _testDeposit(equityToAddInCollateralAsset, 0);
+        _testDeposit(equityToAddInCollateralAsset, 0, 0);
     }
 
     function test_deposit_IsEmptyLeverageToken() public {
@@ -160,9 +164,14 @@ contract DepositTest is PreviewActionTest {
         leverageManager.deposit(leverageToken, equityToAddInCollateralAsset, minShares);
     }
 
-    function _testDeposit(uint256 equityToAddInCollateralAsset, uint256 collateralRatioDeltaRelative) internal {
+    function _testDeposit(uint256 equityToAddInCollateralAsset, uint256 collateralRatioDeltaRelative, uint256 deltaTime)
+        internal
+    {
+        skip(deltaTime);
+
         LeverageTokenState memory beforeState = leverageManager.getLeverageTokenState(leverageToken);
         uint256 beforeSharesTotalSupply = leverageToken.totalSupply();
+        uint256 beforeSharesFeeAdjustedTotalSupply = leverageManager.exposed_getFeeAdjustedTotalSupply(leverageToken);
 
         // The assertion for collateral ratio before and after the deposit in this helper only makes sense to use
         // if the leverage token has totalSupply > 0 before deposit, as a deposit of equity into a leverage token with totalSupply = 0
@@ -195,6 +204,16 @@ contract DepositTest is PreviewActionTest {
             leverageToken.balanceOf(address(this)),
             actualDepositData.shares,
             "Shares received mismatch with returned data"
+        );
+        assertEq(
+            leverageToken.totalSupply(),
+            beforeSharesFeeAdjustedTotalSupply + actualDepositData.shares,
+            "Shares total supply mismatch, should include accrued management fee shares"
+        );
+        assertEq(
+            leverageToken.balanceOf(treasury),
+            beforeSharesFeeAdjustedTotalSupply - beforeSharesTotalSupply,
+            "Treasury should have received the accrued management fee shares"
         );
         assertEq(actualDepositData.tokenFee, expectedDepositData.tokenFee, "LeverageToken fee mismatch");
         assertEq(actualDepositData.treasuryFee, expectedDepositData.treasuryFee, "Treasury fee mismatch");

@@ -24,16 +24,21 @@ import {IFeeManager} from "src/interfaces/IFeeManager.sol";
  * the maximum fee, the LeverageToken fee is set to the delta of the maximum fee and the treasury fee.
  */
 contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, ReentrancyGuardUpgradeable {
-    /// @inheritdoc IFeeManager
-    uint256 public constant MAX_FEE = 100_00;
-
     bytes32 public constant FEE_MANAGER_ROLE = keccak256("FEE_MANAGER_ROLE");
+
+    uint256 internal constant MAX_FEE = 100_00;
+
+    uint256 internal constant SECS_PER_YEAR = 31536000;
 
     /// @dev Struct containing all state for the FeeManager contract
     /// @custom:storage-location erc7201:seamless.contracts.storage.FeeManager
     struct FeeManagerStorage {
-        /// @dev Treasury address that receives treasury fees
+        /// @dev Treasury address that receives treasury fees and management fees
         address treasury;
+        /// @dev Annual management fee. 100_00 is 100%
+        uint256 managementFee;
+        /// @dev Timestamp when the management fee was most recently accrued for each LeverageToken
+        mapping(ILeverageToken token => uint120) lastManagementFeeAccrualTimestamp;
         /// @dev Treasury fee for each action
         mapping(ExternalAction action => uint256) treasuryActionFee;
         /// @dev LeverageToken fee for each action
@@ -59,8 +64,18 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
     }
 
     /// @inheritdoc IFeeManager
+    function getLastManagementFeeAccrualTimestamp(ILeverageToken token) public view returns (uint120) {
+        return _getFeeManagerStorage().lastManagementFeeAccrualTimestamp[token];
+    }
+
+    /// @inheritdoc IFeeManager
     function getLeverageTokenActionFee(ILeverageToken token, ExternalAction action) public view returns (uint256 fee) {
         return _getFeeManagerStorage().tokenActionFee[token][action];
+    }
+
+    /// @inheritdoc IFeeManager
+    function getManagementFee() public view returns (uint256 fee) {
+        return _getFeeManagerStorage().managementFee;
     }
 
     /// @inheritdoc IFeeManager
@@ -71,6 +86,14 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
     /// @inheritdoc IFeeManager
     function getTreasuryActionFee(ExternalAction action) public view returns (uint256 fee) {
         return _getFeeManagerStorage().treasuryActionFee[action];
+    }
+
+    /// @inheritdoc IFeeManager
+    function setManagementFee(uint128 fee) external onlyRole(FEE_MANAGER_ROLE) {
+        _validateFee(fee);
+
+        _getFeeManagerStorage().managementFee = fee;
+        emit ManagementFeeSet(fee);
     }
 
     /// @inheritdoc IFeeManager
@@ -89,18 +112,33 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
 
     /// @inheritdoc IFeeManager
     function setTreasuryActionFee(ExternalAction action, uint256 fee) external onlyRole(FEE_MANAGER_ROLE) {
-        FeeManagerStorage storage $ = _getFeeManagerStorage();
-
-        if (fee > MAX_FEE) {
-            revert FeeTooHigh(fee, MAX_FEE);
-        }
-
-        if ($.treasury == address(0)) {
+        _validateFee(fee);
+        if (getTreasury() == address(0)) {
             revert TreasuryNotSet();
         }
 
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
         $.treasuryActionFee[action] = fee;
+
         emit TreasuryActionFeeSet(action, fee);
+    }
+
+    /// @inheritdoc IFeeManager
+    function chargeManagementFee(ILeverageToken token) public {
+        address treasury = getTreasury();
+
+        // If the treasury is not set, do nothing. Management fee will continue to accrue
+        // but cannot be minted until the treasury is set
+        if (treasury == address(0)) {
+            return;
+        }
+
+        // Shares fee must be obtained before the last management fee accrual timestamp is updated
+        uint256 sharesFee = _getAccruedManagementFee(token);
+        _getFeeManagerStorage().lastManagementFeeAccrualTimestamp[token] = uint120(block.timestamp);
+
+        token.mint(treasury, sharesFee);
+        emit ManagementFeeCharged(token, sharesFee);
     }
 
     /// @notice Computes equity fees based on action
@@ -157,18 +195,47 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
         }
     }
 
+    /// @notice Function that returns the total supply of the LeverageToken adjusted for any accrued management fees
+    /// @param token LeverageToken to get fee adjusted total supply for
+    /// @return totalSupply Fee adjusted total supply of the LeverageToken
+    function _getFeeAdjustedTotalSupply(ILeverageToken token) internal view returns (uint256) {
+        uint256 totalSupply = token.totalSupply();
+        uint256 accruedManagementFee = _getAccruedManagementFee(token);
+        return totalSupply + accruedManagementFee;
+    }
+
+    /// @notice Function that calculates how many shares to mint for the accrued management fee at the current timestamp
+    /// @param token LeverageToken to calculate management fee shares for
+    /// @return shares Shares to mint
+    function _getAccruedManagementFee(ILeverageToken token) internal view returns (uint256) {
+        uint256 managementFee = getManagementFee();
+        uint120 lastManagementFeeAccrualTimestamp = getLastManagementFeeAccrualTimestamp(token);
+        uint256 totalSupply = token.totalSupply();
+
+        uint256 duration = block.timestamp - lastManagementFeeAccrualTimestamp;
+
+        uint256 sharesFee =
+            Math.mulDiv(managementFee * totalSupply, duration, MAX_FEE * SECS_PER_YEAR, Math.Rounding.Ceil);
+        return sharesFee;
+    }
+
     /// @notice Sets the LeverageToken fee for a specific action
     /// @param token LeverageToken to set fee for
     /// @param action Action to set fee for
     /// @param fee Fee for action, 100_00 is 100%
     /// @dev If caller tries to set fee above 100% it reverts with FeeTooHigh error
     function _setLeverageTokenActionFee(ILeverageToken token, ExternalAction action, uint256 fee) internal {
-        // Check if fees are not higher than 100%
-        if (fee > MAX_FEE) {
-            revert FeeTooHigh(fee, MAX_FEE);
-        }
+        _validateFee(fee);
 
         _getFeeManagerStorage().tokenActionFee[token][action] = fee;
         emit LeverageTokenActionFeeSet(token, action, fee);
+    }
+
+    /// @notice Validates that the fee is not higher than 100%
+    /// @param fee Fee to validate
+    function _validateFee(uint256 fee) internal pure {
+        if (fee > MAX_FEE) {
+            revert FeeTooHigh(fee, MAX_FEE);
+        }
     }
 }
