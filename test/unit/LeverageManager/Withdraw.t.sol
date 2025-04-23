@@ -13,7 +13,7 @@ contract WithdrawTest is PreviewActionTest {
 
         vm.prank(feeManagerRole);
         leverageManager.setManagementFee(0.1e4); // 10% management fee
-        leverageManager.exposed_setLastManagementFeeAccrualTimestamp(leverageToken);
+        feeManager.chargeManagementFee(leverageToken);
 
         // 1:2 exchange rate
         lendingAdapter.mockConvertCollateralToDebtAssetExchangeRate(2e8);

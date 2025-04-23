@@ -15,18 +15,19 @@ contract GetAccruedManagementFeeTest is FeeManagerTest {
         uint256 totalSupply = 1000;
         leverageToken.mint(address(this), totalSupply);
 
-        feeManager.exposed_setLastManagementFeeAccrualTimestamp(leverageToken);
+        vm.warp(0);
+        feeManager.chargeManagementFee(leverageToken);
         skip(SECONDS_ONE_YEAR / 2);
 
         uint256 sharesFee = feeManager.exposed_getAccruedManagementFee(leverageToken);
 
         assertEq(sharesFee, 50); // half of 10% of 1000 total supply
 
-        feeManager.exposed_setLastManagementFeeAccrualTimestamp(leverageToken);
+        feeManager.chargeManagementFee(leverageToken);
         skip(SECONDS_ONE_YEAR / 2);
 
         sharesFee = feeManager.exposed_getAccruedManagementFee(leverageToken);
-        assertEq(sharesFee, 50); // other half of 10% of 1000 total supply
+        assertEq(sharesFee, 53); // half of 10% of 1000 + 50, rounded up
     }
 
     function testFuzz_getAccruedManagementFee_RoundsUp(uint128 totalSupply, uint128 managementFee) public {
@@ -37,7 +38,8 @@ contract GetAccruedManagementFeeTest is FeeManagerTest {
 
         leverageToken.mint(address(this), totalSupply);
 
-        feeManager.exposed_setLastManagementFeeAccrualTimestamp(leverageToken);
+        vm.warp(0);
+        feeManager.chargeManagementFee(leverageToken);
         skip(SECONDS_ONE_YEAR);
 
         uint256 sharesFee = feeManager.exposed_getAccruedManagementFee(leverageToken);
@@ -51,7 +53,8 @@ contract GetAccruedManagementFeeTest is FeeManagerTest {
 
         leverageToken.mint(address(this), totalSupply);
 
-        feeManager.exposed_setLastManagementFeeAccrualTimestamp(leverageToken);
+        vm.warp(0);
+        feeManager.chargeManagementFee(leverageToken);
 
         vm.prank(feeManagerRole);
         feeManager.setManagementFee(managementFee);
@@ -68,7 +71,7 @@ contract GetAccruedManagementFeeTest is FeeManagerTest {
 
         leverageToken.mint(address(this), totalSupply);
 
-        feeManager.exposed_setLastManagementFeeAccrualTimestamp(leverageToken);
+        feeManager.chargeManagementFee(leverageToken);
         skip(deltaT);
 
         uint256 shares = feeManager.exposed_getAccruedManagementFee(leverageToken);
@@ -80,7 +83,7 @@ contract GetAccruedManagementFeeTest is FeeManagerTest {
         managementFee = uint128(bound(managementFee, 1, feeManager.MAX_FEE()));
         deltaT = uint120(bound(deltaT, 1, type(uint120).max));
 
-        feeManager.exposed_setLastManagementFeeAccrualTimestamp(leverageToken);
+        feeManager.chargeManagementFee(leverageToken);
         skip(deltaT);
 
         vm.prank(feeManagerRole);

@@ -13,16 +13,16 @@ interface IFeeManager {
     /// @notice Error emitted when trying to set a treasury fee when the treasury address is not set
     error TreasuryNotSet();
 
-    /// @notice Emitted when the last management fee accrual timestamp is set for a LeverageToken
-    /// @param leverageToken The LeverageToken that the timestamp was set for
-    /// @param timestamp The timestamp that was set
-    event LastManagementFeeAccrualTimestampSet(ILeverageToken indexed leverageToken, uint256 timestamp);
-
     /// @notice Emitted when a LeverageToken fee is set for a specific action
     /// @param leverageToken The LeverageToken that the fee was set for
     /// @param action The action that the fee was set for
     /// @param fee The fee that was set
     event LeverageTokenActionFeeSet(ILeverageToken indexed leverageToken, ExternalAction indexed action, uint256 fee);
+
+    /// @notice Emitted when the management fee is charged for a LeverageToken
+    /// @param leverageToken The LeverageToken that the management fee was charged for
+    /// @param sharesFee The amount of shares that were minted to the treasury
+    event ManagementFeeCharged(ILeverageToken indexed leverageToken, uint256 sharesFee);
 
     /// @notice Emitted when the management fee is set
     /// @param fee The fee that was set
@@ -62,7 +62,7 @@ interface IFeeManager {
 
     /// @notice Returns the management fee for the LeverageManager
     /// @return fee Management fee for the LeverageManager, 100_00 is 100%
-    function getManagementFee() external view returns (uint128 fee);
+    function getManagementFee() external view returns (uint256 fee);
 
     /// @notice Returns the address of the treasury
     /// @return treasury The address of the treasury

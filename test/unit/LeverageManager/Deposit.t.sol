@@ -32,7 +32,7 @@ contract DepositTest is PreviewActionTest {
 
         vm.prank(feeManagerRole);
         leverageManager.setManagementFee(0.1e4); // 10% management fee
-        leverageManager.exposed_setLastManagementFeeAccrualTimestamp(leverageToken);
+        feeManager.chargeManagementFee(leverageToken);
 
         MockLeverageManagerStateForAction memory beforeState =
             MockLeverageManagerStateForAction({collateral: 200 ether, debt: 50 ether, sharesTotalSupply: 100 ether});

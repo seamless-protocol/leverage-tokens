@@ -37,7 +37,7 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
         /// @dev Treasury address that receives treasury fees and management fees
         address treasury;
         /// @dev Annual management fee. 100_00 is 100%
-        uint128 managementFee;
+        uint256 managementFee;
         /// @dev Timestamp when the management fee was most recently accrued for each LeverageToken
         mapping(ILeverageToken token => uint120) lastManagementFeeAccrualTimestamp;
         /// @dev Treasury fee for each action
@@ -75,7 +75,7 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
     }
 
     /// @inheritdoc IFeeManager
-    function getManagementFee() public view returns (uint128 fee) {
+    function getManagementFee() public view returns (uint256 fee) {
         return _getFeeManagerStorage().managementFee;
     }
 
@@ -93,9 +93,7 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
     function setManagementFee(uint128 fee) external onlyRole(FEE_MANAGER_ROLE) {
         _validateFee(fee);
 
-        FeeManagerStorage storage $ = _getFeeManagerStorage();
-        $.managementFee = fee;
-
+        _getFeeManagerStorage().managementFee = fee;
         emit ManagementFeeSet(fee);
     }
 
@@ -136,13 +134,12 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
             return;
         }
 
+        // Shares fee must be obtained before the last management fee accrual timestamp is updated
         uint256 sharesFee = _getAccruedManagementFee(token);
+        _getFeeManagerStorage().lastManagementFeeAccrualTimestamp[token] = uint120(block.timestamp);
 
-        _setLastManagementFeeAccrualTimestamp(token);
-
-        if (sharesFee > 0) {
-            token.mint(treasury, sharesFee);
-        }
+        token.mint(treasury, sharesFee);
+        emit ManagementFeeCharged(token, sharesFee);
     }
 
     /// @notice Computes equity fees based on action
@@ -212,7 +209,7 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
     /// @param token LeverageToken to calculate management fee shares for
     /// @return shares Shares to mint
     function _getAccruedManagementFee(ILeverageToken token) internal view returns (uint256) {
-        uint128 managementFee = getManagementFee();
+        uint256 managementFee = getManagementFee();
         uint120 lastManagementFeeAccrualTimestamp = getLastManagementFeeAccrualTimestamp(token);
         uint256 totalSupply = token.totalSupply();
 
@@ -233,13 +230,6 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
 
         _getFeeManagerStorage().tokenActionFee[token][action] = fee;
         emit LeverageTokenActionFeeSet(token, action, fee);
-    }
-
-    /// @notice Function that sets the last management fee accrual timestamp for the LeverageToken to the current timestamp
-    /// @param token LeverageToken to set last management fee accrual timestamp for
-    function _setLastManagementFeeAccrualTimestamp(ILeverageToken token) internal {
-        _getFeeManagerStorage().lastManagementFeeAccrualTimestamp[token] = uint120(block.timestamp);
-        emit LastManagementFeeAccrualTimestampSet(token, block.timestamp);
     }
 
     /// @notice Validates that the fee is not higher than 100%

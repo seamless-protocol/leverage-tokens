@@ -199,7 +199,7 @@ contract LeverageManager is
         });
         _setLeverageTokenActionFee(token, ExternalAction.Deposit, tokenConfig.depositTokenFee);
         _setLeverageTokenActionFee(token, ExternalAction.Withdraw, tokenConfig.withdrawTokenFee);
-        _setLastManagementFeeAccrualTimestamp(token);
+        chargeManagementFee(token);
 
         tokenConfig.lendingAdapter.postLeverageTokenCreation(msg.sender, address(token));
         tokenConfig.rebalanceAdapter.postLeverageTokenCreation(msg.sender, address(token));

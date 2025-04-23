@@ -35,7 +35,7 @@ contract PreviewActionTest is LeverageManagerTest {
     function test_previewAction_WithFee() public {
         vm.prank(feeManagerRole);
         leverageManager.setManagementFee(0.1e4); // 10% management fee
-        leverageManager.exposed_setLastManagementFeeAccrualTimestamp(leverageToken);
+        feeManager.chargeManagementFee(leverageToken);
 
         leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Deposit, 0.05e4); // 5% fee
         leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Withdraw, 0.05e4); // 5% fee

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.26;
 
 // Internal imports
+import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {FeeManagerTest} from "test/unit/FeeManager/FeeManager.t.sol";
 
 contract ChargeManagementFeeTest is FeeManagerTest {
@@ -12,14 +13,17 @@ contract ChargeManagementFeeTest is FeeManagerTest {
         uint256 totalSupply = 1000;
         leverageToken.mint(address(this), totalSupply);
 
-        feeManager.exposed_setLastManagementFeeAccrualTimestamp(leverageToken);
-
+        vm.warp(0);
+        vm.expectEmit(true, true, true, true);
+        emit IFeeManager.ManagementFeeCharged(leverageToken, 0);
         feeManager.chargeManagementFee(leverageToken);
 
         uint256 totalSupplyAfter = leverageToken.totalSupply();
         assertEq(totalSupplyAfter, totalSupply); // No time has passed yet, total supply should be the same
 
         skip(SECONDS_ONE_YEAR); // One year passes and management fee is charged
+        vm.expectEmit(true, true, true, true);
+        emit IFeeManager.ManagementFeeCharged(leverageToken, 100);
         feeManager.chargeManagementFee(leverageToken);
 
         // 10% of 1000 total supply should be minted to the treasury and the last management fee accrual timestamp
@@ -31,6 +35,8 @@ contract ChargeManagementFeeTest is FeeManagerTest {
 
         // Another year passes and management fee is charged again
         skip(SECONDS_ONE_YEAR);
+        vm.expectEmit(true, true, true, true);
+        emit IFeeManager.ManagementFeeCharged(leverageToken, 110);
         feeManager.chargeManagementFee(leverageToken);
 
         // 10% of 1100 total supply should be minted to the treasury and the last management fee accrual timestamp
@@ -48,7 +54,7 @@ contract ChargeManagementFeeTest is FeeManagerTest {
         uint256 totalSupply = 1000;
         leverageToken.mint(address(this), totalSupply);
 
-        feeManager.exposed_setLastManagementFeeAccrualTimestamp(leverageToken);
+        feeManager.chargeManagementFee(leverageToken);
 
         skip(SECONDS_ONE_YEAR);
 
@@ -67,8 +73,7 @@ contract ChargeManagementFeeTest is FeeManagerTest {
         uint256 totalSupply = 1000;
         leverageToken.mint(address(this), totalSupply);
 
-        feeManager.exposed_setLastManagementFeeAccrualTimestamp(leverageToken);
-
+        vm.warp(0);
         feeManager.chargeManagementFee(leverageToken);
 
         uint256 totalSupplyAfter = leverageToken.totalSupply();

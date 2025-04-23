@@ -8,7 +8,7 @@ contract GetFeeAdjustedTotalSupplyTest is FeeManagerTest {
     function test_getFeeAdjustedTotalSupply() public {
         vm.prank(feeManagerRole);
         feeManager.setManagementFee(0.1e4); // 10% management fee
-        feeManager.exposed_setLastManagementFeeAccrualTimestamp(leverageToken);
+        feeManager.chargeManagementFee(leverageToken);
 
         uint256 totalSupply = 1000;
         leverageToken.mint(address(this), totalSupply);
