@@ -174,7 +174,8 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
         leverageManager.setManagementFee(managementFee);
 
         uint256 tokenActionFee = 10_00; // 10%
-        leverageToken = _createNewLeverageToken(BASE_RATIO, 2 * BASE_RATIO, 3 * BASE_RATIO, tokenActionFee, 0);
+        leverageToken =
+            _createNewLeverageToken(BASE_RATIO, 2 * BASE_RATIO, 3 * BASE_RATIO, tokenActionFee, tokenActionFee);
         morphoLendingAdapter =
             MorphoLendingAdapter(address(leverageManager.getLeverageTokenLendingAdapter(leverageToken)));
 
@@ -193,37 +194,56 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
         ActionData memory previewData = leverageManager.previewWithdraw(leverageToken, equityToWithdraw);
         _withdraw(user, equityToWithdraw, previewData.debt);
 
-        // Half of the equity is withdrawn, so half of the shares are burned
-        assertEq(leverageToken.totalSupply(), 4.5 ether);
-        // An additional 10% of shares are burned from the user to cover the treasury fee
-        assertEq(leverageToken.balanceOf(user), 4.05 ether);
-        // 10% of the total shares are minted to the treasury, taken from the user
-        assertEq(leverageToken.balanceOf(treasury), 0.45 ether);
+        // Half of the equity is withdrawn, so half of the total supply is burned + an additional 10% for the token action fee
+        // (9/2)*1.1 = 4.95 burned, 4.05 remaining
+        assertEq(leverageToken.totalSupply(), 9 ether - 4.95 ether);
+        // 10% of the total shares burned are taken from the user to cover the treasury fee. 4.95 * 0.1 = 0.495
+        assertEq(leverageToken.balanceOf(treasury), 0.495 ether);
+        // The user's shares are decreased by the burned shares + the treasury fee. 9 - (4.95 * 1.1) = 9 - 5.445 = 3.555
+        assertEq(leverageToken.balanceOf(user), 3.555 ether);
 
         assertEq(WETH.balanceOf(user), previewData.collateral); // User receives the collateral asset
 
         // One year passes, to withdraw the same amount of equity we need to burn more shares because
-        // of the share dilution from the management fee, morpho borrow interest, and token action fee
+        // of the share dilution from the management fee and morpho borrow interest
         skip(SECONDS_ONE_YEAR);
         previewData = leverageManager.previewWithdraw(leverageToken, equityToWithdraw);
-        assertEq(previewData.shares, 5.516126271167751993 ether);
+        assertEq(previewData.shares, 5.460965008456074474 ether);
 
-        // An additional 10% of shares are required to be burned from the user to cover the treasury action fee
-        uint256 shareValue = Math.mulDiv(
-            Math.mulDiv(leverageToken.balanceOf(user), 1e18, 1.1e18, Math.Rounding.Floor),
+        uint256 userTotalShareValue = Math.mulDiv(
+            // An additional 10% of shares are required to be burned from the user to cover the treasury action fee,
+            // and an additional 10% of shares are required to be burned from the user to cover the token action fee
+            // 1.1 * 1.1 = 1.21
+            Math.mulDiv(leverageToken.balanceOf(user), 1e18, 1.21e18, Math.Rounding.Floor),
             morphoLendingAdapter.getEquityInCollateralAsset(),
             LeverageManagerHarness(address(leverageManager)).exposed_getFeeAdjustedTotalSupply(leverageToken),
             Math.Rounding.Floor
         );
-        // The share value is less than half of the initial equity deposited due to the share dilution from the management fee and
-        // morpho borrow interest
-        assertEq(shareValue, 3.671054469110626624 ether);
+        // The share value is less than half of the initial equity deposited due to the share dilution from the fees,
+        // and morpho borrow interest
+        assertEq(userTotalShareValue, 3.254919226259702618 ether);
 
-        previewData = leverageManager.previewWithdraw(leverageToken, shareValue);
-        assertEq(previewData.shares, 4.05 ether);
+        previewData = leverageManager.previewWithdraw(leverageToken, userTotalShareValue);
+        assertEq(previewData.shares, leverageToken.balanceOf(user));
+
+        uint256 expectedTreasuryActionFee = Math.mulDiv(
+            LeverageManagerHarness(address(leverageManager)).exposed_convertToShares(
+                leverageToken,
+                // 10% additional shares are burned for the token action fee
+                Math.mulDiv(userTotalShareValue, 1.1e18, 1e18, Math.Rounding.Ceil),
+                ExternalAction.Withdraw
+            ),
+            // 10% of the shares burned are minted to the treasury to cover the treasury action fee
+            0.1e18,
+            1e18,
+            Math.Rounding.Ceil
+        );
 
         // Withdraw the share equity
-        _withdraw(user, shareValue, previewData.debt);
+        _withdraw(user, userTotalShareValue, previewData.debt);
         assertEq(leverageToken.balanceOf(user), 0);
+        // Initial balance + management fee + treasury action fee
+        assertEq(leverageToken.balanceOf(treasury), 0.495 ether + 0.405 ether + expectedTreasuryActionFee);
+        assertEq(leverageToken.totalSupply(), leverageToken.balanceOf(treasury));
     }
 }

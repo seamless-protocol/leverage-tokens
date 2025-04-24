@@ -395,13 +395,12 @@ contract LeverageManager is
         (uint256 collateral, uint256 debt) = _computeCollateralAndDebtForAction(token, equityInCollateralAsset, action);
 
         (uint256 equityForShares, uint256 tokenFee) = _computeEquityFees(token, equityInCollateralAsset, action);
-        uint256 totalShares = _convertToShares(token, equityForShares, action);
-        uint256 treasuryFee = _computeTreasuryFee(action, totalShares);
+        uint256 shares = _convertToShares(token, equityForShares, action);
+        uint256 treasuryFee = _computeTreasuryFee(action, shares);
 
         // On deposits, some of the minted shares are for the treasury fee
         // On withdrawals, additional shares are taken from the user to cover the treasury fee
-        uint256 userSharesDelta =
-            action == ExternalAction.Deposit ? totalShares - treasuryFee : totalShares + treasuryFee;
+        uint256 userSharesDelta = action == ExternalAction.Deposit ? shares - treasuryFee : shares + treasuryFee;
 
         return ActionData({
             collateral: collateral,
