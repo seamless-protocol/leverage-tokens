@@ -17,12 +17,12 @@ import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 /**
  * @dev The FeeManager contract is an upgradeable core contract that is responsible for managing the fees for LeverageTokens.
  * There are three types of fees:
- *   - Token action fees: Fees charged that accumulate towards the value of the LeverageToken for current LeverageToken holders,
- *     applied on deposits and withdrawals
+ *   - Token action fees: Fees charged that accumulate towards the value of the LeverageToken for current LeverageToken
+ *     holders, applied on equity for deposits and withdrawals
  *   - Treasury action fees: Fees charged in shares that are transferred to the configured treasury address, applied on
- *     deposits and withdrawals
+ *     shares minted for deposits and shares burned for withdrawals
  *   - Management fees: Fees charged in shares that are transferred to the configured treasury address. The management fee
- *     accrues linearly over time and is minted to the treasury when the `chargeManagementFee` function is called.
+ *     accrues linearly over time and is minted to the treasury when the `chargeManagementFee` function is executed
  *
  * The maximum fee that can be set for each action is 100_00 (100%).
  */
@@ -38,13 +38,13 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
     struct FeeManagerStorage {
         /// @dev Treasury address that receives treasury fees and management fees
         address treasury;
-        /// @dev Annual management fee. 100_00 is 100%
+        /// @dev Annual management fee. 100_00 is 100% per year
         uint256 managementFee;
         /// @dev Timestamp when the management fee was most recently accrued for each LeverageToken
         mapping(ILeverageToken token => uint120) lastManagementFeeAccrualTimestamp;
-        /// @dev Treasury action fee for each action
+        /// @dev Treasury action fee for each action. 100_00 is 100%
         mapping(ExternalAction action => uint256) treasuryActionFee;
-        /// @dev Token action fee for each action
+        /// @dev Token action fee for each action. 100_00 is 100%
         mapping(ILeverageToken token => mapping(ExternalAction action => uint256)) tokenActionFee;
     }
 
@@ -181,7 +181,12 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
     /// @param action Action to compute treasury action fee for
     /// @param shares Shares to compute treasury action fee for
     /// @return treasuryFee Treasury action fee amount in shares
+    /// @dev If the treasury is not set, this function returns 0
     function _computeTreasuryFee(ExternalAction action, uint256 shares) internal view returns (uint256) {
+        if (getTreasury() == address(0)) {
+            return 0;
+        }
+
         return Math.mulDiv(shares, getTreasuryActionFee(action), MAX_FEE, Math.Rounding.Ceil);
     }
 
