@@ -197,16 +197,18 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
         // Half of the equity is withdrawn, so half of the total supply is burned + an additional 10% for the token action fee
         // (9/2)*1.1 = 4.95 burned, 4.05 remaining
         assertEq(leverageToken.totalSupply(), 9 ether - 4.95 ether);
-        // 10% of the total shares burned are taken from the user to cover the treasury fee. 4.95 * 0.1 = 0.495
+        // 10% of the total shares burned are minted to the treasury to cover the treasury fee. 4.95 * 0.1 = 0.495
         assertEq(leverageToken.balanceOf(treasury), 0.495 ether);
-        // The user's shares are decreased by the burned shares + the treasury fee. 9 - (4.95 * 1.1) = 9 - 5.445 = 3.555
+        // The user's shares are decreased by the burned shares including token and treasury fees. 9 - (4.5 * 1.1 * 1.1) = 9 - 5.445 = 3.555
         assertEq(leverageToken.balanceOf(user), 3.555 ether);
 
         assertEq(WETH.balanceOf(user), previewData.collateral); // User receives the collateral asset
 
-        // One year passes, to withdraw the same amount of equity we need to burn more shares because
-        // of the share dilution from the management fee and morpho borrow interest
+        // One year passes
         skip(SECONDS_ONE_YEAR);
+
+        // To withdraw the same amount of equity we need to burn more shares because of the share dilution from the
+        // management fee and morpho borrow interest
         previewData = leverageManager.previewWithdraw(leverageToken, equityToWithdraw);
         assertEq(previewData.shares, 5.460965008456074474 ether);
 
@@ -224,8 +226,6 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
         assertEq(userTotalShareValue, 3.254919226259702618 ether);
 
         previewData = leverageManager.previewWithdraw(leverageToken, userTotalShareValue);
-        assertEq(previewData.shares, leverageToken.balanceOf(user));
-
         uint256 expectedTreasuryActionFee = Math.mulDiv(
             LeverageManagerHarness(address(leverageManager)).exposed_convertToShares(
                 leverageToken,
@@ -245,5 +245,7 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
         // Initial balance + management fee + treasury action fee
         assertEq(leverageToken.balanceOf(treasury), 0.495 ether + 0.405 ether + expectedTreasuryActionFee);
         assertEq(leverageToken.totalSupply(), leverageToken.balanceOf(treasury));
+
+        assertEq(WETH.balanceOf(user), previewData.collateral); // User receives the collateral asset
     }
 }
