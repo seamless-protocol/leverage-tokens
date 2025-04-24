@@ -249,23 +249,20 @@ contract PreviewActionTest is LeverageManagerTest {
         );
 
         {
-            (
-                uint256 equityForLeverageTokenAfterFees,
-                uint256 equityForSharesAfterFees,
-                uint256 tokenFee,
-                uint256 treasuryFee
-            ) = leverageManager.exposed_computeEquityFees(leverageToken, equityInCollateralAsset, action);
+            (uint256 equityForSharesAfterFees, uint256 tokenFee) =
+                leverageManager.exposed_computeEquityFees(leverageToken, equityInCollateralAsset, action);
 
             (uint256 collateralForLeverageToken, uint256 debtForLeverageToken) = leverageManager
-                .exposed_computeCollateralAndDebtForAction(leverageToken, equityForLeverageTokenAfterFees, action);
+                .exposed_computeCollateralAndDebtForAction(leverageToken, equityInCollateralAsset, action);
             uint256 shares = leverageManager.exposed_convertToShares(leverageToken, equityForSharesAfterFees, action);
+            uint256 treasuryFee = leverageManager.exposed_computeTreasuryFee(action, shares);
 
             // Validate if shares, collateral, debt, and fees are properly calculated and returned
-            assertEq(previewData.shares, shares);
+            assertEq(previewData.shares, action == ExternalAction.Deposit ? shares - treasuryFee : shares + treasuryFee);
             assertEq(previewData.collateral, collateralForLeverageToken);
             assertEq(previewData.debt, debtForLeverageToken);
             assertEq(previewData.tokenFee, tokenFee);
-            assertEq(previewData.treasuryFee, collateralForLeverageToken == 0 ? 0 : treasuryFee);
+            assertEq(previewData.treasuryFee, treasuryFee);
         }
 
         // If full withdraw is done then the collateral ratio should be max

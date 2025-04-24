@@ -117,8 +117,7 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
             revert TreasuryNotSet();
         }
 
-        FeeManagerStorage storage $ = _getFeeManagerStorage();
-        $.treasuryActionFee[action] = fee;
+        _getFeeManagerStorage().treasuryActionFee[action] = fee;
 
         emit TreasuryActionFeeSet(action, fee);
     }
@@ -141,58 +140,48 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
         emit ManagementFeeCharged(token, sharesFee);
     }
 
+    /// @notice Function that mints shares to the treasury for the treasury fee, if the treasury is set
+    /// @param token LeverageToken to mint shares to treasury for
+    /// @param shares Shares to mint
+    /// @dev If the treasury is not set, this function does not mint any shares and does not revert
+    /// @dev This contract must be authorized to mint shares for the LeverageToken
+    function _chargeTreasuryFee(ILeverageToken token, uint256 shares) internal {
+        address treasury = getTreasury();
+        if (treasury != address(0)) {
+            token.mint(treasury, shares);
+        }
+    }
+
     /// @notice Computes equity fees based on action
     /// @param token LeverageToken to compute fees for
     /// @param equity Amount of equity to compute fees for, denominated in collateral asset
     /// @param action Action to compute fees for, Deposit or Withdraw
-    /// @return equityToCover Equity to add / remove from the LeverageToken after fees, denominated in the collateral asset of the LeverageToken
     /// @return equityForShares Equity to mint / burn shares for the LeverageToken after fees, denominated in the collateral asset of the LeverageToken
     /// @return tokenFee LeverageToken fee amount, denominated in the collateral asset of the LeverageToken
-    /// @return treasuryFee Treasury fee amount, denominated in the collateral asset of the LeverageToken
     /// @dev Fees are always rounded up.
     /// @dev If the sum of the LeverageToken fee and the treasury fee is greater than the amount,
     ///      the LeverageToken fee is set to the delta of the amount and the treasury fee.
     function _computeEquityFees(ILeverageToken token, uint256 equity, ExternalAction action)
         internal
         view
-        returns (uint256, uint256, uint256, uint256)
+        returns (uint256, uint256)
     {
         // A treasury fee is only applied if the treasury is set
-        uint256 treasuryFee = Math.mulDiv(equity, getTreasuryActionFee(action), MAX_FEE, Math.Rounding.Ceil);
         uint256 tokenFee = Math.mulDiv(equity, getLeverageTokenActionFee(token, action), MAX_FEE, Math.Rounding.Ceil);
-
-        // If the sum of the LeverageToken fee and the treasury fee is greater than the equity amount,
-        // the LeverageToken fee is set to the delta of the equity amount and the treasury fee.
-        tokenFee = Math.min(tokenFee, equity - treasuryFee);
-
-        // For the collateral and debt required by the position held by the LeverageToken for the action, we need to use
-        // the equity amount without the LeverageToken fee applied because the LeverageToken fee is used to increase share value
-        // among existing LeverageToken shares. So, the LeverageToken fee is applied on the shares received / burned but not on
-        // the collateral supplied / removed and debt borrowed / repaid.
-        //
-        // For deposits we need to subtract the treasury fee from the equity amount used for the calculation of the
-        // collateral and debt because the treasury fee should not be supplied to the position held by the LeverageToken,
-        // it should be simply transferred to the treasury.
-        //
-        // For withdrawals, the treasury fee should be included in the calculation of the collateral and debt because
-        // it comes from the collateral removed from the position held by the LeverageToken.
-        uint256 equityToCover = action == ExternalAction.Deposit ? equity - treasuryFee : equity;
 
         // To increase share value for existing users, less shares are minted on deposits and more shares are burned on
         // withdrawals.
-        uint256 equityForShares = action == ExternalAction.Deposit ? equityToCover - tokenFee : equityToCover + tokenFee;
+        uint256 equityForShares = action == ExternalAction.Deposit ? equity - tokenFee : equity + tokenFee;
 
-        return (equityToCover, equityForShares, tokenFee, treasuryFee);
+        return (equityForShares, tokenFee);
     }
 
-    /// @notice Charges a treasury fee if the treasury is set
-    /// @param collateralAsset Collateral asset to charge the fee from
-    /// @param amount Amount of fee to charge
-    function _chargeTreasuryFee(IERC20 collateralAsset, uint256 amount) internal {
-        address treasury = getTreasury();
-        if (treasury != address(0)) {
-            SafeERC20.safeTransfer(collateralAsset, treasury, amount);
-        }
+    /// @notice Computes the treasury fee for a given action
+    /// @param action Action to compute treasury fee for
+    /// @param shares Shares to compute treasury fee for
+    /// @return treasuryFee Treasury fee amount in shares
+    function _computeTreasuryFee(ExternalAction action, uint256 shares) internal view returns (uint256) {
+        return Math.mulDiv(shares, getTreasuryActionFee(action), MAX_FEE, Math.Rounding.Ceil);
     }
 
     /// @notice Function that returns the total supply of the LeverageToken adjusted for any accrued management fees

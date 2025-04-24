@@ -220,12 +220,6 @@ contract LeverageManager is
         returns (ActionData memory)
     {
         ActionData memory data = _previewAction(token, equityInCollateralAsset, ExternalAction.Deposit);
-
-        // For deposits, the collateral amount returned by the preview is the total collateral required to execute the
-        // deposit, so we add the treasury fee to it, since the collateral computed above is wrt the equity amount with
-        // the treasury fee subtracted.
-        data.collateral += data.treasuryFee;
-
         return data;
     }
 
@@ -236,17 +230,6 @@ contract LeverageManager is
         returns (ActionData memory)
     {
         ActionData memory data = _previewAction(token, equityInCollateralAsset, ExternalAction.Withdraw);
-
-        // For withdrawals, the collateral amount returned is the collateral transferred to the sender, so we subtract the
-        // treasury fee, since the collateral computed by `previewAction` is wrt the equity amount without the treasury fee
-        // subtracted.
-        // Note: It is possible for collateral to be < treasuryFee because of rounding down for both the share calculation and
-        //       the resulting collateral calculated using those shares in `previewAction`, while the treasury fee is calculated
-        //       based on the initial equity amount rounded up. In this case, we set the collateral to 0 and the treasury fee to
-        //       the computed collateral amount
-        data.treasuryFee = Math.min(data.collateral, data.treasuryFee);
-        data.collateral = data.collateral > data.treasuryFee ? data.collateral - data.treasuryFee : 0;
-
         return data;
     }
 
@@ -271,14 +254,14 @@ contract LeverageManager is
         SafeERC20.safeTransferFrom(collateralAsset, msg.sender, address(this), depositData.collateral);
 
         // Add collateral to LeverageToken
-        _executeLendingAdapterAction(token, ActionType.AddCollateral, depositData.collateral - depositData.treasuryFee);
-
-        // Charge treasury fee
-        _chargeTreasuryFee(collateralAsset, depositData.treasuryFee);
+        _executeLendingAdapterAction(token, ActionType.AddCollateral, depositData.collateral);
 
         // Borrow and send debt assets to caller
         _executeLendingAdapterAction(token, ActionType.Borrow, depositData.debt);
         SafeERC20.safeTransfer(getLeverageTokenDebtAsset(token), msg.sender, depositData.debt);
+
+        // Charge treasury fee
+        _chargeTreasuryFee(token, depositData.treasuryFee);
 
         // Mint shares to user
         // slither-disable-next-line reentrancy-events
@@ -308,21 +291,19 @@ contract LeverageManager is
         // Burn shares from user and total supply
         token.burn(msg.sender, withdrawData.shares);
 
+        // Mint shares to treasury for the treasury action fee
+        _chargeTreasuryFee(token, withdrawData.treasuryFee);
+
         // Take assets from sender and repay the debt
         SafeERC20.safeTransferFrom(getLeverageTokenDebtAsset(token), msg.sender, address(this), withdrawData.debt);
         _executeLendingAdapterAction(token, ActionType.Repay, withdrawData.debt);
 
         // Withdraw collateral from lending pool
-        _executeLendingAdapterAction(
-            token, ActionType.RemoveCollateral, withdrawData.collateral + withdrawData.treasuryFee
-        );
+        _executeLendingAdapterAction(token, ActionType.RemoveCollateral, withdrawData.collateral);
 
         // Send collateral assets to sender
         IERC20 collateralAsset = getLeverageTokenCollateralAsset(token);
         SafeERC20.safeTransfer(collateralAsset, msg.sender, withdrawData.collateral);
-
-        // Charge treasury fee
-        _chargeTreasuryFee(collateralAsset, withdrawData.treasuryFee);
 
         // Emit event and explicit return statement
         emit Withdraw(token, msg.sender, withdrawData);
@@ -411,24 +392,22 @@ contract LeverageManager is
         view
         returns (ActionData memory data)
     {
-        (uint256 equityToCover, uint256 equityForShares, uint256 tokenFee, uint256 treasuryFee) =
-            _computeEquityFees(token, equityInCollateralAsset, action);
+        (uint256 collateral, uint256 debt) = _computeCollateralAndDebtForAction(token, equityInCollateralAsset, action);
 
-        uint256 shares = _convertToShares(token, equityForShares, action);
+        (uint256 equityForShares, uint256 tokenFee) = _computeEquityFees(token, equityInCollateralAsset, action);
+        uint256 totalShares = _convertToShares(token, equityForShares, action);
+        uint256 treasuryFee = _computeTreasuryFee(action, totalShares);
 
-        (uint256 collateral, uint256 debt) = _computeCollateralAndDebtForAction(token, equityToCover, action);
-
-        // The collateral returned by `_computeCollateralAndDebtForAction` can be zero if the amount of equity for the LeverageToken
-        // cannot be exchanged for at least 1 LeverageToken share due to rounding down in the exchange rate calculation.
-        // The treasury fee returned by `_computeEquityFees` is wrt the equity amount, not the share amount, thus it's possible
-        // for it to be non-zero even if the collateral amount is zero. In this case, the treasury fee should be set to 0
-        treasuryFee = collateral == 0 ? 0 : treasuryFee;
+        // On deposits, some of the minted shares are for the treasury fee
+        // On withdrawals, additional shares are taken from the user to cover the treasury fee
+        uint256 userSharesDelta =
+            action == ExternalAction.Deposit ? totalShares - treasuryFee : totalShares + treasuryFee;
 
         return ActionData({
             collateral: collateral,
             debt: debt,
             equity: equityInCollateralAsset,
-            shares: shares,
+            shares: userSharesDelta,
             tokenFee: tokenFee,
             treasuryFee: treasuryFee
         });
