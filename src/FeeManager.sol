@@ -16,12 +16,15 @@ import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 
 /**
  * @dev The FeeManager contract is an upgradeable core contract that is responsible for managing the fees for LeverageTokens.
- * There are two types of fees, both of which can be configured to be applied on deposits and withdrawals:
- *   - LeverageToken fees: Fees charged that accumulate towards the value of the LeverageToken for current LeverageToken holders
- *   - Treasury fees: Fees charged that are transferred to the configured treasury address
+ * There are three types of fees:
+ *   - Token action fees: Fees charged that accumulate towards the value of the LeverageToken for current LeverageToken holders,
+ *     applied on deposits and withdrawals
+ *   - Treasury action fees: Fees charged in shares that are transferred to the configured treasury address, applied on
+ *     deposits and withdrawals
+ *   - Management fees: Fees charged in shares that are transferred to the configured treasury address. The management fee
+ *     accrues linearly over time and is minted to the treasury when the `chargeManagementFee` function is called.
  *
- * The maximum fee that can be set for each action is 100_00 (100%). If the LeverageToken fee + the treasury fee is greater than
- * the maximum fee, the LeverageToken fee is set to the delta of the maximum fee and the treasury fee.
+ * The maximum fee that can be set for each action is 100_00 (100%).
  */
 contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, ReentrancyGuardUpgradeable {
     bytes32 public constant FEE_MANAGER_ROLE = keccak256("FEE_MANAGER_ROLE");
@@ -39,9 +42,9 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
         uint256 managementFee;
         /// @dev Timestamp when the management fee was most recently accrued for each LeverageToken
         mapping(ILeverageToken token => uint120) lastManagementFeeAccrualTimestamp;
-        /// @dev Treasury fee for each action
+        /// @dev Treasury action fee for each action
         mapping(ExternalAction action => uint256) treasuryActionFee;
-        /// @dev LeverageToken fee for each action
+        /// @dev Token action fee for each action
         mapping(ILeverageToken token => mapping(ExternalAction action => uint256)) tokenActionFee;
     }
 
@@ -153,33 +156,31 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
     }
 
     /// @notice Computes equity fees based on action
-    /// @param token LeverageToken to compute fees for
+    /// @param token LeverageToken to compute equity fees for
     /// @param equity Amount of equity to compute fees for, denominated in collateral asset
     /// @param action Action to compute fees for, Deposit or Withdraw
     /// @return equityForShares Equity to mint / burn shares for the LeverageToken after fees, denominated in the collateral asset of the LeverageToken
-    /// @return tokenFee LeverageToken fee amount, denominated in the collateral asset of the LeverageToken
+    /// @return tokenFee LeverageToken equity fee amount, denominated in the collateral asset of the LeverageToken
     /// @dev Fees are always rounded up.
-    /// @dev If the sum of the LeverageToken fee and the treasury fee is greater than the amount,
-    ///      the LeverageToken fee is set to the delta of the amount and the treasury fee.
     function _computeEquityFees(ILeverageToken token, uint256 equity, ExternalAction action)
         internal
         view
         returns (uint256, uint256)
     {
-        // A treasury fee is only applied if the treasury is set
         uint256 tokenFee = Math.mulDiv(equity, getLeverageTokenActionFee(token, action), MAX_FEE, Math.Rounding.Ceil);
 
         // To increase share value for existing users, less shares are minted on deposits and more shares are burned on
+        // withdrawals by subtracting the token fee from the equity on deposits and adding the token fee to the equity on
         // withdrawals.
         uint256 equityForShares = action == ExternalAction.Deposit ? equity - tokenFee : equity + tokenFee;
 
         return (equityForShares, tokenFee);
     }
 
-    /// @notice Computes the treasury fee for a given action
-    /// @param action Action to compute treasury fee for
-    /// @param shares Shares to compute treasury fee for
-    /// @return treasuryFee Treasury fee amount in shares
+    /// @notice Computes the treasury action fee for a given action
+    /// @param action Action to compute treasury action fee for
+    /// @param shares Shares to compute treasury action fee for
+    /// @return treasuryFee Treasury action fee amount in shares
     function _computeTreasuryFee(ExternalAction action, uint256 shares) internal view returns (uint256) {
         return Math.mulDiv(shares, getTreasuryActionFee(action), MAX_FEE, Math.Rounding.Ceil);
     }

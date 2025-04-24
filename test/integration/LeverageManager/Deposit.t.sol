@@ -71,10 +71,14 @@ contract LeverageManagerDepositTest is LeverageManagerTest {
         // One year passes, same deposit amount occurs
         skip(SECONDS_ONE_YEAR);
 
+        // CR goes down due to morpho borrow interest
+        collateralRatio = leverageManager.getLeverageTokenState(leverageToken).collateralRatio;
+        assertEq(collateralRatio, 1974502635802161566);
+
         ActionData memory previewData = leverageManager.previewDeposit(leverageToken, equityInCollateralAsset);
         // collateralToAdd is higher than before due to higher leverage from CR going down
         assertEq(previewData.collateral, 20.261644896959132013 ether);
-        // more shares are minted due to share dilution from management fee and morpho borrow interest
+        // more shares are minted to the user due to share dilution from management fee and morpho borrow interest
         assertEq(previewData.shares, 8.123906521435763979 ether);
         // treasury fee is 10% of the total shares minted for the deposit
         assertEq(previewData.treasuryFee, 0.902656280159529332 ether);
