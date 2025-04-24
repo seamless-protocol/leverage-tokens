@@ -167,6 +167,10 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
     function testFork_withdraw_withFee() public {
         uint256 fee = 10_00; // 10%
         leverageManager.setTreasuryActionFee(ExternalAction.Withdraw, fee); // 10%
+
+        uint128 managementFee = 10_00; // 10%
+        leverageManager.setManagementFee(managementFee);
+
         leverageToken = _createNewLeverageToken(BASE_RATIO, 2 * BASE_RATIO, 3 * BASE_RATIO, fee, 0);
         morphoLendingAdapter =
             MorphoLendingAdapter(address(leverageManager.getLeverageTokenLendingAdapter(leverageToken)));
@@ -189,5 +193,11 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
         assertEq(WETH.balanceOf(treasury), previewData.treasuryFee); // Treasury receives the fee
 
         assertEq(WETH.balanceOf(user), previewData.collateral);
+
+        // One year passes, to withdraw the same amount of equity we need to burn more shares because
+        // of the share dilution from the management fee and morpho borrow interest
+        skip(SECONDS_ONE_YEAR);
+        previewData = leverageManager.previewWithdraw(leverageToken, equityToWithdraw);
+        assertEq(previewData.shares, 5014660246516138175);
     }
 }

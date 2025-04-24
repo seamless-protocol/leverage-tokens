@@ -25,10 +25,8 @@ import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 
 contract LeverageManagerTest is FeeManagerTest {
-    ILeverageToken public leverageToken;
     address public defaultAdmin = makeAddr("defaultAdmin");
     address public manager = makeAddr("manager");
-    address public treasury = makeAddr("treasury");
 
     MockERC20 public collateralToken = new MockERC20();
     MockERC20 public debtToken = new MockERC20();
@@ -75,10 +73,6 @@ contract LeverageManagerTest is FeeManagerTest {
 
     function _BASE_RATIO() internal view returns (uint256) {
         return leverageManager.BASE_RATIO();
-    }
-
-    function _MAX_FEE() internal view returns (uint256) {
-        return IFeeManager(address(leverageManager)).MAX_FEE();
     }
 
     function _convertToAssets(uint256 shares, ExternalAction action) internal view returns (uint256) {

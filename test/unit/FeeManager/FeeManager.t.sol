@@ -9,13 +9,22 @@ import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 // Local imports
+import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {FeeManager} from "src/FeeManager.sol";
 import {FeeManagerHarness} from "test/unit/harness/FeeManagerHarness.sol";
 import {ExternalAction} from "src/types/DataTypes.sol";
+import {MockERC20} from "test/unit/mock/MockERC20.sol";
 
 contract FeeManagerTest is Test {
+    uint256 public constant MAX_FEE = 100_00;
+    uint256 public constant SECONDS_ONE_YEAR = 31536000;
+
     address public feeManagerRole = makeAddr("feeManagerRole");
     FeeManagerHarness public feeManager;
+
+    ILeverageToken leverageToken = ILeverageToken(address(new MockERC20()));
+
+    address treasury = makeAddr("treasury");
 
     function setUp() public virtual {
         address feeManagerImplementation = address(new FeeManagerHarness());
@@ -25,6 +34,9 @@ contract FeeManagerTest is Test {
 
         feeManager = FeeManagerHarness(feeManagerProxy);
         feeManager.grantRole(feeManager.FEE_MANAGER_ROLE(), feeManagerRole);
+
+        vm.prank(feeManagerRole);
+        feeManager.setTreasury(treasury);
     }
 
     function test_setUp() public view virtual {
@@ -33,6 +45,7 @@ contract FeeManagerTest is Test {
 
         assertTrue(feeManager.hasRole(feeManager.FEE_MANAGER_ROLE(), feeManagerRole));
         assertEq(feeManager.exposed_getFeeManagerStorageSlot(), expectedSlot);
+        assertEq(feeManager.getTreasury(), treasury);
     }
 
     function test_feeManagerInit_RevertsIfNotInitializer() public {
@@ -45,8 +58,8 @@ contract FeeManagerTest is Test {
         feeManager.setTreasuryActionFee(action, fee);
     }
 
-    function _setTreasury(address caller, address treasury) internal {
+    function _setTreasury(address caller, address _treasury) internal {
         vm.prank(caller);
-        feeManager.setTreasury(treasury);
+        feeManager.setTreasury(_treasury);
     }
 }

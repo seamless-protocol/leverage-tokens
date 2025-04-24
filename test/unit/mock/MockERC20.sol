@@ -2,12 +2,13 @@
 pragma solidity ^0.8.26;
 
 // Dependency imports
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 
 // Internal imports
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
-import {TokenTransfer, RebalanceAction, ActionType, LeverageTokenConfig} from "src/types/DataTypes.sol";
+import {RebalanceAction, ActionType, LeverageTokenConfig} from "src/types/DataTypes.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 
@@ -65,16 +66,11 @@ contract MockERC20 is ERC20Mock {
         } else if (reentrancyCallType == ReentrancyCallType.Withdraw) {
             leverageManager.withdraw(ILeverageToken(address(0)), 10 ether, 10 ether);
         } else if (reentrancyCallType == ReentrancyCallType.Rebalance) {
-            TokenTransfer[] memory transfersIn = new TokenTransfer[](1);
-            transfersIn[0] = TokenTransfer({token: address(this), amount: 10 ether});
-            TokenTransfer[] memory transfersOut = new TokenTransfer[](0);
             RebalanceAction[] memory actions = new RebalanceAction[](1);
-            actions[0] = RebalanceAction({
-                leverageToken: ILeverageToken(address(0)),
-                actionType: ActionType.AddCollateral,
-                amount: 10 ether
-            });
-            leverageManager.rebalance(actions, transfersIn, transfersOut);
+            actions[0] = RebalanceAction({actionType: ActionType.AddCollateral, amount: 10 ether});
+            leverageManager.rebalance(
+                ILeverageToken(address(0)), actions, IERC20(address(this)), IERC20(address(0)), 10 ether, 0
+            );
         } else if (reentrancyCallType == ReentrancyCallType.CreateNewLeverageToken) {
             leverageManager.createNewLeverageToken(
                 LeverageTokenConfig({

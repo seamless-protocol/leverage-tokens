@@ -33,6 +33,10 @@ contract PreviewActionTest is LeverageManagerTest {
     }
 
     function test_previewAction_WithFee() public {
+        vm.prank(feeManagerRole);
+        leverageManager.setManagementFee(0.1e4); // 10% management fee
+        feeManager.chargeManagementFee(leverageToken);
+
         leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Deposit, 0.05e4); // 5% fee
         leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Withdraw, 0.05e4); // 5% fee
 
@@ -59,6 +63,26 @@ contract PreviewActionTest is LeverageManagerTest {
         assertEq(previewData.collateral, 20 ether);
         assertEq(previewData.debt, 20 ether);
         assertEq(previewData.shares, 21 ether); // 5% fee
+        assertEq(previewData.tokenFee, 0.5 ether); // 5% fee on equity in collateral asset
+        assertEq(previewData.treasuryFee, 0);
+
+        skip(SECONDS_ONE_YEAR);
+
+        previewData = leverageManager.exposed_previewAction(leverageToken, equity, ExternalAction.Deposit);
+
+        // 10% management fee affects the shares but everything else is the same
+        assertEq(previewData.collateral, 20 ether);
+        assertEq(previewData.debt, 20 ether);
+        assertEq(previewData.shares, 20.9 ether); // Shares minted are increased by 10% due to management fee diluting share value
+        assertEq(previewData.tokenFee, 0.5 ether); // 5% fee on equity in collateral asset
+        assertEq(previewData.treasuryFee, 0 ether);
+
+        previewData = leverageManager.exposed_previewAction(leverageToken, equity, ExternalAction.Withdraw);
+
+        // 10% management fee affects the shares but everything else is the same
+        assertEq(previewData.collateral, 20 ether);
+        assertEq(previewData.debt, 20 ether);
+        assertEq(previewData.shares, 23.1 ether); // Shares burned are increased by 10% due to management fee diluting share value
         assertEq(previewData.tokenFee, 0.5 ether); // 5% fee on equity in collateral asset
         assertEq(previewData.treasuryFee, 0);
     }
@@ -178,11 +202,16 @@ contract PreviewActionTest is LeverageManagerTest {
         uint128 sharesTotalSupply,
         uint128 equityInCollateralAsset,
         uint16 fee,
+        uint16 managementFee,
         uint8 actionNum
     ) public {
         ExternalAction action = ExternalAction(actionNum % 2);
-        fee = uint16(bound(fee, 0, 1e4)); // 0% to 100% fee
+        fee = uint16(bound(fee, 0, MAX_FEE)); // 0% to 100% fee
         leverageManager.exposed_setLeverageTokenActionFee(leverageToken, action, fee);
+
+        managementFee = uint16(bound(managementFee, 0, MAX_FEE)); // 0% to 100% management fee
+        vm.prank(feeManagerRole);
+        leverageManager.setManagementFee(managementFee);
 
         initialDebtInCollateralAsset = uint128(bound(initialDebtInCollateralAsset, 0, initialCollateral));
 

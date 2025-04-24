@@ -26,8 +26,7 @@ import {
     ExternalAction,
     LeverageTokenConfig,
     BaseLeverageTokenConfig,
-    RebalanceAction,
-    TokenTransfer
+    RebalanceAction
 } from "src/types/DataTypes.sol";
 
 /**
@@ -202,6 +201,7 @@ contract LeverageManager is
         });
         _setLeverageTokenActionFee(token, ExternalAction.Deposit, tokenConfig.depositTokenFee);
         _setLeverageTokenActionFee(token, ExternalAction.Withdraw, tokenConfig.withdrawTokenFee);
+        chargeManagementFee(token);
 
         tokenConfig.lendingAdapter.postLeverageTokenCreation(msg.sender, address(token));
         tokenConfig.rebalanceAdapter.postLeverageTokenCreation(msg.sender, address(token));
@@ -258,6 +258,10 @@ contract LeverageManager is
         nonReentrant
         returns (ActionData memory actionData)
     {
+        // Management fee is calculated from the total supply of the LeverageToken, so we need to claim it first
+        // before total supply is updated due to the deposit
+        chargeManagementFee(token);
+
         ActionData memory depositData = previewDeposit(token, equityInCollateralAsset);
 
         if (depositData.shares < minShares) {
@@ -293,6 +297,10 @@ contract LeverageManager is
         nonReentrant
         returns (ActionData memory actionData)
     {
+        // Management fee is calculated from the total supply of the LeverageToken, so we need to claim it first
+        // before total supply is updated due to the withdraw
+        chargeManagementFee(token);
+
         ActionData memory withdrawData = previewWithdraw(token, equityInCollateralAsset);
 
         if (withdrawData.shares > maxShares) {
@@ -325,44 +333,33 @@ contract LeverageManager is
 
     /// @inheritdoc ILeverageManager
     function rebalance(
+        ILeverageToken leverageToken,
         RebalanceAction[] calldata actions,
-        TokenTransfer[] calldata tokensIn,
-        TokenTransfer[] calldata tokensOut
+        IERC20 tokenIn,
+        IERC20 tokenOut,
+        uint256 amountIn,
+        uint256 amountOut
     ) external nonReentrant {
-        _transferTokens(tokensIn, msg.sender, address(this));
+        _transferTokens(tokenIn, msg.sender, address(this), amountIn);
 
-        LeverageTokenState[] memory leverageTokensStateBefore = new LeverageTokenState[](actions.length);
+        // Check if the LeverageToken is eligible for rebalance
+        LeverageTokenState memory stateBefore = getLeverageTokenState(leverageToken);
+
+        IRebalanceAdapterBase rebalanceAdapter = getLeverageTokenRebalanceAdapter(leverageToken);
+        if (!rebalanceAdapter.isEligibleForRebalance(leverageToken, stateBefore, msg.sender)) {
+            revert LeverageTokenNotEligibleForRebalance();
+        }
 
         for (uint256 i = 0; i < actions.length; i++) {
-            ILeverageToken leverageToken = actions[i].leverageToken;
-
-            // Check if the LeverageToken is eligible for rebalance if it has not been checked yet in a previous iteration of the loop
-            if (!_isElementInSlice(actions, leverageToken, i)) {
-                LeverageTokenState memory state = getLeverageTokenState(leverageToken);
-                leverageTokensStateBefore[i] = state;
-
-                IRebalanceAdapterBase rebalanceAdapter = getLeverageTokenRebalanceAdapter(leverageToken);
-                if (!rebalanceAdapter.isEligibleForRebalance(leverageToken, state, msg.sender)) {
-                    revert LeverageTokenNotEligibleForRebalance(leverageToken);
-                }
-            }
-
             _executeLendingAdapterAction(leverageToken, actions[i].actionType, actions[i].amount);
         }
 
-        for (uint256 i = 0; i < actions.length; i++) {
-            // Validate the LeverageToken state after rebalancing if it has not been validated yet in a previous iteration of the loop
-            if (!_isElementInSlice(actions, actions[i].leverageToken, i)) {
-                ILeverageToken leverageToken = actions[i].leverageToken;
-                IRebalanceAdapterBase rebalanceAdapter = getLeverageTokenRebalanceAdapter(leverageToken);
-
-                if (!rebalanceAdapter.isStateAfterRebalanceValid(leverageToken, leverageTokensStateBefore[i])) {
-                    revert InvalidLeverageTokenStateAfterRebalance(leverageToken);
-                }
-            }
+        // Validate the LeverageToken state after rebalancing
+        if (!rebalanceAdapter.isStateAfterRebalanceValid(leverageToken, stateBefore)) {
+            revert InvalidLeverageTokenStateAfterRebalance(leverageToken);
         }
 
-        _transferTokens(tokensOut, address(this), msg.sender);
+        _transferTokens(tokenOut, address(this), msg.sender, amountOut);
     }
 
     /// @notice Function that converts user's equity to shares
@@ -379,7 +376,7 @@ contract LeverageManager is
     {
         ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
 
-        uint256 totalSupply = token.totalSupply();
+        uint256 totalSupply = _getFeeAdjustedTotalSupply(token);
         uint256 totalEquityInCollateralAsset = lendingAdapter.getEquityInCollateralAsset();
 
         // If leverage token is empty we mint it in 1:1 ratio with collateral asset but we align it on 18 decimals always
@@ -389,7 +386,6 @@ contract LeverageManager is
 
             // If collateral asset has more decimals than leverage token, we scale down the equity in collateral asset
             // Otherwise we scale up the equity in collateral asset
-
             if (collateralDecimals > leverageTokenDecimals) {
                 uint256 scalingFactor = 10 ** (collateralDecimals - leverageTokenDecimals);
                 return equityInCollateralAsset / scalingFactor;
@@ -453,7 +449,7 @@ contract LeverageManager is
     ) internal view returns (uint256 collateral, uint256 debt) {
         ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
         uint256 totalDebt = lendingAdapter.getDebt();
-        uint256 totalShares = token.totalSupply();
+        uint256 totalShares = _getFeeAdjustedTotalSupply(token);
 
         Math.Rounding collateralRounding = action == ExternalAction.Deposit ? Math.Rounding.Ceil : Math.Rounding.Floor;
         Math.Rounding debtRounding = action == ExternalAction.Deposit ? Math.Rounding.Floor : Math.Rounding.Ceil;
@@ -474,26 +470,6 @@ contract LeverageManager is
         }
 
         return (collateral, debt);
-    }
-
-    /// @notice Helper function that checks if a specific element has already been processed in the slice up to the given index
-    /// @param actions Entire array to go through
-    /// @param token Element to search for
-    /// @param untilIndex Search until this specific index
-    /// @dev This function is used to check if we already stored the state of the LeverageToken before rebalance.
-    ///      This function is used to check if LeverageToken state has been already validated after rebalance
-    function _isElementInSlice(RebalanceAction[] calldata actions, ILeverageToken token, uint256 untilIndex)
-        internal
-        pure
-        returns (bool)
-    {
-        for (uint256 i = 0; i < untilIndex; i++) {
-            if (address(actions[i].leverageToken) == address(token)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /// @notice Executes actions on the LendingAdapter for a specific LeverageToken
@@ -524,20 +500,20 @@ contract LeverageManager is
         }
     }
 
-    /// @notice Used for batching token transfers
-    /// @param transfers Array of transfer data. Transfer data consist of token to transfer and amount
+    /// @notice Helper function for transferring tokens, or no-op if token is 0 address
+    /// @param token Token to transfer
     /// @param from Address to transfer tokens from
     /// @param to Address to transfer tokens to
     /// @dev If from address is this smart contract it will use the regular transfer function otherwise it will use transferFrom
-    function _transferTokens(TokenTransfer[] calldata transfers, address from, address to) internal {
-        for (uint256 i = 0; i < transfers.length; i++) {
-            TokenTransfer calldata transfer = transfers[i];
+    function _transferTokens(IERC20 token, address from, address to, uint256 amount) internal {
+        if (address(token) == address(0)) {
+            return;
+        }
 
-            if (from == address(this)) {
-                SafeERC20.safeTransfer(IERC20(transfer.token), to, transfer.amount);
-            } else {
-                SafeERC20.safeTransferFrom(IERC20(transfer.token), from, to, transfer.amount);
-            }
+        if (from == address(this)) {
+            SafeERC20.safeTransfer(token, to, amount);
+        } else {
+            SafeERC20.safeTransferFrom(token, from, to, amount);
         }
     }
 }

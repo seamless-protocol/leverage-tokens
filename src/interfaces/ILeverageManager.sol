@@ -10,13 +10,7 @@ import {IRebalanceAdapterBase} from "./IRebalanceAdapterBase.sol";
 import {ILeverageToken} from "./ILeverageToken.sol";
 import {IBeaconProxyFactory} from "./IBeaconProxyFactory.sol";
 import {ILendingAdapter} from "./ILendingAdapter.sol";
-import {
-    ActionData,
-    LeverageTokenState,
-    RebalanceAction,
-    TokenTransfer,
-    LeverageTokenConfig
-} from "src/types/DataTypes.sol";
+import {ActionData, LeverageTokenState, RebalanceAction, LeverageTokenConfig} from "src/types/DataTypes.sol";
 
 interface ILeverageManager is IFeeManager {
     /// @notice Error thrown when someone tries to set zero address for collateral or debt asset when creating a LeverageToken
@@ -35,9 +29,8 @@ interface ILeverageManager is IFeeManager {
     /// @param caller The caller of the rebalance function
     error NotRebalancer(ILeverageToken token, address caller);
 
-    /// @notice Error thrown when a LeverageToken is not eligible for rebalance
-    /// @param token The LeverageToken that is not eligible for rebalance
-    error LeverageTokenNotEligibleForRebalance(ILeverageToken token);
+    /// @notice Error thrown when attempting to rebalance a LeverageToken that is not eligible for rebalance
+    error LeverageTokenNotEligibleForRebalance();
 
     /// @notice Error thrown when a LeverageToken's state after rebalance is invalid
     /// @param token The LeverageToken that has invalid state after rebalance
@@ -186,19 +179,25 @@ interface ILeverageManager is IFeeManager {
         external
         returns (ActionData memory actionData);
 
-    /// @notice Rebalances LeverageTokens based on provided actions
-    /// @param actions Array of rebalance actions to execute (add collateral, remove collateral, borrow or repay)
-    /// @param tokensIn Array of tokens to transfer in. Transfer from caller to the LeverageManager contract
-    /// @param tokensOut Array of tokens to transfer out. Transfer from the LeverageManager contract to caller
-    /// @dev Anyone can call this function. At the end function will just check if all effected LeverageTokens are in the
+    /// @notice Rebalances a LeverageToken based on provided actions
+    /// @param leverageToken LeverageToken to rebalance
+    /// @param actions Rebalance actions to execute (add collateral, remove collateral, borrow or repay)
+    /// @param tokenIn Token to transfer in. Transfer from caller to the LeverageManager contract
+    /// @param tokenOut Token to transfer out. Transfer from the LeverageManager contract to caller
+    /// @param amountIn Amount of tokenIn to transfer in
+    /// @param amountOut Amount of tokenOut to transfer out
+    /// @dev Anyone can call this function. At the end function will just check if the affected LeverageToken is in a
     ///      better state than before rebalance. Caller needs to calculate and to provide tokens for rebalancing and he needs
     ///      to specify tokens that he wants to receive
-    /// @dev Note: If the sender specifies less tokensOut than the maximum amount they can retrieve for their specified
+    /// @dev Note: If the sender specifies less amountOut than the maximum amount they can retrieve for their specified
     ///      rebalance actions, the rebalance will still be successful. The remaining amount that could have been taken
-    ///      out can be claimed by anyone by executing rebalance with that remaining amount in tokensOut.
+    ///      out can be claimed by anyone by executing rebalance with that remaining amount in amountOut.
     function rebalance(
+        ILeverageToken leverageToken,
         RebalanceAction[] calldata actions,
-        TokenTransfer[] calldata tokensIn,
-        TokenTransfer[] calldata tokensOut
+        IERC20 tokenIn,
+        IERC20 tokenOut,
+        uint256 amountIn,
+        uint256 amountOut
     ) external;
 }
