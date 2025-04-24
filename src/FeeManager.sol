@@ -143,7 +143,7 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
         emit ManagementFeeCharged(token, sharesFee);
     }
 
-    /// @notice Function that mints shares to the treasury for the treasury fee, if the treasury is set
+    /// @notice Function that mints shares to the treasury for the treasury action fee, if the treasury is set
     /// @param token LeverageToken to mint shares to treasury for
     /// @param shares Shares to mint
     /// @dev If the treasury is not set, this function does not mint any shares and does not revert
@@ -155,7 +155,7 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
         }
     }
 
-    /// @notice Computes equity fees based on action
+    /// @notice Computes equity fees using the token action fee
     /// @param token LeverageToken to compute equity fees for
     /// @param equity Amount of equity to compute fees for, denominated in collateral asset
     /// @param action Action to compute fees for, Deposit or Withdraw
@@ -181,7 +181,7 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
     /// @param action Action to compute treasury action fee for
     /// @param shares Shares to compute treasury action fee for
     /// @return treasuryFee Treasury action fee amount in shares
-    /// @dev If the treasury is not set, this function returns 0
+    /// @dev If the treasury is not set, this function returns 0, regardless of what the treasury action fee is set to
     function _computeTreasuryFee(ExternalAction action, uint256 shares) internal view returns (uint256) {
         if (getTreasury() == address(0)) {
             return 0;
