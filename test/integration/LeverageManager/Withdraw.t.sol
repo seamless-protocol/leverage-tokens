@@ -239,13 +239,16 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
             Math.Rounding.Ceil
         );
 
+        uint256 userWethBalanceBeforeWithdraw = WETH.balanceOf(user);
+
         // Withdraw the share equity
         _withdraw(user, userTotalShareValue, previewData.debt);
+
         assertEq(leverageToken.balanceOf(user), 0);
         // Initial balance + management fee + treasury action fee
         assertEq(leverageToken.balanceOf(treasury), 0.495 ether + 0.405 ether + expectedTreasuryActionFee);
         assertEq(leverageToken.totalSupply(), leverageToken.balanceOf(treasury));
 
-        assertEq(WETH.balanceOf(user), previewData.collateral); // User receives the collateral asset
+        assertEq(WETH.balanceOf(user), userWethBalanceBeforeWithdraw + previewData.collateral); // User receives the collateral asset
     }
 }
