@@ -16,6 +16,7 @@ contract ComputeTreasuryFeeTest is FeeManagerTest {
 
         uint256 treasuryFee = feeManager.exposed_computeTreasuryFee(action, shares);
         assertEq(treasuryFee, Math.mulDiv(shares, treasuryActionFee, MAX_FEE, Math.Rounding.Ceil));
+        assertLe(treasuryFee, shares); // Treasury fee is less than or equal to the shares
     }
 
     /// forge-config: default.fuzz.runs = 1
