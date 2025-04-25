@@ -243,6 +243,7 @@ contract LeverageManager is
 
         ActionData memory depositData = previewDeposit(token, equityInCollateralAsset);
 
+        // slither-disable-next-line timestamp
         if (depositData.shares < minShares) {
             revert SlippageTooHigh(depositData.shares, minShares);
         }
@@ -282,6 +283,7 @@ contract LeverageManager is
 
         ActionData memory withdrawData = previewWithdraw(token, equityInCollateralAsset);
 
+        // slither-disable-next-line timestamp
         if (withdrawData.shares > maxShares) {
             revert SlippageTooHigh(withdrawData.shares, maxShares);
         }
@@ -357,6 +359,7 @@ contract LeverageManager is
         uint256 totalEquityInCollateralAsset = lendingAdapter.getEquityInCollateralAsset();
 
         // If leverage token is empty we mint it in 1:1 ratio with collateral asset but we align it on 18 decimals always
+        // slither-disable-next-line incorrect-equality,timestamp
         if (totalSupply == 0 || totalEquityInCollateralAsset == 0) {
             uint256 leverageTokenDecimals = IERC20Metadata(address(token)).decimals();
             uint256 collateralDecimals = IERC20Metadata(address(lendingAdapter.getCollateralAsset())).decimals();
@@ -431,6 +434,7 @@ contract LeverageManager is
         uint256 shares = _convertToShares(token, equityInCollateralAsset, action);
 
         // If action is deposit there might be some dust in collateral but debt can be 0. In that case we should follow target ratio
+        // slither-disable-next-line incorrect-equality,timestamp
         bool shouldFollowInitialRatio = totalShares == 0 || (action == ExternalAction.Deposit && totalDebt == 0);
 
         if (shouldFollowInitialRatio) {

@@ -139,6 +139,7 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
         uint256 sharesFee = _getAccruedManagementFee(token);
         _getFeeManagerStorage().lastManagementFeeAccrualTimestamp[token] = uint120(block.timestamp);
 
+        // slither-disable-next-line reentrancy-events
         token.mint(treasury, sharesFee);
         emit ManagementFeeCharged(token, sharesFee);
     }
