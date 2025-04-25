@@ -155,14 +155,16 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
         }
     }
 
-    /// @notice Computes equity fees using the token action fee
-    /// @param token LeverageToken to compute equity fees for
-    /// @param equity Amount of equity to compute fees for, denominated in collateral asset
-    /// @param action Action to compute fees for, Deposit or Withdraw
-    /// @return equityForShares Equity to mint / burn shares for the LeverageToken after fees, denominated in the collateral asset of the LeverageToken
-    /// @return tokenFee LeverageToken equity fee amount, denominated in the collateral asset of the LeverageToken
+    /// @notice Computes the token action fee for a given action
+    /// @param token LeverageToken to compute token action fee for
+    /// @param equity Amount of equity to compute token action fee for, denominated in collateral asset
+    /// @param action Action to compute token action fee for, Deposit or Withdraw
+    /// @return equityForShares Equity to mint / burn shares for the LeverageToken after token action fees, denominated in
+    /// collateral asset of the LeverageToken
+    /// @return tokenFee LeverageToken token action fee amount in equity, denominated in the collateral asset of the
+    /// LeverageToken
     /// @dev Fees are always rounded up.
-    function _computeEquityFees(ILeverageToken token, uint256 equity, ExternalAction action)
+    function _computeTokenFee(ILeverageToken token, uint256 equity, ExternalAction action)
         internal
         view
         returns (uint256, uint256)

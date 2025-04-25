@@ -9,8 +9,8 @@ import {ExternalAction} from "src/types/DataTypes.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {FeeManagerTest} from "test/unit/FeeManager/FeeManager.t.sol";
 
-contract ComputeEquityFeesTest is FeeManagerTest {
-    function test_computeEquityFees_Deposit() public {
+contract ComputeTokenFeeTest is FeeManagerTest {
+    function test_computeTokenFee_Deposit() public {
         ExternalAction action = ExternalAction.Deposit;
         uint256 equity = 1 ether;
         uint256 depositTokenFee = 200;
@@ -18,7 +18,7 @@ contract ComputeEquityFeesTest is FeeManagerTest {
         _setFees(depositTokenFee, withdrawTokenFee);
 
         (uint256 equityForSharesAfterFees, uint256 tokenFee) =
-            feeManager.exposed_computeEquityFees(leverageToken, equity, action);
+            feeManager.exposed_computeTokenFee(leverageToken, equity, action);
 
         uint256 expectedTokenFee = Math.mulDiv(equity, depositTokenFee, MAX_FEE, Math.Rounding.Ceil);
         assertEq(tokenFee, expectedTokenFee);
@@ -26,7 +26,7 @@ contract ComputeEquityFeesTest is FeeManagerTest {
         assertEq(equityForSharesAfterFees, equity - expectedTokenFee);
     }
 
-    function test_computeEquityFees_Withdraw() public {
+    function test_computeTokenFee_Withdraw() public {
         ExternalAction action = ExternalAction.Withdraw;
         uint256 equity = 1 ether;
         uint256 depositTokenFee = 200;
@@ -34,7 +34,7 @@ contract ComputeEquityFeesTest is FeeManagerTest {
         _setFees(depositTokenFee, withdrawTokenFee);
 
         (uint256 equityForSharesAfterFees, uint256 tokenFee) =
-            feeManager.exposed_computeEquityFees(leverageToken, equity, action);
+            feeManager.exposed_computeTokenFee(leverageToken, equity, action);
 
         uint256 expectedTokenFee = Math.mulDiv(equity, withdrawTokenFee, MAX_FEE, Math.Rounding.Ceil);
         assertEq(tokenFee, expectedTokenFee);
@@ -42,14 +42,14 @@ contract ComputeEquityFeesTest is FeeManagerTest {
         assertEq(equityForSharesAfterFees, equity + expectedTokenFee);
     }
 
-    function testFuzz_computeEquityFees(uint128 equity, uint256 depositTokenFee, uint256 withdrawTokenFee) public {
+    function testFuzz_computeTokenFee(uint128 equity, uint256 depositTokenFee, uint256 withdrawTokenFee) public {
         ExternalAction action = ExternalAction.Deposit;
         depositTokenFee = bound(depositTokenFee, 0, MAX_FEE);
         withdrawTokenFee = bound(withdrawTokenFee, 0, MAX_FEE);
         _setFees(depositTokenFee, withdrawTokenFee);
 
         (uint256 equityForSharesAfterFees, uint256 tokenFee) =
-            feeManager.exposed_computeEquityFees(leverageToken, equity, action);
+            feeManager.exposed_computeTokenFee(leverageToken, equity, action);
 
         uint256 expectedTokenFee = Math.mulDiv(
             equity, action == ExternalAction.Deposit ? depositTokenFee : withdrawTokenFee, MAX_FEE, Math.Rounding.Ceil

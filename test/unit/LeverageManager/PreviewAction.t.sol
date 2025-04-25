@@ -260,7 +260,7 @@ contract PreviewActionTest is LeverageManagerTest {
 
         {
             (uint256 equityForSharesAfterFees, uint256 tokenFee) =
-                leverageManager.exposed_computeEquityFees(leverageToken, equityInCollateralAsset, action);
+                leverageManager.exposed_computeTokenFee(leverageToken, equityInCollateralAsset, action);
 
             (uint256 collateralForLeverageToken, uint256 debtForLeverageToken) = leverageManager
                 .exposed_computeCollateralAndDebtForAction(leverageToken, equityInCollateralAsset, action);

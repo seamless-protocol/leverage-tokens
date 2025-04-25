@@ -392,7 +392,7 @@ contract LeverageManager is
     {
         (uint256 collateral, uint256 debt) = _computeCollateralAndDebtForAction(token, equityInCollateralAsset, action);
 
-        (uint256 equityForShares, uint256 tokenFee) = _computeEquityFees(token, equityInCollateralAsset, action);
+        (uint256 equityForShares, uint256 tokenFee) = _computeTokenFee(token, equityInCollateralAsset, action);
         uint256 shares = _convertToShares(token, equityForShares, action);
         uint256 treasuryFee = _computeTreasuryFee(action, shares);
 

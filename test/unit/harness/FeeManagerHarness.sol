@@ -24,12 +24,12 @@ contract FeeManagerHarness is FeeManager {
         }
     }
 
-    function exposed_computeEquityFees(ILeverageToken token, uint256 equityAmount, ExternalAction action)
+    function exposed_computeTokenFee(ILeverageToken token, uint256 equityAmount, ExternalAction action)
         external
         view
         returns (uint256, uint256)
     {
-        return _computeEquityFees(token, equityAmount, action);
+        return _computeTokenFee(token, equityAmount, action);
     }
 
     function exposed_computeTreasuryFee(ExternalAction action, uint256 shares) external view returns (uint256) {
