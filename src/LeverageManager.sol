@@ -219,8 +219,7 @@ contract LeverageManager is
         view
         returns (ActionData memory)
     {
-        ActionData memory data = _previewAction(token, equityInCollateralAsset, ExternalAction.Deposit);
-        return data;
+        return _previewAction(token, equityInCollateralAsset, ExternalAction.Deposit);
     }
 
     /// @inheritdoc ILeverageManager
@@ -229,8 +228,7 @@ contract LeverageManager is
         view
         returns (ActionData memory)
     {
-        ActionData memory data = _previewAction(token, equityInCollateralAsset, ExternalAction.Withdraw);
-        return data;
+        return _previewAction(token, equityInCollateralAsset, ExternalAction.Withdraw);
     }
 
     /// @inheritdoc ILeverageManager
