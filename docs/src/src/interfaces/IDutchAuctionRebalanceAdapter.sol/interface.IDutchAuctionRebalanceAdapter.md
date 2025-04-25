@@ -1,5 +1,5 @@
 # IDutchAuctionRebalanceAdapter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e940fa5a38a4ecdb2ab814caac34ad52528360be/src/interfaces/IDutchAuctionRebalanceAdapter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/002c85336929e7b2f8b2193e3cb727fe9cf4b9e6/src/interfaces/IDutchAuctionRebalanceAdapter.sol)
 
 
 ## Functions
@@ -56,13 +56,13 @@ Returns the maximum duration of all auctions in seconds
 
 
 ```solidity
-function getAuctionDuration() external view returns (uint256 auctionDuration);
+function getAuctionDuration() external view returns (uint120 auctionDuration);
 ```
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`auctionDuration`|`uint256`|The maximum duration of all auctions in seconds|
+|`auctionDuration`|`uint120`|The maximum duration of all auctions in seconds|
 
 
 ### getInitialPriceMultiplier

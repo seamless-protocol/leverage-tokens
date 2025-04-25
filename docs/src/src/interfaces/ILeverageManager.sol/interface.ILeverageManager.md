@@ -1,5 +1,5 @@
 # ILeverageManager
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e940fa5a38a4ecdb2ab814caac34ad52528360be/src/interfaces/ILeverageManager.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/002c85336929e7b2f8b2193e3cb727fe9cf4b9e6/src/interfaces/ILeverageManager.sol)
 
 **Inherits:**
 [IFeeManager](/src/interfaces/IFeeManager.sol/interface.IFeeManager.md)
@@ -304,31 +304,37 @@ function withdraw(ILeverageToken token, uint256 equityInCollateralAsset, uint256
 
 ### rebalance
 
-Rebalances LeverageTokens based on provided actions
+Rebalances a LeverageToken based on provided actions
 
-*Anyone can call this function. At the end function will just check if all effected LeverageTokens are in the
+*Anyone can call this function. At the end function will just check if the affected LeverageToken is in a
 better state than before rebalance. Caller needs to calculate and to provide tokens for rebalancing and he needs
 to specify tokens that he wants to receive*
 
-*Note: If the sender specifies less tokensOut than the maximum amount they can retrieve for their specified
+*Note: If the sender specifies less amountOut than the maximum amount they can retrieve for their specified
 rebalance actions, the rebalance will still be successful. The remaining amount that could have been taken
-out can be claimed by anyone by executing rebalance with that remaining amount in tokensOut.*
+out can be claimed by anyone by executing rebalance with that remaining amount in amountOut.*
 
 
 ```solidity
 function rebalance(
+    ILeverageToken leverageToken,
     RebalanceAction[] calldata actions,
-    TokenTransfer[] calldata tokensIn,
-    TokenTransfer[] calldata tokensOut
+    IERC20 tokenIn,
+    IERC20 tokenOut,
+    uint256 amountIn,
+    uint256 amountOut
 ) external;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`actions`|`RebalanceAction[]`|Array of rebalance actions to execute (add collateral, remove collateral, borrow or repay)|
-|`tokensIn`|`TokenTransfer[]`|Array of tokens to transfer in. Transfer from caller to the LeverageManager contract|
-|`tokensOut`|`TokenTransfer[]`|Array of tokens to transfer out. Transfer from the LeverageManager contract to caller|
+|`leverageToken`|`ILeverageToken`|LeverageToken to rebalance|
+|`actions`|`RebalanceAction[]`|Rebalance actions to execute (add collateral, remove collateral, borrow or repay)|
+|`tokenIn`|`IERC20`|Token to transfer in. Transfer from caller to the LeverageManager contract|
+|`tokenOut`|`IERC20`|Token to transfer out. Transfer from the LeverageManager contract to caller|
+|`amountIn`|`uint256`|Amount of tokenIn to transfer in|
+|`amountOut`|`uint256`|Amount of tokenOut to transfer out|
 
 
 ## Events
@@ -445,18 +451,12 @@ error NotRebalancer(ILeverageToken token, address caller);
 |`caller`|`address`|The caller of the rebalance function|
 
 ### LeverageTokenNotEligibleForRebalance
-Error thrown when a LeverageToken is not eligible for rebalance
+Error thrown when attempting to rebalance a LeverageToken that is not eligible for rebalance
 
 
 ```solidity
-error LeverageTokenNotEligibleForRebalance(ILeverageToken token);
+error LeverageTokenNotEligibleForRebalance();
 ```
-
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`token`|`ILeverageToken`|The LeverageToken that is not eligible for rebalance|
 
 ### InvalidLeverageTokenStateAfterRebalance
 Error thrown when a LeverageToken's state after rebalance is invalid
