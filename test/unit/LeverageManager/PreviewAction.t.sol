@@ -37,6 +37,9 @@ contract PreviewActionTest is LeverageManagerTest {
         leverageManager.setManagementFee(0.1e4); // 10% management fee
         feeManager.chargeManagementFee(leverageToken);
 
+        _setTreasuryActionFee(feeManagerRole, ExternalAction.Deposit, 0.1e4); // 10% fee
+        _setTreasuryActionFee(feeManagerRole, ExternalAction.Withdraw, 0.1e4); // 10% fee
+
         leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Deposit, 0.05e4); // 5% fee
         leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Withdraw, 0.05e4); // 5% fee
 
@@ -54,17 +57,24 @@ contract PreviewActionTest is LeverageManagerTest {
 
         assertEq(previewData.collateral, 20 ether);
         assertEq(previewData.debt, 20 ether);
-        assertEq(previewData.shares, 19 ether); // 5% fee
-        assertEq(previewData.tokenFee, 0.5 ether); // 5% fee on equity in collateral asset
-        assertEq(previewData.treasuryFee, 0 ether);
+        // 5% fee on equity (1 ether shares), 10% fee on shares (19 ether shares * 0.1 = 1.9 ether shares)
+        // 20 ether shares - 1 ether shares - 1.9 ether shares = 17.1 ether shares
+        assertEq(previewData.shares, 17.1 ether);
+        // 5% fee on equity in collateral asset
+        assertEq(previewData.tokenFee, 0.5 ether);
+        // 10% fee on shares
+        assertEq(previewData.treasuryFee, 1.9 ether);
 
         previewData = leverageManager.exposed_previewAction(leverageToken, equity, ExternalAction.Withdraw);
 
         assertEq(previewData.collateral, 20 ether);
         assertEq(previewData.debt, 20 ether);
-        assertEq(previewData.shares, 21 ether); // 5% fee
-        assertEq(previewData.tokenFee, 0.5 ether); // 5% fee on equity in collateral asset
-        assertEq(previewData.treasuryFee, 0);
+        // 5% fee on equity (1 ether shares), 10% fee on shares (21 ether shares * 0.1 = 2.1 ether shares)
+        assertEq(previewData.shares, 23.1 ether);
+        // 5% fee on equity in collateral asset
+        assertEq(previewData.tokenFee, 0.5 ether);
+        // 10% fee on shares
+        assertEq(previewData.treasuryFee, 2.1 ether);
 
         skip(SECONDS_ONE_YEAR);
 
@@ -73,18 +83,18 @@ contract PreviewActionTest is LeverageManagerTest {
         // 10% management fee affects the shares but everything else is the same
         assertEq(previewData.collateral, 20 ether);
         assertEq(previewData.debt, 20 ether);
-        assertEq(previewData.shares, 20.9 ether); // Shares minted are increased by 10% due to management fee diluting share value
+        assertEq(previewData.shares, 18.81 ether); // Shares minted are increased by 10% due to management fee diluting share value
         assertEq(previewData.tokenFee, 0.5 ether); // 5% fee on equity in collateral asset
-        assertEq(previewData.treasuryFee, 0 ether);
+        assertEq(previewData.treasuryFee, 2.09 ether);
 
         previewData = leverageManager.exposed_previewAction(leverageToken, equity, ExternalAction.Withdraw);
 
         // 10% management fee affects the shares but everything else is the same
         assertEq(previewData.collateral, 20 ether);
         assertEq(previewData.debt, 20 ether);
-        assertEq(previewData.shares, 23.1 ether); // Shares burned are increased by 10% due to management fee diluting share value
+        assertEq(previewData.shares, 25.41 ether); // Shares burned are increased by 10% due to management fee diluting share value
         assertEq(previewData.tokenFee, 0.5 ether); // 5% fee on equity in collateral asset
-        assertEq(previewData.treasuryFee, 0);
+        assertEq(previewData.treasuryFee, 2.31 ether);
     }
 
     function test_previewAction_WithFee_ZeroSharesForEquity() public {
@@ -249,23 +259,20 @@ contract PreviewActionTest is LeverageManagerTest {
         );
 
         {
-            (
-                uint256 equityForLeverageTokenAfterFees,
-                uint256 equityForSharesAfterFees,
-                uint256 tokenFee,
-                uint256 treasuryFee
-            ) = leverageManager.exposed_computeEquityFees(leverageToken, equityInCollateralAsset, action);
+            (uint256 equityForSharesAfterFees, uint256 tokenFee) =
+                leverageManager.exposed_computeTokenFee(leverageToken, equityInCollateralAsset, action);
 
             (uint256 collateralForLeverageToken, uint256 debtForLeverageToken) = leverageManager
-                .exposed_computeCollateralAndDebtForAction(leverageToken, equityForLeverageTokenAfterFees, action);
+                .exposed_computeCollateralAndDebtForAction(leverageToken, equityInCollateralAsset, action);
             uint256 shares = leverageManager.exposed_convertToShares(leverageToken, equityForSharesAfterFees, action);
+            uint256 treasuryFee = leverageManager.exposed_computeTreasuryFee(action, shares);
 
             // Validate if shares, collateral, debt, and fees are properly calculated and returned
-            assertEq(previewData.shares, shares);
+            assertEq(previewData.shares, action == ExternalAction.Deposit ? shares - treasuryFee : shares + treasuryFee);
             assertEq(previewData.collateral, collateralForLeverageToken);
             assertEq(previewData.debt, debtForLeverageToken);
             assertEq(previewData.tokenFee, tokenFee);
-            assertEq(previewData.treasuryFee, collateralForLeverageToken == 0 ? 0 : treasuryFee);
+            assertEq(previewData.treasuryFee, treasuryFee);
         }
 
         // If full withdraw is done then the collateral ratio should be max

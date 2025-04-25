@@ -12,7 +12,7 @@ import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {MorphoLendingAdapter} from "src/lending/MorphoLendingAdapter.sol";
 import {LeverageManagerTest} from "./LeverageManager.t.sol";
-import {LeverageTokenState, ExternalAction} from "src/types/DataTypes.sol";
+import {ActionData, LeverageTokenState, ExternalAction} from "src/types/DataTypes.sol";
 
 contract LeverageManagerDepositTest is LeverageManagerTest {
     /// @dev In this block price on oracle 3392.292471591441746049801068
@@ -42,13 +42,14 @@ contract LeverageManagerDepositTest is LeverageManagerTest {
     }
 
     function testFork_deposit_WithFees() public {
-        uint256 fee = 10_00; // 10%
-        leverageManager.setTreasuryActionFee(ExternalAction.Deposit, fee);
+        uint256 treasuryActionFee = 10_00; // 10%
+        leverageManager.setTreasuryActionFee(ExternalAction.Deposit, treasuryActionFee);
 
         uint128 managementFee = 10_00; // 10%
         leverageManager.setManagementFee(managementFee);
 
-        leverageToken = _createNewLeverageToken(BASE_RATIO, 2 * BASE_RATIO, 3 * BASE_RATIO, fee, 0);
+        uint256 tokenActionFee = 10_00; // 10%
+        leverageToken = _createNewLeverageToken(BASE_RATIO, 2 * BASE_RATIO, 3 * BASE_RATIO, tokenActionFee, 0);
         morphoLendingAdapter =
             MorphoLendingAdapter(address(leverageManager.getLeverageTokenLendingAdapter(leverageToken)));
 
@@ -56,32 +57,46 @@ contract LeverageManagerDepositTest is LeverageManagerTest {
         uint256 collateralToAdd = 2 * equityInCollateralAsset;
         _deposit(user, equityInCollateralAsset, collateralToAdd);
 
-        // 8 ether because 10% of equity is for treasury fee and 10% is for leverage token
-        assertEq(leverageToken.balanceOf(user), 8 ether);
-        // 9 ether is added to the leverage token because 10% of equity was for the treasury fee. Some slight deviation
-        // from 9 ether is expected due to interest accrual in morpho and rounding errors
-        assertEq(morphoLendingAdapter.getEquityInCollateralAsset(), 8999999999800422784);
-        assertEq(leverageToken.balanceOf(user), leverageToken.totalSupply());
+        // 8.1 ether because 10% of equity is for diluting leverage token shares, and 10% of the remaining shares
+        // after subtracting the dilution is for the treasury fee (10 * 0.9) * 0.9 = 8.1
+        assertEq(leverageToken.balanceOf(user), 8.1 ether);
+        assertEq(leverageToken.balanceOf(treasury), 0.9 ether);
+        assertEq(leverageToken.balanceOf(user) + leverageToken.balanceOf(treasury), leverageToken.totalSupply());
+        // Some slight deviation from 10 ether is expected due to interest accrual in morpho and rounding errors
+        assertEq(morphoLendingAdapter.getEquityInCollateralAsset(), 9999999999974771473);
 
-        // No shares fee minted to the treasury, as no management fee has accrued yet
-        assertEq(leverageToken.balanceOf(treasury), 0);
-
-        assertEq(WETH.balanceOf(treasury), 1 ether); // Treasury receives 10% of the equity in collateral asset
-        assertEq(WETH.balanceOf(user), 1 ether); // User keeps 10% of the equity in collateral asset
+        uint256 collateralRatio = leverageManager.getLeverageTokenState(leverageToken).collateralRatio;
+        assertEq(collateralRatio, 1999999999970521409);
 
         // One year passes, same deposit amount occurs
         skip(SECONDS_ONE_YEAR);
-        _deposit(user, equityInCollateralAsset, collateralToAdd); // Same collateral is required for the deposit
 
-        // Slightly less than 8 ether of shares are minted to the user because of the share dilution from the management fee
-        // and morpho borrow interest
-        assertEq(leverageToken.balanceOf(user), 8 ether + 7.924523833507237152 ether);
+        // CR goes down due to morpho borrow interest
+        collateralRatio = leverageManager.getLeverageTokenState(leverageToken).collateralRatio;
+        assertEq(collateralRatio, 1974502635802161566);
 
-        // Management fee has been accrued and charged as a year has passed
-        assertEq(leverageToken.balanceOf(treasury), 0.8 ether);
+        ActionData memory previewData = leverageManager.previewDeposit(leverageToken, equityInCollateralAsset);
+        // collateralToAdd is higher than before due to higher leverage from CR going down
+        assertEq(previewData.collateral, 20.261644896959132013 ether);
+        // more shares are minted to the user due to share dilution from management fee and morpho borrow interest
+        assertEq(previewData.shares, 8.123906521435763979 ether);
+        // treasury fee is 10% of the total shares minted for the deposit
+        assertEq(previewData.treasuryFee, 0.902656280159529332 ether);
 
+        // Preview data is the same after charging management fee but treasury balance of LT increases by 0.9 ether (10% of total supply)
+        leverageManager.chargeManagementFee(leverageToken);
+        previewData = leverageManager.previewDeposit(leverageToken, equityInCollateralAsset);
+        assertEq(previewData.collateral, 20.261644896959132013 ether);
+        assertEq(previewData.shares, 8.123906521435763979 ether); // 90% of total shares minted
+        assertEq(previewData.treasuryFee, 0.902656280159529332 ether); // 10% of total shares minted
+        assertEq(leverageToken.balanceOf(treasury), 1.8 ether);
+
+        // Deposit again
+        _deposit(user, equityInCollateralAsset, previewData.collateral);
+
+        assertEq(leverageToken.balanceOf(user), 8.1 ether + previewData.shares);
+        assertEq(leverageToken.balanceOf(treasury), 1.8 ether + previewData.treasuryFee);
         assertEq(leverageToken.totalSupply(), leverageToken.balanceOf(user) + leverageToken.balanceOf(treasury));
-        assertEq(WETH.balanceOf(treasury), 2 ether); // Treasury receives an additional 10% of the equity in collateral asset
     }
 
     /// @dev In this block price on oracle 3392.292471591441746049801068

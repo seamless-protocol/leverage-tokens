@@ -43,6 +43,22 @@ contract DepositTest is PreviewActionTest {
         _testDeposit(equityToAddInCollateralAsset, 0, SECONDS_ONE_YEAR);
     }
 
+    function test_deposit_WithFeesTreasuryNotSet() public {
+        _setTreasuryActionFee(ExternalAction.Deposit, 0.1e4); // 10% fee
+        _setTreasury(feeManagerRole, address(0));
+
+        MockLeverageManagerStateForAction memory beforeState =
+            MockLeverageManagerStateForAction({collateral: 200 ether, debt: 50 ether, sharesTotalSupply: 100 ether});
+
+        _prepareLeverageManagerStateForAction(beforeState);
+
+        uint256 equityToAddInCollateralAsset = 10 ether;
+        _testDeposit(equityToAddInCollateralAsset, 0, SECONDS_ONE_YEAR);
+
+        // Treasury (zero address) should not receive any shares, even though there is a treasury action fee
+        assertEq(leverageToken.balanceOf(address(treasury)), 0);
+    }
+
     function testFuzz_deposit_SharesTotalSupplyGreaterThanZero(
         uint128 initialCollateral,
         uint128 initialDebtInCollateralAsset,
@@ -207,13 +223,13 @@ contract DepositTest is PreviewActionTest {
         );
         assertEq(
             leverageToken.totalSupply(),
-            beforeSharesFeeAdjustedTotalSupply + actualDepositData.shares,
-            "Shares total supply mismatch, should include accrued management fee shares"
+            beforeSharesFeeAdjustedTotalSupply + expectedDepositData.shares + expectedDepositData.treasuryFee,
+            "Shares total supply mismatch, should include accrued management fee, treasury action fee, and shares minted for the deposit"
         );
         assertEq(
             leverageToken.balanceOf(treasury),
-            beforeSharesFeeAdjustedTotalSupply - beforeSharesTotalSupply,
-            "Treasury should have received the accrued management fee shares"
+            beforeSharesFeeAdjustedTotalSupply - beforeSharesTotalSupply + expectedDepositData.treasuryFee,
+            "Treasury should have received the accrued management fee shares and the treasury action fee shares"
         );
         assertEq(actualDepositData.tokenFee, expectedDepositData.tokenFee, "LeverageToken fee mismatch");
         assertEq(actualDepositData.treasuryFee, expectedDepositData.treasuryFee, "Treasury fee mismatch");
@@ -222,8 +238,7 @@ contract DepositTest is PreviewActionTest {
         assertEq(
             afterState.collateralInDebtAsset,
             beforeState.collateralInDebtAsset
-                + lendingAdapter.convertCollateralToDebtAsset(expectedDepositData.collateral)
-                - expectedDepositData.treasuryFee,
+                + lendingAdapter.convertCollateralToDebtAsset(expectedDepositData.collateral),
             "Collateral in leverage token after deposit mismatch"
         );
         assertEq(actualDepositData.collateral, expectedDepositData.collateral, "Collateral added mismatch");
@@ -234,8 +249,6 @@ contract DepositTest is PreviewActionTest {
         );
         assertEq(actualDepositData.debt, expectedDepositData.debt, "Debt borrowed mismatch");
         assertEq(debtToken.balanceOf(address(this)), expectedDepositData.debt, "Debt tokens received mismatch");
-
-        assertEq(collateralToken.balanceOf(treasury), expectedDepositData.treasuryFee, "Treasury fee not received");
 
         assertLe(expectedDepositData.tokenFee + expectedDepositData.treasuryFee, equityToAddInCollateralAsset);
 

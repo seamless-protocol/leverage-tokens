@@ -31,11 +31,7 @@ contract PreviewDepositTest is PreviewActionTest {
         ActionData memory actualPreviewData =
             leverageManager.previewDeposit(leverageToken, equityToAddInCollateralAsset);
 
-        assertEq(
-            actualPreviewData.collateral,
-            previewActionData.collateral + previewActionData.treasuryFee,
-            "Collateral to add mismatch"
-        );
+        assertEq(actualPreviewData.collateral, previewActionData.collateral, "Collateral to add mismatch");
         assertEq(actualPreviewData.debt, previewActionData.debt, "Debt to borrow mismatch");
         assertEq(actualPreviewData.shares, previewActionData.shares, "Shares after fee mismatch");
         assertEq(actualPreviewData.tokenFee, previewActionData.tokenFee, "Shares fee mismatch");
