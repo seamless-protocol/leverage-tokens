@@ -51,7 +51,7 @@ contract DutchAuctionTest is RebalanceTest {
             lendingAdapter: ILendingAdapter(morphoLendingAdapter),
             rebalanceAdapter: ethLong2xRebalanceAdapter,
             mintTokenFee: 0,
-            withdrawTokenFee: 0
+            redeemTokenFee: 0
         });
 
         vm.expectRevert(IDutchAuctionRebalanceAdapter.LeverageTokenAlreadySet.selector);

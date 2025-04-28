@@ -81,7 +81,7 @@ contract IntegrationTestBase is Test {
                 lendingAdapter: ILendingAdapter(address(morphoLendingAdapter)),
                 rebalanceAdapter: IRebalanceAdapter(address(rebalanceAdapter)),
                 mintTokenFee: 0,
-                withdrawTokenFee: 0
+                redeemTokenFee: 0
             }),
             "Seamless ETH/USDC 2x leverage token",
             "ltETH/USDC-2x"
@@ -125,7 +125,7 @@ contract IntegrationTestBase is Test {
         uint256 targetCollateralRatio,
         uint256 maxColRatio,
         uint256 mintFee,
-        uint256 withdrawFee
+        uint256 redeemFee
     ) internal returns (ILeverageToken) {
         ILendingAdapter lendingAdapter = ILendingAdapter(
             morphoLendingAdapterFactory.deployAdapter(WETH_USDC_MARKET_ID, address(this), bytes32(vm.randomUint()))
@@ -142,7 +142,7 @@ contract IntegrationTestBase is Test {
                 lendingAdapter: lendingAdapter,
                 rebalanceAdapter: IRebalanceAdapter(_rebalanceAdapter),
                 mintTokenFee: mintFee,
-                withdrawTokenFee: withdrawFee
+                redeemTokenFee: redeemFee
             }),
             "dummy name",
             "dummy symbol"

@@ -52,15 +52,15 @@ interface ILeverageRouter {
         ISwapAdapter.SwapContext memory swapContext
     ) external;
 
-    /// @notice Withdraw equity from a LeverageToken
-    /// @param token LeverageToken to withdraw equity from
-    /// @param equityInCollateralAsset The amount of equity to withdraw from the LeverageToken. Denominated in the collateral
+    /// @notice Redeems LeverageToken
+    /// @param token LeverageToken to redeem
+    /// @param equityInCollateralAsset The amount of equity to receive by redeeming LeverageToken. Denominated in the collateral
     ///        asset of the LeverageToken
-    /// @param maxShares Maximum shares (LeverageTokens) to burn for the withdrawal
-    /// @param maxSwapCostInCollateralAsset The maximum amount of equity received from the withdrawal from the LeverageToken
+    /// @param maxShares Maximum shares (LeverageTokens) to redeem
+    /// @param maxSwapCostInCollateralAsset The maximum amount of equity to pay for the redeem of the LeverageToken
     ///        to use to help repay the debt flash loan due to the swap of debt to collateral being unfavorable
     /// @param swapContext Swap context to use for the swap (which DEX to use, the route, tick spacing, etc.)
-    function withdraw(
+    function redeem(
         ILeverageToken token,
         uint256 equityInCollateralAsset,
         uint256 maxShares,

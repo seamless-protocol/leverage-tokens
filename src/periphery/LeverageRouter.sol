@@ -15,7 +15,7 @@ import {ActionData, ExternalAction} from "../types/DataTypes.sol";
 
 /**
  * @dev The LeverageRouter contract is an immutable periphery contract that facilitates the use of Morpho flash loans and a swap adapter
- * to mint and withdraw equity from LeverageTokens.
+ * to mint and redeem equity from LeverageTokens.
  *
  * The high-level mint flow is as follows:
  *   1. The user calls `mint` with the amount of equity to mint leverage token for, the minimum amount of shares (LeverageTokens) to receive, the maximum
@@ -28,7 +28,7 @@ import {ActionData, ExternalAction} from "../types/DataTypes.sol";
  *      (the maximum swap cost)
  *   6. The LeverageRouter will transfer the LeverageTokens and any remaining collateral asset to the sender.
  *
- * The high-level withdrawal flow is the same as the mint flow, but in reverse.
+ * The high-level redeem flow is the same as the mint flow, but in reverse.
  */
 contract LeverageRouter is ILeverageRouter {
     /// @notice Mint related parameters to pass to the Morpho flash loan callback handler for mints
@@ -48,18 +48,18 @@ contract LeverageRouter is ILeverageRouter {
         ISwapAdapter.SwapContext swapContext;
     }
 
-    /// @notice Withdraw related parameters to pass to the Morpho flash loan callback handler for withdrawals
-    struct WithdrawParams {
-        // LeverageToken to withdraw from
+    /// @notice Redeem related parameters to pass to the Morpho flash loan callback handler for redeems
+    struct RedeemParams {
+        // LeverageToken to redeem from
         ILeverageToken token;
-        // Amount of equity to withdraw, denominated in the collateral asset
+        // Amount of equity to receive by redeeming, denominated in the collateral asset
         uint256 equityInCollateralAsset;
-        // Maximum amount of shares (LeverageTokens) to be burned during the withdrawal
+        // Maximum amount of shares (LeverageTokens) to be burned during the redeem
         uint256 maxShares;
-        // Maximum cost to the sender for the swap of debt to collateral during the withdrawal to repay the flash loan,
-        // denominated in the collateral asset. This cost is applied to the equity being withdrawn
+        // Maximum cost to the sender for the swap of debt to collateral during the redeem to repay the flash loan,
+        // denominated in the collateral asset. This cost is applied to the equity being received
         uint256 maxSwapCostInCollateralAsset;
-        // Address of the sender of the withdrawal, whose shares will be burned and the equity will be transferred to
+        // Address of the sender of the redeem, whose shares will be burned and the equity will be transferred to
         address sender;
         // Swap context for the debt swap
         ISwapAdapter.SwapContext swapContext;
@@ -121,17 +121,17 @@ contract LeverageRouter is ILeverageRouter {
     }
 
     /// @inheritdoc ILeverageRouter
-    function withdraw(
+    function redeem(
         ILeverageToken token,
         uint256 equityInCollateralAsset,
         uint256 maxShares,
         uint256 maxSwapCostInCollateralAsset,
         ISwapAdapter.SwapContext memory swapContext
     ) external {
-        uint256 debtToBorrow = leverageManager.previewWithdraw(token, equityInCollateralAsset).debt;
+        uint256 debtToBorrow = leverageManager.previewRedeem(token, equityInCollateralAsset).debt;
 
-        bytes memory withdrawData = abi.encode(
-            WithdrawParams({
+        bytes memory redeemData = abi.encode(
+            RedeemParams({
                 token: token,
                 equityInCollateralAsset: equityInCollateralAsset,
                 maxShares: maxShares,
@@ -141,11 +141,11 @@ contract LeverageRouter is ILeverageRouter {
             })
         );
 
-        // Flash loan the debt asset required to repay the flash loan, and pass the required data to the Morpho flash loan callback handler for the withdrawal.
+        // Flash loan the debt asset required to repay the flash loan, and pass the required data to the Morpho flash loan callback handler for the redeem.
         morpho.flashLoan(
             address(leverageManager.getLeverageTokenDebtAsset(token)),
             debtToBorrow,
-            abi.encode(MorphoCallbackData({action: ExternalAction.Withdraw, data: withdrawData}))
+            abi.encode(MorphoCallbackData({action: ExternalAction.Redeem, data: redeemData}))
         );
     }
 
@@ -160,9 +160,9 @@ contract LeverageRouter is ILeverageRouter {
         if (callbackData.action == ExternalAction.Mint) {
             MintParams memory params = abi.decode(callbackData.data, (MintParams));
             _mintAndRepayMorphoFlashLoan(params, loanAmount);
-        } else if (callbackData.action == ExternalAction.Withdraw) {
-            WithdrawParams memory params = abi.decode(callbackData.data, (WithdrawParams));
-            _withdrawAndRepayMorphoFlashLoan(params, loanAmount);
+        } else if (callbackData.action == ExternalAction.Redeem) {
+            RedeemParams memory params = abi.decode(callbackData.data, (RedeemParams));
+            _redeemAndRepayMorphoFlashLoan(params, loanAmount);
         }
     }
 
@@ -219,11 +219,11 @@ contract LeverageRouter is ILeverageRouter {
         SafeERC20.forceApprove(collateralAsset, address(morpho), collateralLoanAmount);
     }
 
-    /// @notice Executes the withdrawal of equity from a LeverageToken and the swap of collateral assets to the debt asset
+    /// @notice Executes the redeem of leverage token to receive equity and the swap of collateral assets to the debt asset
     /// to repay the flash loan from Morpho
-    /// @param params Params for the withdrawal of equity from a LeverageToken
+    /// @param params Params for the redeem of equity from a LeverageToken
     /// @param debtLoanAmount Amount of debt asset flash loaned
-    function _withdrawAndRepayMorphoFlashLoan(WithdrawParams memory params, uint256 debtLoanAmount) internal {
+    function _redeemAndRepayMorphoFlashLoan(RedeemParams memory params, uint256 debtLoanAmount) internal {
         IERC20 collateralAsset = leverageManager.getLeverageTokenCollateralAsset(params.token);
         IERC20 debtAsset = leverageManager.getLeverageTokenDebtAsset(params.token);
 
@@ -231,12 +231,12 @@ contract LeverageRouter is ILeverageRouter {
         // slither-disable-next-line arbitrary-send-erc20
         SafeERC20.safeTransferFrom(params.token, params.sender, address(this), params.maxShares);
 
-        // Withdraw the equity from the leverage token
+        // Redeem the equity from the leverage token
         SafeERC20.forceApprove(debtAsset, address(leverageManager), debtLoanAmount);
         uint256 collateralWithdrawn =
-            leverageManager.withdraw(params.token, params.equityInCollateralAsset, params.maxShares).collateral;
+            leverageManager.redeem(params.token, params.equityInCollateralAsset, params.maxShares).collateral;
 
-        // Swap the collateral asset received from the withdrawal to the debt asset, used to repay the flash loan
+        // Swap the collateral asset received from the redeem to the debt asset, used to repay the flash loan
         SafeERC20.forceApprove(collateralAsset, address(swapper), collateralWithdrawn);
         uint256 collateralAmountSwapped =
             swapper.swapExactOutput(collateralAsset, debtLoanAmount, collateralWithdrawn, params.swapContext);

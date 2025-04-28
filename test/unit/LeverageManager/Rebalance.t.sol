@@ -37,7 +37,7 @@ contract RebalanceTest is LeverageManagerTest {
                 lendingAdapter: ILendingAdapter(address(adapter)),
                 rebalanceAdapter: IRebalanceAdapter(address(rebalanceAdapter)),
                 mintTokenFee: 0,
-                withdrawTokenFee: 0
+                redeemTokenFee: 0
             }),
             address(WETH),
             address(USDC),
@@ -118,17 +118,17 @@ contract RebalanceTest is LeverageManagerTest {
 
         // Current leverage is 1,333x and leverageToken needs to be rebalanced, current equity is 5,000 USDC
         uint256 amountToRepay = 10_000 ether; // 10,000 USDC
-        uint256 amountToWithdraw = 5.5 ether; // 5,5 ETH = 11,000 USDC
+        uint256 amountToRedeem = 5.5 ether; // 5,5 ETH = 11,000 USDC
 
         USDC.mint(address(this), amountToRepay);
 
         RebalanceAction[] memory actions = new RebalanceAction[](2);
         actions[0] = RebalanceAction({actionType: ActionType.Repay, amount: amountToRepay});
-        actions[1] = RebalanceAction({actionType: ActionType.RemoveCollateral, amount: amountToWithdraw});
+        actions[1] = RebalanceAction({actionType: ActionType.RemoveCollateral, amount: amountToRedeem});
 
         USDC.approve(address(leverageManager), amountToRepay);
         leverageManager.rebalance(
-            leverageToken, actions, IERC20(address(USDC)), IERC20(address(WETH)), amountToRepay, amountToWithdraw
+            leverageToken, actions, IERC20(address(USDC)), IERC20(address(WETH)), amountToRepay, amountToRedeem
         );
 
         LeverageTokenState memory state = leverageManager.getLeverageTokenState(leverageToken);
@@ -136,7 +136,7 @@ contract RebalanceTest is LeverageManagerTest {
         assertEq(state.debt, 5_000 ether); // 5,000 USDC
         assertEq(state.equity, 4_000 ether); // 4,500 USDC, 10% reward
         assertEq(state.collateralRatio, 180 * _BASE_RATIO() / 100); // Back to 1,8x leverage which is better than 1,333x
-        assertEq(WETH.balanceOf(address(this)), amountToWithdraw); // Rebalancer took collateral
+        assertEq(WETH.balanceOf(address(this)), amountToRedeem); // Rebalancer took collateral
     }
 
     function test_rebalance_RevertIf_NotEligibleForRebalance() external {

@@ -3,7 +3,7 @@ pragma solidity ^0.8.26;
 
 interface IWETH9 {
     /// @notice Mint ether to get wrapped ether
-    function mint() external payable;
+    function deposit() external payable;
 
     /// @notice Withdraw wrapped ether to get ether
     /// @param amount The amount of wrapped ether to withdraw

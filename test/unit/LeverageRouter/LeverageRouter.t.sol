@@ -130,7 +130,7 @@ contract LeverageRouterTest is Test {
         );
     }
 
-    function _mockLeverageManagerWithdraw(
+    function _mockLeverageManagerRedeem(
         uint256 requiredCollateral,
         uint256 equityInCollateralAsset,
         uint256 requiredDebt,
@@ -139,13 +139,13 @@ contract LeverageRouterTest is Test {
     ) internal {
         swapper.mockNextExactOutputSwap(collateralToken, debtToken, requiredCollateralForSwap);
 
-        // Mock the withdraw preview
-        leverageManager.setMockPreviewWithdrawData(
+        // Mock the redeem preview
+        leverageManager.setMockPreviewRedeemData(
             MockLeverageManager.PreviewParams({
                 leverageToken: leverageToken,
                 equityInCollateralAsset: equityInCollateralAsset
             }),
-            MockLeverageManager.MockPreviewWithdrawData({
+            MockLeverageManager.MockPreviewRedeemData({
                 collateralToRemove: requiredCollateral,
                 debtToRepay: requiredDebt,
                 shares: shares,
@@ -154,14 +154,14 @@ contract LeverageRouterTest is Test {
             })
         );
 
-        // Mock the LeverageManager withdraw
-        leverageManager.setMockWithdrawData(
-            MockLeverageManager.WithdrawParams({
+        // Mock the LeverageManager redeem
+        leverageManager.setMockRedeemData(
+            MockLeverageManager.RedeemParams({
                 leverageToken: leverageToken,
                 equityInCollateralAsset: equityInCollateralAsset,
                 maxShares: shares
             }),
-            MockLeverageManager.MockWithdrawData({
+            MockLeverageManager.MockRedeemData({
                 collateral: requiredCollateral,
                 debt: requiredDebt,
                 shares: shares,

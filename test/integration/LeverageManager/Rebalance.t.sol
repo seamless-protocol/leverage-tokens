@@ -59,7 +59,7 @@ contract RebalanceTest is LeverageManagerTest {
                 lendingAdapter: ILendingAdapter(address(ethLong2xAdapter)),
                 rebalanceAdapter: IRebalanceAdapter(ethLong2xRebalanceAdapter),
                 mintTokenFee: 0,
-                withdrawTokenFee: 0
+                redeemTokenFee: 0
             }),
             "Seamless ETH/USDC 2x leverage token",
             "ltETH/USDC-2x"
@@ -70,7 +70,7 @@ contract RebalanceTest is LeverageManagerTest {
                 lendingAdapter: ILendingAdapter(address(ethShort2xAdapter)),
                 rebalanceAdapter: IRebalanceAdapter(ethShort2xRebalanceAdapter),
                 mintTokenFee: 0,
-                withdrawTokenFee: 0
+                redeemTokenFee: 0
             }),
             "Seamless USDC/ETH 2x leverage token",
             "ltUSDC/ETH-2x"

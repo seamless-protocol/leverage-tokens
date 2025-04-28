@@ -30,7 +30,7 @@ contract CreateNewLeverageTokenTest is LeverageManagerTest {
         config.lendingAdapter = ILendingAdapter(makeAddr(lendingAdapterName));
 
         config.mintTokenFee = bound(config.mintTokenFee, 0, MAX_FEE);
-        config.withdrawTokenFee = bound(config.withdrawTokenFee, 0, MAX_FEE);
+        config.redeemTokenFee = bound(config.redeemTokenFee, 0, MAX_FEE);
 
         address expectedLeverageTokenAddress = leverageTokenFactory.computeProxyAddress(
             address(leverageManager),
@@ -50,7 +50,7 @@ contract CreateNewLeverageTokenTest is LeverageManagerTest {
         assertEq(address(configAfter.rebalanceAdapter), address(config.rebalanceAdapter));
 
         assertEq(configAfter.mintTokenFee, config.mintTokenFee);
-        assertEq(configAfter.withdrawTokenFee, config.withdrawTokenFee);
+        assertEq(configAfter.redeemTokenFee, config.redeemTokenFee);
 
         assertEq(address(leverageManager.getLeverageTokenCollateralAsset(leverageToken)), collateralAsset);
         assertEq(address(leverageManager.getLeverageTokenDebtAsset(leverageToken)), debtAsset);

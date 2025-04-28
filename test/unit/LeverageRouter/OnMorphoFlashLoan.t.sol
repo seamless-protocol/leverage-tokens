@@ -59,7 +59,7 @@ contract OnMorphoFlashLoanTest is LeverageRouterTest {
         assertEq(leverageToken.balanceOf(address(this)), shares);
     }
 
-    function test_onMorphoFlashLoan_Withdraw() public {
+    function test_onMorphoFlashLoan_Redeem() public {
         uint256 requiredCollateral = 10 ether;
         uint256 equityInCollateralAsset = 5 ether;
         uint256 collateralReceivedFromDebtSwap = 5 ether;
@@ -68,7 +68,7 @@ contract OnMorphoFlashLoanTest is LeverageRouterTest {
 
         _mint(equityInCollateralAsset, requiredCollateral, requiredDebt, collateralReceivedFromDebtSwap, shares);
 
-        _mockLeverageManagerWithdraw(
+        _mockLeverageManagerRedeem(
             requiredCollateral,
             equityInCollateralAsset,
             requiredDebt,
@@ -76,8 +76,8 @@ contract OnMorphoFlashLoanTest is LeverageRouterTest {
             shares
         );
 
-        bytes memory withdrawData = abi.encode(
-            LeverageRouter.WithdrawParams({
+        bytes memory redeemData = abi.encode(
+            LeverageRouter.RedeemParams({
                 token: leverageToken,
                 equityInCollateralAsset: equityInCollateralAsset,
                 maxShares: shares,
@@ -102,14 +102,14 @@ contract OnMorphoFlashLoanTest is LeverageRouterTest {
 
         leverageToken.approve(address(leverageRouter), shares);
 
-        // Mock morpho flash loaning the debt required for the withdraw
+        // Mock morpho flash loaning the debt required for the redeem
         uint256 flashLoanAmount = requiredDebt;
         deal(address(debtToken), address(leverageRouter), flashLoanAmount);
 
         vm.prank(address(morpho));
         leverageRouter.onMorphoFlashLoan(
             flashLoanAmount,
-            abi.encode(LeverageRouter.MorphoCallbackData({action: ExternalAction.Withdraw, data: withdrawData}))
+            abi.encode(LeverageRouter.MorphoCallbackData({action: ExternalAction.Redeem, data: redeemData}))
         );
         assertEq(leverageToken.balanceOf(address(this)), 0);
         assertEq(collateralToken.balanceOf(address(this)), equityInCollateralAsset);

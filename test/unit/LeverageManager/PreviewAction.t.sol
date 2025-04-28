@@ -23,7 +23,7 @@ contract PreviewActionTest is LeverageManagerTest {
                 lendingAdapter: ILendingAdapter(address(lendingAdapter)),
                 rebalanceAdapter: IRebalanceAdapter(address(0)),
                 mintTokenFee: 0,
-                withdrawTokenFee: 0
+                redeemTokenFee: 0
             }),
             address(collateralToken),
             address(debtToken),
@@ -38,10 +38,10 @@ contract PreviewActionTest is LeverageManagerTest {
         feeManager.chargeManagementFee(leverageToken);
 
         _setTreasuryActionFee(feeManagerRole, ExternalAction.Mint, 0.1e4); // 10% fee
-        _setTreasuryActionFee(feeManagerRole, ExternalAction.Withdraw, 0.1e4); // 10% fee
+        _setTreasuryActionFee(feeManagerRole, ExternalAction.Redeem, 0.1e4); // 10% fee
 
         leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Mint, 0.05e4); // 5% fee
-        leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Withdraw, 0.05e4); // 5% fee
+        leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Redeem, 0.05e4); // 5% fee
 
         // 1:2 exchange rate
         lendingAdapter.mockConvertCollateralToDebtAssetExchangeRate(2e8);
@@ -65,7 +65,7 @@ contract PreviewActionTest is LeverageManagerTest {
         // 10% fee on shares
         assertEq(previewData.treasuryFee, 1.9 ether);
 
-        previewData = leverageManager.exposed_previewAction(leverageToken, equity, ExternalAction.Withdraw);
+        previewData = leverageManager.exposed_previewAction(leverageToken, equity, ExternalAction.Redeem);
 
         assertEq(previewData.collateral, 20 ether);
         assertEq(previewData.debt, 20 ether);
@@ -87,7 +87,7 @@ contract PreviewActionTest is LeverageManagerTest {
         assertEq(previewData.tokenFee, 0.5 ether); // 5% fee on equity in collateral asset
         assertEq(previewData.treasuryFee, 2.09 ether);
 
-        previewData = leverageManager.exposed_previewAction(leverageToken, equity, ExternalAction.Withdraw);
+        previewData = leverageManager.exposed_previewAction(leverageToken, equity, ExternalAction.Redeem);
 
         // 10% management fee affects the shares but everything else is the same
         assertEq(previewData.collateral, 20 ether);
@@ -99,7 +99,7 @@ contract PreviewActionTest is LeverageManagerTest {
 
     function test_previewAction_WithFee_ZeroSharesForEquity() public {
         leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Mint, 0.05e4); // 5% fee
-        leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Withdraw, 0.05e4); // 5% fee
+        leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Redeem, 0.05e4); // 5% fee
 
         // 1:2 exchange rate
         lendingAdapter.mockConvertCollateralToDebtAssetExchangeRate(2e8);
@@ -120,8 +120,8 @@ contract PreviewActionTest is LeverageManagerTest {
         assertEq(previewData.tokenFee, 1);
         assertEq(previewData.treasuryFee, 0);
 
-        // 1 share can be burned for 1 wei of equity because of shares rounding up for withdraws
-        previewData = leverageManager.exposed_previewAction(leverageToken, equity, ExternalAction.Withdraw);
+        // 1 share can be burned for 1 wei of equity because of shares rounding up for redeems
+        previewData = leverageManager.exposed_previewAction(leverageToken, equity, ExternalAction.Redeem);
         assertEq(previewData.collateral, 10);
         assertEq(previewData.debt, 10);
         assertEq(previewData.shares, 1);
@@ -145,7 +145,7 @@ contract PreviewActionTest is LeverageManagerTest {
         assertEq(previewData.tokenFee, 0);
         assertEq(previewData.treasuryFee, 0);
 
-        previewData = leverageManager.exposed_previewAction(leverageToken, equityToAdd, ExternalAction.Withdraw);
+        previewData = leverageManager.exposed_previewAction(leverageToken, equityToAdd, ExternalAction.Redeem);
 
         assertEq(previewData.collateral, 20 ether);
         assertEq(previewData.debt, 10 ether);
@@ -164,7 +164,7 @@ contract PreviewActionTest is LeverageManagerTest {
         assertEq(previewData.shares, 0);
         assertEq(previewData.tokenFee, 0);
         assertEq(previewData.treasuryFee, 0);
-        previewData = leverageManager.exposed_previewAction(leverageToken, equity, ExternalAction.Withdraw);
+        previewData = leverageManager.exposed_previewAction(leverageToken, equity, ExternalAction.Redeem);
 
         assertEq(previewData.collateral, 0);
         assertEq(previewData.debt, 0);
@@ -195,8 +195,8 @@ contract PreviewActionTest is LeverageManagerTest {
         assertEq(previewData.tokenFee, 0);
         assertEq(previewData.treasuryFee, 0);
 
-        expectedShares = leverageManager.exposed_convertToShares(leverageToken, equity, ExternalAction.Withdraw);
-        previewData = leverageManager.exposed_previewAction(leverageToken, equity, ExternalAction.Withdraw);
+        expectedShares = leverageManager.exposed_convertToShares(leverageToken, equity, ExternalAction.Redeem);
+        previewData = leverageManager.exposed_previewAction(leverageToken, equity, ExternalAction.Redeem);
         assertEq(previewData.collateral, 2 ether);
         assertEq(previewData.debt, 1 ether);
         assertEq(previewData.shares, expectedShares);
@@ -273,8 +273,8 @@ contract PreviewActionTest is LeverageManagerTest {
             assertEq(previewData.treasuryFee, treasuryFee);
         }
 
-        // If full withdraw is done then the collateral ratio should be max
-        if (_isFullWithdraw(initialDebtInCollateralAsset, previewData.debt, action)) {
+        // If full redeem is done then the collateral ratio should be max
+        if (_isFullRedeem(initialDebtInCollateralAsset, previewData.debt, action)) {
             assertEq(newCollateralRatio, type(uint256).max);
             return;
         }
@@ -293,7 +293,7 @@ contract PreviewActionTest is LeverageManagerTest {
 
         // Otherwise, the action should be done by respecting the current collateral ratio
         // There is some tolerance on collateral ratio due to rounding depending on debt size
-        // It is important to calculate tolerance with smaller debt (for mint before action for withdraw after action)
+        // It is important to calculate tolerance with smaller debt (for mint before action for redeem after action)
 
         uint256 respectiveDebt = action == ExternalAction.Mint ? initialDebtInCollateralAsset : newDebt;
         uint256 from = action == ExternalAction.Mint ? newCollateralRatio : prevState.collateralRatio;
@@ -334,13 +334,12 @@ contract PreviewActionTest is LeverageManagerTest {
         return (newCollateral, newDebt, newCollateralRatio);
     }
 
-    function _isFullWithdraw(uint256 initialDebt, uint256 debtChange, ExternalAction action)
+    function _isFullRedeem(uint256 initialDebt, uint256 debtChange, ExternalAction action)
         internal
         view
         returns (bool)
     {
-        return
-            action == ExternalAction.Withdraw && initialDebt == lendingAdapter.convertDebtToCollateralAsset(debtChange);
+        return action == ExternalAction.Redeem && initialDebt == lendingAdapter.convertDebtToCollateralAsset(debtChange);
     }
 
     function _isLeverageTokenEmpty(uint256 collateral) private pure returns (bool) {

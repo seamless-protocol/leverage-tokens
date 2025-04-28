@@ -30,7 +30,7 @@ import {
 
 /**
  * @dev The LeverageManager contract is an upgradeable core contract that is responsible for managing the creation of LeverageTokens.
- * It also acts as an entry point for users to mint and withdraw equity from the position held by the LeverageToken, and for
+ * It also acts as an entry point for users to mint and redeem leverage token, and for
  * rebalancers to rebalance LeverageTokens.
  *
  * LeverageTokens are ERC20 tokens that are akin to shares in an ERC-4626 vault - they represent a claim on the equity held by
@@ -52,13 +52,13 @@ import {
  *   "In empty (or nearly empty) ERC-4626 vaults, mints are at high risk of being stolen through frontrunning
  *   with a "donation" to the vault that inflates the price of a share. This is variously known as a donation or inflation
  *   attack and is essentially a problem of slippage. Vault deployers can protect against this attack by making an initial
- *   mint of a non-trivial amount of the asset, such that price manipulation becomes infeasible. Withdrawals may
+ *   mint of a non-trivial amount of the asset, such that price manipulation becomes infeasible. Redeems may
  *   similarly be affected by slippage. Users can protect against this attack as well as unexpected slippage in general by
  *   verifying the amount received is as expected, using a wrapper that performs these checks such as
  *   https://github.com/fei-protocol/ERC4626#erc4626router-and-base[ERC4626Router]."
  *
  *   As such it is highly recommended that LeverageToken creators make an initial mint of a non-trivial amount of equity.
- *   It is also recommended to use a router that performs slippage checks when minting and withdrawing.
+ *   It is also recommended to use a router that performs slippage checks when minting and redeeming.
  *
  * - LeverageToken creation is permissionless and can be configured with arbitrary lending adapters, rebalance adapters, and
  *   underlying collateral and debt assets. As such, the adapters and tokens used by a LeverageToken are part of the risk
@@ -71,7 +71,7 @@ import {
  *   - Morpho: Users should be aware that Morpho market creation is permissionless, and that the price oracle used by
  *     by the market may be manipulatable.
  *   - Aave v3: Allows rehypothecation of collateral, which may lead to reverts when trying to remove collateral from the
- *     market during withdrawals and rebalances.
+ *     market during redeems and rebalances.
  */
 contract LeverageManager is
     ILeverageManager,
@@ -138,13 +138,13 @@ contract LeverageManager is
     function getLeverageTokenConfig(ILeverageToken token) external view returns (LeverageTokenConfig memory config) {
         BaseLeverageTokenConfig memory baseConfig = _getLeverageManagerStorage().config[token];
         uint256 mintTokenFee = getLeverageTokenActionFee(token, ExternalAction.Mint);
-        uint256 withdrawTokenFee = getLeverageTokenActionFee(token, ExternalAction.Withdraw);
+        uint256 redeemTokenFee = getLeverageTokenActionFee(token, ExternalAction.Redeem);
 
         return LeverageTokenConfig({
             lendingAdapter: baseConfig.lendingAdapter,
             rebalanceAdapter: baseConfig.rebalanceAdapter,
             mintTokenFee: mintTokenFee,
-            withdrawTokenFee: withdrawTokenFee
+            redeemTokenFee: redeemTokenFee
         });
     }
 
@@ -198,7 +198,7 @@ contract LeverageManager is
             rebalanceAdapter: tokenConfig.rebalanceAdapter
         });
         _setLeverageTokenActionFee(token, ExternalAction.Mint, tokenConfig.mintTokenFee);
-        _setLeverageTokenActionFee(token, ExternalAction.Withdraw, tokenConfig.withdrawTokenFee);
+        _setLeverageTokenActionFee(token, ExternalAction.Redeem, tokenConfig.redeemTokenFee);
         chargeManagementFee(token);
 
         tokenConfig.lendingAdapter.postLeverageTokenCreation(msg.sender, address(token));
@@ -223,12 +223,12 @@ contract LeverageManager is
     }
 
     /// @inheritdoc ILeverageManager
-    function previewWithdraw(ILeverageToken token, uint256 equityInCollateralAsset)
+    function previewRedeem(ILeverageToken token, uint256 equityInCollateralAsset)
         public
         view
         returns (ActionData memory)
     {
-        return _previewAction(token, equityInCollateralAsset, ExternalAction.Withdraw);
+        return _previewAction(token, equityInCollateralAsset, ExternalAction.Redeem);
     }
 
     /// @inheritdoc ILeverageManager
@@ -271,41 +271,41 @@ contract LeverageManager is
     }
 
     /// @inheritdoc ILeverageManager
-    function withdraw(ILeverageToken token, uint256 equityInCollateralAsset, uint256 maxShares)
+    function redeem(ILeverageToken token, uint256 equityInCollateralAsset, uint256 maxShares)
         external
         nonReentrant
         returns (ActionData memory actionData)
     {
         // Management fee is calculated from the total supply of the LeverageToken, so we need to claim it first
-        // before total supply is updated due to the withdraw
+        // before total supply is updated due to the redeem
         chargeManagementFee(token);
 
-        ActionData memory withdrawData = previewWithdraw(token, equityInCollateralAsset);
+        ActionData memory redeemData = previewRedeem(token, equityInCollateralAsset);
 
-        if (withdrawData.shares > maxShares) {
-            revert SlippageTooHigh(withdrawData.shares, maxShares);
+        if (redeemData.shares > maxShares) {
+            revert SlippageTooHigh(redeemData.shares, maxShares);
         }
 
         // Burn shares from user and total supply
-        token.burn(msg.sender, withdrawData.shares);
+        token.burn(msg.sender, redeemData.shares);
 
         // Mint shares to treasury for the treasury action fee
-        _chargeTreasuryFee(token, withdrawData.treasuryFee);
+        _chargeTreasuryFee(token, redeemData.treasuryFee);
 
         // Take assets from sender and repay the debt
-        SafeERC20.safeTransferFrom(getLeverageTokenDebtAsset(token), msg.sender, address(this), withdrawData.debt);
-        _executeLendingAdapterAction(token, ActionType.Repay, withdrawData.debt);
+        SafeERC20.safeTransferFrom(getLeverageTokenDebtAsset(token), msg.sender, address(this), redeemData.debt);
+        _executeLendingAdapterAction(token, ActionType.Repay, redeemData.debt);
 
-        // Withdraw collateral from lending pool
-        _executeLendingAdapterAction(token, ActionType.RemoveCollateral, withdrawData.collateral);
+        // Remove collateral from lending pool
+        _executeLendingAdapterAction(token, ActionType.RemoveCollateral, redeemData.collateral);
 
         // Send collateral assets to sender
         IERC20 collateralAsset = getLeverageTokenCollateralAsset(token);
-        SafeERC20.safeTransfer(collateralAsset, msg.sender, withdrawData.collateral);
+        SafeERC20.safeTransfer(collateralAsset, msg.sender, redeemData.collateral);
 
         // Emit event and explicit return statement
-        emit Withdraw(token, msg.sender, withdrawData);
-        return withdrawData;
+        emit Redeem(token, msg.sender, redeemData);
+        return redeemData;
     }
 
     /// @inheritdoc ILeverageManager
@@ -378,13 +378,13 @@ contract LeverageManager is
 
     /// @notice Previews parameters related to a mint action
     /// @param token LeverageToken to preview mint for
-    /// @param equityInCollateralAsset Amount of equity to add or withdraw, denominated in collateral asset
-    /// @param action Type of the action to preview, can be Mint or Withdraw
+    /// @param equityInCollateralAsset Amount of equity to give or receive, denominated in collateral asset
+    /// @param action Type of the action to preview, can be Mint or Redeem
     /// @return data Preview data for the action
     /// @dev If the LeverageToken has zero total supply of shares (so the LeverageToken does not hold any collateral or debt,
     ///      or holds some leftover dust after all shares are redeemed), then the preview will use the target
     ///      collateral ratio for determining how much collateral and debt is required instead of the current collateral ratio.
-    /// @dev If action is mint collateral will be rounded down and debt up, if action is withdraw collateral will be rounded up and debt down
+    /// @dev If action is mint collateral will be rounded down and debt up, if action is redeem collateral will be rounded up and debt down
     function _previewAction(ILeverageToken token, uint256 equityInCollateralAsset, ExternalAction action)
         internal
         view
@@ -397,7 +397,7 @@ contract LeverageManager is
         uint256 treasuryFee = _computeTreasuryFee(action, shares);
 
         // On mints, some of the minted shares are for the treasury fee
-        // On withdrawals, additional shares are taken from the user to cover the treasury fee
+        // On redeems, additional shares are taken from the user to cover the treasury fee
         uint256 userSharesDelta = action == ExternalAction.Mint ? shares - treasuryFee : shares + treasuryFee;
 
         return ActionData({

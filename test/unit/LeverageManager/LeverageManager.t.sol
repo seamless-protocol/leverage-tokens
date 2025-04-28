@@ -97,7 +97,7 @@ contract LeverageManagerTest is FeeManagerTest {
                     lendingAdapter: ILendingAdapter(address(lendingAdapter)),
                     rebalanceAdapter: IRebalanceAdapter(address(0)),
                     mintTokenFee: 0,
-                    withdrawTokenFee: 0
+                    redeemTokenFee: 0
                 }),
                 address(0),
                 address(0),

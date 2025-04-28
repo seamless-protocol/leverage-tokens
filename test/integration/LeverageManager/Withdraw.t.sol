@@ -14,9 +14,9 @@ import {LeverageManagerTest} from "./LeverageManager.t.sol";
 import {ActionData, LeverageTokenState} from "src/types/DataTypes.sol";
 import {LeverageManagerHarness} from "test/unit/harness/LeverageManagerHarness.t.sol";
 
-contract LeverageManagerWithdrawTest is LeverageManagerTest {
+contract LeverageManagerRedeemTest is LeverageManagerTest {
     /// @dev In this block price on oracle 3392.292471591441746049801068
-    function testFork_withdraw_NoFee() public {
+    function testFork_redeem_NoFee() public {
         uint256 equityInCollateralAsset = 10 ether;
         uint256 collateralToAdd = 2 * equityInCollateralAsset;
         _mint(user, equityInCollateralAsset, collateralToAdd);
@@ -24,9 +24,9 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
         LeverageTokenState memory stateBefore = getLeverageTokenState();
         assertEq(stateBefore.collateralRatio, 1999999999970521409); // ~2x CR
 
-        uint256 equityToWithdraw = 5 ether;
-        ActionData memory previewData = leverageManager.previewWithdraw(leverageToken, equityToWithdraw);
-        _withdraw(user, equityToWithdraw, previewData.debt);
+        uint256 equityToRedeem = 5 ether;
+        ActionData memory previewData = leverageManager.previewRedeem(leverageToken, equityToRedeem);
+        _redeem(user, equityToRedeem, previewData.debt);
 
         LeverageTokenState memory stateAfter = getLeverageTokenState();
 
@@ -38,20 +38,20 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
         assertEq(WETH.balanceOf(user), previewData.collateral);
     }
 
-    function testFork_withdraw_ZeroAmount() public {
+    function testFork_redeem_ZeroAmount() public {
         uint256 equityInCollateralAsset = 10 ether;
         uint256 collateralToAdd = 2 * equityInCollateralAsset;
         _mint(user, equityInCollateralAsset, collateralToAdd);
 
-        ActionData memory previewData = leverageManager.previewWithdraw(leverageToken, 0);
-        _withdraw(user, 0, previewData.debt);
+        ActionData memory previewData = leverageManager.previewRedeem(leverageToken, 0);
+        _redeem(user, 0, previewData.debt);
 
         assertEq(previewData.collateral, 0);
         assertEq(previewData.debt, 0);
         assertEq(previewData.shares, 0);
     }
 
-    function testFork_withdraw_FullWithdraw() public {
+    function testFork_redeem_FullRedeem() public {
         (,, address oracle,,) = morphoLendingAdapter.marketParams();
         vm.mockCall(address(oracle), abi.encodeWithSelector(IOracle.price.selector), abi.encode(4000e24));
 
@@ -60,13 +60,13 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
         uint256 shares = _mint(user, equityInCollateralAsset, collateralToAdd);
 
         uint256 sharesValue = _convertToAssets(shares);
-        uint256 debtToRepay = leverageManager.previewWithdraw(leverageToken, sharesValue).debt;
-        _withdraw(user, sharesValue, debtToRepay);
+        uint256 debtToRepay = leverageManager.previewRedeem(leverageToken, sharesValue).debt;
+        _redeem(user, sharesValue, debtToRepay);
 
         // Validate that all shares are burned
         assertEq(leverageToken.totalSupply(), 0);
 
-        // Validate that almost all collateral is withdrawn, we round down collateral to withdraw so dust can be left
+        // Validate that almost all collateral is redeemn, we round down collateral to redeem so dust can be left
         assertGe(morphoLendingAdapter.getCollateral(), 0);
         assertLe(morphoLendingAdapter.getCollateral(), 2);
 
@@ -74,7 +74,7 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
         assertEq(morphoLendingAdapter.getDebt(), 0);
     }
 
-    function testFork_withdraw_MockPrice() public {
+    function testFork_redeem_MockPrice() public {
         // Mock ETH price to be 4000 USDC
         (,, address oracle,,) = morphoLendingAdapter.marketParams();
         vm.mockCall(address(oracle), abi.encodeWithSelector(IOracle.price.selector), abi.encode(4000e24));
@@ -86,28 +86,28 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
         LeverageTokenState memory stateBefore = getLeverageTokenState();
         assertEq(stateBefore.collateralRatio, 1999999999950000000); // ~2x CR
 
-        uint256 equityInCollateralAssetBeforeWithdraw = morphoLendingAdapter.getEquityInCollateralAsset();
-        assertEq(equityInCollateralAssetBeforeWithdraw, 9999999999750000000);
+        uint256 equityInCollateralAssetBeforeRedeem = morphoLendingAdapter.getEquityInCollateralAsset();
+        assertEq(equityInCollateralAssetBeforeRedeem, 9999999999750000000);
 
-        uint256 equityToWithdraw = equityInCollateralAssetBeforeWithdraw / 2;
-        ActionData memory previewData = leverageManager.previewWithdraw(leverageToken, equityToWithdraw);
-        _withdraw(user, equityToWithdraw, previewData.debt);
+        uint256 equityToRedeem = equityInCollateralAssetBeforeRedeem / 2;
+        ActionData memory previewData = leverageManager.previewRedeem(leverageToken, equityToRedeem);
+        _redeem(user, equityToRedeem, previewData.debt);
 
         LeverageTokenState memory stateAfter = getLeverageTokenState();
-        uint256 equityInCollateralAssetAfterWithdraw = morphoLendingAdapter.getEquityInCollateralAsset();
+        uint256 equityInCollateralAssetAfterRedeem = morphoLendingAdapter.getEquityInCollateralAsset();
 
         // Ensure that collateral ratio is the same
         assertGe(stateAfter.collateralRatio, stateBefore.collateralRatio);
         assertEq(stateAfter.collateralRatio, 2000000000000000000);
 
-        // Ensure that after withdraw debt and collateral is 50% of what was initially after mint
+        // Ensure that after redeem debt and collateral is 50% of what was initially after mint
         assertEq(stateAfter.debt, 20000_000000); // 2000 USDC
-        assertEq(equityInCollateralAssetAfterWithdraw, equityInCollateralAsset / 2);
+        assertEq(equityInCollateralAssetAfterRedeem, equityInCollateralAsset / 2);
 
         assertEq(WETH.balanceOf(user), previewData.collateral);
     }
 
-    function testFork_withdraw_PriceChangedBetweenWithdraws_CollateralRatioDoesNotChange() public {
+    function testFork_redeem_PriceChangedBetweenRedeems_CollateralRatioDoesNotChange() public {
         uint256 equityInCollateralAsset = 10 ether;
         uint256 collateralToAdd = 2 * equityInCollateralAsset;
         _mint(user, equityInCollateralAsset, collateralToAdd);
@@ -119,9 +119,9 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
         LeverageTokenState memory stateBefore = getLeverageTokenState();
         assertEq(stateBefore.collateralRatio, 2358287225224640032); // ~2x CR
 
-        uint256 equityToWithdraw = 5 ether;
-        ActionData memory previewData = leverageManager.previewWithdraw(leverageToken, equityToWithdraw);
-        _withdraw(user, equityToWithdraw, previewData.debt);
+        uint256 equityToRedeem = 5 ether;
+        ActionData memory previewData = leverageManager.previewRedeem(leverageToken, equityToRedeem);
+        _redeem(user, equityToRedeem, previewData.debt);
 
         LeverageTokenState memory stateAfter = getLeverageTokenState();
 
@@ -132,29 +132,29 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
         assertEq(WETH.balanceOf(user), previewData.collateral);
     }
 
-    function testFork_withdraw_fullWithdrawComparedToPartialWithdrawals() public {
+    function testFork_redeem_fullRedeemComparedToPartialRedeemals() public {
         // Mint some assets initially
         uint256 equityInCollateralAsset = 10 ether;
         uint256 collateralToAdd = 2 * equityInCollateralAsset;
         uint256 sharesAfterMint = _mint(user, equityInCollateralAsset, collateralToAdd);
 
-        // Withdraw everything
+        // Redeem everything
         uint256 sharesValueAfterMint = _convertToAssets(sharesAfterMint);
-        ActionData memory previewDataAfterMint = leverageManager.previewWithdraw(leverageToken, sharesValueAfterMint);
-        _withdraw(user, sharesValueAfterMint, previewDataAfterMint.debt);
+        ActionData memory previewDataAfterMint = leverageManager.previewRedeem(leverageToken, sharesValueAfterMint);
+        _redeem(user, sharesValueAfterMint, previewDataAfterMint.debt);
 
         // Mint again to create the same scenario
         sharesAfterMint = _mint(user, equityInCollateralAsset, collateralToAdd);
 
-        // Withdraw half of it
-        uint256 equityToWithdraw = equityInCollateralAsset / 2;
-        ActionData memory previewDataFirstTime = leverageManager.previewWithdraw(leverageToken, equityToWithdraw);
-        _withdraw(user, equityToWithdraw, previewDataFirstTime.debt);
+        // Redeem half of it
+        uint256 equityToRedeem = equityInCollateralAsset / 2;
+        ActionData memory previewDataFirstTime = leverageManager.previewRedeem(leverageToken, equityToRedeem);
+        _redeem(user, equityToRedeem, previewDataFirstTime.debt);
 
-        // Withdraw the rest
-        equityToWithdraw = _convertToAssets(leverageToken.balanceOf(user));
-        ActionData memory previewDataSecondTime = leverageManager.previewWithdraw(leverageToken, equityToWithdraw);
-        _withdraw(user, equityToWithdraw, previewDataSecondTime.debt);
+        // Redeem the rest
+        equityToRedeem = _convertToAssets(leverageToken.balanceOf(user));
+        ActionData memory previewDataSecondTime = leverageManager.previewRedeem(leverageToken, equityToRedeem);
+        _redeem(user, equityToRedeem, previewDataSecondTime.debt);
 
         // Validate that in both cases we get the same amount of collateral and debt
         assertEq(previewDataFirstTime.collateral + previewDataSecondTime.collateral, previewDataAfterMint.collateral);
@@ -165,9 +165,9 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
         assertLe(previewDataAfterMint.collateral, 2 * equityInCollateralAsset);
     }
 
-    function testFork_withdraw_withFee() public {
+    function testFork_redeem_withFee() public {
         uint256 treasuryActionFee = 10_00; // 10%
-        leverageManager.setTreasuryActionFee(ExternalAction.Withdraw, treasuryActionFee); // 10%
+        leverageManager.setTreasuryActionFee(ExternalAction.Redeem, treasuryActionFee); // 10%
 
         uint128 managementFee = 10_00; // 10%
         leverageManager.setManagementFee(managementFee);
@@ -188,12 +188,12 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
 
         uint256 equityInCollateralAssetAfterMint = morphoLendingAdapter.getEquityInCollateralAsset();
 
-        // Withdraw 50% of equity
-        uint256 equityToWithdraw = equityInCollateralAssetAfterMint / 2;
-        ActionData memory previewData = leverageManager.previewWithdraw(leverageToken, equityToWithdraw);
-        _withdraw(user, equityToWithdraw, previewData.debt);
+        // Redeem 50% of equity
+        uint256 equityToRedeem = equityInCollateralAssetAfterMint / 2;
+        ActionData memory previewData = leverageManager.previewRedeem(leverageToken, equityToRedeem);
+        _redeem(user, equityToRedeem, previewData.debt);
 
-        // Half of the equity is withdrawn, so half of the total supply is burned + an additional 10% for the token action fee
+        // Half of the equity is redeemn, so half of the total supply is burned + an additional 10% for the token action fee
         // (9/2)*1.1 = 4.95 burned, 4.05 remaining
         assertEq(leverageToken.totalSupply(), 9 ether - 4.95 ether);
         // 10% of the total shares burned are minted to the treasury to cover the treasury fee. 4.95 * 0.1 = 0.495
@@ -206,9 +206,9 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
         // One year passes
         skip(SECONDS_ONE_YEAR);
 
-        // To withdraw the same amount of equity we need to burn more shares because of the share dilution from the
+        // To redeem the same amount of equity we need to burn more shares because of the share dilution from the
         // management fee and morpho borrow interest
-        previewData = leverageManager.previewWithdraw(leverageToken, equityToWithdraw);
+        previewData = leverageManager.previewRedeem(leverageToken, equityToRedeem);
         assertEq(previewData.shares, 5.460965008456074474 ether);
 
         uint256 userTotalShareValue = Math.mulDiv(
@@ -224,13 +224,13 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
         // and morpho borrow interest
         assertEq(userTotalShareValue, 3.254919226259702618 ether);
 
-        previewData = leverageManager.previewWithdraw(leverageToken, userTotalShareValue);
+        previewData = leverageManager.previewRedeem(leverageToken, userTotalShareValue);
         uint256 expectedTreasuryActionFee = Math.mulDiv(
             LeverageManagerHarness(address(leverageManager)).exposed_convertToShares(
                 leverageToken,
                 // 10% additional shares are burned for the token action fee
                 Math.mulDiv(userTotalShareValue, 1.1e18, 1e18, Math.Rounding.Ceil),
-                ExternalAction.Withdraw
+                ExternalAction.Redeem
             ),
             // 10% of the shares burned are minted to the treasury to cover the treasury action fee
             0.1e18,
@@ -238,16 +238,16 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
             Math.Rounding.Ceil
         );
 
-        uint256 userWethBalanceBeforeWithdraw = WETH.balanceOf(user);
+        uint256 userWethBalanceBeforeRedeem = WETH.balanceOf(user);
 
-        // Withdraw the share equity
-        _withdraw(user, userTotalShareValue, previewData.debt);
+        // Redeem the share equity
+        _redeem(user, userTotalShareValue, previewData.debt);
 
         assertEq(leverageToken.balanceOf(user), 0);
         // Initial balance + management fee + treasury action fee
         assertEq(leverageToken.balanceOf(treasury), 0.495 ether + 0.405 ether + expectedTreasuryActionFee);
         assertEq(leverageToken.totalSupply(), leverageToken.balanceOf(treasury));
 
-        assertEq(WETH.balanceOf(user), userWethBalanceBeforeWithdraw + previewData.collateral); // User receives the collateral asset
+        assertEq(WETH.balanceOf(user), userWethBalanceBeforeRedeem + previewData.collateral); // User receives the collateral asset
     }
 }

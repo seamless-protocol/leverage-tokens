@@ -46,7 +46,7 @@ contract EtherFiLeverageRouterTest is IntegrationTestBase {
                 lendingAdapter: ILendingAdapter(address(morphoLendingAdapter)),
                 rebalanceAdapter: IRebalanceAdapter(address(rebalanceAdapter)),
                 mintTokenFee: 0,
-                withdrawTokenFee: 0
+                redeemTokenFee: 0
             }),
             "Seamless WEETH/WETH 2x leverage token",
             "ltWEETH/WETH-2x"

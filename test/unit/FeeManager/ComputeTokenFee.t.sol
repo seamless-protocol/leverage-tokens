@@ -14,8 +14,8 @@ contract ComputeTokenFeeTest is FeeManagerTest {
         ExternalAction action = ExternalAction.Mint;
         uint256 equity = 1 ether;
         uint256 mintTokenFee = 200;
-        uint256 withdrawTokenFee = 400;
-        _setFees(mintTokenFee, withdrawTokenFee);
+        uint256 redeemTokenFee = 400;
+        _setFees(mintTokenFee, redeemTokenFee);
 
         (uint256 equityForSharesAfterFees, uint256 tokenFee) =
             feeManager.exposed_computeTokenFee(leverageToken, equity, action);
@@ -26,33 +26,33 @@ contract ComputeTokenFeeTest is FeeManagerTest {
         assertEq(equityForSharesAfterFees, equity - expectedTokenFee);
     }
 
-    function test_computeTokenFee_Withdraw() public {
-        ExternalAction action = ExternalAction.Withdraw;
+    function test_computeTokenFee_Redeem() public {
+        ExternalAction action = ExternalAction.Redeem;
         uint256 equity = 1 ether;
         uint256 mintTokenFee = 200;
-        uint256 withdrawTokenFee = 400;
-        _setFees(mintTokenFee, withdrawTokenFee);
+        uint256 redeemTokenFee = 400;
+        _setFees(mintTokenFee, redeemTokenFee);
 
         (uint256 equityForSharesAfterFees, uint256 tokenFee) =
             feeManager.exposed_computeTokenFee(leverageToken, equity, action);
 
-        uint256 expectedTokenFee = Math.mulDiv(equity, withdrawTokenFee, MAX_FEE, Math.Rounding.Ceil);
+        uint256 expectedTokenFee = Math.mulDiv(equity, redeemTokenFee, MAX_FEE, Math.Rounding.Ceil);
         assertEq(tokenFee, expectedTokenFee);
 
         assertEq(equityForSharesAfterFees, equity + expectedTokenFee);
     }
 
-    function testFuzz_computeTokenFee(uint128 equity, uint256 mintTokenFee, uint256 withdrawTokenFee) public {
+    function testFuzz_computeTokenFee(uint128 equity, uint256 mintTokenFee, uint256 redeemTokenFee) public {
         ExternalAction action = ExternalAction.Mint;
         mintTokenFee = bound(mintTokenFee, 0, MAX_FEE);
-        withdrawTokenFee = bound(withdrawTokenFee, 0, MAX_FEE);
-        _setFees(mintTokenFee, withdrawTokenFee);
+        redeemTokenFee = bound(redeemTokenFee, 0, MAX_FEE);
+        _setFees(mintTokenFee, redeemTokenFee);
 
         (uint256 equityForSharesAfterFees, uint256 tokenFee) =
             feeManager.exposed_computeTokenFee(leverageToken, equity, action);
 
         uint256 expectedTokenFee = Math.mulDiv(
-            equity, action == ExternalAction.Mint ? mintTokenFee : withdrawTokenFee, MAX_FEE, Math.Rounding.Ceil
+            equity, action == ExternalAction.Mint ? mintTokenFee : redeemTokenFee, MAX_FEE, Math.Rounding.Ceil
         );
         assertEq(tokenFee, expectedTokenFee);
 
@@ -64,10 +64,10 @@ contract ComputeTokenFeeTest is FeeManagerTest {
         assertLe(expectedEquityForSharesAfterFees, equity);
     }
 
-    function _setFees(uint256 mintTokenFee, uint256 withdrawTokenFee) internal {
+    function _setFees(uint256 mintTokenFee, uint256 redeemTokenFee) internal {
         vm.startPrank(feeManagerRole);
         feeManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Mint, mintTokenFee);
-        feeManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Withdraw, withdrawTokenFee);
+        feeManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Redeem, redeemTokenFee);
         vm.stopPrank();
     }
 }

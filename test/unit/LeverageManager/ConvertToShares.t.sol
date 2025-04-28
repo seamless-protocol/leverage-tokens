@@ -67,7 +67,7 @@ contract ConvertToSharesTest is LeverageManagerTest {
             ConvertToSharesState({totalEquity: totalEquity, sharesTotalSupply: sharesTotalSupply})
         );
 
-        shares = leverageManager.exposed_convertToShares(leverageToken, equity, ExternalAction.Withdraw);
+        shares = leverageManager.exposed_convertToShares(leverageToken, equity, ExternalAction.Redeem);
         assertEq(shares, equity);
     }
 
@@ -108,7 +108,7 @@ contract ConvertToSharesTest is LeverageManagerTest {
         assertEq(shares, equity / 1e9);
     }
 
-    function test_convertToShares_WithdrawRoundsUp() public {
+    function test_convertToShares_RedeemRoundsUp() public {
         uint128 equity = 1;
         uint128 sharesTotalSupply = 99;
         uint128 totalEquity = 100;
@@ -117,11 +117,11 @@ contract ConvertToSharesTest is LeverageManagerTest {
             ConvertToSharesState({totalEquity: totalEquity, sharesTotalSupply: sharesTotalSupply})
         );
 
-        uint256 shares = leverageManager.exposed_convertToShares(leverageToken, equity, ExternalAction.Withdraw);
+        uint256 shares = leverageManager.exposed_convertToShares(leverageToken, equity, ExternalAction.Redeem);
         assertEq(shares, 1);
     }
 
-    function testFuzz_convertToShares_WithdrawRoundsUp(uint128 equity, uint128 totalEquity, uint128 sharesTotalSupply)
+    function testFuzz_convertToShares_RedeemRoundsUp(uint128 equity, uint128 totalEquity, uint128 sharesTotalSupply)
         public
     {
         totalEquity = uint128(bound(totalEquity, 1, type(uint128).max));
@@ -131,7 +131,7 @@ contract ConvertToSharesTest is LeverageManagerTest {
             ConvertToSharesState({totalEquity: totalEquity, sharesTotalSupply: sharesTotalSupply})
         );
 
-        uint256 shares = leverageManager.exposed_convertToShares(leverageToken, equity, ExternalAction.Withdraw);
+        uint256 shares = leverageManager.exposed_convertToShares(leverageToken, equity, ExternalAction.Redeem);
         uint256 expectedShares = Math.mulDiv(equity, sharesTotalSupply, totalEquity, Math.Rounding.Ceil);
 
         assertEq(shares, expectedShares);
@@ -162,7 +162,7 @@ contract ConvertToSharesTest is LeverageManagerTest {
         assertEq(shares, 10);
     }
 
-    function test_convertToShares_Withdraw_WithManagementFee() public {
+    function test_convertToShares_Redeem_WithManagementFee() public {
         uint128 equity = 10;
         uint128 sharesTotalSupply = 99;
         uint128 totalEquity = 100;
@@ -177,14 +177,14 @@ contract ConvertToSharesTest is LeverageManagerTest {
             ConvertToSharesState({totalEquity: totalEquity, sharesTotalSupply: sharesTotalSupply})
         );
 
-        uint256 shares = leverageManager.exposed_convertToShares(leverageToken, equity, ExternalAction.Withdraw);
+        uint256 shares = leverageManager.exposed_convertToShares(leverageToken, equity, ExternalAction.Redeem);
         assertEq(shares, 10);
 
         // One year passes
         skip(SECONDS_ONE_YEAR);
 
         // Shares should be slightly more than 10 because of the management fee increasing the virtual total supply
-        shares = leverageManager.exposed_convertToShares(leverageToken, equity, ExternalAction.Withdraw);
+        shares = leverageManager.exposed_convertToShares(leverageToken, equity, ExternalAction.Redeem);
         assertEq(shares, 11);
     }
 }

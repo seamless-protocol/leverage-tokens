@@ -30,7 +30,7 @@ contract MockLeverageManager is Test {
         uint256 minShares;
     }
 
-    struct WithdrawParams {
+    struct RedeemParams {
         ILeverageToken leverageToken;
         uint256 equityInCollateralAsset;
         uint256 maxShares;
@@ -48,7 +48,7 @@ contract MockLeverageManager is Test {
         bool isExecuted;
     }
 
-    struct MockWithdrawData {
+    struct MockRedeemData {
         uint256 collateral;
         uint256 debt;
         uint256 shares;
@@ -63,7 +63,7 @@ contract MockLeverageManager is Test {
         uint256 treasuryFee;
     }
 
-    struct MockPreviewWithdrawData {
+    struct MockPreviewRedeemData {
         uint256 collateralToRemove;
         uint256 debtToRepay;
         uint256 shares;
@@ -77,11 +77,11 @@ contract MockLeverageManager is Test {
 
     mapping(bytes32 => MockMintData[]) public mockMintData;
 
-    mapping(bytes32 => MockWithdrawData[]) public mockWithdrawData;
+    mapping(bytes32 => MockRedeemData[]) public mockRedeemData;
 
     mapping(bytes32 => MockPreviewMintData) public mockPreviewMintData;
 
-    mapping(bytes32 => MockPreviewWithdrawData) public mockPreviewWithdrawData;
+    mapping(bytes32 => MockPreviewRedeemData) public mockPreviewRedeemData;
 
     mapping(ILeverageToken => address) public leverageTokenRebalanceAdapter;
 
@@ -128,24 +128,20 @@ contract MockLeverageManager is Test {
         mockPreviewMintData[mockPreviewMintDataKey] = _mockPreviewMintData;
     }
 
-    function setMockPreviewWithdrawData(
-        PreviewParams memory _previewWithdrawParams,
-        MockPreviewWithdrawData memory _mockPreviewWithdrawData
+    function setMockPreviewRedeemData(
+        PreviewParams memory _previewRedeemParams,
+        MockPreviewRedeemData memory _mockPreviewRedeemData
     ) external {
-        bytes32 mockPreviewWithdrawDataKey =
-            keccak256(abi.encode(_previewWithdrawParams.leverageToken, _previewWithdrawParams.equityInCollateralAsset));
-        mockPreviewWithdrawData[mockPreviewWithdrawDataKey] = _mockPreviewWithdrawData;
+        bytes32 mockPreviewRedeemDataKey =
+            keccak256(abi.encode(_previewRedeemParams.leverageToken, _previewRedeemParams.equityInCollateralAsset));
+        mockPreviewRedeemData[mockPreviewRedeemDataKey] = _mockPreviewRedeemData;
     }
 
-    function setMockWithdrawData(WithdrawParams memory _withdrawParams, MockWithdrawData memory _mockWithdrawData)
-        external
-    {
-        bytes32 mockWithdrawDataKey = keccak256(
-            abi.encode(
-                _withdrawParams.leverageToken, _withdrawParams.equityInCollateralAsset, _withdrawParams.maxShares
-            )
+    function setMockRedeemData(RedeemParams memory _redeemParams, MockRedeemData memory _mockRedeemData) external {
+        bytes32 mockRedeemDataKey = keccak256(
+            abi.encode(_redeemParams.leverageToken, _redeemParams.equityInCollateralAsset, _redeemParams.maxShares)
         );
-        mockWithdrawData[mockWithdrawDataKey].push(_mockWithdrawData);
+        mockRedeemData[mockRedeemDataKey].push(_mockRedeemData);
     }
 
     function setMockMintData(MintParams memory _mintParams, MockMintData memory _mockMintData) external {
@@ -171,19 +167,19 @@ contract MockLeverageManager is Test {
         });
     }
 
-    function previewWithdraw(ILeverageToken leverageToken, uint256 equityInCollateralAsset)
+    function previewRedeem(ILeverageToken leverageToken, uint256 equityInCollateralAsset)
         external
         view
         returns (ActionData memory)
     {
-        bytes32 mockPreviewWithdrawDataKey = keccak256(abi.encode(leverageToken, equityInCollateralAsset));
+        bytes32 mockPreviewRedeemDataKey = keccak256(abi.encode(leverageToken, equityInCollateralAsset));
         return ActionData({
-            collateral: mockPreviewWithdrawData[mockPreviewWithdrawDataKey].collateralToRemove,
-            debt: mockPreviewWithdrawData[mockPreviewWithdrawDataKey].debtToRepay,
+            collateral: mockPreviewRedeemData[mockPreviewRedeemDataKey].collateralToRemove,
+            debt: mockPreviewRedeemData[mockPreviewRedeemDataKey].debtToRepay,
             equity: equityInCollateralAsset,
-            shares: mockPreviewWithdrawData[mockPreviewWithdrawDataKey].shares,
-            tokenFee: mockPreviewWithdrawData[mockPreviewWithdrawDataKey].tokenFee,
-            treasuryFee: mockPreviewWithdrawData[mockPreviewWithdrawDataKey].treasuryFee
+            shares: mockPreviewRedeemData[mockPreviewRedeemDataKey].shares,
+            tokenFee: mockPreviewRedeemData[mockPreviewRedeemDataKey].tokenFee,
+            treasuryFee: mockPreviewRedeemData[mockPreviewRedeemDataKey].treasuryFee
         });
     }
 
@@ -230,47 +226,45 @@ contract MockLeverageManager is Test {
         revert("No mock mint data found for MockLeverageManager.mint");
     }
 
-    function withdraw(ILeverageToken leverageToken, uint256 equityInCollateralAsset, uint256 maxShares)
+    function redeem(ILeverageToken leverageToken, uint256 equityInCollateralAsset, uint256 maxShares)
         external
         returns (ActionData memory)
     {
         LeverageTokenData storage leverageTokenData = leverageTokens[leverageToken];
 
-        bytes32 mockWithdrawDataKey = keccak256(abi.encode(leverageToken, equityInCollateralAsset, maxShares));
-        MockWithdrawData[] memory mockWithdrawDataArray = mockWithdrawData[mockWithdrawDataKey];
+        bytes32 mockRedeemDataKey = keccak256(abi.encode(leverageToken, equityInCollateralAsset, maxShares));
+        MockRedeemData[] memory mockRedeemDataArray = mockRedeemData[mockRedeemDataKey];
 
         // Find the first unexecuted mock mint data
-        for (uint256 i = 0; i < mockWithdrawDataArray.length; i++) {
-            MockWithdrawData memory _mockWithdrawData = mockWithdrawDataArray[i];
-            if (!_mockWithdrawData.isExecuted) {
+        for (uint256 i = 0; i < mockRedeemDataArray.length; i++) {
+            MockRedeemData memory _mockRedeemData = mockRedeemDataArray[i];
+            if (!_mockRedeemData.isExecuted) {
                 // Transfer the required debt to the LeverageManager
-                SafeERC20.safeTransferFrom(
-                    leverageTokenData.debtAsset, msg.sender, address(this), _mockWithdrawData.debt
-                );
+                SafeERC20.safeTransferFrom(leverageTokenData.debtAsset, msg.sender, address(this), _mockRedeemData.debt);
 
                 // Give the sender the required collateral
-                deal(address(leverageTokenData.collateralAsset), address(this), _mockWithdrawData.collateral);
-                leverageTokenData.collateralAsset.transfer(msg.sender, _mockWithdrawData.collateral);
+                deal(address(leverageTokenData.collateralAsset), address(this), _mockRedeemData.collateral);
+                leverageTokenData.collateralAsset.transfer(msg.sender, _mockRedeemData.collateral);
 
                 // Burn the sender's shares
-                deal(address(leverageTokenData.leverageToken), address(this), _mockWithdrawData.shares);
-                leverageTokenData.leverageToken.burn(msg.sender, _mockWithdrawData.shares);
+                deal(address(leverageTokenData.leverageToken), address(this), _mockRedeemData.shares);
+                leverageTokenData.leverageToken.burn(msg.sender, _mockRedeemData.shares);
 
-                // Set the mock withdraw data to executed
-                mockWithdrawData[mockWithdrawDataKey][i].isExecuted = true;
+                // Set the mock redeem data to executed
+                mockRedeemData[mockRedeemDataKey][i].isExecuted = true;
                 return ActionData({
                     equity: equityInCollateralAsset,
-                    collateral: _mockWithdrawData.collateral,
-                    debt: _mockWithdrawData.debt,
-                    shares: _mockWithdrawData.shares,
+                    collateral: _mockRedeemData.collateral,
+                    debt: _mockRedeemData.debt,
+                    shares: _mockRedeemData.shares,
                     tokenFee: 0,
                     treasuryFee: 0
                 });
             }
         }
 
-        // If no mock withdraw data is found, revert
-        revert("No mock withdraw data found for MockLeverageManager.withdraw");
+        // If no mock redeem data is found, revert
+        revert("No mock redeem data found for MockLeverageManager.redeem");
     }
 
     function rebalance(

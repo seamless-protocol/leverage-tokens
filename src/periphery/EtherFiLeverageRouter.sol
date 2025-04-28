@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
+import "forge-std/console.sol";
+
 // Dependency imports
 import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -52,7 +54,7 @@ contract EtherFiLeverageRouter is LeverageRouterMintBase, IEtherFiLeverageRouter
     function mint(ILeverageToken token, uint256 equityInCollateralAsset, uint256 minShares) external {
         uint256 collateralToAdd = leverageManager.previewMint(token, equityInCollateralAsset).collateral;
 
-        bytes memory depositData = abi.encode(
+        bytes memory mintData = abi.encode(
             MintParams({
                 token: token,
                 equityInCollateralAsset: equityInCollateralAsset,
@@ -67,7 +69,7 @@ contract EtherFiLeverageRouter is LeverageRouterMintBase, IEtherFiLeverageRouter
         morpho.flashLoan(
             address(leverageManager.getLeverageTokenCollateralAsset(token)),
             collateralToAdd - equityInCollateralAsset,
-            depositData
+            mintData
         );
     }
 
@@ -92,7 +94,10 @@ contract EtherFiLeverageRouter is LeverageRouterMintBase, IEtherFiLeverageRouter
         uint256 weethLoanAmount,
         bytes memory /* additionalData */
     ) internal override returns (uint256) {
+        console.log("1");
+        console.log("weth", address(weth));
         IWETH9(address(weth)).withdraw(wethAmount);
+        console.log("2");
 
         // Deposit the ETH into the EtherFi L2 Mode Sync Pool to obtain weETH
         // Note: The EtherFi L2 Mode Sync Pool requires ETH to mint weETH. WETH is unsupported

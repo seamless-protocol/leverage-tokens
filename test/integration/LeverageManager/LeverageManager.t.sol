@@ -35,14 +35,11 @@ contract LeverageManagerTest is IntegrationTestBase {
         return shares;
     }
 
-    function _withdraw(address caller, uint256 equityInCollateralAsset, uint256 debtToRepay)
-        internal
-        returns (uint256)
-    {
+    function _redeem(address caller, uint256 equityInCollateralAsset, uint256 debtToRepay) internal returns (uint256) {
         deal(address(USDC), caller, debtToRepay);
         vm.startPrank(caller);
         USDC.approve(address(leverageManager), debtToRepay);
-        uint256 shares = leverageManager.withdraw(leverageToken, equityInCollateralAsset, type(uint256).max).shares;
+        uint256 shares = leverageManager.redeem(leverageToken, equityInCollateralAsset, type(uint256).max).shares;
         vm.stopPrank();
 
         return shares;

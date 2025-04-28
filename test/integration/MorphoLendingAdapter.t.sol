@@ -49,7 +49,7 @@ contract MorphoLendingAdapterTest is IntegrationTestBase {
                 lendingAdapter: morphoLendingAdapter,
                 rebalanceAdapter: IRebalanceAdapterBase(address(0)),
                 mintTokenFee: 0,
-                withdrawTokenFee: 0
+                redeemTokenFee: 0
             }),
             "LT",
             "LT"

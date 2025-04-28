@@ -30,7 +30,7 @@ contract NonReentrantTest is LeverageManagerTest {
                 lendingAdapter: ILendingAdapter(address(lendingAdapter)),
                 rebalanceAdapter: IRebalanceAdapter(address(rebalanceAdapter)),
                 mintTokenFee: 0,
-                withdrawTokenFee: 0
+                redeemTokenFee: 0
             }),
             address(reentrancyToken),
             address(debtToken),
@@ -49,8 +49,8 @@ contract NonReentrantTest is LeverageManagerTest {
         vm.expectRevert(abi.encodeWithSelector(ReentrancyGuardUpgradeable.ReentrancyGuardReentrantCall.selector));
         leverageManager.mint(leverageToken, equityToAddInCollateralAsset, 0);
 
-        // withdraw is non-reentrant
-        reentrancyToken.mockSetReentrancyCallType(ReentrancyCallType.Withdraw);
+        // redeem is non-reentrant
+        reentrancyToken.mockSetReentrancyCallType(ReentrancyCallType.Redeem);
         vm.expectRevert(abi.encodeWithSelector(ReentrancyGuardUpgradeable.ReentrancyGuardReentrantCall.selector));
         leverageManager.mint(leverageToken, equityToAddInCollateralAsset, 0);
 

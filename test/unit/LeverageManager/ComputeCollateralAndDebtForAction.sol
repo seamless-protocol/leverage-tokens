@@ -45,7 +45,7 @@ contract ComputeCollateralAndDebtForActionTest is PreviewActionTest {
         assertEq(computedDebt, 20 ether);
     }
 
-    function test_computeCollateralAndDebtForAction_Withdraw() public {
+    function test_computeCollateralAndDebtForAction_Redeem() public {
         uint256 equityInCollateralAsset = 80 ether;
         MockLeverageManagerStateForAction memory beforeState =
             MockLeverageManagerStateForAction({collateral: 100 ether, debt: 20 ether, sharesTotalSupply: 80 ether});
@@ -53,14 +53,14 @@ contract ComputeCollateralAndDebtForActionTest is PreviewActionTest {
         _prepareLeverageManagerStateForAction(beforeState);
 
         (uint256 computedCollateral, uint256 computedDebt) = leverageManager.exposed_computeCollateralAndDebtForAction(
-            leverageToken, equityInCollateralAsset, ExternalAction.Withdraw
+            leverageToken, equityInCollateralAsset, ExternalAction.Redeem
         );
 
         assertEq(computedCollateral, 100 ether);
         assertEq(computedDebt, 20 ether);
     }
 
-    function testFuzz_computeCollateralAndDebtForAction_Withdraw_WithManagementFee(uint128 managementFee) public {
+    function testFuzz_computeCollateralAndDebtForAction_Redeem_WithManagementFee(uint128 managementFee) public {
         managementFee = uint128(bound(managementFee, 0, MAX_FEE));
 
         vm.prank(feeManagerRole);
@@ -76,7 +76,7 @@ contract ComputeCollateralAndDebtForActionTest is PreviewActionTest {
         skip(SECONDS_ONE_YEAR);
 
         (uint256 computedCollateral, uint256 computedDebt) = leverageManager.exposed_computeCollateralAndDebtForAction(
-            leverageToken, equityInCollateralAsset, ExternalAction.Withdraw
+            leverageToken, equityInCollateralAsset, ExternalAction.Redeem
         );
 
         // The amount of collateral and debt should be the same as before, regardless of the management fee
@@ -100,7 +100,7 @@ contract ComputeCollateralAndDebtForActionTest is PreviewActionTest {
         assertEq(computedDebt, 100 ether);
     }
 
-    function test_computeCollateralAndDebtForAction_Withdraw_TotalSupplyZero() public {
+    function test_computeCollateralAndDebtForAction_Redeem_TotalSupplyZero() public {
         uint256 equityInCollateralAsset = 20 ether;
         MockLeverageManagerStateForAction memory beforeState =
             MockLeverageManagerStateForAction({collateral: 100 ether, debt: 20 ether, sharesTotalSupply: 0 ether});
@@ -108,7 +108,7 @@ contract ComputeCollateralAndDebtForActionTest is PreviewActionTest {
         _prepareLeverageManagerStateForAction(beforeState);
 
         (uint256 computedCollateral, uint256 computedDebt) = leverageManager.exposed_computeCollateralAndDebtForAction(
-            leverageToken, equityInCollateralAsset, ExternalAction.Withdraw
+            leverageToken, equityInCollateralAsset, ExternalAction.Redeem
         );
 
         // Follows 2x target ratio, not the current ratio
