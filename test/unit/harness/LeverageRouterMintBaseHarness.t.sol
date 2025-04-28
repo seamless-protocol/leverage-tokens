@@ -9,35 +9,33 @@ import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
-import {LeverageRouterDepositBase} from "src/periphery/LeverageRouterDepositBase.sol";
+import {LeverageRouterMintBase} from "src/periphery/LeverageRouterMintBase.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {MockERC20} from "../mock/MockERC20.sol";
 
-contract LeverageRouterDepositBaseHarness is LeverageRouterDepositBase, Test {
+contract LeverageRouterMintBaseHarness is LeverageRouterMintBase, Test {
     event AdditionalData(bytes additionalData);
 
     IERC20 public collateralAsset;
 
     constructor(ILeverageManager _leverageManager, IMorpho _morpho, IERC20 _collateralAsset)
-        LeverageRouterDepositBase(_leverageManager, _morpho)
+        LeverageRouterMintBase(_leverageManager, _morpho)
     {
         collateralAsset = _collateralAsset;
     }
 
-    function exposed_depositAndRepayMorphoFlashLoan(DepositParams memory params, uint256 collateralLoanAmount)
-        external
-    {
+    function exposed_mintAndRepayMorphoFlashLoan(MintParams memory params, uint256 collateralLoanAmount) external {
         // Mock the flash loan occuring beforehand
         deal(address(collateralAsset), address(this), collateralLoanAmount);
 
-        _depositAndRepayMorphoFlashLoan(params, collateralLoanAmount);
+        _mintAndRepayMorphoFlashLoan(params, collateralLoanAmount);
     }
 
-    function exposed_deposit(DepositParams memory params, uint256 collateralLoanAmount) external {
+    function exposed_mint(MintParams memory params, uint256 collateralLoanAmount) external {
         // Mock the flash loan occuring beforehand
         deal(address(collateralAsset), address(this), collateralLoanAmount);
 
-        _deposit(params, collateralAsset, collateralLoanAmount);
+        _mint(params, collateralAsset, collateralLoanAmount);
     }
 
     function exposed_getCollateralFromDebt(

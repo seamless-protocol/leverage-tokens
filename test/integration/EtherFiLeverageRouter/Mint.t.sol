@@ -9,17 +9,17 @@ import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {EtherFiLeverageRouterTest} from "./EtherFiLeverageRouter.t.sol";
 import {SwapPathLib} from "../../utils/SwapPathLib.sol";
 
-contract EtherFiLeverageRouterDepositTest is EtherFiLeverageRouterTest {
-    function testFork_Deposit() public {
+contract EtherFiLeverageRouterMintTest is EtherFiLeverageRouterTest {
+    function testFork_Mint() public {
         uint256 equityInCollateralAsset = 1 ether;
         uint256 collateralToAdd = 2 * equityInCollateralAsset;
-        uint256 userBalanceOfCollateralAsset = 4 ether; // User has more than enough assets for the deposit of equity
+        uint256 userBalanceOfCollateralAsset = 4 ether; // User has more than enough assets for the mint of equity
 
-        _dealAndDeposit(WEETH, userBalanceOfCollateralAsset, equityInCollateralAsset);
+        _dealAndMint(WEETH, userBalanceOfCollateralAsset, equityInCollateralAsset);
 
-        // Initial deposit results in 1:1 shares to equity
+        // Initial mint results in 1:1 shares to equity
         assertEq(leverageToken.balanceOf(user), equityInCollateralAsset);
-        // Collateral is taken from the user for the deposit
+        // Collateral is taken from the user for the mint
         assertEq(WEETH.balanceOf(user), userBalanceOfCollateralAsset - equityInCollateralAsset);
 
         assertEq(morphoLendingAdapter.getCollateral(), collateralToAdd);

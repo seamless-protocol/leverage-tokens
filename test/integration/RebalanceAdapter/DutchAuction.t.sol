@@ -50,7 +50,7 @@ contract DutchAuctionTest is RebalanceTest {
         LeverageTokenConfig memory config = LeverageTokenConfig({
             lendingAdapter: ILendingAdapter(morphoLendingAdapter),
             rebalanceAdapter: ethLong2xRebalanceAdapter,
-            depositTokenFee: 0,
+            mintTokenFee: 0,
             withdrawTokenFee: 0
         });
 
@@ -59,19 +59,19 @@ contract DutchAuctionTest is RebalanceTest {
     }
 
     function _prepareOverCollateralizedState() internal {
-        // Deposit 10 WETH following target ratio
-        uint256 equityToDeposit = 10 * 1e18;
-        uint256 collateralToAdd = leverageManager.previewDeposit(ethLong2x, equityToDeposit).collateral;
-        _deposit(ethLong2x, user, equityToDeposit, collateralToAdd);
+        // Mint 10 WETH following target ratio
+        uint256 equityToMint = 10 * 1e18;
+        uint256 collateralToAdd = leverageManager.previewMint(ethLong2x, equityToMint).collateral;
+        _mint(ethLong2x, user, equityToMint, collateralToAdd);
 
         _moveEthPrice(20_00); // 20% up price movement. Collateral ratio should be 2.4x
     }
 
     function _prepareUnderCollateralizedState() internal {
-        // Deposit 10 WETH following target ratio
-        uint256 equityToDeposit = 10 * 1e18;
-        uint256 collateralToAdd = leverageManager.previewDeposit(ethLong2x, equityToDeposit).collateral;
-        _deposit(ethLong2x, user, equityToDeposit, collateralToAdd);
+        // Mint 10 WETH following target ratio
+        uint256 equityToMint = 10 * 1e18;
+        uint256 collateralToAdd = leverageManager.previewMint(ethLong2x, equityToMint).collateral;
+        _mint(ethLong2x, user, equityToMint, collateralToAdd);
 
         _moveEthPrice(-20_00); // 20% down price movement. Collateral ratio should be 1.6x
     }

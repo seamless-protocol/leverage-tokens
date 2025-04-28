@@ -34,11 +34,11 @@ contract SetTreasuryTest is FeeManagerTest {
 
     function test_setTreasury_ZeroAddressResetsTreasuryFees() public {
         _setTreasury(feeManagerRole, makeAddr("treasury"));
-        _setTreasuryActionFee(feeManagerRole, ExternalAction.Deposit, 100);
+        _setTreasuryActionFee(feeManagerRole, ExternalAction.Mint, 100);
         _setTreasuryActionFee(feeManagerRole, ExternalAction.Withdraw, 100);
 
         _setTreasury(feeManagerRole, address(0));
-        assertEq(feeManager.getTreasuryActionFee(ExternalAction.Deposit), 0);
+        assertEq(feeManager.getTreasuryActionFee(ExternalAction.Mint), 0);
         assertEq(feeManager.getTreasuryActionFee(ExternalAction.Withdraw), 0);
     }
 }

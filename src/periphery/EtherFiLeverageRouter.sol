@@ -11,7 +11,7 @@ import {IEtherFiLeverageRouter} from "../interfaces/periphery/IEtherFiLeverageRo
 import {ILeverageManager} from "../interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "../interfaces/ILeverageToken.sol";
 import {IWETH9} from "../interfaces/periphery/IWETH9.sol";
-import {LeverageRouterDepositBase} from "./LeverageRouterDepositBase.sol";
+import {LeverageRouterMintBase} from "./LeverageRouterMintBase.sol";
 
 /**
  * @dev The EtherFiLeverageRouter contract is an immutable periphery contract that facilitates the use of Morpho flash loans
@@ -31,7 +31,7 @@ import {LeverageRouterDepositBase} from "./LeverageRouterDepositBase.sol";
  * @dev Note: This router is intended to be used for LeverageTokens that use weETH as collateral and WETH as debt and will
  *   otherwise revert.
  */
-contract EtherFiLeverageRouter is LeverageRouterDepositBase, IEtherFiLeverageRouter {
+contract EtherFiLeverageRouter is LeverageRouterMintBase, IEtherFiLeverageRouter {
     /// @notice The ETH address per the EtherFi L2 Mode Sync Pool contract
     address internal constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
@@ -43,17 +43,17 @@ contract EtherFiLeverageRouter is LeverageRouterDepositBase, IEtherFiLeverageRou
     /// @param _morpho The Morpho core protocol contract
     /// @param _etherFiL2ModeSyncPool The EtherFi L2 Mode Sync Pool contract
     constructor(ILeverageManager _leverageManager, IMorpho _morpho, IEtherFiL2ModeSyncPool _etherFiL2ModeSyncPool)
-        LeverageRouterDepositBase(_leverageManager, _morpho)
+        LeverageRouterMintBase(_leverageManager, _morpho)
     {
         etherFiL2ModeSyncPool = _etherFiL2ModeSyncPool;
     }
 
     /// @inheritdoc IEtherFiLeverageRouter
-    function deposit(ILeverageToken token, uint256 equityInCollateralAsset, uint256 minShares) external {
-        uint256 collateralToAdd = leverageManager.previewDeposit(token, equityInCollateralAsset).collateral;
+    function mint(ILeverageToken token, uint256 equityInCollateralAsset, uint256 minShares) external {
+        uint256 collateralToAdd = leverageManager.previewMint(token, equityInCollateralAsset).collateral;
 
         bytes memory depositData = abi.encode(
-            DepositParams({
+            MintParams({
                 token: token,
                 equityInCollateralAsset: equityInCollateralAsset,
                 minShares: minShares,
@@ -77,8 +77,8 @@ contract EtherFiLeverageRouter is LeverageRouterDepositBase, IEtherFiLeverageRou
     function onMorphoFlashLoan(uint256 loanAmount, bytes calldata data) external {
         if (msg.sender != address(morpho)) revert Unauthorized();
 
-        DepositParams memory params = abi.decode(data, (DepositParams));
-        _depositAndRepayMorphoFlashLoan(params, loanAmount);
+        MintParams memory params = abi.decode(data, (MintParams));
+        _mintAndRepayMorphoFlashLoan(params, loanAmount);
     }
 
     /// @notice Performs logic to obtain weETH collateral from WETH debt

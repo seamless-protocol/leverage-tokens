@@ -18,9 +18,9 @@ import {IFeeManager} from "src/interfaces/IFeeManager.sol";
  * @dev The FeeManager contract is an upgradeable core contract that is responsible for managing the fees for LeverageTokens.
  * There are three types of fees:
  *   - Token action fees: Fees charged that accumulate towards the value of the LeverageToken for current LeverageToken
- *     holders, applied on equity for deposits and withdrawals
+ *     holders, applied on equity for mints and withdrawals
  *   - Treasury action fees: Fees charged in shares that are transferred to the configured treasury address, applied on
- *     shares minted for deposits and shares burned for withdrawals
+ *     shares minted for mints and shares burned for withdrawals
  *   - Management fees: Fees charged in shares that are transferred to the configured treasury address. The management fee
  *     accrues linearly over time and is minted to the treasury when the `chargeManagementFee` function is executed
  *
@@ -106,7 +106,7 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
 
         // If the treasury is reset, the treasury fees should be reset as well
         if (treasury == address(0)) {
-            $.treasuryActionFee[ExternalAction.Deposit] = 0;
+            $.treasuryActionFee[ExternalAction.Mint] = 0;
             $.treasuryActionFee[ExternalAction.Withdraw] = 0;
         }
 
@@ -158,7 +158,7 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
     /// @notice Computes the token action fee for a given action
     /// @param token LeverageToken to compute token action fee for
     /// @param equity Amount of equity to compute token action fee for, denominated in collateral asset
-    /// @param action Action to compute token action fee for, Deposit or Withdraw
+    /// @param action Action to compute token action fee for, Mint or Withdraw
     /// @return equityForShares Equity to mint / burn shares for the LeverageToken after token action fees, denominated in
     /// collateral asset of the LeverageToken
     /// @return tokenFee LeverageToken token action fee amount in equity, denominated in the collateral asset of the
@@ -171,10 +171,10 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
     {
         uint256 tokenFee = Math.mulDiv(equity, getLeverageTokenActionFee(token, action), MAX_FEE, Math.Rounding.Ceil);
 
-        // To increase share value for existing users, less shares are minted on deposits and more shares are burned on
-        // withdrawals by subtracting the token fee from the equity on deposits and adding the token fee to the equity on
+        // To increase share value for existing users, less shares are minted on mints and more shares are burned on
+        // withdrawals by subtracting the token fee from the equity on mints and adding the token fee to the equity on
         // withdrawals.
-        uint256 equityForShares = action == ExternalAction.Deposit ? equity - tokenFee : equity + tokenFee;
+        uint256 equityForShares = action == ExternalAction.Mint ? equity - tokenFee : equity + tokenFee;
 
         return (equityForShares, tokenFee);
     }

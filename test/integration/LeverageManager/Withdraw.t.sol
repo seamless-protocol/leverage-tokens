@@ -19,7 +19,7 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
     function testFork_withdraw_NoFee() public {
         uint256 equityInCollateralAsset = 10 ether;
         uint256 collateralToAdd = 2 * equityInCollateralAsset;
-        _deposit(user, equityInCollateralAsset, collateralToAdd);
+        _mint(user, equityInCollateralAsset, collateralToAdd);
 
         LeverageTokenState memory stateBefore = getLeverageTokenState();
         assertEq(stateBefore.collateralRatio, 1999999999970521409); // ~2x CR
@@ -41,7 +41,7 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
     function testFork_withdraw_ZeroAmount() public {
         uint256 equityInCollateralAsset = 10 ether;
         uint256 collateralToAdd = 2 * equityInCollateralAsset;
-        _deposit(user, equityInCollateralAsset, collateralToAdd);
+        _mint(user, equityInCollateralAsset, collateralToAdd);
 
         ActionData memory previewData = leverageManager.previewWithdraw(leverageToken, 0);
         _withdraw(user, 0, previewData.debt);
@@ -57,7 +57,7 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
 
         uint256 equityInCollateralAsset = 10 ether;
         uint256 collateralToAdd = 2 * equityInCollateralAsset;
-        uint256 shares = _deposit(user, equityInCollateralAsset, collateralToAdd);
+        uint256 shares = _mint(user, equityInCollateralAsset, collateralToAdd);
 
         uint256 sharesValue = _convertToAssets(shares);
         uint256 debtToRepay = leverageManager.previewWithdraw(leverageToken, sharesValue).debt;
@@ -81,7 +81,7 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
 
         uint256 equityInCollateralAsset = 10 ether;
         uint256 collateralToAdd = 2 * equityInCollateralAsset;
-        _deposit(user, equityInCollateralAsset, collateralToAdd);
+        _mint(user, equityInCollateralAsset, collateralToAdd);
 
         LeverageTokenState memory stateBefore = getLeverageTokenState();
         assertEq(stateBefore.collateralRatio, 1999999999950000000); // ~2x CR
@@ -100,7 +100,7 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
         assertGe(stateAfter.collateralRatio, stateBefore.collateralRatio);
         assertEq(stateAfter.collateralRatio, 2000000000000000000);
 
-        // Ensure that after withdraw debt and collateral is 50% of what was initially after deposit
+        // Ensure that after withdraw debt and collateral is 50% of what was initially after mint
         assertEq(stateAfter.debt, 20000_000000); // 2000 USDC
         assertEq(equityInCollateralAssetAfterWithdraw, equityInCollateralAsset / 2);
 
@@ -110,7 +110,7 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
     function testFork_withdraw_PriceChangedBetweenWithdraws_CollateralRatioDoesNotChange() public {
         uint256 equityInCollateralAsset = 10 ether;
         uint256 collateralToAdd = 2 * equityInCollateralAsset;
-        _deposit(user, equityInCollateralAsset, collateralToAdd);
+        _mint(user, equityInCollateralAsset, collateralToAdd);
 
         // Mock ETH price to be 4000 USDC
         (,, address oracle,,) = morphoLendingAdapter.marketParams();
@@ -133,19 +133,18 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
     }
 
     function testFork_withdraw_fullWithdrawComparedToPartialWithdrawals() public {
-        // Deposit some assets initially
+        // Mint some assets initially
         uint256 equityInCollateralAsset = 10 ether;
         uint256 collateralToAdd = 2 * equityInCollateralAsset;
-        uint256 sharesAfterDeposit = _deposit(user, equityInCollateralAsset, collateralToAdd);
+        uint256 sharesAfterMint = _mint(user, equityInCollateralAsset, collateralToAdd);
 
         // Withdraw everything
-        uint256 sharesValueAfterDeposit = _convertToAssets(sharesAfterDeposit);
-        ActionData memory previewDataAfterDeposit =
-            leverageManager.previewWithdraw(leverageToken, sharesValueAfterDeposit);
-        _withdraw(user, sharesValueAfterDeposit, previewDataAfterDeposit.debt);
+        uint256 sharesValueAfterMint = _convertToAssets(sharesAfterMint);
+        ActionData memory previewDataAfterMint = leverageManager.previewWithdraw(leverageToken, sharesValueAfterMint);
+        _withdraw(user, sharesValueAfterMint, previewDataAfterMint.debt);
 
-        // Deposit again to create the same scenario
-        sharesAfterDeposit = _deposit(user, equityInCollateralAsset, collateralToAdd);
+        // Mint again to create the same scenario
+        sharesAfterMint = _mint(user, equityInCollateralAsset, collateralToAdd);
 
         // Withdraw half of it
         uint256 equityToWithdraw = equityInCollateralAsset / 2;
@@ -158,12 +157,12 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
         _withdraw(user, equityToWithdraw, previewDataSecondTime.debt);
 
         // Validate that in both cases we get the same amount of collateral and debt
-        assertEq(previewDataFirstTime.collateral + previewDataSecondTime.collateral, previewDataAfterDeposit.collateral);
-        assertEq(previewDataFirstTime.debt + previewDataSecondTime.debt, previewDataAfterDeposit.debt);
+        assertEq(previewDataFirstTime.collateral + previewDataSecondTime.collateral, previewDataAfterMint.collateral);
+        assertEq(previewDataFirstTime.debt + previewDataSecondTime.debt, previewDataAfterMint.debt);
 
         // Validate that collateral token is properly transferred to user
         assertEq(WETH.balanceOf(user), previewDataFirstTime.collateral + previewDataSecondTime.collateral);
-        assertLe(previewDataAfterDeposit.collateral, 2 * equityInCollateralAsset);
+        assertLe(previewDataAfterMint.collateral, 2 * equityInCollateralAsset);
     }
 
     function testFork_withdraw_withFee() public {
@@ -181,16 +180,16 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
 
         uint256 equityInCollateralAsset = 10 ether;
         uint256 collateralToAdd = 2 * equityInCollateralAsset;
-        _deposit(user, equityInCollateralAsset, collateralToAdd);
+        _mint(user, equityInCollateralAsset, collateralToAdd);
 
         // 10% of equity goes to share dilution (token action fee), so 9 ether shares are minted instead of 10 ether
         assertEq(leverageToken.balanceOf(user), 9 ether);
         assertEq(leverageToken.totalSupply(), 9 ether);
 
-        uint256 equityInCollateralAssetAfterDeposit = morphoLendingAdapter.getEquityInCollateralAsset();
+        uint256 equityInCollateralAssetAfterMint = morphoLendingAdapter.getEquityInCollateralAsset();
 
         // Withdraw 50% of equity
-        uint256 equityToWithdraw = equityInCollateralAssetAfterDeposit / 2;
+        uint256 equityToWithdraw = equityInCollateralAssetAfterMint / 2;
         ActionData memory previewData = leverageManager.previewWithdraw(leverageToken, equityToWithdraw);
         _withdraw(user, equityToWithdraw, previewData.debt);
 
@@ -221,7 +220,7 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
             LeverageManagerHarness(address(leverageManager)).exposed_getFeeAdjustedTotalSupply(leverageToken),
             Math.Rounding.Floor
         );
-        // The share value is less than half of the initial equity deposited due to the share dilution from the fees,
+        // The share value is less than half of the initial equity minted due to the share dilution from the fees,
         // and morpho borrow interest
         assertEq(userTotalShareValue, 3.254919226259702618 ether);
 

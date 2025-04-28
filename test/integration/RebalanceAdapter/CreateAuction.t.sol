@@ -73,9 +73,9 @@ contract CreateAuctionTest is DutchAuctionTest {
     }
 
     function testFork_createAuction_RevertIf_LeverageTokenNotEligibleForRebalance() public {
-        uint256 equityToDeposit = 10 * 1e18;
-        uint256 collateralToAdd = leverageManager.previewDeposit(ethLong2x, equityToDeposit).collateral;
-        _deposit(ethLong2x, user, equityToDeposit, collateralToAdd);
+        uint256 equityToMint = 10 * 1e18;
+        uint256 collateralToAdd = leverageManager.previewMint(ethLong2x, equityToMint).collateral;
+        _mint(ethLong2x, user, equityToMint, collateralToAdd);
 
         vm.expectRevert(IDutchAuctionRebalanceAdapter.LeverageTokenNotEligibleForRebalance.selector);
         ethLong2xRebalanceAdapter.createAuction();

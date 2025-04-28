@@ -19,7 +19,7 @@ interface ILeverageManager is IFeeManager {
     /// @notice Error thrown when collateral ratios are invalid for an action
     error InvalidCollateralRatios();
 
-    /// @notice Error thrown when slippage is too high during deposit/withdraw
+    /// @notice Error thrown when slippage is too high during mint/withdraw
     /// @param actual The actual amount of tokens received
     /// @param expected The expected amount of tokens to receive
     error SlippageTooHigh(uint256 actual, uint256 expected);
@@ -49,11 +49,11 @@ interface ILeverageManager is IFeeManager {
         ILeverageToken indexed token, IERC20 collateralAsset, IERC20 debtAsset, LeverageTokenConfig config
     );
 
-    /// @notice Event emitted when a user deposits assets into a LeverageToken
+    /// @notice Event emitted when a user mints assets into a LeverageToken
     /// @param token The LeverageToken
-    /// @param sender The sender of the deposit
-    /// @param actionData The action data of the deposit
-    event Deposit(ILeverageToken indexed token, address indexed sender, ActionData actionData);
+    /// @param sender The sender of the mint
+    /// @param actionData The action data of the mint
+    event Mint(ILeverageToken indexed token, address indexed sender, ActionData actionData);
 
     /// @notice Event emitted when a user withdraws assets from a LeverageToken
     /// @param token The LeverageToken
@@ -96,7 +96,7 @@ interface ILeverageManager is IFeeManager {
     /// @notice Returns the initial collateral ratio for a LeverageToken
     /// @param token LeverageToken to get initial collateral ratio for
     /// @return initialCollateralRatio Initial collateral ratio for the LeverageToken
-    /// @dev Initial collateral ratio is followed when the LeverageToken has no shares and on deposits when debt is 0.
+    /// @dev Initial collateral ratio is followed when the LeverageToken has no shares and on mints when debt is 0.
     function getLeverageTokenInitialCollateralRatio(ILeverageToken token)
         external
         view
@@ -116,19 +116,19 @@ interface ILeverageManager is IFeeManager {
         external
         returns (ILeverageToken token);
 
-    /// @notice Previews deposit function call and returns all required data
-    /// @param token LeverageToken to preview deposit for
-    /// @param equityInCollateralAsset Equity to deposit denominated in collateral asset
-    /// @return previewData Preview data for deposit
+    /// @notice Previews mint function call and returns all required data
+    /// @param token LeverageToken to preview mint for
+    /// @param equityInCollateralAsset Equity to mint leverage token for denominated in collateral asset
+    /// @return previewData Preview data for mint
     ///         - collateralToAdd Amount of collateral that sender needs to approve the LeverageManager to spend,
     ///           this includes any fees
     ///         - debtToBorrow Amount of debt that will be borrowed and sent to sender
-    ///         - equity Amount of equity that will be deposited before fees, denominated in collateral asset
+    ///         - equity Amount of equity that will be used for minting shares before fees, denominated in collateral asset
     ///         - shares Amount of shares that will be minted to the sender
-    ///         - tokenFee Amount of collateral asset that will be charged for the deposit to the leverage token
-    ///         - treasuryFee Amount of collateral asset that will be charged for the deposit to the treasury
+    ///         - tokenFee Amount of collateral asset that will be charged for the mint to the leverage token
+    ///         - treasuryFee Amount of collateral asset that will be charged for the mint to the treasury
     /// @dev Sender should approve leverage manager to spend collateralToAdd amount of collateral asset
-    function previewDeposit(ILeverageToken token, uint256 equityInCollateralAsset)
+    function previewMint(ILeverageToken token, uint256 equityInCollateralAsset)
         external
         view
         returns (ActionData memory previewData);
@@ -149,18 +149,18 @@ interface ILeverageManager is IFeeManager {
         view
         returns (ActionData memory previewData);
 
-    /// @notice Deposits equity into a LeverageToken and mints shares to the sender
-    /// @param token The LeverageToken to deposit into
-    /// @param equityInCollateralAsset The amount of equity to deposit denominated in the collateral asset of the LeverageToken
+    /// @notice Mints equity into a LeverageToken and mints shares to the sender
+    /// @param token The LeverageToken to mint into
+    /// @param equityInCollateralAsset The amount of equity to mint denominated in the collateral asset of the LeverageToken
     /// @param minShares The minimum amount of shares to mint
-    /// @return actionData Data about the deposit
+    /// @return actionData Data about the mint
     ///         - collateral Amount of collateral that was added, including any fees
     ///         - debt Amount of debt that was added
-    ///         - equity Amount of equity that was deposited before fees, denominated in collateral asset
+    ///         - equity Amount of equity that was minted before fees, denominated in collateral asset
     ///         - shares Amount of shares minted to the sender
-    ///         - tokenFee Amount of collateral that was charged for the deposit to the leverage token
-    ///         - treasuryFee Amount of collateral that was charged for the deposit to the treasury
-    function deposit(ILeverageToken token, uint256 equityInCollateralAsset, uint256 minShares)
+    ///         - tokenFee Amount of collateral that was charged for the mint to the leverage token
+    ///         - treasuryFee Amount of collateral that was charged for the mint to the treasury
+    function mint(ILeverageToken token, uint256 equityInCollateralAsset, uint256 minShares)
         external
         returns (ActionData memory actionData);
 

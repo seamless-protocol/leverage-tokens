@@ -30,7 +30,7 @@ import {
 
 /**
  * @dev The LeverageManager contract is an upgradeable core contract that is responsible for managing the creation of LeverageTokens.
- * It also acts as an entry point for users to deposit and withdraw equity from the position held by the LeverageToken, and for
+ * It also acts as an entry point for users to mint and withdraw equity from the position held by the LeverageToken, and for
  * rebalancers to rebalance LeverageTokens.
  *
  * LeverageTokens are ERC20 tokens that are akin to shares in an ERC-4626 vault - they represent a claim on the equity held by
@@ -42,23 +42,23 @@ import {
  * The LeverageManager also inherits the `FeeManager` contract, which is used to manage LeverageToken fees (which accrue to
  * the share value of the LeverageToken) and the treasury fees.
  *
- * For deposits of equity into a LeverageToken, the collateral and debt required is calculated by using the LeverageToken's
- * current collateral ratio. As such, the collateral ratio after a deposit must be equal to the collateral ratio before a
- * deposit, within some rounding error.
+ * For mints of a LeverageToken, the collateral and debt required is calculated by using the LeverageToken's
+ * current collateral ratio. As such, the collateral ratio after a mint must be equal to the collateral ratio before a
+ * mint, within some rounding error.
  *
  * [CAUTION]
  * ====
  * - LeverageTokens are susceptible to inflation attacks like ERC-4626 vaults:
- *   "In empty (or nearly empty) ERC-4626 vaults, deposits are at high risk of being stolen through frontrunning
+ *   "In empty (or nearly empty) ERC-4626 vaults, mints are at high risk of being stolen through frontrunning
  *   with a "donation" to the vault that inflates the price of a share. This is variously known as a donation or inflation
  *   attack and is essentially a problem of slippage. Vault deployers can protect against this attack by making an initial
- *   deposit of a non-trivial amount of the asset, such that price manipulation becomes infeasible. Withdrawals may
+ *   mint of a non-trivial amount of the asset, such that price manipulation becomes infeasible. Withdrawals may
  *   similarly be affected by slippage. Users can protect against this attack as well as unexpected slippage in general by
  *   verifying the amount received is as expected, using a wrapper that performs these checks such as
  *   https://github.com/fei-protocol/ERC4626#erc4626router-and-base[ERC4626Router]."
  *
- *   As such it is highly recommended that LeverageToken creators make an initial deposit of a non-trivial amount of equity.
- *   It is also recommended to use a router that performs slippage checks when depositing and withdrawing.
+ *   As such it is highly recommended that LeverageToken creators make an initial mint of a non-trivial amount of equity.
+ *   It is also recommended to use a router that performs slippage checks when minting and withdrawing.
  *
  * - LeverageToken creation is permissionless and can be configured with arbitrary lending adapters, rebalance adapters, and
  *   underlying collateral and debt assets. As such, the adapters and tokens used by a LeverageToken are part of the risk
@@ -137,13 +137,13 @@ contract LeverageManager is
     /// @inheritdoc ILeverageManager
     function getLeverageTokenConfig(ILeverageToken token) external view returns (LeverageTokenConfig memory config) {
         BaseLeverageTokenConfig memory baseConfig = _getLeverageManagerStorage().config[token];
-        uint256 depositTokenFee = getLeverageTokenActionFee(token, ExternalAction.Deposit);
+        uint256 mintTokenFee = getLeverageTokenActionFee(token, ExternalAction.Mint);
         uint256 withdrawTokenFee = getLeverageTokenActionFee(token, ExternalAction.Withdraw);
 
         return LeverageTokenConfig({
             lendingAdapter: baseConfig.lendingAdapter,
             rebalanceAdapter: baseConfig.rebalanceAdapter,
-            depositTokenFee: depositTokenFee,
+            mintTokenFee: mintTokenFee,
             withdrawTokenFee: withdrawTokenFee
         });
     }
@@ -197,7 +197,7 @@ contract LeverageManager is
             lendingAdapter: tokenConfig.lendingAdapter,
             rebalanceAdapter: tokenConfig.rebalanceAdapter
         });
-        _setLeverageTokenActionFee(token, ExternalAction.Deposit, tokenConfig.depositTokenFee);
+        _setLeverageTokenActionFee(token, ExternalAction.Mint, tokenConfig.mintTokenFee);
         _setLeverageTokenActionFee(token, ExternalAction.Withdraw, tokenConfig.withdrawTokenFee);
         chargeManagementFee(token);
 
@@ -214,12 +214,12 @@ contract LeverageManager is
     }
 
     /// @inheritdoc ILeverageManager
-    function previewDeposit(ILeverageToken token, uint256 equityInCollateralAsset)
+    function previewMint(ILeverageToken token, uint256 equityInCollateralAsset)
         public
         view
         returns (ActionData memory)
     {
-        return _previewAction(token, equityInCollateralAsset, ExternalAction.Deposit);
+        return _previewAction(token, equityInCollateralAsset, ExternalAction.Mint);
     }
 
     /// @inheritdoc ILeverageManager
@@ -232,42 +232,42 @@ contract LeverageManager is
     }
 
     /// @inheritdoc ILeverageManager
-    function deposit(ILeverageToken token, uint256 equityInCollateralAsset, uint256 minShares)
+    function mint(ILeverageToken token, uint256 equityInCollateralAsset, uint256 minShares)
         external
         nonReentrant
         returns (ActionData memory actionData)
     {
         // Management fee is calculated from the total supply of the LeverageToken, so we need to claim it first
-        // before total supply is updated due to the deposit
+        // before total supply is updated due to the mint
         chargeManagementFee(token);
 
-        ActionData memory depositData = previewDeposit(token, equityInCollateralAsset);
+        ActionData memory mintData = previewMint(token, equityInCollateralAsset);
 
-        if (depositData.shares < minShares) {
-            revert SlippageTooHigh(depositData.shares, minShares);
+        if (mintData.shares < minShares) {
+            revert SlippageTooHigh(mintData.shares, minShares);
         }
 
         // Take collateral asset from sender
         IERC20 collateralAsset = getLeverageTokenCollateralAsset(token);
-        SafeERC20.safeTransferFrom(collateralAsset, msg.sender, address(this), depositData.collateral);
+        SafeERC20.safeTransferFrom(collateralAsset, msg.sender, address(this), mintData.collateral);
 
         // Add collateral to LeverageToken
-        _executeLendingAdapterAction(token, ActionType.AddCollateral, depositData.collateral);
+        _executeLendingAdapterAction(token, ActionType.AddCollateral, mintData.collateral);
 
         // Borrow and send debt assets to caller
-        _executeLendingAdapterAction(token, ActionType.Borrow, depositData.debt);
-        SafeERC20.safeTransfer(getLeverageTokenDebtAsset(token), msg.sender, depositData.debt);
+        _executeLendingAdapterAction(token, ActionType.Borrow, mintData.debt);
+        SafeERC20.safeTransfer(getLeverageTokenDebtAsset(token), msg.sender, mintData.debt);
 
         // Charge treasury fee
-        _chargeTreasuryFee(token, depositData.treasuryFee);
+        _chargeTreasuryFee(token, mintData.treasuryFee);
 
         // Mint shares to user
         // slither-disable-next-line reentrancy-events
-        token.mint(msg.sender, depositData.shares);
+        token.mint(msg.sender, mintData.shares);
 
         // Emit event and explicit return statement
-        emit Deposit(token, msg.sender, depositData);
-        return depositData;
+        emit Mint(token, msg.sender, mintData);
+        return mintData;
     }
 
     /// @inheritdoc ILeverageManager
@@ -372,19 +372,19 @@ contract LeverageManager is
             }
         }
 
-        Math.Rounding rounding = action == ExternalAction.Deposit ? Math.Rounding.Floor : Math.Rounding.Ceil;
+        Math.Rounding rounding = action == ExternalAction.Mint ? Math.Rounding.Floor : Math.Rounding.Ceil;
         return Math.mulDiv(equityInCollateralAsset, totalSupply, totalEquityInCollateralAsset, rounding);
     }
 
-    /// @notice Previews parameters related to a deposit action
-    /// @param token LeverageToken to preview deposit for
+    /// @notice Previews parameters related to a mint action
+    /// @param token LeverageToken to preview mint for
     /// @param equityInCollateralAsset Amount of equity to add or withdraw, denominated in collateral asset
-    /// @param action Type of the action to preview, can be Deposit or Withdraw
+    /// @param action Type of the action to preview, can be Mint or Withdraw
     /// @return data Preview data for the action
     /// @dev If the LeverageToken has zero total supply of shares (so the LeverageToken does not hold any collateral or debt,
     ///      or holds some leftover dust after all shares are redeemed), then the preview will use the target
     ///      collateral ratio for determining how much collateral and debt is required instead of the current collateral ratio.
-    /// @dev If action is deposit collateral will be rounded down and debt up, if action is withdraw collateral will be rounded up and debt down
+    /// @dev If action is mint collateral will be rounded down and debt up, if action is withdraw collateral will be rounded up and debt down
     function _previewAction(ILeverageToken token, uint256 equityInCollateralAsset, ExternalAction action)
         internal
         view
@@ -396,9 +396,9 @@ contract LeverageManager is
         uint256 shares = _convertToShares(token, equityForShares, action);
         uint256 treasuryFee = _computeTreasuryFee(action, shares);
 
-        // On deposits, some of the minted shares are for the treasury fee
+        // On mints, some of the minted shares are for the treasury fee
         // On withdrawals, additional shares are taken from the user to cover the treasury fee
-        uint256 userSharesDelta = action == ExternalAction.Deposit ? shares - treasuryFee : shares + treasuryFee;
+        uint256 userSharesDelta = action == ExternalAction.Mint ? shares - treasuryFee : shares + treasuryFee;
 
         return ActionData({
             collateral: collateral,
@@ -425,13 +425,13 @@ contract LeverageManager is
         uint256 totalDebt = lendingAdapter.getDebt();
         uint256 totalShares = _getFeeAdjustedTotalSupply(token);
 
-        Math.Rounding collateralRounding = action == ExternalAction.Deposit ? Math.Rounding.Ceil : Math.Rounding.Floor;
-        Math.Rounding debtRounding = action == ExternalAction.Deposit ? Math.Rounding.Floor : Math.Rounding.Ceil;
+        Math.Rounding collateralRounding = action == ExternalAction.Mint ? Math.Rounding.Ceil : Math.Rounding.Floor;
+        Math.Rounding debtRounding = action == ExternalAction.Mint ? Math.Rounding.Floor : Math.Rounding.Ceil;
 
         uint256 shares = _convertToShares(token, equityInCollateralAsset, action);
 
-        // If action is deposit there might be some dust in collateral but debt can be 0. In that case we should follow target ratio
-        bool shouldFollowInitialRatio = totalShares == 0 || (action == ExternalAction.Deposit && totalDebt == 0);
+        // If action is mint there might be some dust in collateral but debt can be 0. In that case we should follow target ratio
+        bool shouldFollowInitialRatio = totalShares == 0 || (action == ExternalAction.Mint && totalDebt == 0);
 
         if (shouldFollowInitialRatio) {
             uint256 initialRatio = getLeverageTokenInitialCollateralRatio(token);

@@ -58,7 +58,7 @@ contract RebalanceTest is LeverageManagerTest {
             LeverageTokenConfig({
                 lendingAdapter: ILendingAdapter(address(ethLong2xAdapter)),
                 rebalanceAdapter: IRebalanceAdapter(ethLong2xRebalanceAdapter),
-                depositTokenFee: 0,
+                mintTokenFee: 0,
                 withdrawTokenFee: 0
             }),
             "Seamless ETH/USDC 2x leverage token",
@@ -69,7 +69,7 @@ contract RebalanceTest is LeverageManagerTest {
             LeverageTokenConfig({
                 lendingAdapter: ILendingAdapter(address(ethShort2xAdapter)),
                 rebalanceAdapter: IRebalanceAdapter(ethShort2xRebalanceAdapter),
-                depositTokenFee: 0,
+                mintTokenFee: 0,
                 withdrawTokenFee: 0
             }),
             "Seamless USDC/ETH 2x leverage token",
@@ -79,7 +79,7 @@ contract RebalanceTest is LeverageManagerTest {
 
     /// @dev In this block price on oracle 3392.292471591441746049801068
     function test_rebalance_SingleLeverageToken_OverCollateralized() public {
-        _depositEthLong2x();
+        _mintEthLong2x();
 
         // After previous action we expect leverage token to have 20 ETH collateral
         // We need to mock price change so leverage token goes off balance
@@ -119,7 +119,7 @@ contract RebalanceTest is LeverageManagerTest {
     }
 
     function test_rebalance_SingleLeverageToken_UnderCollateralized() public {
-        _depositEthLong2x();
+        _mintEthLong2x();
 
         // After previous action we expect leverage token to have 20 ETH collateral
         // We need to mock price change so leverage token goes off balance
@@ -155,7 +155,7 @@ contract RebalanceTest is LeverageManagerTest {
 
     /// @dev In this block price on oracle 3392.292471591441746049801068
     function test_rebalance_RevertIf_ExposureDirectionChanged() public {
-        _depositEthLong2x();
+        _mintEthLong2x();
 
         // Move price of ETH 20% downwards
         _moveEthPrice(-20_00);
@@ -291,21 +291,21 @@ contract RebalanceTest is LeverageManagerTest {
         morpho.supplyCollateral(marketParams, 150_000 * 1e6, address(ethShort2xAdapter), new bytes(0));
     }
 
-    /// @dev Performs initial deposit into ETH long leverage token, amount is not important but it is important to gain some collateral and debt
-    function _depositEthLong2x() internal {
-        uint256 equityToDeposit = 10 ether;
-        uint256 collateralToAdd = leverageManager.previewDeposit(ethLong2x, equityToDeposit).collateral;
-        _deposit(ethLong2x, user, equityToDeposit, collateralToAdd);
+    /// @dev Performs initial mint into ETH long leverage token, amount is not important but it is important to gain some collateral and debt
+    function _mintEthLong2x() internal {
+        uint256 equityToMint = 10 ether;
+        uint256 collateralToAdd = leverageManager.previewMint(ethLong2x, equityToMint).collateral;
+        _mint(ethLong2x, user, equityToMint, collateralToAdd);
     }
 
-    /// @dev Performs initial deposit into ETH short leverage token, amount is not important but it is important to gain some collateral and debt
-    function _depositEthShort2x() internal {
-        uint256 equityToDeposit = 30_000 * 1e6;
-        uint256 collateralToAdd = leverageManager.previewDeposit(ethShort2x, equityToDeposit).collateral;
-        _deposit(ethShort2x, user, equityToDeposit, collateralToAdd);
+    /// @dev Performs initial mint into ETH short leverage token, amount is not important but it is important to gain some collateral and debt
+    function _mintEthShort2x() internal {
+        uint256 equityToMint = 30_000 * 1e6;
+        uint256 collateralToAdd = leverageManager.previewMint(ethShort2x, equityToMint).collateral;
+        _mint(ethShort2x, user, equityToMint, collateralToAdd);
     }
 
-    function _deposit(
+    function _mint(
         ILeverageToken _leverageToken,
         address _caller,
         uint256 _equityInCollateralAsset,
@@ -316,7 +316,7 @@ contract RebalanceTest is LeverageManagerTest {
 
         vm.startPrank(_caller);
         collateralAsset.approve(address(leverageManager), _collateralToAdd);
-        uint256 shares = leverageManager.deposit(_leverageToken, _equityInCollateralAsset, 0).shares;
+        uint256 shares = leverageManager.mint(_leverageToken, _equityInCollateralAsset, 0).shares;
         vm.stopPrank();
 
         return shares;

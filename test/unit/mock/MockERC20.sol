@@ -14,7 +14,7 @@ import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 
 enum ReentrancyCallType {
     None,
-    Deposit,
+    Mint,
     Withdraw,
     Rebalance,
     CreateNewLeverageToken
@@ -61,8 +61,8 @@ contract MockERC20 is ERC20Mock {
             return;
         }
 
-        if (reentrancyCallType == ReentrancyCallType.Deposit) {
-            leverageManager.deposit(ILeverageToken(address(0)), 10 ether, 10 ether);
+        if (reentrancyCallType == ReentrancyCallType.Mint) {
+            leverageManager.mint(ILeverageToken(address(0)), 10 ether, 10 ether);
         } else if (reentrancyCallType == ReentrancyCallType.Withdraw) {
             leverageManager.withdraw(ILeverageToken(address(0)), 10 ether, 10 ether);
         } else if (reentrancyCallType == ReentrancyCallType.Rebalance) {
@@ -76,7 +76,7 @@ contract MockERC20 is ERC20Mock {
                 LeverageTokenConfig({
                     lendingAdapter: ILendingAdapter(address(0)),
                     rebalanceAdapter: IRebalanceAdapter(address(0)),
-                    depositTokenFee: 0,
+                    mintTokenFee: 0,
                     withdrawTokenFee: 0
                 }),
                 "dummy name",

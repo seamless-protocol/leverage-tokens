@@ -12,7 +12,7 @@ import {SwapPathLib} from "test/utils/SwapPathLib.sol";
 
 contract LeverageRouterWithdrawTest is LeverageRouterTest {
     function testFork_withdraw_UniswapV2_FullWithdraw() public {
-        uint256 equityInCollateralAsset = _deposit();
+        uint256 equityInCollateralAsset = _mint();
 
         uint256 collateralUsedForDebtSwap = 1.003150469473258488 ether; // Swap to 3392.292472 USDC requires 1.003150469473258488 WETH
 
@@ -43,8 +43,8 @@ contract LeverageRouterWithdrawTest is LeverageRouterTest {
     }
 
     function testFork_withdraw_UniswapV2_PartialWithdraw() public {
-        uint256 equityInCollateralAssetDeposited = _deposit();
-        uint256 equityInCollateralAssetToWithdraw = equityInCollateralAssetDeposited / 2;
+        uint256 equityInCollateralAssetMinted = _mint();
+        uint256 equityInCollateralAssetToWithdraw = equityInCollateralAssetMinted / 2;
 
         uint256 collateralUsedForDebtSwap = 0.501454232794326784 ether; // Swap to 1696.146236 USDC requires 0.501454232794326784 WETH
 
@@ -76,7 +76,7 @@ contract LeverageRouterWithdrawTest is LeverageRouterTest {
     }
 
     function testFork_withdraw_UniswapV3_FullWithdraw() public {
-        uint256 equityInCollateralAsset = _deposit();
+        uint256 equityInCollateralAsset = _mint();
 
         uint256 collateralUsedForDebtSwap = 1.000932853734567851 ether; // Swap to 3392.292472 USDC requires 1.000932853734567851 WETH
 
@@ -112,8 +112,8 @@ contract LeverageRouterWithdrawTest is LeverageRouterTest {
     }
 
     function testFork_withdraw_UniswapV3_PartialWithdraw() public {
-        uint256 equityInCollateralAssetDeposited = _deposit();
-        uint256 equityInCollateralAssetToWithdraw = equityInCollateralAssetDeposited / 2;
+        uint256 equityInCollateralAssetMinted = _mint();
+        uint256 equityInCollateralAssetToWithdraw = equityInCollateralAssetMinted / 2;
 
         uint256 collateralUsedForDebtSwap = 0.500462327543122173 ether; // Swap to 1696.146236 USDC requires 0.500462327543122173 WETH
 
@@ -150,7 +150,7 @@ contract LeverageRouterWithdrawTest is LeverageRouterTest {
     }
 
     function testFork_withdraw_Aerodrome_FullWithdraw() public {
-        uint256 equityInCollateralAsset = _deposit();
+        uint256 equityInCollateralAsset = _mint();
 
         uint256 collateralUsedForDebtSwap = 1.010346527757605823 ether; // Swap to 3392.292472 USDC requires 1.010346527757605823 WETH
 
@@ -181,8 +181,8 @@ contract LeverageRouterWithdrawTest is LeverageRouterTest {
     }
 
     function testFork_withdraw_Aerodrome_PartialWithdraw() public {
-        uint256 equityInCollateralAssetDeposited = _deposit();
-        uint256 equityInCollateralAssetToWithdraw = equityInCollateralAssetDeposited / 2;
+        uint256 equityInCollateralAssetMinted = _mint();
+        uint256 equityInCollateralAssetToWithdraw = equityInCollateralAssetMinted / 2;
 
         uint256 collateralUsedForDebtSwap = 0.505102807630211973 ether; // Swap to 1696.146236 USDC requires 0.505102807630211973 WETH
 
@@ -214,7 +214,7 @@ contract LeverageRouterWithdrawTest is LeverageRouterTest {
     }
 
     function testFork_withdraw_AerodromeSlipstream_FullWithdraw() public {
-        uint256 equityInCollateralAsset = _deposit();
+        uint256 equityInCollateralAsset = _mint();
 
         uint256 collateralUsedForDebtSwap = 1.00090332288531026 ether; // Swap to 3392.292472 USDC requires 1.000903322885310260 WETH
 
@@ -250,8 +250,8 @@ contract LeverageRouterWithdrawTest is LeverageRouterTest {
     }
 
     function testFork_withdraw_AerodromeSlipstream_PartialWithdraw() public {
-        uint256 equityInCollateralAssetDeposited = _deposit();
-        uint256 equityInCollateralAssetToWithdraw = equityInCollateralAssetDeposited / 2;
+        uint256 equityInCollateralAssetMinted = _mint();
+        uint256 equityInCollateralAssetToWithdraw = equityInCollateralAssetMinted / 2;
 
         uint256 collateralUsedForDebtSwap = 0.500450510128598052 ether; // Swap to 1696.146236 USDC requires 0.500450510128598052 WETH
 
@@ -288,7 +288,7 @@ contract LeverageRouterWithdrawTest is LeverageRouterTest {
     }
 
     function testFork_withdraw_UniswapV3_MultiHop() public {
-        uint256 equityInCollateralAsset = _deposit();
+        uint256 equityInCollateralAsset = _mint();
 
         uint256 collateralUsedForDebtSwap = 1.001190795778625348 ether; // Swap to 3392.292472 USDC requires 1.001190795778625348 WETH
 
@@ -326,7 +326,7 @@ contract LeverageRouterWithdrawTest is LeverageRouterTest {
     }
 
     function testFork_withdraw_Aerodrome_MultiHop() public {
-        uint256 equityInCollateralAsset = _deposit();
+        uint256 equityInCollateralAsset = _mint();
 
         uint256 collateralUsedForDebtSwap = 1.023409712556120568 ether; // Swap to 3392.292472 USDC requires 1.023409712556120568 WETH
 
@@ -358,7 +358,7 @@ contract LeverageRouterWithdrawTest is LeverageRouterTest {
     }
 
     function testFork_withdraw_AerodromeSlipstream_MultiHop() public {
-        uint256 equityInCollateralAsset = _deposit();
+        uint256 equityInCollateralAsset = _mint();
 
         uint256 collateralUsedForDebtSwap = 1.001101865694523417 ether; // Swap to 3392.292472 USDC requires 1.001101865694523417 WETH
 
@@ -396,7 +396,7 @@ contract LeverageRouterWithdrawTest is LeverageRouterTest {
     }
 
     function testFork_withdraw_RevertIf_InsufficientSenderShares() public {
-        uint256 equityInCollateralAsset = _deposit();
+        uint256 equityInCollateralAsset = _mint();
 
         // User tries to withdraw more equity than they have
         uint256 equityToWithdraw = equityInCollateralAsset + 1;
@@ -433,10 +433,10 @@ contract LeverageRouterWithdrawTest is LeverageRouterTest {
         vm.stopPrank();
     }
 
-    function _deposit() internal returns (uint256 shareValueInCollateralAsset) {
+    function _mint() internal returns (uint256 shareValueInCollateralAsset) {
         uint256 equityInCollateralAsset = 1 ether;
         uint256 collateralToAdd = 2 * equityInCollateralAsset;
-        uint256 userBalanceOfCollateralAssetBefore = 4 ether; // User has more than enough assets for the deposit of equity
+        uint256 userBalanceOfCollateralAssetBefore = 4 ether; // User has more than enough assets for the mint of equity
         uint256 collateralReceivedFromDebtSwap = 0.997140594716559346 ether; // Swap of 3392.292471 USDC results in 0.997140594716559346 WETH
 
         // The swap results in less collateral than required to repay the flash loan, so the user needs to approve more collateral than `equityInCollateralAsset`
@@ -464,7 +464,7 @@ contract LeverageRouterWithdrawTest is LeverageRouterTest {
             })
         });
 
-        _dealAndDeposit(
+        _dealAndMint(
             WETH,
             USDC,
             userBalanceOfCollateralAssetBefore,

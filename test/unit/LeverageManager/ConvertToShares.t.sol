@@ -16,7 +16,7 @@ contract ConvertToSharesTest is LeverageManagerTest {
         _createDummyLeverageToken();
     }
 
-    function test_convertToShares_DepositRoundsDown() public {
+    function test_convertToShares_MintRoundsDown() public {
         uint128 equity = 1;
         uint128 sharesTotalSupply = 99;
         uint128 totalEquity = 100;
@@ -25,11 +25,11 @@ contract ConvertToSharesTest is LeverageManagerTest {
             ConvertToSharesState({totalEquity: totalEquity, sharesTotalSupply: sharesTotalSupply})
         );
 
-        uint256 shares = leverageManager.exposed_convertToShares(leverageToken, equity, ExternalAction.Deposit);
+        uint256 shares = leverageManager.exposed_convertToShares(leverageToken, equity, ExternalAction.Mint);
         assertEq(shares, 0);
     }
 
-    function testFuzz_convertToShares_DepositRoundsDown(uint128 equity, uint128 totalEquity, uint128 sharesTotalSupply)
+    function testFuzz_convertToShares_MintRoundsDown(uint128 equity, uint128 totalEquity, uint128 sharesTotalSupply)
         public
     {
         totalEquity = uint128(bound(totalEquity, 1, type(uint128).max));
@@ -39,7 +39,7 @@ contract ConvertToSharesTest is LeverageManagerTest {
             ConvertToSharesState({totalEquity: totalEquity, sharesTotalSupply: sharesTotalSupply})
         );
 
-        uint256 shares = leverageManager.exposed_convertToShares(leverageToken, equity, ExternalAction.Deposit);
+        uint256 shares = leverageManager.exposed_convertToShares(leverageToken, equity, ExternalAction.Mint);
         uint256 expectedShares = uint256(equity) * sharesTotalSupply / totalEquity;
         assertEq(shares, expectedShares);
     }
@@ -57,7 +57,7 @@ contract ConvertToSharesTest is LeverageManagerTest {
             abi.encode(18)
         );
 
-        uint256 shares = leverageManager.exposed_convertToShares(leverageToken, equity, ExternalAction.Deposit);
+        uint256 shares = leverageManager.exposed_convertToShares(leverageToken, equity, ExternalAction.Mint);
         assertEq(shares, equity);
 
         totalEquity = nonZeroValue;
@@ -85,7 +85,7 @@ contract ConvertToSharesTest is LeverageManagerTest {
             abi.encode(6)
         );
 
-        uint256 shares = leverageManager.exposed_convertToShares(leverageToken, equity, ExternalAction.Deposit);
+        uint256 shares = leverageManager.exposed_convertToShares(leverageToken, equity, ExternalAction.Mint);
         uint256 expectedShares = uint256(equity) * 1e12;
         assertEq(shares, expectedShares);
     }
@@ -104,7 +104,7 @@ contract ConvertToSharesTest is LeverageManagerTest {
             abi.encode(27)
         );
 
-        uint256 shares = leverageManager.exposed_convertToShares(leverageToken, equity, ExternalAction.Deposit);
+        uint256 shares = leverageManager.exposed_convertToShares(leverageToken, equity, ExternalAction.Mint);
         assertEq(shares, equity / 1e9);
     }
 
@@ -137,7 +137,7 @@ contract ConvertToSharesTest is LeverageManagerTest {
         assertEq(shares, expectedShares);
     }
 
-    function test_convertToShares_Deposit_WithManagementFee() public {
+    function test_convertToShares_Mint_WithManagementFee() public {
         uint128 equity = 10;
         uint128 sharesTotalSupply = 99;
         uint128 totalEquity = 100;
@@ -151,14 +151,14 @@ contract ConvertToSharesTest is LeverageManagerTest {
             ConvertToSharesState({totalEquity: totalEquity, sharesTotalSupply: sharesTotalSupply})
         );
 
-        uint256 shares = leverageManager.exposed_convertToShares(leverageToken, equity, ExternalAction.Deposit);
+        uint256 shares = leverageManager.exposed_convertToShares(leverageToken, equity, ExternalAction.Mint);
         assertEq(shares, 9);
 
         // One year passes
         skip(SECONDS_ONE_YEAR);
 
         // Shares should be slightly more than 10 because of the management fee increasing the virtual total supply
-        shares = leverageManager.exposed_convertToShares(leverageToken, equity, ExternalAction.Deposit);
+        shares = leverageManager.exposed_convertToShares(leverageToken, equity, ExternalAction.Mint);
         assertEq(shares, 10);
     }
 

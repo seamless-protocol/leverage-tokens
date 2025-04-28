@@ -80,7 +80,7 @@ contract IntegrationTestBase is Test {
             LeverageTokenConfig({
                 lendingAdapter: ILendingAdapter(address(morphoLendingAdapter)),
                 rebalanceAdapter: IRebalanceAdapter(address(rebalanceAdapter)),
-                depositTokenFee: 0,
+                mintTokenFee: 0,
                 withdrawTokenFee: 0
             }),
             "Seamless ETH/USDC 2x leverage token",
@@ -124,7 +124,7 @@ contract IntegrationTestBase is Test {
         uint256 minColRatio,
         uint256 targetCollateralRatio,
         uint256 maxColRatio,
-        uint256 depositFee,
+        uint256 mintFee,
         uint256 withdrawFee
     ) internal returns (ILeverageToken) {
         ILendingAdapter lendingAdapter = ILendingAdapter(
@@ -141,7 +141,7 @@ contract IntegrationTestBase is Test {
             LeverageTokenConfig({
                 lendingAdapter: lendingAdapter,
                 rebalanceAdapter: IRebalanceAdapter(_rebalanceAdapter),
-                depositTokenFee: depositFee,
+                mintTokenFee: mintFee,
                 withdrawTokenFee: withdrawFee
             }),
             "dummy name",

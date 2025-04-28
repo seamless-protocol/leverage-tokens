@@ -36,7 +36,7 @@ contract RebalanceTest is LeverageManagerTest {
             LeverageTokenConfig({
                 lendingAdapter: ILendingAdapter(address(adapter)),
                 rebalanceAdapter: IRebalanceAdapter(address(rebalanceAdapter)),
-                depositTokenFee: 0,
+                mintTokenFee: 0,
                 withdrawTokenFee: 0
             }),
             address(WETH),

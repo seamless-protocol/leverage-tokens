@@ -21,7 +21,7 @@ contract WithdrawTest is LeverageRouterTest {
     ) public {
         vm.assume(requiredDebt < requiredCollateral);
 
-        uint256 depositShares = 10 ether; // Doesn't matter for this test as the shares received and previewed are mocked
+        uint256 mintShares = 10 ether; // Doesn't matter for this test as the shares received and previewed are mocked
         uint256 withdrawShares = 5 ether; // Doesn't matter for this test as the shares received and previewed are mocked
 
         equityInCollateralAsset = requiredCollateral - requiredDebt;
@@ -40,12 +40,12 @@ contract WithdrawTest is LeverageRouterTest {
             requiredCollateral, equityInCollateralAsset, requiredDebt, requiredCollateralForSwap, withdrawShares
         );
 
-        _deposit(
+        _mint(
             equityInCollateralAsset,
             requiredCollateral,
             requiredDebt,
             requiredCollateral - equityInCollateralAsset,
-            depositShares
+            mintShares
         );
 
         // Execute the withdraw
@@ -75,7 +75,7 @@ contract WithdrawTest is LeverageRouterTest {
         );
 
         // Senders shares are burned
-        assertEq(leverageToken.balanceOf(address(this)), depositShares - withdrawShares);
+        assertEq(leverageToken.balanceOf(address(this)), mintShares - withdrawShares);
 
         // The LeverageRouter has the required debt to repay the flash loan and Morpho is approved to spend it
         assertEq(debtToken.balanceOf(address(leverageRouter)), requiredDebt);
@@ -114,7 +114,7 @@ contract WithdrawTest is LeverageRouterTest {
             requiredCollateral, equityInCollateralAsset, requiredDebt, requiredCollateralForSwap, shares
         );
 
-        _deposit(
+        _mint(
             equityInCollateralAsset,
             requiredCollateral,
             requiredDebt,

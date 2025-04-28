@@ -29,7 +29,7 @@ contract NonReentrantTest is LeverageManagerTest {
             LeverageTokenConfig({
                 lendingAdapter: ILendingAdapter(address(lendingAdapter)),
                 rebalanceAdapter: IRebalanceAdapter(address(rebalanceAdapter)),
-                depositTokenFee: 0,
+                mintTokenFee: 0,
                 withdrawTokenFee: 0
             }),
             address(reentrancyToken),
@@ -44,24 +44,24 @@ contract NonReentrantTest is LeverageManagerTest {
         deal(address(debtToken), address(this), type(uint256).max);
         reentrancyToken.approve(address(leverageManager), type(uint256).max);
 
-        // deposit is non-reentrant
-        reentrancyToken.mockSetReentrancyCallType(ReentrancyCallType.Deposit);
+        // mint is non-reentrant
+        reentrancyToken.mockSetReentrancyCallType(ReentrancyCallType.Mint);
         vm.expectRevert(abi.encodeWithSelector(ReentrancyGuardUpgradeable.ReentrancyGuardReentrantCall.selector));
-        leverageManager.deposit(leverageToken, equityToAddInCollateralAsset, 0);
+        leverageManager.mint(leverageToken, equityToAddInCollateralAsset, 0);
 
         // withdraw is non-reentrant
         reentrancyToken.mockSetReentrancyCallType(ReentrancyCallType.Withdraw);
         vm.expectRevert(abi.encodeWithSelector(ReentrancyGuardUpgradeable.ReentrancyGuardReentrantCall.selector));
-        leverageManager.deposit(leverageToken, equityToAddInCollateralAsset, 0);
+        leverageManager.mint(leverageToken, equityToAddInCollateralAsset, 0);
 
         // rebalance is non-reentrant
         reentrancyToken.mockSetReentrancyCallType(ReentrancyCallType.Rebalance);
         vm.expectRevert(abi.encodeWithSelector(ReentrancyGuardUpgradeable.ReentrancyGuardReentrantCall.selector));
-        leverageManager.deposit(leverageToken, equityToAddInCollateralAsset, 0);
+        leverageManager.mint(leverageToken, equityToAddInCollateralAsset, 0);
 
         // createNewLeverageToken is non-reentrant
         reentrancyToken.mockSetReentrancyCallType(ReentrancyCallType.CreateNewLeverageToken);
         vm.expectRevert(abi.encodeWithSelector(ReentrancyGuardUpgradeable.ReentrancyGuardReentrantCall.selector));
-        leverageManager.deposit(leverageToken, equityToAddInCollateralAsset, 0);
+        leverageManager.mint(leverageToken, equityToAddInCollateralAsset, 0);
     }
 }

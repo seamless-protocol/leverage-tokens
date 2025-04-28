@@ -53,6 +53,6 @@ contract SetTreasuryActionFeeTest is FeeManagerTest {
         _setTreasury(feeManagerRole, address(0));
 
         vm.expectRevert(abi.encodeWithSelector(IFeeManager.TreasuryNotSet.selector));
-        _setTreasuryActionFee(feeManagerRole, ExternalAction.Deposit, 100);
+        _setTreasuryActionFee(feeManagerRole, ExternalAction.Mint, 100);
     }
 }

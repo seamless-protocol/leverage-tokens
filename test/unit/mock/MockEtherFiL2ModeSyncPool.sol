@@ -19,7 +19,7 @@ contract MockEtherFiL2ModeSyncPool {
         mockAmountOut = _amountOut;
     }
 
-    function deposit(address tokenIn, uint256 amountIn, uint256 minAmountOut, address /*referral*/ )
+    function mint(address tokenIn, uint256 amountIn, uint256 minAmountOut, address /*referral*/ )
         external
         payable
         returns (uint256 amountOut)
