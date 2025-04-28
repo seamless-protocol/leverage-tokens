@@ -59,7 +59,7 @@ struct LeverageTokenConfig {
     ILendingAdapter lendingAdapter;
     /// @dev RebalanceAdapter for the LeverageToken
     IRebalanceAdapterBase rebalanceAdapter;
-    /// @dev Fee for mint action
+    /// @dev Fee for mint action, defined as a percentage
     uint256 mintTokenFee;
     /// @dev Fee for redeem action, defined as a percentage
     uint256 redeemTokenFee;
