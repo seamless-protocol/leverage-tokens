@@ -78,7 +78,7 @@ abstract contract LeverageRouterMintBase is LeverageRouterBase {
         // slither-disable-next-line arbitrary-send-erc20
         SafeERC20.safeTransferFrom(collateralAsset, params.sender, address(this), params.equityInCollateralAsset);
 
-        // Use the flash loaned collateral and the equity from the sender for the mint into the LeverageToken
+        // Use the flash loaned collateral and the equity from the sender for the mint
         SafeERC20.forceApprove(
             collateralAsset, address(leverageManager), collateralLoanAmount + params.equityInCollateralAsset
         );
