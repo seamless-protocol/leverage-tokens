@@ -1,8 +1,47 @@
 # IFeeManager
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e940fa5a38a4ecdb2ab814caac34ad52528360be/src/interfaces/IFeeManager.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/002c85336929e7b2f8b2193e3cb727fe9cf4b9e6/src/interfaces/IFeeManager.sol)
 
 
 ## Functions
+### chargeManagementFee
+
+Function that charges any accrued management fees for the LeverageToken by minting shares to the treasury
+
+*If the treasury is not set, the management fee is not charged (shares are not minted to the treasury) but
+still accrues*
+
+
+```solidity
+function chargeManagementFee(ILeverageToken token) external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`ILeverageToken`|LeverageToken to charge management fee for|
+
+
+### getLastManagementFeeAccrualTimestamp
+
+Returns the timestamp of the most recent management fee accrual for a LeverageToken
+
+
+```solidity
+function getLastManagementFeeAccrualTimestamp(ILeverageToken leverageToken) external view returns (uint120 timestamp);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`leverageToken`|`ILeverageToken`|The LeverageToken to get the timestamp for|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`timestamp`|`uint120`|The timestamp of the most recent management fee accrual|
+
+
 ### getLeverageTokenActionFee
 
 Returns the LeverageToken fee for a specific action
@@ -26,6 +65,21 @@ function getLeverageTokenActionFee(ILeverageToken leverageToken, ExternalAction 
 |Name|Type|Description|
 |----|----|-----------|
 |`fee`|`uint256`|Fee for action, 100_00 is 100%|
+
+
+### getManagementFee
+
+Returns the management fee for the LeverageManager
+
+
+```solidity
+function getManagementFee() external view returns (uint256 fee);
+```
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`fee`|`uint256`|Management fee for the LeverageManager, 100_00 is 100%|
 
 
 ### getTreasury
@@ -64,19 +118,21 @@ function getTreasuryActionFee(ExternalAction action) external view returns (uint
 |`fee`|`uint256`|Fee for action, 100_00 is 100%|
 
 
-### MAX_FEE
+### setManagementFee
 
-Returns the max fee that can be set
+Sets the management fee
+
+*Only `FEE_MANAGER_ROLE` can call this function*
 
 
 ```solidity
-function MAX_FEE() external view returns (uint256 maxFee);
+function setManagementFee(uint128 fee) external;
 ```
-**Returns**
+**Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`maxFee`|`uint256`|Max fee, 100_00 is 100%|
+|`fee`|`uint128`|Management fee, 100_00 is 100%|
 
 
 ### setTreasury
@@ -131,6 +187,35 @@ event LeverageTokenActionFeeSet(ILeverageToken indexed leverageToken, ExternalAc
 |`leverageToken`|`ILeverageToken`|The LeverageToken that the fee was set for|
 |`action`|`ExternalAction`|The action that the fee was set for|
 |`fee`|`uint256`|The fee that was set|
+
+### ManagementFeeCharged
+Emitted when the management fee is charged for a LeverageToken
+
+
+```solidity
+event ManagementFeeCharged(ILeverageToken indexed leverageToken, uint256 sharesFee);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`leverageToken`|`ILeverageToken`|The LeverageToken that the management fee was charged for|
+|`sharesFee`|`uint256`|The amount of shares that were minted to the treasury|
+
+### ManagementFeeSet
+Emitted when the management fee is set
+
+
+```solidity
+event ManagementFeeSet(uint128 fee);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`fee`|`uint128`|The fee that was set|
 
 ### TreasuryActionFeeSet
 Emitted when a treasury fee is set for a specific action
