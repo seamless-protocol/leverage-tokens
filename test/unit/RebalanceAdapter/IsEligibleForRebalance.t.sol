@@ -2,6 +2,7 @@
 pragma solidity ^0.8.26;
 
 import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
@@ -63,10 +64,16 @@ contract IsEligibleForRebalanceTest is RebalanceAdapterTest {
 
     function testFuzz_isEligibleForRebalance_ReturnsSameAsCollateralRatiosRebalanceAdapter(
         LeverageTokenState memory stateBefore,
-        LeverageTokenState memory stateAfter
+        LeverageTokenState memory stateAfter,
+        uint256 totalSupplyBefore
     ) public {
+        vm.assume(stateBefore.collateralInDebtAsset != 0);
         vm.assume(stateBefore.collateralRatio >= 1.3e8);
+
         _mockLeverageTokenState(stateAfter);
+        vm.mockCall(
+            address(leverageToken), abi.encodeWithSelector(IERC20.totalSupply.selector), abi.encode(totalSupplyBefore)
+        );
 
         bool isEligible = rebalanceAdapter.isEligibleForRebalance(leverageToken, stateBefore, address(rebalanceAdapter));
         bool expectedIsEligible = collateralRatiosRebalanceAdapter.isEligibleForRebalance(

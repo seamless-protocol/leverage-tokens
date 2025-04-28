@@ -80,4 +80,9 @@ contract CreateAuctionTest is DutchAuctionTest {
         vm.expectRevert(IDutchAuctionRebalanceAdapter.LeverageTokenNotEligibleForRebalance.selector);
         ethLong2xRebalanceAdapter.createAuction();
     }
+
+    function testFork_createAuction_RevertIf_LeverageTokenEmpty() public {
+        vm.expectRevert(IDutchAuctionRebalanceAdapter.LeverageTokenNotEligibleForRebalance.selector);
+        ethLong2xRebalanceAdapter.createAuction();
+    }
 }
