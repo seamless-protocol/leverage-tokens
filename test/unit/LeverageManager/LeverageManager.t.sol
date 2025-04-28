@@ -80,7 +80,7 @@ contract LeverageManagerTest is FeeManagerTest {
             shares,
             lendingAdapter.getEquityInCollateralAsset() + 1,
             leverageToken.totalSupply() + 1,
-            action == ExternalAction.Deposit ? Math.Rounding.Ceil : Math.Rounding.Floor
+            action == ExternalAction.Mint ? Math.Rounding.Ceil : Math.Rounding.Floor
         );
     }
 
@@ -96,8 +96,8 @@ contract LeverageManagerTest is FeeManagerTest {
                 LeverageTokenConfig({
                     lendingAdapter: ILendingAdapter(address(lendingAdapter)),
                     rebalanceAdapter: IRebalanceAdapter(address(0)),
-                    depositTokenFee: 0,
-                    withdrawTokenFee: 0
+                    mintTokenFee: 0,
+                    redeemTokenFee: 0
                 }),
                 address(0),
                 address(0),

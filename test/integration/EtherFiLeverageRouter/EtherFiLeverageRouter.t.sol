@@ -45,8 +45,8 @@ contract EtherFiLeverageRouterTest is IntegrationTestBase {
             LeverageTokenConfig({
                 lendingAdapter: ILendingAdapter(address(morphoLendingAdapter)),
                 rebalanceAdapter: IRebalanceAdapter(address(rebalanceAdapter)),
-                depositTokenFee: 0,
-                withdrawTokenFee: 0
+                mintTokenFee: 0,
+                redeemTokenFee: 0
             }),
             "Seamless WEETH/WETH 2x leverage token",
             "ltWEETH/WETH-2x"
@@ -67,12 +67,12 @@ contract EtherFiLeverageRouterTest is IntegrationTestBase {
         assertEq(address(leverageRouter.etherFiL2ModeSyncPool()), address(etherFiL2ModeSyncPool));
     }
 
-    function _dealAndDeposit(IERC20 collateralAsset, uint256 dealAmount, uint256 equityInCollateralAsset) internal {
+    function _dealAndMint(IERC20 collateralAsset, uint256 dealAmount, uint256 equityInCollateralAsset) internal {
         deal(address(collateralAsset), user, dealAmount);
 
         vm.startPrank(user);
         collateralAsset.approve(address(leverageRouter), equityInCollateralAsset);
-        leverageRouter.deposit(leverageToken, equityInCollateralAsset, 0);
+        leverageRouter.mint(leverageToken, equityInCollateralAsset, 0);
         vm.stopPrank();
 
         // No leftover assets in the LeverageRouter

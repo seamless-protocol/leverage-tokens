@@ -30,21 +30,21 @@ interface ILeverageRouter {
     /// @return _swapper The swap adapter contract
     function swapper() external view returns (ISwapAdapter _swapper);
 
-    /// @notice Deposit equity into a LeverageToken
-    /// @param token LeverageToken to deposit equity into
-    /// @param equityInCollateralAsset The amount of equity to deposit into the LeverageToken. Denominated in the collateral
+    /// @notice Mint shares of a LeverageToken by adding equity
+    /// @param token LeverageToken to mint shares of
+    /// @param equityInCollateralAsset The amount of equity to mint LeverageToken shares for. Denominated in the collateral
     ///        asset of the LeverageToken
-    /// @param minShares Minimum shares (LeverageTokens) to receive from the deposit
+    /// @param minShares Minimum shares (LeverageTokens) to receive from the mint
     /// @param maxSwapCostInCollateralAsset The maximum amount of collateral from the sender to use to help repay the flash loan
     ///        due to the swap of debt to collateral being unfavorable
     /// @param swapContext Swap context to use for the swap (which DEX to use, the route, tick spacing, etc.)
     /// @dev Flash loans the collateral required to add the equity to the LeverageToken, receives debt, then swaps the debt to the
     ///      LeverageToken's collateral asset. The swapped assets and the sender's supplied collateral are used to repay the flash loan
     /// @dev The sender should approve the LeverageRouter to spend an amount of collateral assets greater than the equity being added
-    ///      to facilitate the deposit in the case that the deposit requires additional collateral to cover swap slippage when swapping
+    ///      to facilitate the mint in the case that the mint requires additional collateral to cover swap slippage when swapping
     ///      debt to collateral to repay the flash loan. The approved amount should equal at least `equityInCollateralAsset + maxSwapCostInCollateralAsset`.
-    ///      To see the preview of the deposit, `LeverageRouter.leverageManager().previewDeposit(...)` can be used.
-    function deposit(
+    ///      To see the preview of the mint, `LeverageRouter.leverageManager().previewMint(...)` can be used.
+    function mint(
         ILeverageToken token,
         uint256 equityInCollateralAsset,
         uint256 minShares,
@@ -52,15 +52,15 @@ interface ILeverageRouter {
         ISwapAdapter.SwapContext memory swapContext
     ) external;
 
-    /// @notice Withdraw equity from a LeverageToken
-    /// @param token LeverageToken to withdraw equity from
-    /// @param equityInCollateralAsset The amount of equity to withdraw from the LeverageToken. Denominated in the collateral
+    /// @notice Redeems equity of a LeverageToken by repaying debt and burning shares
+    /// @param token LeverageToken to redeem
+    /// @param equityInCollateralAsset The amount of equity to receive by redeeming LeverageToken. Denominated in the collateral
     ///        asset of the LeverageToken
-    /// @param maxShares Maximum shares (LeverageTokens) to burn for the withdrawal
-    /// @param maxSwapCostInCollateralAsset The maximum amount of equity received from the withdrawal from the LeverageToken
+    /// @param maxShares Maximum shares (LeverageTokens) to redeem
+    /// @param maxSwapCostInCollateralAsset The maximum amount of equity to pay for the redeem of the LeverageToken
     ///        to use to help repay the debt flash loan due to the swap of debt to collateral being unfavorable
     /// @param swapContext Swap context to use for the swap (which DEX to use, the route, tick spacing, etc.)
-    function withdraw(
+    function redeem(
         ILeverageToken token,
         uint256 equityInCollateralAsset,
         uint256 maxShares,

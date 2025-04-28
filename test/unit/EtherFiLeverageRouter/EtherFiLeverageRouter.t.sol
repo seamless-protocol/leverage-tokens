@@ -81,19 +81,19 @@ contract EtherFiLeverageRouterTest is Test {
         assertEq(address(etherFiLeverageRouter.etherFiL2ModeSyncPool()), address(etherFiL2ModeSyncPool));
     }
 
-    function _mockEtherFiLeverageManagerDeposit(
+    function _mockEtherFiLeverageManagerMint(
         uint256 requiredCollateral,
         uint256 equityInCollateralAsset,
         uint256 requiredDebt,
         uint256 shares
     ) internal {
-        // Mock the deposit preview
-        leverageManager.setMockPreviewDepositData(
+        // Mock the mint preview
+        leverageManager.setMockPreviewMintData(
             MockLeverageManager.PreviewParams({
                 leverageToken: leverageToken,
                 equityInCollateralAsset: equityInCollateralAsset
             }),
-            MockLeverageManager.MockPreviewDepositData({
+            MockLeverageManager.MockPreviewMintData({
                 collateralToAdd: requiredCollateral,
                 debtToBorrow: requiredDebt,
                 shares: shares,
@@ -102,14 +102,14 @@ contract EtherFiLeverageRouterTest is Test {
             })
         );
 
-        // Mock the LeverageManager deposit
-        leverageManager.setMockDepositData(
-            MockLeverageManager.DepositParams({
+        // Mock the LeverageManager mint
+        leverageManager.setMockMintData(
+            MockLeverageManager.MintParams({
                 leverageToken: leverageToken,
                 equityInCollateralAsset: equityInCollateralAsset,
                 minShares: shares
             }),
-            MockLeverageManager.MockDepositData({
+            MockLeverageManager.MockMintData({
                 collateral: requiredCollateral,
                 debt: requiredDebt,
                 shares: shares,

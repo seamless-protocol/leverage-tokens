@@ -48,8 +48,8 @@ contract MorphoLendingAdapterTest is IntegrationTestBase {
             LeverageTokenConfig({
                 lendingAdapter: morphoLendingAdapter,
                 rebalanceAdapter: IRebalanceAdapterBase(address(0)),
-                depositTokenFee: 0,
-                withdrawTokenFee: 0
+                mintTokenFee: 0,
+                redeemTokenFee: 0
             }),
             "LT",
             "LT"

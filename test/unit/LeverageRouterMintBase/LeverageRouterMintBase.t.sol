@@ -12,14 +12,14 @@ import {MarketParamsLib} from "@morpho-blue/libraries/MarketParamsLib.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
-import {LeverageRouterDepositBase} from "src/periphery/LeverageRouterDepositBase.sol";
-import {LeverageRouterDepositBaseHarness} from "../harness/LeverageRouterDepositBaseHarness.t.sol";
+import {LeverageRouterMintBase} from "src/periphery/LeverageRouterMintBase.sol";
+import {LeverageRouterMintBaseHarness} from "../harness/LeverageRouterMintBaseHarness.t.sol";
 import {MockERC20} from "../mock/MockERC20.sol";
 import {MockLendingAdapter} from "../mock/MockLendingAdapter.sol";
 import {MockLeverageManager} from "../mock/MockLeverageManager.sol";
 import {MockMorpho} from "../mock/MockMorpho.sol";
 
-contract LeverageRouterDepositBaseTest is Test {
+contract LeverageRouterMintBaseTest is Test {
     MockERC20 public collateralToken = new MockERC20();
     MockERC20 public debtToken = new MockERC20();
     ILeverageToken public leverageToken = ILeverageToken(address(new MockERC20()));
@@ -40,7 +40,7 @@ contract LeverageRouterDepositBaseTest is Test {
 
     MockLeverageManager public leverageManager;
 
-    LeverageRouterDepositBaseHarness public leverageRouterDepositBase;
+    LeverageRouterMintBaseHarness public leverageRouterMintBase;
 
     function setUp() public virtual {
         // Setup mocked contracts
@@ -58,7 +58,7 @@ contract LeverageRouterDepositBaseTest is Test {
             })
         );
 
-        leverageRouterDepositBase = new LeverageRouterDepositBaseHarness(
+        leverageRouterMintBase = new LeverageRouterMintBaseHarness(
             ILeverageManager(address(leverageManager)), IMorpho(address(morpho)), collateralToken
         );
 
@@ -68,23 +68,23 @@ contract LeverageRouterDepositBaseTest is Test {
     }
 
     function test_setUp() public view {
-        assertEq(address(leverageRouterDepositBase.leverageManager()), address(leverageManager));
-        assertEq(address(leverageRouterDepositBase.morpho()), address(morpho));
+        assertEq(address(leverageRouterMintBase.leverageManager()), address(leverageManager));
+        assertEq(address(leverageRouterMintBase.morpho()), address(morpho));
     }
 
-    function _mockLeverageManagerDeposit(
+    function _mockLeverageManagerMint(
         uint256 requiredCollateral,
         uint256 equityInCollateralAsset,
         uint256 requiredDebt,
         uint256 shares
     ) internal {
-        // Mock the deposit preview
-        leverageManager.setMockPreviewDepositData(
+        // Mock the mint preview
+        leverageManager.setMockPreviewMintData(
             MockLeverageManager.PreviewParams({
                 leverageToken: leverageToken,
                 equityInCollateralAsset: equityInCollateralAsset
             }),
-            MockLeverageManager.MockPreviewDepositData({
+            MockLeverageManager.MockPreviewMintData({
                 collateralToAdd: requiredCollateral,
                 debtToBorrow: requiredDebt,
                 shares: shares,
@@ -93,14 +93,14 @@ contract LeverageRouterDepositBaseTest is Test {
             })
         );
 
-        // Mock the LeverageManager deposit
-        leverageManager.setMockDepositData(
-            MockLeverageManager.DepositParams({
+        // Mock the LeverageManager mint
+        leverageManager.setMockMintData(
+            MockLeverageManager.MintParams({
                 leverageToken: leverageToken,
                 equityInCollateralAsset: equityInCollateralAsset,
                 minShares: shares
             }),
-            MockLeverageManager.MockDepositData({
+            MockLeverageManager.MockMintData({
                 collateral: requiredCollateral,
                 debt: requiredDebt,
                 shares: shares,

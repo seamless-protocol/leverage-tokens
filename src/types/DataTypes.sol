@@ -15,8 +15,8 @@ enum ActionType {
 
 /// @dev Enum defining actions that users can perform on a LeverageToken
 enum ExternalAction {
-    Deposit,
-    Withdraw
+    Mint,
+    Redeem
 }
 
 /// @dev Struct that contains all data related to a LeverageToken action
@@ -59,10 +59,10 @@ struct LeverageTokenConfig {
     ILendingAdapter lendingAdapter;
     /// @dev RebalanceAdapter for the LeverageToken
     IRebalanceAdapterBase rebalanceAdapter;
-    /// @dev Fee for deposit action
-    uint256 depositTokenFee;
-    /// @dev Fee for withdraw action, defined as a percentage
-    uint256 withdrawTokenFee;
+    /// @dev Fee for mint action, defined as a percentage
+    uint256 mintTokenFee;
+    /// @dev Fee for redeem action, defined as a percentage
+    uint256 redeemTokenFee;
 }
 
 /// @dev Struct that contains all data describing the state of a LeverageToken

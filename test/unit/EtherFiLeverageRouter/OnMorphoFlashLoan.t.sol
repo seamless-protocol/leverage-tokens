@@ -3,23 +3,23 @@ pragma solidity ^0.8.26;
 
 // Internal imports
 import {EtherFiLeverageRouter} from "src/periphery/EtherFiLeverageRouter.sol";
-import {LeverageRouterDepositBase} from "src/periphery/LeverageRouterDepositBase.sol";
+import {LeverageRouterMintBase} from "src/periphery/LeverageRouterMintBase.sol";
 import {IEtherFiLeverageRouter} from "src/interfaces/periphery/IEtherFiLeverageRouter.sol";
 import {ILeverageRouterBase} from "src/interfaces/periphery/ILeverageRouterBase.sol";
 import {ExternalAction} from "src/types/DataTypes.sol";
 import {EtherFiLeverageRouterTest} from "./EtherFiLeverageRouter.t.sol";
 
 contract OnMorphoFlashLoanTest is EtherFiLeverageRouterTest {
-    function test_onMorphoFlashLoan_Deposit() public {
+    function test_onMorphoFlashLoan_Mint() public {
         uint256 requiredCollateral = 10 ether;
         uint256 equityInCollateralAsset = 5 ether;
         uint256 shares = 10 ether;
         uint256 requiredDebt = 100e6;
 
-        _mockEtherFiLeverageManagerDeposit(requiredCollateral, equityInCollateralAsset, requiredDebt, shares);
+        _mockEtherFiLeverageManagerMint(requiredCollateral, equityInCollateralAsset, requiredDebt, shares);
 
-        bytes memory depositData = abi.encode(
-            LeverageRouterDepositBase.DepositParams({
+        bytes memory mintData = abi.encode(
+            LeverageRouterMintBase.MintParams({
                 token: leverageToken,
                 equityInCollateralAsset: equityInCollateralAsset,
                 minShares: shares,
@@ -31,14 +31,14 @@ contract OnMorphoFlashLoanTest is EtherFiLeverageRouterTest {
         deal(address(collateralToken), address(this), equityInCollateralAsset);
         collateralToken.approve(address(etherFiLeverageRouter), equityInCollateralAsset);
 
-        // Also mock morpho flash loaning the additional collateral required for the deposit
+        // Also mock morpho flash loaning the additional collateral required for the mint
         uint256 flashLoanAmount = requiredCollateral - equityInCollateralAsset;
         deal(address(collateralToken), address(etherFiLeverageRouter), flashLoanAmount);
 
         etherFiL2ModeSyncPool.mockSetAmountOut(flashLoanAmount);
 
         vm.prank(address(morpho));
-        etherFiLeverageRouter.onMorphoFlashLoan(flashLoanAmount, depositData);
+        etherFiLeverageRouter.onMorphoFlashLoan(flashLoanAmount, mintData);
         assertEq(leverageToken.balanceOf(address(this)), shares);
     }
 

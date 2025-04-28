@@ -11,8 +11,8 @@ import {ExternalAction} from "src/types/DataTypes.sol";
 import {LeverageRouterTest} from "./LeverageRouter.t.sol";
 import {MockLeverageManager} from "../mock/MockLeverageManager.sol";
 
-contract WithdrawTest is LeverageRouterTest {
-    function testFuzz_withdraw_CollateralSwapWithinMaxCostForFlashLoanRepaymentDebt(
+contract RedeemTest is LeverageRouterTest {
+    function testFuzz_redeem_CollateralSwapWithinMaxCostForFlashLoanRepaymentDebt(
         uint128 requiredCollateral,
         uint128 requiredDebt,
         uint128 equityInCollateralAsset,
@@ -21,8 +21,8 @@ contract WithdrawTest is LeverageRouterTest {
     ) public {
         vm.assume(requiredDebt < requiredCollateral);
 
-        uint256 depositShares = 10 ether; // Doesn't matter for this test as the shares received and previewed are mocked
-        uint256 withdrawShares = 5 ether; // Doesn't matter for this test as the shares received and previewed are mocked
+        uint256 mintShares = 10 ether; // Doesn't matter for this test as the shares received and previewed are mocked
+        uint256 redeemShares = 5 ether; // Doesn't matter for this test as the shares received and previewed are mocked
 
         equityInCollateralAsset = requiredCollateral - requiredDebt;
         maxSwapCostInCollateralAsset = uint128(bound(maxSwapCostInCollateralAsset, 0, equityInCollateralAsset - 1));
@@ -36,26 +36,26 @@ contract WithdrawTest is LeverageRouterTest {
             )
         );
 
-        _mockLeverageManagerWithdraw(
-            requiredCollateral, equityInCollateralAsset, requiredDebt, requiredCollateralForSwap, withdrawShares
+        _mockLeverageManagerRedeem(
+            requiredCollateral, equityInCollateralAsset, requiredDebt, requiredCollateralForSwap, redeemShares
         );
 
-        _deposit(
+        _mint(
             equityInCollateralAsset,
             requiredCollateral,
             requiredDebt,
             requiredCollateral - equityInCollateralAsset,
-            depositShares
+            mintShares
         );
 
-        // Execute the withdraw
+        // Execute the redeem
         deal(address(debtToken), address(this), requiredDebt);
         debtToken.approve(address(leverageRouter), requiredDebt);
-        leverageToken.approve(address(leverageRouter), withdrawShares);
-        leverageRouter.withdraw(
+        leverageToken.approve(address(leverageRouter), redeemShares);
+        leverageRouter.redeem(
             leverageToken,
             equityInCollateralAsset,
-            withdrawShares,
+            redeemShares,
             maxSwapCostInCollateralAsset,
             // Mock the swap context (doesn't matter for this test as the swap is mocked)
             ISwapAdapter.SwapContext({
@@ -75,7 +75,7 @@ contract WithdrawTest is LeverageRouterTest {
         );
 
         // Senders shares are burned
-        assertEq(leverageToken.balanceOf(address(this)), depositShares - withdrawShares);
+        assertEq(leverageToken.balanceOf(address(this)), mintShares - redeemShares);
 
         // The LeverageRouter has the required debt to repay the flash loan and Morpho is approved to spend it
         assertEq(debtToken.balanceOf(address(leverageRouter)), requiredDebt);
@@ -86,7 +86,7 @@ contract WithdrawTest is LeverageRouterTest {
         assertGe(collateralToken.balanceOf(address(this)), equityInCollateralAsset - maxSwapCostInCollateralAsset);
     }
 
-    function testFuzz_withdraw_CollateralSwapMoreThanMaxCostForFlashLoanRepaymentDebt(
+    function testFuzz_redeem_CollateralSwapMoreThanMaxCostForFlashLoanRepaymentDebt(
         uint128 requiredCollateral,
         uint128 requiredDebt,
         uint128 equityInCollateralAsset,
@@ -110,11 +110,11 @@ contract WithdrawTest is LeverageRouterTest {
             )
         );
 
-        _mockLeverageManagerWithdraw(
+        _mockLeverageManagerRedeem(
             requiredCollateral, equityInCollateralAsset, requiredDebt, requiredCollateralForSwap, shares
         );
 
-        _deposit(
+        _mint(
             equityInCollateralAsset,
             requiredCollateral,
             requiredDebt,
@@ -122,7 +122,7 @@ contract WithdrawTest is LeverageRouterTest {
             shares
         );
 
-        // Execute the withdraw
+        // Execute the redeem
         deal(address(debtToken), address(this), requiredDebt);
         debtToken.approve(address(leverageRouter), requiredDebt);
         leverageToken.approve(address(leverageRouter), shares);
@@ -134,7 +134,7 @@ contract WithdrawTest is LeverageRouterTest {
                 maxSwapCostInCollateralAsset
             )
         );
-        leverageRouter.withdraw(
+        leverageRouter.redeem(
             leverageToken,
             equityInCollateralAsset,
             shares,

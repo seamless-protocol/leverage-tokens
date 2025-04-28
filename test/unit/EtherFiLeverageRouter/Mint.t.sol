@@ -8,27 +8,27 @@ import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {EtherFiLeverageRouterTest} from "./EtherFiLeverageRouter.t.sol";
 
-contract DepositTest is EtherFiLeverageRouterTest {
-    function testFuzz_Deposit(uint256 requiredCollateral, uint256 equityInCollateralAsset) public {
+contract MintTest is EtherFiLeverageRouterTest {
+    function testFuzz_Mint(uint256 requiredCollateral, uint256 equityInCollateralAsset) public {
         requiredCollateral = bound(requiredCollateral, 1, type(uint256).max);
-        // Ensure that a flash loan is required by making equity less than the required collateral for the deposit
+        // Ensure that a flash loan is required by making equity less than the required collateral for the mint
         equityInCollateralAsset = requiredCollateral > 1 ? bound(equityInCollateralAsset, 1, requiredCollateral - 1) : 0;
 
         uint256 requiredFlashLoan = requiredCollateral - equityInCollateralAsset;
 
         // Mocked exchange rate of shares (Doesn't matter for this test as the shares received and previewed are mocked)
         uint256 shares = 10 ether;
-        // Mocked debt required to deposit the equity (Doesn't matter for this test due to mocking)
+        // Mocked debt required to mint the equity (Doesn't matter for this test due to mocking)
         uint256 requiredDebt = 100e6;
 
-        _mockEtherFiLeverageManagerDeposit(requiredCollateral, equityInCollateralAsset, requiredDebt, shares);
+        _mockEtherFiLeverageManagerMint(requiredCollateral, equityInCollateralAsset, requiredDebt, shares);
 
         etherFiL2ModeSyncPool.mockSetAmountOut(requiredFlashLoan);
 
-        // Execute the deposit
+        // Execute the mint
         deal(address(collateralToken), address(this), equityInCollateralAsset);
         collateralToken.approve(address(etherFiLeverageRouter), equityInCollateralAsset);
-        etherFiLeverageRouter.deposit(leverageToken, equityInCollateralAsset, shares);
+        etherFiLeverageRouter.mint(leverageToken, equityInCollateralAsset, shares);
 
         // Sender receives the minted shares
         assertEq(leverageToken.balanceOf(address(this)), shares);
@@ -39,24 +39,24 @@ contract DepositTest is EtherFiLeverageRouterTest {
         assertEq(collateralToken.allowance(address(etherFiLeverageRouter), address(morpho)), requiredFlashLoan);
     }
 
-    function test_Deposit_WithSurplusFromEtherFiLiquidityPool() public {
+    function test_Mint_WithSurplusFromEtherFiLiquidityPool() public {
         uint256 requiredCollateral = 100e18;
         uint256 equityInCollateralAsset = 50e18;
         uint256 requiredFlashLoan = requiredCollateral - equityInCollateralAsset;
 
         // Mocked exchange rate of shares (Doesn't matter for this test as the shares received and previewed are mocked)
         uint256 shares = 10 ether;
-        // Mocked debt required to deposit the equity (Doesn't matter for this test due to mocking)
+        // Mocked debt required to mint the equity (Doesn't matter for this test due to mocking)
         uint256 requiredDebt = 100e6;
 
-        _mockEtherFiLeverageManagerDeposit(requiredCollateral, equityInCollateralAsset, requiredDebt, shares);
+        _mockEtherFiLeverageManagerMint(requiredCollateral, equityInCollateralAsset, requiredDebt, shares);
 
         etherFiL2ModeSyncPool.mockSetAmountOut(requiredFlashLoan + 1); // Surplus of 1 wei of weETH
 
-        // Execute the deposit
+        // Execute the mint
         deal(address(collateralToken), address(this), equityInCollateralAsset);
         collateralToken.approve(address(etherFiLeverageRouter), equityInCollateralAsset);
-        etherFiLeverageRouter.deposit(leverageToken, equityInCollateralAsset, shares);
+        etherFiLeverageRouter.mint(leverageToken, equityInCollateralAsset, shares);
 
         // Sender receives the minted shares
         assertEq(leverageToken.balanceOf(address(this)), shares);

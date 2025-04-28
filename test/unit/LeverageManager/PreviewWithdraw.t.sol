@@ -8,21 +8,21 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ActionData, ExternalAction} from "src/types/DataTypes.sol";
 import {PreviewActionTest} from "./PreviewAction.t.sol";
 
-contract PreviewWithdrawTest is PreviewActionTest {
-    function testFuzz_previewWithdraw_MatchesPreviewAction(
+contract PreviewRedeemTest is PreviewActionTest {
+    function testFuzz_previewRedeem_MatchesPreviewAction(
         uint128 initialCollateral,
         uint128 initialDebtInCollateralAsset,
         uint128 sharesTotalSupply,
-        uint128 equityToWithdrawInCollateralAsset,
+        uint128 equityToRedeemInCollateralAsset,
         uint16 treasuryFee
     ) public {
         initialDebtInCollateralAsset = uint128(bound(initialDebtInCollateralAsset, 0, initialCollateral));
 
         treasuryFee = uint16(bound(treasuryFee, 0, 1e4));
-        _setTreasuryActionFee(ExternalAction.Withdraw, treasuryFee);
+        _setTreasuryActionFee(ExternalAction.Redeem, treasuryFee);
 
-        equityToWithdrawInCollateralAsset =
-            uint128(bound(equityToWithdrawInCollateralAsset, 0, initialCollateral - initialDebtInCollateralAsset));
+        equityToRedeemInCollateralAsset =
+            uint128(bound(equityToRedeemInCollateralAsset, 0, initialCollateral - initialDebtInCollateralAsset));
 
         _prepareLeverageManagerStateForAction(
             MockLeverageManagerStateForAction({
@@ -32,12 +32,11 @@ contract PreviewWithdrawTest is PreviewActionTest {
             })
         );
 
-        ActionData memory previewActionData = leverageManager.exposed_previewAction(
-            leverageToken, equityToWithdrawInCollateralAsset, ExternalAction.Withdraw
-        );
+        ActionData memory previewActionData =
+            leverageManager.exposed_previewAction(leverageToken, equityToRedeemInCollateralAsset, ExternalAction.Redeem);
 
         ActionData memory actualPreviewData =
-            leverageManager.previewWithdraw(leverageToken, equityToWithdrawInCollateralAsset);
+            leverageManager.previewRedeem(leverageToken, equityToRedeemInCollateralAsset);
 
         assertEq(actualPreviewData.collateral, previewActionData.collateral, "Collateral to remove mismatch");
         assertEq(actualPreviewData.debt, previewActionData.debt, "Debt to repay mismatch");
@@ -47,11 +46,11 @@ contract PreviewWithdrawTest is PreviewActionTest {
         assertEq(actualPreviewData.equity, previewActionData.equity, "Equity mismatch");
     }
 
-    function test_previewWithdraw_CollateralLessThanTreasuryFee() public {
+    function test_previewRedeem_CollateralLessThanTreasuryFee() public {
         uint256 equityToPreview = 3;
 
         uint256 treasuryFee = 0.8e4; // 80%
-        _setTreasuryActionFee(ExternalAction.Withdraw, treasuryFee);
+        _setTreasuryActionFee(ExternalAction.Redeem, treasuryFee);
 
         uint256 initialCollateral = 330944644884850719377224828425;
         uint256 initialDebt = 135;
@@ -65,7 +64,7 @@ contract PreviewWithdrawTest is PreviewActionTest {
         );
 
         uint256 expectedSharesBeforeFees =
-            leverageManager.exposed_convertToShares(leverageToken, equityToPreview, ExternalAction.Withdraw);
+            leverageManager.exposed_convertToShares(leverageToken, equityToPreview, ExternalAction.Redeem);
         assertEq(expectedSharesBeforeFees, 1338908412);
 
         uint256 collateralToRemove = initialCollateral * expectedSharesBeforeFees / sharesTotalSupply;
@@ -76,7 +75,7 @@ contract PreviewWithdrawTest is PreviewActionTest {
         uint256 expectedTreasuryFeeBeforeAdjustment = Math.mulDiv(equityToPreview, treasuryFee, 1e4, Math.Rounding.Ceil);
         assertEq(expectedTreasuryFeeBeforeAdjustment, 3);
 
-        ActionData memory previewData = leverageManager.previewWithdraw(leverageToken, equityToPreview);
+        ActionData memory previewData = leverageManager.previewRedeem(leverageToken, equityToPreview);
 
         assertEq(previewData.collateral, collateralToRemove);
         assertEq(

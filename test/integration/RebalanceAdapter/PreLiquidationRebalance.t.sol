@@ -12,7 +12,7 @@ import {RebalanceAction, LeverageTokenState} from "src/types/DataTypes.sol";
 contract PreLiquidationRebalanceTest is RebalanceTest {
     /// @dev In this block price on oracle 3392.292471591441746049801068
     function testFork_RebalanceStrategyOutsideOfDutchAuctionIfCloseToLiquidation() public {
-        _depositEthLong2x();
+        _mintEthLong2x();
 
         _moveEthPrice(-40_00);
 
@@ -46,7 +46,7 @@ contract PreLiquidationRebalanceTest is RebalanceTest {
     }
 
     function testFork_RebalanceStrategyOutsideOfDutchAuctionIfCloseToLiquidation_RevertIfEquityLossIsTooHigh() public {
-        _depositEthLong2x();
+        _mintEthLong2x();
 
         _moveEthPrice(-40_00);
 
