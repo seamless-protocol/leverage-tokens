@@ -49,22 +49,22 @@ contract NonReentrantTest is LeverageManagerTest {
         // Transient storage for reentrancy guard is false outside of any tx execution stack on the LeverageManager
         assertEq(LeverageManagerHarness(address(leverageManager)).exposed_getReentrancyGuardTransientStorage(), false);
 
-        // deposit is non-reentrant
-        reentrancyToken.mockSetReentrancyCallType(ReentrancyCallType.Deposit);
+        // mint is non-reentrant
+        reentrancyToken.mockSetReentrancyCallType(ReentrancyCallType.Mint);
         vm.expectRevert(
             abi.encodeWithSelector(ReentrancyGuardTransientUpgradeable.ReentrancyGuardReentrantCall.selector)
         );
-        leverageManager.deposit(leverageToken, equityToAddInCollateralAsset, 0);
+        leverageManager.mint(leverageToken, equityToAddInCollateralAsset, 0);
 
         // Transient storage slot is reset to false
         assertEq(LeverageManagerHarness(address(leverageManager)).exposed_getReentrancyGuardTransientStorage(), false);
 
-        // withdraw is non-reentrant
-        reentrancyToken.mockSetReentrancyCallType(ReentrancyCallType.Withdraw);
+        // redeem is non-reentrant
+        reentrancyToken.mockSetReentrancyCallType(ReentrancyCallType.Redeem);
         vm.expectRevert(
             abi.encodeWithSelector(ReentrancyGuardTransientUpgradeable.ReentrancyGuardReentrantCall.selector)
         );
-        leverageManager.deposit(leverageToken, equityToAddInCollateralAsset, 0);
+        leverageManager.mint(leverageToken, equityToAddInCollateralAsset, 0);
 
         // Transient storage slot is reset to false
         assertEq(LeverageManagerHarness(address(leverageManager)).exposed_getReentrancyGuardTransientStorage(), false);
@@ -74,7 +74,7 @@ contract NonReentrantTest is LeverageManagerTest {
         vm.expectRevert(
             abi.encodeWithSelector(ReentrancyGuardTransientUpgradeable.ReentrancyGuardReentrantCall.selector)
         );
-        leverageManager.deposit(leverageToken, equityToAddInCollateralAsset, 0);
+        leverageManager.mint(leverageToken, equityToAddInCollateralAsset, 0);
 
         // Transient storage slot is reset to false
         assertEq(LeverageManagerHarness(address(leverageManager)).exposed_getReentrancyGuardTransientStorage(), false);
@@ -84,7 +84,7 @@ contract NonReentrantTest is LeverageManagerTest {
         vm.expectRevert(
             abi.encodeWithSelector(ReentrancyGuardTransientUpgradeable.ReentrancyGuardReentrantCall.selector)
         );
-        leverageManager.deposit(leverageToken, equityToAddInCollateralAsset, 0);
+        leverageManager.mint(leverageToken, equityToAddInCollateralAsset, 0);
 
         // Transient storage slot is reset to false
         assertEq(LeverageManagerHarness(address(leverageManager)).exposed_getReentrancyGuardTransientStorage(), false);

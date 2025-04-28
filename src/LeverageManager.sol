@@ -246,8 +246,8 @@ contract LeverageManager is
         ActionData memory mintData = previewMint(token, equityInCollateralAsset);
 
         // slither-disable-next-line timestamp
-        if (depositData.shares < minShares) {
-            revert SlippageTooHigh(depositData.shares, minShares);
+        if (mintData.shares < minShares) {
+            revert SlippageTooHigh(mintData.shares, minShares);
         }
 
         // Take collateral asset from sender
@@ -286,8 +286,8 @@ contract LeverageManager is
         ActionData memory redeemData = previewRedeem(token, equityInCollateralAsset);
 
         // slither-disable-next-line timestamp
-        if (withdrawData.shares > maxShares) {
-            revert SlippageTooHigh(withdrawData.shares, maxShares);
+        if (redeemData.shares > maxShares) {
+            revert SlippageTooHigh(redeemData.shares, maxShares);
         }
 
         // Burn shares from user and total supply
@@ -435,9 +435,9 @@ contract LeverageManager is
 
         uint256 shares = _convertToShares(token, equityInCollateralAsset, action);
 
-        // If action is deposit there might be some dust in collateral but debt can be 0. In that case we should follow target ratio
+        // If action is mint there might be some dust in collateral but debt can be 0. In that case we should follow target ratio
         // slither-disable-next-line incorrect-equality,timestamp
-        bool shouldFollowInitialRatio = totalShares == 0 || (action == ExternalAction.Deposit && totalDebt == 0);
+        bool shouldFollowInitialRatio = totalShares == 0 || (action == ExternalAction.Mint && totalDebt == 0);
 
         if (shouldFollowInitialRatio) {
             uint256 initialRatio = getLeverageTokenInitialCollateralRatio(token);
