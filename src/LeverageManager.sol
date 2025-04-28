@@ -7,7 +7,8 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import {ReentrancyGuardTransientUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 // Internal imports
@@ -76,7 +77,7 @@ import {
 contract LeverageManager is
     ILeverageManager,
     AccessControlUpgradeable,
-    ReentrancyGuardUpgradeable,
+    ReentrancyGuardTransientUpgradeable,
     FeeManager,
     UUPSUpgradeable
 {
@@ -103,6 +104,7 @@ contract LeverageManager is
 
     function initialize(address initialAdmin, IBeaconProxyFactory leverageTokenFactory) external initializer {
         __FeeManager_init(initialAdmin);
+        __ReentrancyGuardTransient_init();
         _grantRole(DEFAULT_ADMIN_ROLE, initialAdmin);
         _getLeverageManagerStorage().tokenFactory = leverageTokenFactory;
         emit LeverageManagerInitialized(leverageTokenFactory);
@@ -243,8 +245,9 @@ contract LeverageManager is
 
         ActionData memory mintData = previewMint(token, equityInCollateralAsset);
 
-        if (mintData.shares < minShares) {
-            revert SlippageTooHigh(mintData.shares, minShares);
+        // slither-disable-next-line timestamp
+        if (depositData.shares < minShares) {
+            revert SlippageTooHigh(depositData.shares, minShares);
         }
 
         // Take collateral asset from sender
@@ -282,8 +285,9 @@ contract LeverageManager is
 
         ActionData memory redeemData = previewRedeem(token, equityInCollateralAsset);
 
-        if (redeemData.shares > maxShares) {
-            revert SlippageTooHigh(redeemData.shares, maxShares);
+        // slither-disable-next-line timestamp
+        if (withdrawData.shares > maxShares) {
+            revert SlippageTooHigh(withdrawData.shares, maxShares);
         }
 
         // Burn shares from user and total supply
@@ -357,6 +361,7 @@ contract LeverageManager is
         uint256 totalEquityInCollateralAsset = lendingAdapter.getEquityInCollateralAsset();
 
         // If leverage token is empty we mint it in 1:1 ratio with collateral asset but we align it on 18 decimals always
+        // slither-disable-next-line incorrect-equality,timestamp
         if (totalSupply == 0 || totalEquityInCollateralAsset == 0) {
             uint256 leverageTokenDecimals = IERC20Metadata(address(token)).decimals();
             uint256 collateralDecimals = IERC20Metadata(address(lendingAdapter.getCollateralAsset())).decimals();
@@ -430,8 +435,9 @@ contract LeverageManager is
 
         uint256 shares = _convertToShares(token, equityInCollateralAsset, action);
 
-        // If action is mint there might be some dust in collateral but debt can be 0. In that case we should follow target ratio
-        bool shouldFollowInitialRatio = totalShares == 0 || (action == ExternalAction.Mint && totalDebt == 0);
+        // If action is deposit there might be some dust in collateral but debt can be 0. In that case we should follow target ratio
+        // slither-disable-next-line incorrect-equality,timestamp
+        bool shouldFollowInitialRatio = totalShares == 0 || (action == ExternalAction.Deposit && totalDebt == 0);
 
         if (shouldFollowInitialRatio) {
             uint256 initialRatio = getLeverageTokenInitialCollateralRatio(token);

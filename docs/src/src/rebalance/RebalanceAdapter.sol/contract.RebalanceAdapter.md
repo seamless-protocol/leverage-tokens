@@ -1,5 +1,5 @@
 # RebalanceAdapter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e940fa5a38a4ecdb2ab814caac34ad52528360be/src/rebalance/RebalanceAdapter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/002c85336929e7b2f8b2193e3cb727fe9cf4b9e6/src/rebalance/RebalanceAdapter.sol)
 
 **Inherits:**
 [IRebalanceAdapter](/src/interfaces/IRebalanceAdapter.sol/interface.IRebalanceAdapter.md), UUPSUpgradeable, OwnableUpgradeable, [CollateralRatiosRebalanceAdapter](/src/rebalance/CollateralRatiosRebalanceAdapter.sol/abstract.CollateralRatiosRebalanceAdapter.md), [DutchAuctionRebalanceAdapter](/src/rebalance/DutchAuctionRebalanceAdapter.sol/abstract.DutchAuctionRebalanceAdapter.md), [PreLiquidationRebalanceAdapter](/src/rebalance/PreLiquidationRebalanceAdapter.sol/abstract.PreLiquidationRebalanceAdapter.md)
@@ -228,7 +228,7 @@ struct RebalanceAdapterInitParams {
     uint256 minCollateralRatio;
     uint256 targetCollateralRatio;
     uint256 maxCollateralRatio;
-    uint256 auctionDuration;
+    uint120 auctionDuration;
     uint256 initialPriceMultiplier;
     uint256 minPriceMultiplier;
     uint256 preLiquidationCollateralRatioThreshold;

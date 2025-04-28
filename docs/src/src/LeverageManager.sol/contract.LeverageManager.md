@@ -1,8 +1,8 @@
 # LeverageManager
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e940fa5a38a4ecdb2ab814caac34ad52528360be/src/LeverageManager.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/002c85336929e7b2f8b2193e3cb727fe9cf4b9e6/src/LeverageManager.sol)
 
 **Inherits:**
-[ILeverageManager](/src/interfaces/ILeverageManager.sol/interface.ILeverageManager.md), AccessControlUpgradeable, [FeeManager](/src/FeeManager.sol/contract.FeeManager.md), UUPSUpgradeable
+[ILeverageManager](/src/interfaces/ILeverageManager.sol/interface.ILeverageManager.md), AccessControlUpgradeable, ReentrancyGuardUpgradeable, [FeeManager](/src/FeeManager.sol/contract.FeeManager.md), UUPSUpgradeable
 
 *The LeverageManager contract is an upgradeable core contract that is responsible for managing the creation of LeverageTokens.
 It also acts as an entry point for users to deposit and withdraw equity from the position held by the LeverageToken, and for
@@ -47,13 +47,6 @@ market during withdrawals and rebalances.*
 
 ```solidity
 uint256 public constant BASE_RATIO = 1e18;
-```
-
-
-### DECIMALS_OFFSET
-
-```solidity
-uint256 public constant DECIMALS_OFFSET = 0;
 ```
 
 
@@ -258,6 +251,7 @@ Creates a new LeverageToken with the given config
 ```solidity
 function createNewLeverageToken(LeverageTokenConfig calldata tokenConfig, string memory name, string memory symbol)
     external
+    nonReentrant
     returns (ILeverageToken token);
 ```
 **Parameters**
@@ -337,6 +331,7 @@ Deposits equity into a LeverageToken and mints shares to the sender
 ```solidity
 function deposit(ILeverageToken token, uint256 equityInCollateralAsset, uint256 minShares)
     external
+    nonReentrant
     returns (ActionData memory actionData);
 ```
 **Parameters**
@@ -362,6 +357,7 @@ Withdraws equity from a LeverageToken and burns shares from sender
 ```solidity
 function withdraw(ILeverageToken token, uint256 equityInCollateralAsset, uint256 maxShares)
     external
+    nonReentrant
     returns (ActionData memory actionData);
 ```
 **Parameters**
@@ -381,27 +377,33 @@ function withdraw(ILeverageToken token, uint256 equityInCollateralAsset, uint256
 
 ### rebalance
 
-Rebalances LeverageTokens based on provided actions
+Rebalances a LeverageToken based on provided actions
 
-*Anyone can call this function. At the end function will just check if all effected LeverageTokens are in the
+*Anyone can call this function. At the end function will just check if the affected LeverageToken is in a
 better state than before rebalance. Caller needs to calculate and to provide tokens for rebalancing and he needs
 to specify tokens that he wants to receive*
 
 
 ```solidity
 function rebalance(
+    ILeverageToken leverageToken,
     RebalanceAction[] calldata actions,
-    TokenTransfer[] calldata tokensIn,
-    TokenTransfer[] calldata tokensOut
-) external;
+    IERC20 tokenIn,
+    IERC20 tokenOut,
+    uint256 amountIn,
+    uint256 amountOut
+) external nonReentrant;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`actions`|`RebalanceAction[]`|Array of rebalance actions to execute (add collateral, remove collateral, borrow or repay)|
-|`tokensIn`|`TokenTransfer[]`|Array of tokens to transfer in. Transfer from caller to the LeverageManager contract|
-|`tokensOut`|`TokenTransfer[]`|Array of tokens to transfer out. Transfer from the LeverageManager contract to caller|
+|`leverageToken`|`ILeverageToken`|LeverageToken to rebalance|
+|`actions`|`RebalanceAction[]`|Rebalance actions to execute (add collateral, remove collateral, borrow or repay)|
+|`tokenIn`|`IERC20`|Token to transfer in. Transfer from caller to the LeverageManager contract|
+|`tokenOut`|`IERC20`|Token to transfer out. Transfer from the LeverageManager contract to caller|
+|`amountIn`|`uint256`|Amount of tokenIn to transfer in|
+|`amountOut`|`uint256`|Amount of tokenOut to transfer out|
 
 
 ### _convertToShares
@@ -414,7 +416,7 @@ Function uses OZ formula for calculating shares
 
 
 ```solidity
-function _convertToShares(ILeverageToken token, uint256 equityInCollateralAsset)
+function _convertToShares(ILeverageToken token, uint256 equityInCollateralAsset, ExternalAction action)
     internal
     view
     returns (uint256 shares);
@@ -425,6 +427,7 @@ function _convertToShares(ILeverageToken token, uint256 equityInCollateralAsset)
 |----|----|-----------|
 |`token`|`ILeverageToken`|LeverageToken to convert equity for|
 |`equityInCollateralAsset`|`uint256`|Equity to convert to shares, denominated in collateral asset|
+|`action`|`ExternalAction`|Action to convert equity for|
 
 **Returns**
 
@@ -493,29 +496,6 @@ function _computeCollateralAndDebtForAction(
 |`debt`|`uint256`|Debt to borrow / repay to the LeverageToken|
 
 
-### _isElementInSlice
-
-Helper function that checks if a specific element has already been processed in the slice up to the given index
-
-*This function is used to check if we already stored the state of the LeverageToken before rebalance.
-This function is used to check if LeverageToken state has been already validated after rebalance*
-
-
-```solidity
-function _isElementInSlice(RebalanceAction[] calldata actions, ILeverageToken token, uint256 untilIndex)
-    internal
-    pure
-    returns (bool);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`actions`|`RebalanceAction[]`|Entire array to go through|
-|`token`|`ILeverageToken`|Element to search for|
-|`untilIndex`|`uint256`|Search until this specific index|
-
-
 ### _executeLendingAdapterAction
 
 Executes actions on the LendingAdapter for a specific LeverageToken
@@ -535,21 +515,22 @@ function _executeLendingAdapterAction(ILeverageToken token, ActionType actionTyp
 
 ### _transferTokens
 
-Used for batching token transfers
+Helper function for transferring tokens, or no-op if token is 0 address
 
 *If from address is this smart contract it will use the regular transfer function otherwise it will use transferFrom*
 
 
 ```solidity
-function _transferTokens(TokenTransfer[] calldata transfers, address from, address to) internal;
+function _transferTokens(IERC20 token, address from, address to, uint256 amount) internal;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`transfers`|`TokenTransfer[]`|Array of transfer data. Transfer data consist of token to transfer and amount|
+|`token`|`IERC20`|Token to transfer|
 |`from`|`address`|Address to transfer tokens from|
 |`to`|`address`|Address to transfer tokens to|
+|`amount`|`uint256`||
 
 
 ## Structs

@@ -7,7 +7,6 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 // Internal imports
 import {ExternalAction} from "src/types/DataTypes.sol";
@@ -26,7 +25,7 @@ import {IFeeManager} from "src/interfaces/IFeeManager.sol";
  *
  * The maximum fee that can be set for each action is 100_00 (100%).
  */
-contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, ReentrancyGuardUpgradeable {
+contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
     bytes32 public constant FEE_MANAGER_ROLE = keccak256("FEE_MANAGER_ROLE");
 
     uint256 internal constant MAX_FEE = 100_00;
@@ -58,7 +57,6 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
 
     function __FeeManager_init(address defaultAdmin) public onlyInitializing {
         __AccessControl_init_unchained();
-        __ReentrancyGuard_init_unchained();
         __FeeManager_init_unchained(defaultAdmin);
     }
 
@@ -139,6 +137,7 @@ contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable, Ree
         uint256 sharesFee = _getAccruedManagementFee(token);
         _getFeeManagerStorage().lastManagementFeeAccrualTimestamp[token] = uint120(block.timestamp);
 
+        // slither-disable-next-line reentrancy-events
         token.mint(treasury, sharesFee);
         emit ManagementFeeCharged(token, sharesFee);
     }
