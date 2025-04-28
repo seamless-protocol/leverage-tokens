@@ -14,14 +14,14 @@ import {ActionData} from "../types/DataTypes.sol";
 
 /**
  * @dev The LeverageRouterMintBase contract is an abstract periphery contract that facilitates the use of Morpho flash loans
- * to mint equity into LeverageTokens.
+ * to mint LeverageTokens (shares).
  */
 abstract contract LeverageRouterMintBase is LeverageRouterBase {
     /// @notice Mint related parameters to pass to the Morpho flash loan callback handler for mints
     struct MintParams {
-        // LeverageToken to mint into
+        // LeverageToken to mint shares of
         ILeverageToken token;
-        // Amount of equity to mint leverage token for, denominated in the collateral asset
+        // Amount of equity to mint LeverageTokens (shares) for, denominated in the collateral asset
         uint256 equityInCollateralAsset;
         // Minimum amount of shares (LeverageTokens) to receive
         uint256 minShares;
@@ -36,7 +36,7 @@ abstract contract LeverageRouterMintBase is LeverageRouterBase {
     /// @param _morpho The Morpho core protocol contract
     constructor(ILeverageManager _leverageManager, IMorpho _morpho) LeverageRouterBase(_leverageManager, _morpho) {}
 
-    /// @notice Executes the mint of LeverageToken and the logic to obtain collateral assets from debt assets
+    /// @notice Executes the mint for a LeverageToken and the logic to obtain collateral assets from debt assets
     ///         to repay the flash loan from Morpho
     /// @param params Params for the mint of a LeverageToken
     /// @param collateralLoanAmount Amount of collateral asset flash loaned
@@ -44,7 +44,7 @@ abstract contract LeverageRouterMintBase is LeverageRouterBase {
         IERC20 collateralAsset = leverageManager.getLeverageTokenCollateralAsset(params.token);
         IERC20 debtAsset = leverageManager.getLeverageTokenDebtAsset(params.token);
 
-        // Mint equity into the LeverageToken using the flash loaned collateral and the equity from the sender
+        // Mint shares by adding equity into the LeverageToken using the flash loaned collateral and the equity from the sender
         ActionData memory actionData = _mint(params, collateralAsset, collateralLoanAmount);
 
         // Get collateral from debt received from the mint to repay the flash loan
@@ -64,9 +64,9 @@ abstract contract LeverageRouterMintBase is LeverageRouterBase {
         SafeERC20.forceApprove(collateralAsset, address(morpho), collateralLoanAmount);
     }
 
-    /// @notice Performs the logic to mint equity into a LeverageToken, including the transfer of collateral from the sender,
+    /// @notice Performs the logic to mint shares of a LeverageToken by adding equity, including the transfer of collateral from the sender,
     ///         the approval of the collateral asset, and the mint into the LeverageToken
-    /// @param params Params for the mint of equity into a LeverageToken
+    /// @param params Params for the mint of LeverageToken shares
     /// @param collateralLoanAmount The amount of collateral asset flash loaned for the mint
     /// @return actionData The ActionData for the mint
     function _mint(MintParams memory params, IERC20 collateralAsset, uint256 collateralLoanAmount)

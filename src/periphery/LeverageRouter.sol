@@ -18,7 +18,7 @@ import {ActionData, ExternalAction} from "../types/DataTypes.sol";
  * to mint and redeem equity from LeverageTokens.
  *
  * The high-level mint flow is as follows:
- *   1. The user calls `mint` with the amount of equity to mint leverage token for, the minimum amount of shares (LeverageTokens) to receive, the maximum
+ *   1. The user calls `mint` with the amount of equity to mint LeverageTokens (shares) for, the minimum amount of shares to receive, the maximum
  *      cost to the sender for the swap of debt to collateral during the mint to help repay the flash loan, and the swap context.
  *   2. The LeverageRouter will flash loan the required collateral asset from Morpho.
  *   3. The LeverageRouter will use the flash loaned collateral and the equity from the sender for the mint into the LeverageToken,
@@ -33,9 +33,9 @@ import {ActionData, ExternalAction} from "../types/DataTypes.sol";
 contract LeverageRouter is ILeverageRouter {
     /// @notice Mint related parameters to pass to the Morpho flash loan callback handler for mints
     struct MintParams {
-        // LeverageToken to mint into
+        // LeverageToken to mint shares of
         ILeverageToken token;
-        // Amount of equity to mint leverage token for, denominated in the collateral asset
+        // Amount of equity to mint LeverageTokens (shares) for, denominated in the collateral asset
         uint256 equityInCollateralAsset;
         // Minimum amount of shares (LeverageTokens) to receive
         uint256 minShares;
@@ -219,7 +219,7 @@ contract LeverageRouter is ILeverageRouter {
         SafeERC20.forceApprove(collateralAsset, address(morpho), collateralLoanAmount);
     }
 
-    /// @notice Executes the redeem of leverage token to receive equity and the swap of collateral assets to the debt asset
+    /// @notice Executes redeem on a LeverageToken to receive equity and the swap of collateral assets to the debt asset
     /// to repay the flash loan from Morpho
     /// @param params Params for the redeem of equity from a LeverageToken
     /// @param debtLoanAmount Amount of debt asset flash loaned

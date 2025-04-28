@@ -30,9 +30,9 @@ interface ILeverageRouter {
     /// @return _swapper The swap adapter contract
     function swapper() external view returns (ISwapAdapter _swapper);
 
-    /// @notice Mint leverage token
-    /// @param token LeverageToken to mint
-    /// @param equityInCollateralAsset The amount of equity to mint into the LeverageToken for. Denominated in the collateral
+    /// @notice Mint shares of a LeverageToken by adding equity 
+    /// @param token LeverageToken to mint shares of
+    /// @param equityInCollateralAsset The amount of equity to mint LeverageToken shares for. Denominated in the collateral
     ///        asset of the LeverageToken
     /// @param minShares Minimum shares (LeverageTokens) to receive from the mint
     /// @param maxSwapCostInCollateralAsset The maximum amount of collateral from the sender to use to help repay the flash loan
@@ -52,7 +52,7 @@ interface ILeverageRouter {
         ISwapAdapter.SwapContext memory swapContext
     ) external;
 
-    /// @notice Redeems LeverageToken
+    /// @notice Redeems equity of a LeverageToken by repaying debt and burning shares
     /// @param token LeverageToken to redeem
     /// @param equityInCollateralAsset The amount of equity to receive by redeeming LeverageToken. Denominated in the collateral
     ///        asset of the LeverageToken

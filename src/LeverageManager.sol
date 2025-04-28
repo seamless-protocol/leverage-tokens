@@ -31,7 +31,7 @@ import {
 
 /**
  * @dev The LeverageManager contract is an upgradeable core contract that is responsible for managing the creation of LeverageTokens.
- * It also acts as an entry point for users to mint and redeem leverage token, and for
+ * It also acts as an entry point for users to mint and redeem LeverageTokens (shares), and for
  * rebalancers to rebalance LeverageTokens.
  *
  * LeverageTokens are ERC20 tokens that are akin to shares in an ERC-4626 vault - they represent a claim on the equity held by
@@ -43,7 +43,7 @@ import {
  * The LeverageManager also inherits the `FeeManager` contract, which is used to manage LeverageToken fees (which accrue to
  * the share value of the LeverageToken) and the treasury fees.
  *
- * For mints of a LeverageToken, the collateral and debt required is calculated by using the LeverageToken's
+ * For mints of LeverageTokens (shares), the collateral and debt required is calculated by using the LeverageToken's
  * current collateral ratio. As such, the collateral ratio after a mint must be equal to the collateral ratio before a
  * mint, within some rounding error.
  *

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import "forge-std/console.sol";
 
 // Dependency imports
 import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
@@ -94,10 +93,7 @@ contract EtherFiLeverageRouter is LeverageRouterMintBase, IEtherFiLeverageRouter
         uint256 weethLoanAmount,
         bytes memory /* additionalData */
     ) internal override returns (uint256) {
-        console.log("1");
-        console.log("weth", address(weth));
         IWETH9(address(weth)).withdraw(wethAmount);
-        console.log("2");
 
         // Deposit the ETH into the EtherFi L2 Mode Sync Pool to obtain weETH
         // Note: The EtherFi L2 Mode Sync Pool requires ETH to mint weETH. WETH is unsupported
