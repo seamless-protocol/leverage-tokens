@@ -30,7 +30,7 @@ interface ILeverageRouter {
     /// @return _swapper The swap adapter contract
     function swapper() external view returns (ISwapAdapter _swapper);
 
-    /// @notice Mint shares of a LeverageToken by adding equity 
+    /// @notice Mint shares of a LeverageToken by adding equity
     /// @param token LeverageToken to mint shares of
     /// @param equityInCollateralAsset The amount of equity to mint LeverageToken shares for. Denominated in the collateral
     ///        asset of the LeverageToken
