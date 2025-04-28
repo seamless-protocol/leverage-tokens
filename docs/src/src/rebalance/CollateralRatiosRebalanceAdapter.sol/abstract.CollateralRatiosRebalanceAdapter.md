@@ -1,5 +1,5 @@
 # CollateralRatiosRebalanceAdapter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/002c85336929e7b2f8b2193e3cb727fe9cf4b9e6/src/rebalance/CollateralRatiosRebalanceAdapter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/ca7af3bd8afb6a515c334e2f448f621a379dc94e/src/rebalance/CollateralRatiosRebalanceAdapter.sol)
 
 **Inherits:**
 [ICollateralRatiosRebalanceAdapter](/src/interfaces/ICollateralRatiosRebalanceAdapter.sol/interface.ICollateralRatiosRebalanceAdapter.md), Initializable
@@ -128,7 +128,7 @@ Returns true if the LeverageToken is eligible for rebalance
 
 
 ```solidity
-function isEligibleForRebalance(ILeverageToken, LeverageTokenState memory state, address)
+function isEligibleForRebalance(ILeverageToken token, LeverageTokenState memory state, address)
     public
     view
     virtual
@@ -138,7 +138,7 @@ function isEligibleForRebalance(ILeverageToken, LeverageTokenState memory state,
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`ILeverageToken`||
+|`token`|`ILeverageToken`|The LeverageToken|
 |`state`|`LeverageTokenState`|The state of the LeverageToken|
 |`<none>`|`address`||
 

@@ -1,5 +1,5 @@
 # IRebalanceAdapterBase
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/002c85336929e7b2f8b2193e3cb727fe9cf4b9e6/src/interfaces/IRebalanceAdapterBase.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/ca7af3bd8afb6a515c334e2f448f621a379dc94e/src/interfaces/IRebalanceAdapterBase.sol)
 
 Interface for the base RebalanceAdapter
 
@@ -11,7 +11,7 @@ Interface for the base RebalanceAdapter
 
 Returns the initial collateral ratio for a LeverageToken
 
-*Initial collateral ratio is followed when the LeverageToken has no shares and on deposits when debt is 0.*
+*Initial collateral ratio is followed when the LeverageToken has no shares and on mints when debt is 0.*
 
 
 ```solidity

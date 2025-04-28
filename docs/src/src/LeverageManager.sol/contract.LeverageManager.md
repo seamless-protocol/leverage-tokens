@@ -1,11 +1,11 @@
 # LeverageManager
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/002c85336929e7b2f8b2193e3cb727fe9cf4b9e6/src/LeverageManager.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/ca7af3bd8afb6a515c334e2f448f621a379dc94e/src/LeverageManager.sol)
 
 **Inherits:**
-[ILeverageManager](/src/interfaces/ILeverageManager.sol/interface.ILeverageManager.md), AccessControlUpgradeable, ReentrancyGuardUpgradeable, [FeeManager](/src/FeeManager.sol/contract.FeeManager.md), UUPSUpgradeable
+[ILeverageManager](/src/interfaces/ILeverageManager.sol/interface.ILeverageManager.md), AccessControlUpgradeable, ReentrancyGuardTransientUpgradeable, [FeeManager](/src/FeeManager.sol/contract.FeeManager.md), UUPSUpgradeable
 
 *The LeverageManager contract is an upgradeable core contract that is responsible for managing the creation of LeverageTokens.
-It also acts as an entry point for users to deposit and withdraw equity from the position held by the LeverageToken, and for
+It also acts as an entry point for users to mint and redeem LeverageTokens (shares), and for
 rebalancers to rebalance LeverageTokens.
 LeverageTokens are ERC20 tokens that are akin to shares in an ERC-4626 vault - they represent a claim on the equity held by
 the LeverageToken. They can be created on this contract by calling `createNewLeverageToken`, and their configuration on the
@@ -14,21 +14,21 @@ Note: Although the LeverageToken configuration saved on the LeverageManager is i
 RebalanceAdapter for the LeverageToken may be upgradeable contracts.
 The LeverageManager also inherits the `FeeManager` contract, which is used to manage LeverageToken fees (which accrue to
 the share value of the LeverageToken) and the treasury fees.
-For deposits of equity into a LeverageToken, the collateral and debt required is calculated by using the LeverageToken's
-current collateral ratio. As such, the collateral ratio after a deposit must be equal to the collateral ratio before a
-deposit, within some rounding error.
+For mints of LeverageTokens (shares), the collateral and debt required is calculated by using the LeverageToken's
+current collateral ratio. As such, the collateral ratio after a mint must be equal to the collateral ratio before a
+mint, within some rounding error.
 [CAUTION]
 ====
 - LeverageTokens are susceptible to inflation attacks like ERC-4626 vaults:
-"In empty (or nearly empty) ERC-4626 vaults, deposits are at high risk of being stolen through frontrunning
+"In empty (or nearly empty) ERC-4626 vaults, mints are at high risk of being stolen through frontrunning
 with a "donation" to the vault that inflates the price of a share. This is variously known as a donation or inflation
 attack and is essentially a problem of slippage. Vault deployers can protect against this attack by making an initial
-deposit of a non-trivial amount of the asset, such that price manipulation becomes infeasible. Withdrawals may
+mint of a non-trivial amount of the asset, such that price manipulation becomes infeasible. Redeems may
 similarly be affected by slippage. Users can protect against this attack as well as unexpected slippage in general by
 verifying the amount received is as expected, using a wrapper that performs these checks such as
 https://github.com/fei-protocol/ERC4626#erc4626router-and-base[ERC4626Router]."
-As such it is highly recommended that LeverageToken creators make an initial deposit of a non-trivial amount of equity.
-It is also recommended to use a router that performs slippage checks when depositing and withdrawing.
+As such it is highly recommended that LeverageToken creators make an initial mint of a non-trivial amount of equity.
+It is also recommended to use a router that performs slippage checks when minting and redeeming.
 - LeverageToken creation is permissionless and can be configured with arbitrary lending adapters, rebalance adapters, and
 underlying collateral and debt assets. As such, the adapters and tokens used by a LeverageToken are part of the risk
 profile of the LeverageToken, and should be carefully considered by users before using a LeverageToken.
@@ -39,7 +39,7 @@ considering using. Some examples:
 - Morpho: Users should be aware that Morpho market creation is permissionless, and that the price oracle used by
 by the market may be manipulatable.
 - Aave v3: Allows rehypothecation of collateral, which may lead to reverts when trying to remove collateral from the
-market during withdrawals and rebalances.*
+market during redeems and rebalances.*
 
 
 ## State Variables
@@ -203,7 +203,7 @@ function getLeverageTokenLendingAdapter(ILeverageToken token) public view return
 
 Returns the initial collateral ratio for a LeverageToken
 
-*Initial collateral ratio is followed when the LeverageToken has no shares and on deposits when debt is 0.*
+*Initial collateral ratio is followed when the LeverageToken has no shares and on mints when debt is 0.*
 
 
 ```solidity
@@ -269,67 +269,61 @@ function createNewLeverageToken(LeverageTokenConfig calldata tokenConfig, string
 |`token`|`ILeverageToken`|Address of the new LeverageToken|
 
 
-### previewDeposit
+### previewMint
 
-Previews deposit function call and returns all required data
+Previews mint function call and returns all required data
 
 *Sender should approve leverage manager to spend collateralToAdd amount of collateral asset*
 
 
 ```solidity
-function previewDeposit(ILeverageToken token, uint256 equityInCollateralAsset)
-    public
-    view
-    returns (ActionData memory);
+function previewMint(ILeverageToken token, uint256 equityInCollateralAsset) public view returns (ActionData memory);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`token`|`ILeverageToken`|LeverageToken to preview deposit for|
-|`equityInCollateralAsset`|`uint256`|Equity to deposit denominated in collateral asset|
+|`token`|`ILeverageToken`|LeverageToken to preview mint for|
+|`equityInCollateralAsset`|`uint256`|Equity to mint LeverageTokens (shares) for, denominated in the collateral asset|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`ActionData`|previewData Preview data for deposit - collateralToAdd Amount of collateral that sender needs to approve the LeverageManager to spend, this includes any fees - debtToBorrow Amount of debt that will be borrowed and sent to sender - equity Amount of equity that will be deposited before fees, denominated in collateral asset - shares Amount of shares that will be minted to the sender - tokenFee Amount of collateral asset that will be charged for the deposit to the leverage token - treasuryFee Amount of collateral asset that will be charged for the deposit to the treasury|
+|`<none>`|`ActionData`|previewData Preview data for mint - collateralToAdd Amount of collateral that sender needs to approve the LeverageManager to spend, this includes any fees - debtToBorrow Amount of debt that will be borrowed and sent to sender - equity Amount of equity that will be used for minting shares before fees, denominated in collateral asset - shares Amount of shares that will be minted to the sender - tokenFee Amount of shares that will be charged for the mint that are given to the LeverageToken - treasuryFee Amount of shares that will be charged for the mint that are given to the treasury|
 
 
-### previewWithdraw
+### previewRedeem
 
-Previews withdraw function call and returns all required data
+Previews redeem function call and returns all required data
 
 *Sender should approve leverage manager to spend debtToRepay amount of debt asset*
 
 
 ```solidity
-function previewWithdraw(ILeverageToken token, uint256 equityInCollateralAsset)
-    public
-    view
-    returns (ActionData memory);
+function previewRedeem(ILeverageToken token, uint256 equityInCollateralAsset) public view returns (ActionData memory);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`token`|`ILeverageToken`|LeverageToken to preview withdraw for|
-|`equityInCollateralAsset`|`uint256`|Equity to withdraw denominated in collateral asset|
+|`token`|`ILeverageToken`|LeverageToken to preview redeem for|
+|`equityInCollateralAsset`|`uint256`|Equity to receive by redeem denominated in collateral asset|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`ActionData`|previewData Preview data for withdraw - collateralToRemove Amount of collateral that will be removed from the LeverageToken and sent to the sender - debtToRepay Amount of debt that will be taken from sender and repaid to the LeverageToken - equity Amount of equity that will be withdrawn before fees, denominated in collateral asset - shares Amount of shares that will be burned from sender - tokenFee Amount of collateral asset that will be charged for the withdraw to the leverage token - treasuryFee Amount of collateral asset that will be charged for the withdraw to the treasury|
+|`<none>`|`ActionData`|previewData Preview data for redeem - collateralToRemove Amount of collateral that will be removed from the LeverageToken and sent to the sender - debtToRepay Amount of debt that will be taken from sender and repaid to the LeverageToken - equity Amount of equity that will be received for the redeem before fees, denominated in collateral asset - shares Amount of shares that will be burned from sender - tokenFee Amount of shares that will be charged for the redeem that are given to the LeverageToken - treasuryFee Amount of shares that will be charged for the redeem that are given to the treasury|
 
 
-### deposit
+### mint
 
-Deposits equity into a LeverageToken and mints shares to the sender
+Adds equity to a LeverageToken and mints shares of it to the sender
 
 
 ```solidity
-function deposit(ILeverageToken token, uint256 equityInCollateralAsset, uint256 minShares)
+function mint(ILeverageToken token, uint256 equityInCollateralAsset, uint256 minShares)
     external
     nonReentrant
     returns (ActionData memory actionData);
@@ -338,24 +332,24 @@ function deposit(ILeverageToken token, uint256 equityInCollateralAsset, uint256 
 
 |Name|Type|Description|
 |----|----|-----------|
-|`token`|`ILeverageToken`|The LeverageToken to deposit into|
-|`equityInCollateralAsset`|`uint256`|The amount of equity to deposit denominated in the collateral asset of the LeverageToken|
+|`token`|`ILeverageToken`|The LeverageToken to mint shares of|
+|`equityInCollateralAsset`|`uint256`|The amount of equity to mint shares for, denominated in the collateral asset of the LeverageToken|
 |`minShares`|`uint256`|The minimum amount of shares to mint|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`actionData`|`ActionData`|Data about the deposit - collateral Amount of collateral that was added, including any fees - debt Amount of debt that was added - equity Amount of equity that was deposited before fees, denominated in collateral asset - shares Amount of shares minted to the sender - tokenFee Amount of collateral that was charged for the deposit to the leverage token - treasuryFee Amount of collateral that was charged for the deposit to the treasury|
+|`actionData`|`ActionData`|Data about the mint - collateral Amount of collateral that was added, including any fees - debt Amount of debt that was added - equity Amount of equity that was added before fees, denominated in collateral asset - shares Amount of shares minted to the sender - tokenFee Amount of shares that was charged for the mint that are given to the LeverageToken - treasuryFee Amount of shares that was charged for the mint that are given to the treasury|
 
 
-### withdraw
+### redeem
 
-Withdraws equity from a LeverageToken and burns shares from sender
+Redeems equity from a LeverageToken and burns shares from sender
 
 
 ```solidity
-function withdraw(ILeverageToken token, uint256 equityInCollateralAsset, uint256 maxShares)
+function redeem(ILeverageToken token, uint256 equityInCollateralAsset, uint256 maxShares)
     external
     nonReentrant
     returns (ActionData memory actionData);
@@ -364,15 +358,15 @@ function withdraw(ILeverageToken token, uint256 equityInCollateralAsset, uint256
 
 |Name|Type|Description|
 |----|----|-----------|
-|`token`|`ILeverageToken`|The LeverageToken to withdraw from|
-|`equityInCollateralAsset`|`uint256`|The amount of equity to withdraw denominated in the collateral asset of the LeverageToken|
+|`token`|`ILeverageToken`|The LeverageToken to redeem from|
+|`equityInCollateralAsset`|`uint256`|The amount of equity to receive by redeeming denominated in the collateral asset of the LeverageToken|
 |`maxShares`|`uint256`|The maximum amount of shares to burn|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`actionData`|`ActionData`|Data about the withdraw - collateral Amount of collateral that was removed from LeverageToken and sent to sender - debt Amount of debt that was repaid to LeverageToken, taken from sender - equity Amount of equity that was withdrawn before fees, denominated in collateral asset - shares Amount of the sender's shares that were burned for the withdrawal - tokenFee Amount of collateral that was charged for the withdraw to the leverage token - treasuryFee Amount of collateral that was charged for the withdraw to the treasury|
+|`actionData`|`ActionData`|Data about the redeem - collateral Amount of collateral that was removed from LeverageToken and sent to sender - debt Amount of debt that was repaid to LeverageToken, taken from sender - equity Amount of equity that was received for redeem before fees, denominated in collateral asset - shares Amount of the sender's shares that were burned for the redeem - tokenFee Amount of shares that was charged for the redeem that are given to the LeverageToken - treasuryFee Amount of shares that was charged for the redeem that are given to the treasury|
 
 
 ### rebalance
@@ -438,13 +432,13 @@ function _convertToShares(ILeverageToken token, uint256 equityInCollateralAsset,
 
 ### _previewAction
 
-Previews parameters related to a deposit action
+Previews parameters related to a mint action
 
 *If the LeverageToken has zero total supply of shares (so the LeverageToken does not hold any collateral or debt,
 or holds some leftover dust after all shares are redeemed), then the preview will use the target
 collateral ratio for determining how much collateral and debt is required instead of the current collateral ratio.*
 
-*If action is deposit collateral will be rounded down and debt up, if action is withdraw collateral will be rounded up and debt down*
+*If action is mint collateral will be rounded down and debt up, if action is redeem collateral will be rounded up and debt down*
 
 
 ```solidity
@@ -457,9 +451,9 @@ function _previewAction(ILeverageToken token, uint256 equityInCollateralAsset, E
 
 |Name|Type|Description|
 |----|----|-----------|
-|`token`|`ILeverageToken`|LeverageToken to preview deposit for|
-|`equityInCollateralAsset`|`uint256`|Amount of equity to add or withdraw, denominated in collateral asset|
-|`action`|`ExternalAction`|Type of the action to preview, can be Deposit or Withdraw|
+|`token`|`ILeverageToken`|LeverageToken to preview mint for|
+|`equityInCollateralAsset`|`uint256`|Amount of equity to give or receive, denominated in collateral asset|
+|`action`|`ExternalAction`|Type of the action to preview, can be Mint or Redeem|
 
 **Returns**
 
