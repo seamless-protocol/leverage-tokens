@@ -50,6 +50,6 @@
     - [LeverageTokenState](src/types/DataTypes.sol/struct.LeverageTokenState.md)
     - [RebalanceAction](src/types/DataTypes.sol/struct.RebalanceAction.md)
   - [BeaconProxyFactory](src/BeaconProxyFactory.sol/contract.BeaconProxyFactory.md)
-  - [FeeManager](src/FeeManager.sol/contract.FeeManager.md)
+  - [FeeManager](src/FeeManager.sol/abstract.FeeManager.md)
   - [LeverageManager](src/LeverageManager.sol/contract.LeverageManager.md)
   - [LeverageToken](src/LeverageToken.sol/contract.LeverageToken.md)
