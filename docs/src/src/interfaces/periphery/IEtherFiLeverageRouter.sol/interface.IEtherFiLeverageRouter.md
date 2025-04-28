@@ -1,5 +1,5 @@
 # IEtherFiLeverageRouter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/002c85336929e7b2f8b2193e3cb727fe9cf4b9e6/src/interfaces/periphery/IEtherFiLeverageRouter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/ca7af3bd8afb6a515c334e2f448f621a379dc94e/src/interfaces/periphery/IEtherFiLeverageRouter.sol)
 
 **Inherits:**
 [ILeverageRouterBase](/src/interfaces/periphery/ILeverageRouterBase.sol/interface.ILeverageRouterBase.md)
@@ -21,9 +21,9 @@ function etherFiL2ModeSyncPool() external view returns (IEtherFiL2ModeSyncPool _
 |`_etherFiL2ModeSyncPool`|`IEtherFiL2ModeSyncPool`|The EtherFi L2 Mode Sync Pool contract|
 
 
-### deposit
+### mint
 
-Deposit equity into a LeverageToken that uses weETH as collateral and WETH as debt
+Mints LeverageTokens (shares) that use weETH as collateral and WETH as debt
 
 *Transfers `equityInCollateralAsset` of weETH to the LeverageRouter, flash loans the additional weETH collateral
 required to add the equity to the LeverageToken, receives WETH debt, then unwraps the WETH debt to ETH and deposits
@@ -31,14 +31,14 @@ the ETH into the EtherFi L2 Mode Sync Pool to obtain weETH. The received weETH i
 
 
 ```solidity
-function deposit(ILeverageToken token, uint256 equityInCollateralAsset, uint256 minShares) external;
+function mint(ILeverageToken token, uint256 equityInCollateralAsset, uint256 minShares) external;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`token`|`ILeverageToken`|LeverageToken to deposit equity into|
-|`equityInCollateralAsset`|`uint256`|The amount of weETH equity to deposit into the LeverageToken.|
-|`minShares`|`uint256`|Minimum shares (LeverageTokens) to receive from the deposit|
+|`token`|`ILeverageToken`|LeverageToken to mint|
+|`equityInCollateralAsset`|`uint256`|The amount of weETH equity to add to the LeverageToken and mint shares for.|
+|`minShares`|`uint256`|Minimum shares (LeverageTokens) to receive from the mint|
 
 

@@ -1,15 +1,15 @@
 # FeeManager
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/002c85336929e7b2f8b2193e3cb727fe9cf4b9e6/src/FeeManager.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/ca7af3bd8afb6a515c334e2f448f621a379dc94e/src/FeeManager.sol)
 
 **Inherits:**
-[IFeeManager](/src/interfaces/IFeeManager.sol/interface.IFeeManager.md), Initializable, AccessControlUpgradeable, ReentrancyGuardUpgradeable
+[IFeeManager](/src/interfaces/IFeeManager.sol/interface.IFeeManager.md), Initializable, AccessControlUpgradeable
 
 *The FeeManager contract is an upgradeable core contract that is responsible for managing the fees for LeverageTokens.
 There are three types of fees:
 - Token action fees: Fees charged that accumulate towards the value of the LeverageToken for current LeverageToken
-holders, applied on equity for deposits and withdrawals
+holders, applied on equity for mints and redeems
 - Treasury action fees: Fees charged in shares that are transferred to the configured treasury address, applied on
-shares minted for deposits and shares burned for withdrawals
+shares minted for mints and shares burned for redeems
 - Management fees: Fees charged in shares that are transferred to the configured treasury address. The management fee
 accrues linearly over time and is minted to the treasury when the `chargeManagementFee` function is executed
 The maximum fee that can be set for each action is 100_00 (100%).*
@@ -263,7 +263,7 @@ function _computeTokenFee(ILeverageToken token, uint256 equity, ExternalAction a
 |----|----|-----------|
 |`token`|`ILeverageToken`|LeverageToken to compute token action fee for|
 |`equity`|`uint256`|Amount of equity to compute token action fee for, denominated in collateral asset|
-|`action`|`ExternalAction`|Action to compute token action fee for, Deposit or Withdraw|
+|`action`|`ExternalAction`|Action to compute token action fee for, Mint or Redeem|
 
 **Returns**
 

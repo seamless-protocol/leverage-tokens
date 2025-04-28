@@ -33,7 +33,7 @@
     - [EtherFiLeverageRouter](src/periphery/EtherFiLeverageRouter.sol/contract.EtherFiLeverageRouter.md)
     - [LeverageRouter](src/periphery/LeverageRouter.sol/contract.LeverageRouter.md)
     - [LeverageRouterBase](src/periphery/LeverageRouterBase.sol/abstract.LeverageRouterBase.md)
-    - [LeverageRouterDepositBase](src/periphery/LeverageRouterDepositBase.sol/abstract.LeverageRouterDepositBase.md)
+    - [LeverageRouterMintBase](src/periphery/LeverageRouterMintBase.sol/abstract.LeverageRouterMintBase.md)
     - [SwapAdapter](src/periphery/SwapAdapter.sol/contract.SwapAdapter.md)
   - [❱ rebalance](src/rebalance/README.md)
     - [CollateralRatiosRebalanceAdapter](src/rebalance/CollateralRatiosRebalanceAdapter.sol/abstract.CollateralRatiosRebalanceAdapter.md)

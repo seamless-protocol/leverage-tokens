@@ -1,5 +1,5 @@
 # LeverageTokenConfig
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/002c85336929e7b2f8b2193e3cb727fe9cf4b9e6/src/types/DataTypes.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/ca7af3bd8afb6a515c334e2f448f621a379dc94e/src/types/DataTypes.sol)
 
 *Struct that contains the entire LeverageToken config*
 
@@ -8,8 +8,8 @@
 struct LeverageTokenConfig {
     ILendingAdapter lendingAdapter;
     IRebalanceAdapterBase rebalanceAdapter;
-    uint256 depositTokenFee;
-    uint256 withdrawTokenFee;
+    uint256 mintTokenFee;
+    uint256 redeemTokenFee;
 }
 ```
 
