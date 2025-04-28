@@ -14,7 +14,7 @@ import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 
 /**
- * @dev The FeeManager contract is an upgradeable core contract that is responsible for managing the fees for LeverageTokens.
+ * @dev The FeeManager contract is an abstract upgradeable core contract that is responsible for managing the fees for LeverageTokens.
  * There are three types of fees:
  *   - Token action fees: Fees charged that accumulate towards the value of the LeverageToken for current LeverageToken
  *     holders, applied on equity for mints and redeems
@@ -22,10 +22,10 @@ import {IFeeManager} from "src/interfaces/IFeeManager.sol";
  *     shares minted for mints and shares burned for redeems
  *   - Management fees: Fees charged in shares that are transferred to the configured treasury address. The management fee
  *     accrues linearly over time and is minted to the treasury when the `chargeManagementFee` function is executed
- *
+ * Note: This contract is abstract and meant to be inherited by LeverageManager
  * The maximum fee that can be set for each action is 100_00 (100%).
  */
-contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
+abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
     bytes32 public constant FEE_MANAGER_ROLE = keccak256("FEE_MANAGER_ROLE");
 
     uint256 internal constant MAX_FEE = 100_00;
