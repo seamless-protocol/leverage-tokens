@@ -11,6 +11,7 @@ import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {RebalanceAction, ActionType, LeverageTokenConfig} from "src/types/DataTypes.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
+import {LeverageManagerHarness} from "test/unit/harness/LeverageManagerHarness.t.sol";
 
 enum ReentrancyCallType {
     None,
@@ -57,6 +58,13 @@ contract MockERC20 is ERC20Mock {
     }
 
     function _executeDummyReentrancyCall() internal {
+        if (leverageManager != ILeverageManager(address(0))) {
+            require(
+                LeverageManagerHarness(address(leverageManager)).exposed_getReentrancyGuardTransientStorage() == true,
+                "ReentrancyGuardTransient transient storage should be set to true"
+            );
+        }
+
         if (leverageManager == ILeverageManager(address(0)) || reentrancyCallType == ReentrancyCallType.None) {
             return;
         }

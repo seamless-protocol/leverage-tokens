@@ -58,4 +58,16 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
     ) external view returns (uint256 collateral, uint256 debt) {
         return _computeCollateralAndDebtForAction(leverageToken, equityInCollateralAsset, action);
     }
+
+    function exposed_getReentrancyGuardTransientStorage() external view returns (bool) {
+        // slot used in OZ's ReentrancyGuardTransient
+        bytes32 slot = 0x9b779b17422d0df92223018b32b4d1fa46e071723d6817e2486d003becc55f00;
+
+        bool value;
+        assembly {
+            value := tload(slot)
+        }
+
+        return value;
+    }
 }
