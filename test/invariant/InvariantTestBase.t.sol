@@ -107,10 +107,10 @@ abstract contract InvariantTestBase is Test {
                 targetCollateralRatio: 2 * BASE_RATIO,
                 maxCollateralRatio: 3 * BASE_RATIO,
                 auctionDuration: 10 minutes,
-                initialPriceMultiplier: 1.05e18,
-                minPriceMultiplier: 0.9e18,
-                preLiquidationCollateralRatioThreshold: 102_00,
-                rebalanceReward: 40_00
+                initialPriceMultiplier: 1.05e18, // 105%
+                minPriceMultiplier: 0.9e18, // 90%
+                preLiquidationCollateralRatioThreshold: 102e18, // 102%
+                rebalanceReward: 5_00 // 5%
             })
         );
 
