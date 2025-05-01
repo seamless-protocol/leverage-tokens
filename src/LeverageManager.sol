@@ -201,7 +201,7 @@ contract LeverageManager is
         });
         _setLeverageTokenActionFee(token, ExternalAction.Mint, tokenConfig.mintTokenFee);
         _setLeverageTokenActionFee(token, ExternalAction.Redeem, tokenConfig.redeemTokenFee);
-        chargeManagementFee(token);
+        _updateLastManagementFeeAccrualTimestamp(token);
 
         tokenConfig.lendingAdapter.postLeverageTokenCreation(msg.sender, address(token));
         tokenConfig.rebalanceAdapter.postLeverageTokenCreation(msg.sender, address(token));

@@ -135,7 +135,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
 
         // Shares fee must be obtained before the last management fee accrual timestamp is updated
         uint256 sharesFee = _getAccruedManagementFee(token);
-        _getFeeManagerStorage().lastManagementFeeAccrualTimestamp[token] = uint120(block.timestamp);
+        _updateLastManagementFeeAccrualTimestamp(token);
 
         // slither-disable-next-line reentrancy-events
         token.mint(treasury, sharesFee);
@@ -233,5 +233,12 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
         if (fee > MAX_FEE) {
             revert FeeTooHigh(fee, MAX_FEE);
         }
+    }
+
+    /// @notice Function that updates the last management fee accrual timestamp for a given LeverageToken to the current
+    /// timestamp
+    /// @param token LeverageToken to update last management fee accrual timestamp for
+    function _updateLastManagementFeeAccrualTimestamp(ILeverageToken token) internal {
+        _getFeeManagerStorage().lastManagementFeeAccrualTimestamp[token] = uint120(block.timestamp);
     }
 }
