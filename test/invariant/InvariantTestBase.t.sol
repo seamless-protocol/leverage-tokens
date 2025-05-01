@@ -9,21 +9,26 @@ import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {MarketParams, Id, IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
+import {MarketParamsLib} from "@morpho-blue/libraries/MarketParamsLib.sol";
 
 // Internal imports
 import {BeaconProxyFactory} from "src/BeaconProxyFactory.sol";
 import {LeverageManager} from "src/LeverageManager.sol";
 import {LeverageToken} from "src/LeverageToken.sol";
+import {MorphoLendingAdapter} from "src/lending/MorphoLendingAdapter.sol";
 import {RebalanceAdapter} from "src/rebalance/RebalanceAdapter.sol";
 import {ExternalAction, LeverageTokenConfig} from "src/types/DataTypes.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
+import {AdaptiveCurveIrm} from "test/invariant/morpho/AdaptiveCurveIrm.sol";
+import {MORPHO_BYTECODE} from "test/invariant/morpho/Morpho.sol";
 import {LeverageManagerHandler} from "test/invariant/handlers/LeverageManagerHandler.t.sol";
 import {LeverageManagerHarness} from "test/unit/harness/LeverageManagerHarness.t.sol";
-import {MockLendingAdapter} from "test/unit/mock/MockLendingAdapter.sol";
 import {MockERC20} from "test/unit/mock/MockERC20.sol";
+import {MockMorphoOracle} from "test/unit/mock/MockMorphoOracle.sol";
 
 abstract contract InvariantTestBase is Test {
     uint256 public BASE_RATIO;
@@ -31,6 +36,9 @@ abstract contract InvariantTestBase is Test {
     address public defaultAdmin = makeAddr("defaultAdmin");
     address public manager = makeAddr("manager");
     address public feeManagerRole = makeAddr("feeManagerRole");
+
+    IMorpho public morpho;
+    address public irm;
 
     LeverageManagerHarness public leverageManager;
     LeverageManagerHandler public leverageManagerHandler;
@@ -56,10 +64,19 @@ abstract contract InvariantTestBase is Test {
 
         BASE_RATIO = leverageManager.BASE_RATIO();
 
+        // Deploy Morpho
+        morpho = _deployMorpho();
+        irm = _deployAdaptiveCurveIrm();
+
         _initLeverageManagerHandler(leverageManager);
 
         targetContract(address(leverageManagerHandler));
         targetSelector(FuzzSelector({addr: address(leverageManagerHandler), selectors: _fuzzedSelectors()}));
+    }
+
+    function test_invariantSetup_Morpho() public view {
+        assertEq(morpho.owner(), defaultAdmin);
+        assertTrue(morpho.isIrmEnabled(irm));
     }
 
     function _deployRebalanceAdapter(RebalanceAdapter.RebalanceAdapterInitParams memory initParams)
@@ -94,9 +111,18 @@ abstract contract InvariantTestBase is Test {
 
     function _initLeverageManagerHandler(LeverageManagerHarness _leverageManager) internal {
         ILeverageToken[] memory leverageTokens = new ILeverageToken[](1);
+
+        MockERC20 collateralAsset = new MockERC20();
+        MockERC20 debtAsset = new MockERC20();
+        debtAsset.mockSetDecimals(6);
+
         leverageTokens[0] = _initLeverageToken(
             "Strategy A",
             "STRAT-A",
+            address(collateralAsset),
+            address(debtAsset),
+            1e27, // 1 ETH = 1000 USDC
+            0.86e18, // 86% LLTV
             1_00,
             1_00,
             RebalanceAdapter.RebalanceAdapterInitParams({
@@ -114,6 +140,9 @@ abstract contract InvariantTestBase is Test {
             })
         );
 
+        // TODO: Add minimum fees leverage token config (e.g. 0.01% fee, 1 wei).
+        // If issues arise, then we may need to ensure fee is set to at least 10 wei.
+
         address[] memory actors = _createActors(10);
 
         leverageManagerHandler = new LeverageManagerHandler(_leverageManager, leverageTokens, actors);
@@ -124,32 +153,58 @@ abstract contract InvariantTestBase is Test {
     function _initLeverageToken(
         string memory name,
         string memory symbol,
+        address collateralAsset,
+        address debtAsset,
+        uint256 initOraclePrice,
+        uint256 lltv,
         uint256 mintTokenFee,
         uint256 redeemTokenFee,
         RebalanceAdapter.RebalanceAdapterInitParams memory initParams
     ) internal returns (ILeverageToken leverageToken) {
-        MockERC20 collateralAsset = new MockERC20();
-        MockERC20 debtAsset = new MockERC20();
+        Id morphoMarketId = _initMorphoMarket(collateralAsset, debtAsset, initOraclePrice, lltv);
 
-        MockLendingAdapter lendingAdapter =
-            new MockLendingAdapter(address(collateralAsset), address(debtAsset), address(this));
+        ILendingAdapter lendingAdapter = new MorphoLendingAdapter(leverageManager, morpho);
+        MorphoLendingAdapter(address(lendingAdapter)).initialize(morphoMarketId, address(this));
 
         IRebalanceAdapterBase rebalanceAdapter = _deployRebalanceAdapter(initParams);
 
         vm.mockCall(
             address(rebalanceAdapter),
             abi.encodeWithSelector(IRebalanceAdapterBase.postLeverageTokenCreation.selector),
-            abi.encode(true)
+            abi.encode()
         );
 
         LeverageTokenConfig memory config = LeverageTokenConfig({
-            lendingAdapter: ILendingAdapter(address(lendingAdapter)),
+            lendingAdapter: lendingAdapter,
             rebalanceAdapter: rebalanceAdapter,
             mintTokenFee: mintTokenFee,
             redeemTokenFee: redeemTokenFee
         });
 
         return leverageManager.createNewLeverageToken(config, name, symbol);
+    }
+
+    function _initMorphoMarket(address collateralAsset, address debtAsset, uint256 initOraclePrice, uint256 lltv)
+        internal
+        returns (Id)
+    {
+        vm.prank(defaultAdmin);
+        morpho.enableLltv(lltv);
+
+        MockMorphoOracle oracle = new MockMorphoOracle(initOraclePrice);
+
+        MarketParams memory marketParams = MarketParams({
+            loanToken: address(debtAsset),
+            collateralToken: address(collateralAsset),
+            oracle: address(oracle),
+            irm: irm,
+            lltv: lltv
+        });
+
+        // Note: This will revert if a market has already been created with the same params.
+        morpho.createMarket(marketParams);
+
+        return MarketParamsLib.id(marketParams);
     }
 
     function _setTreasuryActionFee(ExternalAction action, uint128 newTreasuryFee) internal {
@@ -160,5 +215,26 @@ abstract contract InvariantTestBase is Test {
     function _setManagementFee(uint128 newManagementFee) internal {
         vm.prank(feeManagerRole);
         leverageManager.setManagementFee(newManagementFee);
+    }
+
+    function _deployAdaptiveCurveIrm() internal returns (address) {
+        address _irm = address(new AdaptiveCurveIrm(address(morpho)));
+
+        vm.prank(defaultAdmin);
+        morpho.enableIrm(_irm);
+
+        return _irm;
+    }
+
+    function _deployMorpho() internal returns (IMorpho) {
+        IMorpho _morpho = IMorpho(makeAddr("morpho"));
+
+        // Code obtained using `cast code` from the Morpho deployment on Base.
+        vm.etch(address(_morpho), MORPHO_BYTECODE);
+
+        vm.prank(address(0));
+        _morpho.setOwner(defaultAdmin);
+
+        return _morpho;
     }
 }
