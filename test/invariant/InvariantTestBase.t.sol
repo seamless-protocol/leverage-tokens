@@ -124,7 +124,7 @@ abstract contract InvariantTestBase is Test {
             address(debtAsset),
             1e27, // 1 ETH = 1000 USDC
             0.86e18, // 86% LLTV
-            100000000e6, // 100m USDC initial supply
+            type(uint128).max / 2, // Half of the maximum amount allowed by Morpho (uint128.max)
             20000e18, // 20000 ETH initial collateral (== 20m USDC)
             10000000e6, // 10m USDC initial debt
             1_00,
