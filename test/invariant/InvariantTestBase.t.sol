@@ -11,6 +11,7 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {MarketParams, Id, IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 import {MarketParamsLib} from "@morpho-blue/libraries/MarketParamsLib.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
 import {BeaconProxyFactory} from "src/BeaconProxyFactory.sol";
@@ -123,6 +124,9 @@ abstract contract InvariantTestBase is Test {
             address(debtAsset),
             1e27, // 1 ETH = 1000 USDC
             0.86e18, // 86% LLTV
+            100000000e6, // 100m USDC initial supply
+            20000e18, // 20000 ETH initial collateral (== 20m USDC)
+            10000000e6, // 10m USDC initial debt
             1_00,
             1_00,
             RebalanceAdapter.RebalanceAdapterInitParams({
@@ -157,11 +161,16 @@ abstract contract InvariantTestBase is Test {
         address debtAsset,
         uint256 initOraclePrice,
         uint256 lltv,
+        uint256 initMarketSupply,
+        uint256 initMarketCollateral,
+        uint256 initMarketDebt,
         uint256 mintTokenFee,
         uint256 redeemTokenFee,
         RebalanceAdapter.RebalanceAdapterInitParams memory initParams
     ) internal returns (ILeverageToken leverageToken) {
-        Id morphoMarketId = _initMorphoMarket(collateralAsset, debtAsset, initOraclePrice, lltv);
+        Id morphoMarketId = _initMorphoMarket(
+            collateralAsset, debtAsset, initOraclePrice, lltv, initMarketSupply, initMarketCollateral, initMarketDebt
+        );
 
         ILendingAdapter lendingAdapter = new MorphoLendingAdapter(leverageManager, morpho);
         MorphoLendingAdapter(address(lendingAdapter)).initialize(morphoMarketId, address(this));
@@ -184,10 +193,15 @@ abstract contract InvariantTestBase is Test {
         return leverageManager.createNewLeverageToken(config, name, symbol);
     }
 
-    function _initMorphoMarket(address collateralAsset, address debtAsset, uint256 initOraclePrice, uint256 lltv)
-        internal
-        returns (Id)
-    {
+    function _initMorphoMarket(
+        address collateralAsset,
+        address debtAsset,
+        uint256 initOraclePrice,
+        uint256 lltv,
+        uint256 initMarketSupply,
+        uint256 initMarketCollateral,
+        uint256 initMarketDebt
+    ) internal returns (Id) {
         vm.prank(defaultAdmin);
         morpho.enableLltv(lltv);
 
@@ -203,6 +217,21 @@ abstract contract InvariantTestBase is Test {
 
         // Note: This will revert if a market has already been created with the same params.
         morpho.createMarket(marketParams);
+
+        // Add supply to the market.
+        deal(address(debtAsset), address(this), initMarketSupply);
+        IERC20(debtAsset).approve(address(morpho), initMarketSupply);
+        morpho.supply(marketParams, initMarketSupply, 0, address(this), bytes(""));
+
+        // Add collateral to the market.
+        deal(address(collateralAsset), address(this), initMarketCollateral);
+        IERC20(collateralAsset).approve(address(morpho), initMarketCollateral);
+        morpho.supplyCollateral(marketParams, initMarketCollateral, address(this), bytes(""));
+
+        // Add debt to the market.
+        deal(address(debtAsset), address(this), initMarketDebt);
+        IERC20(debtAsset).approve(address(morpho), initMarketDebt);
+        morpho.borrow(marketParams, initMarketDebt, 0, address(this), address(this));
 
         return MarketParamsLib.id(marketParams);
     }
