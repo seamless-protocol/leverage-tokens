@@ -90,8 +90,11 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     }
 
     /// @inheritdoc IFeeManager
-    function setManagementFee(uint128 fee) external onlyRole(FEE_MANAGER_ROLE) {
+    function setManagementFee(uint256 fee) external onlyRole(FEE_MANAGER_ROLE) {
         _validateFee(fee);
+        if (getTreasury() == address(0)) {
+            revert TreasuryNotSet();
+        }
 
         _getFeeManagerStorage().managementFee = fee;
         emit ManagementFeeSet(fee);
@@ -102,10 +105,11 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
         FeeManagerStorage storage $ = _getFeeManagerStorage();
         $.treasury = treasury;
 
-        // If the treasury is reset, the treasury fees should be reset as well
+        // If the treasury is reset, the treasury action fees and management fee should be reset as well
         if (treasury == address(0)) {
             $.treasuryActionFee[ExternalAction.Mint] = 0;
             $.treasuryActionFee[ExternalAction.Redeem] = 0;
+            $.managementFee = 0;
         }
 
         emit TreasurySet(treasury);
@@ -125,21 +129,16 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
 
     /// @inheritdoc IFeeManager
     function chargeManagementFee(ILeverageToken token) public {
-        address treasury = getTreasury();
-
-        // If the treasury is not set, do nothing. Management fee will continue to accrue
-        // but cannot be minted until the treasury is set
-        if (treasury == address(0)) {
-            return;
-        }
-
         // Shares fee must be obtained before the last management fee accrual timestamp is updated
         uint256 sharesFee = _getAccruedManagementFee(token);
-        _updateLastManagementFeeAccrualTimestamp(token);
+        _getFeeManagerStorage().lastManagementFeeAccrualTimestamp[token] = uint120(block.timestamp);
 
-        // slither-disable-next-line reentrancy-events
-        token.mint(treasury, sharesFee);
-        emit ManagementFeeCharged(token, sharesFee);
+        address treasury = getTreasury();
+        if (treasury != address(0)) {
+            // slither-disable-next-line reentrancy-events
+            token.mint(treasury, sharesFee);
+            emit ManagementFeeCharged(token, sharesFee);
+        }
     }
 
     /// @notice Function that mints shares to the treasury for the treasury action fee, if the treasury is set
@@ -233,12 +232,5 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
         if (fee > MAX_FEE) {
             revert FeeTooHigh(fee, MAX_FEE);
         }
-    }
-
-    /// @notice Function that updates the last management fee accrual timestamp for a given LeverageToken to the current
-    /// timestamp
-    /// @param token LeverageToken to update last management fee accrual timestamp for
-    function _updateLastManagementFeeAccrualTimestamp(ILeverageToken token) internal {
-        _getFeeManagerStorage().lastManagementFeeAccrualTimestamp[token] = uint120(block.timestamp);
     }
 }

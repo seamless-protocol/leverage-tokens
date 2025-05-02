@@ -43,4 +43,12 @@ contract SetManagementFeeTest is FeeManagerTest {
         vm.prank(caller);
         feeManager.setManagementFee(0);
     }
+
+    function test_setManagementFee_RevertIf_TreasuryNotSet() public {
+        _setTreasury(feeManagerRole, address(0));
+
+        vm.prank(feeManagerRole);
+        vm.expectRevert(abi.encodeWithSelector(IFeeManager.TreasuryNotSet.selector));
+        feeManager.setManagementFee(100);
+    }
 }

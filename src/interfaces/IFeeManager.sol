@@ -26,7 +26,7 @@ interface IFeeManager {
 
     /// @notice Emitted when the management fee is set
     /// @param fee The fee that was set
-    event ManagementFeeSet(uint128 fee);
+    event ManagementFeeSet(uint256 fee);
 
     /// @notice Emitted when a treasury fee is set for a specific action
     /// @param action The action that the fee was set for
@@ -76,10 +76,11 @@ interface IFeeManager {
     /// @notice Sets the management fee
     /// @param fee Management fee, 100_00 is 100%
     /// @dev Only `FEE_MANAGER_ROLE` can call this function
-    function setManagementFee(uint128 fee) external;
+    function setManagementFee(uint256 fee) external;
 
-    /// @notice Sets the address of the treasury. The treasury receives all treasury fees from the LeverageManager. If the
-    ///         treasury is set to the zero address, the treasury fees are reset to 0 as well
+    /// @notice Sets the address of the treasury. The treasury receives all treasury and management fees from the
+    /// LeverageManager. If the treasury is set to the zero address, the treasury and management fees are reset to 0 as
+    /// well
     /// @param treasury The address of the treasury
     /// @dev Only `FEE_MANAGER_ROLE` can call this function
     function setTreasury(address treasury) external;
