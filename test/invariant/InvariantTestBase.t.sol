@@ -32,12 +32,22 @@ import {MockERC20} from "test/unit/mock/MockERC20.sol";
 import {MockMorphoOracle} from "test/unit/mock/MockMorphoOracle.sol";
 
 abstract contract InvariantTestBase is Test {
+    struct MorphoInitMarketParams {
+        address collateralAsset;
+        address debtAsset;
+        uint256 initOraclePrice;
+        uint256 lltv;
+        uint256 initMarketSupply;
+        uint256 initMarketCollateral;
+        uint256 initMarketDebt;
+    }
+
     uint256 public BASE_RATIO;
 
     address public defaultAdmin = makeAddr("defaultAdmin");
     address public manager = makeAddr("manager");
     address public feeManagerRole = makeAddr("feeManagerRole");
-
+    address public treasury = makeAddr("treasury");
     IMorpho public morpho;
     address public irm;
 
@@ -62,6 +72,9 @@ abstract contract InvariantTestBase is Test {
         vm.startPrank(defaultAdmin);
         leverageManager.grantRole(leverageManager.FEE_MANAGER_ROLE(), feeManagerRole);
         vm.stopPrank();
+
+        vm.prank(feeManagerRole);
+        leverageManager.setTreasury(treasury);
 
         BASE_RATIO = leverageManager.BASE_RATIO();
 
@@ -120,15 +133,18 @@ abstract contract InvariantTestBase is Test {
         leverageTokens[0] = _initLeverageToken(
             "Strategy A",
             "STRAT-A",
-            address(collateralAsset),
-            address(debtAsset),
-            1e27, // 1 ETH = 1000 USDC
-            0.86e18, // 86% LLTV
-            type(uint128).max / 2, // Half of the maximum amount allowed by Morpho (uint128.max)
-            20000e18, // 20000 ETH initial collateral (== 20m USDC)
-            10000000e6, // 10m USDC initial debt
-            1_00,
-            1_00,
+            MorphoInitMarketParams({
+                collateralAsset: address(collateralAsset),
+                debtAsset: address(debtAsset),
+                initOraclePrice: 1e27, // 1 ETH = 1000 USDC
+                lltv: 0.86e18, // 86% LLTV
+                // Half of the maximum amount allowed by Morpho (uint128.max). 1e6 for the virtual offset they use.
+                initMarketSupply: type(uint128).max / 1e6 / 2,
+                initMarketCollateral: 20000e18, // 20000 ETH initial collateral (== 20m USDC)
+                initMarketDebt: 10000000e6 // 10m USDC initial debt
+            }),
+            100, // 1% mint token fee
+            100, // 1% redeem token fee
             RebalanceAdapter.RebalanceAdapterInitParams({
                 owner: address(this),
                 authorizedCreator: address(this),
@@ -157,20 +173,12 @@ abstract contract InvariantTestBase is Test {
     function _initLeverageToken(
         string memory name,
         string memory symbol,
-        address collateralAsset,
-        address debtAsset,
-        uint256 initOraclePrice,
-        uint256 lltv,
-        uint256 initMarketSupply,
-        uint256 initMarketCollateral,
-        uint256 initMarketDebt,
+        MorphoInitMarketParams memory marketParams,
         uint256 mintTokenFee,
         uint256 redeemTokenFee,
         RebalanceAdapter.RebalanceAdapterInitParams memory initParams
     ) internal returns (ILeverageToken leverageToken) {
-        Id morphoMarketId = _initMorphoMarket(
-            collateralAsset, debtAsset, initOraclePrice, lltv, initMarketSupply, initMarketCollateral, initMarketDebt
-        );
+        Id morphoMarketId = _initMorphoMarket(marketParams);
 
         ILendingAdapter lendingAdapter = new MorphoLendingAdapter(leverageManager, morpho);
         MorphoLendingAdapter(address(lendingAdapter)).initialize(morphoMarketId, address(this));
@@ -193,45 +201,37 @@ abstract contract InvariantTestBase is Test {
         return leverageManager.createNewLeverageToken(config, name, symbol);
     }
 
-    function _initMorphoMarket(
-        address collateralAsset,
-        address debtAsset,
-        uint256 initOraclePrice,
-        uint256 lltv,
-        uint256 initMarketSupply,
-        uint256 initMarketCollateral,
-        uint256 initMarketDebt
-    ) internal returns (Id) {
+    function _initMorphoMarket(MorphoInitMarketParams memory marketInitParams) internal returns (Id) {
         vm.prank(defaultAdmin);
-        morpho.enableLltv(lltv);
+        morpho.enableLltv(marketInitParams.lltv);
 
-        MockMorphoOracle oracle = new MockMorphoOracle(initOraclePrice);
+        MockMorphoOracle oracle = new MockMorphoOracle(marketInitParams.initOraclePrice);
 
         MarketParams memory marketParams = MarketParams({
-            loanToken: address(debtAsset),
-            collateralToken: address(collateralAsset),
+            loanToken: marketInitParams.debtAsset,
+            collateralToken: marketInitParams.collateralAsset,
             oracle: address(oracle),
             irm: irm,
-            lltv: lltv
+            lltv: marketInitParams.lltv
         });
 
         // Note: This will revert if a market has already been created with the same params.
         morpho.createMarket(marketParams);
 
         // Add supply to the market.
-        deal(address(debtAsset), address(this), initMarketSupply);
-        IERC20(debtAsset).approve(address(morpho), initMarketSupply);
-        morpho.supply(marketParams, initMarketSupply, 0, address(this), bytes(""));
+        deal(address(marketInitParams.debtAsset), address(this), marketInitParams.initMarketSupply);
+        IERC20(marketInitParams.debtAsset).approve(address(morpho), marketInitParams.initMarketSupply);
+        morpho.supply(marketParams, marketInitParams.initMarketSupply, 0, address(this), bytes(""));
 
         // Add collateral to the market.
-        deal(address(collateralAsset), address(this), initMarketCollateral);
-        IERC20(collateralAsset).approve(address(morpho), initMarketCollateral);
-        morpho.supplyCollateral(marketParams, initMarketCollateral, address(this), bytes(""));
+        deal(address(marketInitParams.collateralAsset), address(this), marketInitParams.initMarketCollateral);
+        IERC20(marketInitParams.collateralAsset).approve(address(morpho), marketInitParams.initMarketCollateral);
+        morpho.supplyCollateral(marketParams, marketInitParams.initMarketCollateral, address(this), bytes(""));
 
         // Add debt to the market.
-        deal(address(debtAsset), address(this), initMarketDebt);
-        IERC20(debtAsset).approve(address(morpho), initMarketDebt);
-        morpho.borrow(marketParams, initMarketDebt, 0, address(this), address(this));
+        deal(address(marketInitParams.debtAsset), address(this), marketInitParams.initMarketDebt);
+        IERC20(marketInitParams.debtAsset).approve(address(morpho), marketInitParams.initMarketDebt);
+        morpho.borrow(marketParams, marketInitParams.initMarketDebt, 0, address(this), address(this));
 
         return MarketParamsLib.id(marketParams);
     }
