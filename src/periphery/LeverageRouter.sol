@@ -233,16 +233,16 @@ contract LeverageRouter is ILeverageRouter {
 
         // Redeem the equity from the leverage token
         SafeERC20.forceApprove(debtAsset, address(leverageManager), debtLoanAmount);
-        uint256 collateralWithdrawn =
-            leverageManager.redeem(params.token, params.equityInCollateralAsset, params.maxShares).collateral;
+        ActionData memory redeemData =
+            leverageManager.redeem(params.token, params.equityInCollateralAsset, params.maxShares);
 
         // Swap the collateral asset received from the redeem to the debt asset, used to repay the flash loan
-        SafeERC20.forceApprove(collateralAsset, address(swapper), collateralWithdrawn);
+        SafeERC20.forceApprove(collateralAsset, address(swapper), redeemData.collateral);
         uint256 collateralAmountSwapped =
-            swapper.swapExactOutput(collateralAsset, debtLoanAmount, collateralWithdrawn, params.swapContext);
+            swapper.swapExactOutput(collateralAsset, debtLoanAmount, redeemData.collateral, params.swapContext);
 
         // Check if the amount of collateral swapped to repay the flash loan is greater than the allowed cost
-        uint256 remainingCollateral = collateralWithdrawn - collateralAmountSwapped;
+        uint256 remainingCollateral = redeemData.collateral - collateralAmountSwapped;
         if (remainingCollateral < params.equityInCollateralAsset - params.maxSwapCostInCollateralAsset) {
             revert MaxSwapCostExceeded(
                 params.equityInCollateralAsset - remainingCollateral, params.maxSwapCostInCollateralAsset
@@ -250,6 +250,10 @@ contract LeverageRouter is ILeverageRouter {
         } else if (remainingCollateral > 0) {
             SafeERC20.safeTransfer(collateralAsset, params.sender, remainingCollateral);
         }
+
+        // Check if there are any remaining shares and return them to the sender
+        uint256 remainingShares = params.maxShares - redeemData.shares;
+        SafeERC20.safeTransfer(params.token, params.sender, remainingShares);
 
         // Approve morpho to transfer assets to repay the flash loan
         SafeERC20.forceApprove(debtAsset, address(morpho), debtLoanAmount);

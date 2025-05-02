@@ -73,6 +73,7 @@ contract OnMorphoFlashLoanTest is LeverageRouterTest {
             equityInCollateralAsset,
             requiredDebt,
             requiredCollateral - equityInCollateralAsset,
+            shares,
             shares
         );
 

@@ -37,7 +37,12 @@ contract RedeemTest is LeverageRouterTest {
         );
 
         _mockLeverageManagerRedeem(
-            requiredCollateral, equityInCollateralAsset, requiredDebt, requiredCollateralForSwap, redeemShares
+            requiredCollateral,
+            equityInCollateralAsset,
+            requiredDebt,
+            requiredCollateralForSwap,
+            redeemShares,
+            redeemShares
         );
 
         _mint(
@@ -111,7 +116,7 @@ contract RedeemTest is LeverageRouterTest {
         );
 
         _mockLeverageManagerRedeem(
-            requiredCollateral, equityInCollateralAsset, requiredDebt, requiredCollateralForSwap, shares
+            requiredCollateral, equityInCollateralAsset, requiredDebt, requiredCollateralForSwap, shares, shares
         );
 
         _mint(
@@ -155,5 +160,44 @@ contract RedeemTest is LeverageRouterTest {
                 })
             })
         );
+    }
+
+    function test_redeem_RemainingSharesAreReturnedToSender() public {
+        uint256 totalShares = 60 ether;
+        uint256 redeemShares = totalShares / 2;
+        uint256 redeemEquityInCollateralAsset = 15 ether;
+
+        // Mock the redeem to burn half of the user's shares. Other values are mocked and don't matter for this test
+        _mockLeverageManagerRedeem(
+            30 ether, redeemEquityInCollateralAsset, 15 ether, 15 ether, redeemShares, totalShares
+        );
+
+        _mint(30 ether, 60 ether, 30 ether, 30 ether, totalShares);
+        leverageToken.approve(address(leverageRouter), totalShares);
+
+        // The total shares are passed as the maxShares parameter
+        leverageRouter.redeem(
+            leverageToken,
+            redeemEquityInCollateralAsset,
+            totalShares,
+            redeemEquityInCollateralAsset,
+            ISwapAdapter.SwapContext({
+                path: new address[](0),
+                encodedPath: new bytes(0),
+                fees: new uint24[](0),
+                tickSpacing: new int24[](0),
+                exchange: ISwapAdapter.Exchange.AERODROME,
+                exchangeAddresses: ISwapAdapter.ExchangeAddresses({
+                    aerodromeRouter: address(0),
+                    aerodromePoolFactory: address(0),
+                    aerodromeSlipstreamRouter: address(0),
+                    uniswapSwapRouter02: address(0),
+                    uniswapV2Router02: address(0)
+                })
+            })
+        );
+
+        // Half of the user's shares were burned, and the other half was returned
+        assertEq(leverageToken.balanceOf(address(this)), redeemShares);
     }
 }
