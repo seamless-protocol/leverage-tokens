@@ -8,3 +8,10 @@ out = "out"
 libs = ["lib"]
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+
+[profile.lite]
+optimizer = false # Speed up compilation for faster builds.
+via-ir = false # Speed up compilation for faster builds.
+
+[invariant]
+show_metrics=true

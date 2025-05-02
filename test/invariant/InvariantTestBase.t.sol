@@ -19,9 +19,8 @@ import {LeverageManager} from "src/LeverageManager.sol";
 import {LeverageToken} from "src/LeverageToken.sol";
 import {MorphoLendingAdapter} from "src/lending/MorphoLendingAdapter.sol";
 import {RebalanceAdapter} from "src/rebalance/RebalanceAdapter.sol";
-import {ExternalAction, LeverageTokenConfig} from "src/types/DataTypes.sol";
+import {ExternalAction, LeverageTokenConfig, LeverageTokenState} from "src/types/DataTypes.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
-import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
 import {AdaptiveCurveIrm} from "test/invariant/morpho/AdaptiveCurveIrm.sol";
@@ -76,6 +75,8 @@ abstract contract InvariantTestBase is Test {
         vm.prank(feeManagerRole);
         leverageManager.setTreasury(treasury);
 
+        // TODO: Set treasury action and management fees
+
         BASE_RATIO = leverageManager.BASE_RATIO();
 
         // Deploy Morpho
@@ -120,6 +121,7 @@ abstract contract InvariantTestBase is Test {
         selectors[2] = LeverageManagerHandler.addCollateral.selector;
         selectors[3] = LeverageManagerHandler.repayDebt.selector;
         selectors[4] = LeverageManagerHandler.updateOraclePrice.selector;
+        // TODO: Add selectors for fuzzing over fees (token action, treasury action, and management fees)
         return selectors;
     }
 
@@ -265,5 +267,107 @@ abstract contract InvariantTestBase is Test {
         _morpho.setOwner(defaultAdmin);
 
         return _morpho;
+    }
+
+    function _getMintDataDebugString(LeverageManagerHandler.MintActionData memory mintData)
+        internal
+        pure
+        returns (string memory)
+    {
+        return string.concat(
+            " mintData.leverageToken: ",
+            Strings.toHexString(address(mintData.leverageToken)),
+            " mintData.equityInCollateralAsset: ",
+            Strings.toString(mintData.equityInCollateralAsset),
+            " mintData.equityInDebtAsset: ",
+            Strings.toString(mintData.equityInDebtAsset)
+        );
+    }
+
+    function _getStateBeforeDebugString(LeverageManagerHandler.LeverageTokenStateData memory stateBefore)
+        internal
+        pure
+        returns (string memory)
+    {
+        return string.concat(
+            " stateBefore.leverageToken: ",
+            Strings.toHexString(address(stateBefore.leverageToken)),
+            " stateBefore.collateral: ",
+            Strings.toString(stateBefore.collateral),
+            " stateBefore.collateralInDebtAsset: ",
+            Strings.toString(stateBefore.collateralInDebtAsset),
+            " stateBefore.debt: ",
+            Strings.toString(stateBefore.debt),
+            " stateBefore.equityInCollateralAsset: ",
+            Strings.toString(stateBefore.equityInCollateralAsset),
+            " stateBefore.equityInDebtAsset: ",
+            Strings.toString(stateBefore.equityInDebtAsset),
+            " stateBefore.collateralRatio: ",
+            Strings.toString(stateBefore.collateralRatio),
+            " stateBefore.totalSupply: ",
+            Strings.toString(stateBefore.totalSupply)
+        );
+    }
+
+    function _getStateAfterDebugString(LeverageTokenState memory stateAfter) internal pure returns (string memory) {
+        return string.concat(
+            " stateAfter.collateralInDebtAsset: ",
+            Strings.toString(stateAfter.collateralInDebtAsset),
+            " stateAfter.debt: ",
+            Strings.toString(stateAfter.debt),
+            " stateAfter.equity: ",
+            Strings.toString(stateAfter.equity),
+            " stateAfter.collateralRatio: ",
+            Strings.toString(stateAfter.collateralRatio)
+        );
+    }
+
+    /// @dev The allowed slippage in collateral ratio of the strategy after a mint should scale with the size of the
+    /// min(initial debt in the strategy, initial collateral in the strategy), or equity being added in cases where the
+    /// target ratio should be used, as smaller strategies may incur a higher collateral ratio delta after the mint due to
+    /// precision loss.
+    ///
+    /// For example, if the initial collateral is 3 and the initial debt is 1 (with collateral and debt normalized) then the
+    /// collateral ratio is 300000000, with 2 shares total supply. If a mint of 1 equity is made, then the required collateral
+    /// is 2 and the required debt is 0, so the resulting collateral is 5 and the debt is 1:
+    ///
+    ///    sharesMinted = convertToShares(1) = equityToAdd * (existingSharesTotalSupply) / (existingEquity) = 1 * 2 / 2 = 1
+    ///    collateralToAdd = existingCollateral * sharesMinted / sharesTotalSupply = 3 * 1 / 2 = 2 (1.5 rounded up)
+    ///    debtToBorrow = existingDebt * sharesMinted / sharesTotalSupply = 1 * 1 / 2 = 0 (0.5 rounded down)
+    ///
+    /// The resulting collateral ratio is 500000000, which is a ~+66.67% change from the initial collateral ratio.
+    ///
+    /// As the intial debt scales up in size, the allowed slippage should scale down as more precision can be achieved
+    /// for the collateral ratio which is on 18 decimals:
+    ///    initialDebt < 100: 1e18 (100% slippage)
+    ///    initialDebt < 1000: 0.1e18 (10% slippage)
+    ///    initialDebt < 10000: 0.01e18 (1% slippage)
+    ///    initialDebt < 100000: 0.001e18 (0.1% slippage)
+    ///    initialDebt < 1000000: 0.0001e18 (0.01% slippage)
+    ///    initialDebt < 10000000: 0.00001e18 (0.001% slippage)
+    ///    initialDebt < 100000000: 0.000001e18 (0.0001% slippage)
+    ///    initialDebt < 1000000000: 0.0000001e18 (0.00001% slippage)
+    ///    initialDebt >= 1000000000: 0.00000001e18 (0.000001% slippage)
+    ///
+    /// Note: We can at minimum support up to 0.00000001e18 (0.000001% slippage) due to the base collateral ratio
+    ///       being 1e8
+    function _getAllowedCollateralRatioSlippage(uint256 amount)
+        internal
+        pure
+        returns (uint256 allowedSlippagePercentage)
+    {
+        if (amount == 0) {
+            return 1e18;
+        }
+
+        uint256 i = Math.log10(amount);
+
+        // This is the minimum slippage that we can support due to the precision of the collateral ratio being
+        // 1e8 (1e18 / 1e8 = 1e10 = 0.00000001e18)
+        if (i > 8) return 0.00000001e18;
+
+        // If i <= 1, that means amount < 100, thus slippage = 1e18
+        // Otherwise slippage = 1e18 / (10^(i - 1))
+        return (i <= 1) ? 1e18 : (1e18 / (10 ** (i - 1)));
     }
 }
