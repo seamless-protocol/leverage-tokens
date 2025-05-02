@@ -11,20 +11,19 @@ import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 
 contract SetManagementFeeTest is FeeManagerTest {
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_setManagementFee(uint128 managementFee) public {
-        managementFee = uint128(bound(managementFee, 0, MAX_FEE));
+    function testFuzz_setManagementFee(uint256 managementFee) public {
+        managementFee = bound(managementFee, 0, MAX_FEE);
 
         vm.expectEmit(true, true, true, true);
         emit IFeeManager.ManagementFeeSet(managementFee);
-        vm.prank(feeManagerRole);
-        feeManager.setManagementFee(managementFee);
+        _setManagementFee(feeManagerRole, managementFee);
 
         assertEq(feeManager.getManagementFee(), managementFee);
     }
 
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_setManagementFee_RevertIf_FeeTooHigh(uint128 managementFee) public {
-        managementFee = uint128(bound(managementFee, MAX_FEE + 1, type(uint128).max));
+    function testFuzz_setManagementFee_RevertIf_FeeTooHigh(uint256 managementFee) public {
+        managementFee = bound(managementFee, MAX_FEE + 1, type(uint256).max);
 
         vm.expectRevert(abi.encodeWithSelector(IFeeManager.FeeTooHigh.selector, managementFee, MAX_FEE));
         vm.prank(feeManagerRole);
@@ -40,8 +39,7 @@ contract SetManagementFeeTest is FeeManagerTest {
                 IAccessControl.AccessControlUnauthorizedAccount.selector, caller, feeManager.FEE_MANAGER_ROLE()
             )
         );
-        vm.prank(caller);
-        feeManager.setManagementFee(0);
+        _setManagementFee(caller, 0);
     }
 
     function test_setManagementFee_RevertIf_TreasuryNotSet() public {

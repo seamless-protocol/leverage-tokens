@@ -7,8 +7,7 @@ import {FeeManagerTest} from "test/unit/FeeManager/FeeManager.t.sol";
 
 contract ChargeManagementFeeTest is FeeManagerTest {
     function test_chargeManagementFee() public {
-        vm.prank(feeManagerRole);
-        feeManager.setManagementFee(0.1e4); // 10% management fee
+        _setManagementFee(feeManagerRole, 0.1e4); // 10% management fee
 
         uint256 totalSupply = 1000;
         leverageToken.mint(address(this), totalSupply);
@@ -48,8 +47,7 @@ contract ChargeManagementFeeTest is FeeManagerTest {
     }
 
     function test_chargeManagementFee_ZeroFee() public {
-        vm.prank(feeManagerRole);
-        feeManager.setManagementFee(0);
+        _setManagementFee(feeManagerRole, 0);
 
         uint256 totalSupply = 1000;
         leverageToken.mint(address(this), totalSupply);

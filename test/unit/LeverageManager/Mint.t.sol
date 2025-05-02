@@ -30,8 +30,7 @@ contract MintTest is PreviewActionTest {
         leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Mint, 0.05e4); // 5% fee
         _setTreasuryActionFee(ExternalAction.Mint, 0.1e4); // 10% fee
 
-        vm.prank(feeManagerRole);
-        leverageManager.setManagementFee(0.1e4); // 10% management fee
+        _setManagementFee(feeManagerRole, 0.1e4); // 10% management fee
         feeManager.chargeManagementFee(leverageToken);
 
         MockLeverageManagerStateForAction memory beforeState =

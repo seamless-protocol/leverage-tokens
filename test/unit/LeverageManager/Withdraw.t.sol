@@ -14,8 +14,7 @@ contract RedeemTest is PreviewActionTest {
         leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Redeem, 0.05e4); // 5% fee
         _setTreasuryActionFee(ExternalAction.Redeem, 0.05e4); // 5% fee
 
-        vm.prank(feeManagerRole);
-        leverageManager.setManagementFee(0.1e4); // 10% management fee
+        _setManagementFee(feeManagerRole, 0.1e4); // 10% management fee
         feeManager.chargeManagementFee(leverageToken);
 
         // 1:2 exchange rate

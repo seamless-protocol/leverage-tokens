@@ -21,11 +21,10 @@ contract ComputeCollateralAndDebtForActionTest is PreviewActionTest {
         assertEq(computedDebt, 20 ether);
     }
 
-    function testFuzz_computeCollateralAndDebtForAction_Mint_WithManagementFee(uint128 managementFee) public {
-        managementFee = uint128(bound(managementFee, 0, MAX_FEE));
+    function testFuzz_computeCollateralAndDebtForAction_Mint_WithManagementFee(uint256 managementFee) public {
+        managementFee = bound(managementFee, 0, MAX_FEE);
 
-        vm.prank(feeManagerRole);
-        feeManager.setManagementFee(managementFee);
+        _setManagementFee(feeManagerRole, managementFee);
 
         uint256 equityInCollateralAsset = 80 ether;
         MockLeverageManagerStateForAction memory beforeState =
@@ -60,11 +59,10 @@ contract ComputeCollateralAndDebtForActionTest is PreviewActionTest {
         assertEq(computedDebt, 20 ether);
     }
 
-    function testFuzz_computeCollateralAndDebtForAction_Redeem_WithManagementFee(uint128 managementFee) public {
-        managementFee = uint128(bound(managementFee, 0, MAX_FEE));
+    function testFuzz_computeCollateralAndDebtForAction_Redeem_WithManagementFee(uint256 managementFee) public {
+        managementFee = bound(managementFee, 0, MAX_FEE);
 
-        vm.prank(feeManagerRole);
-        feeManager.setManagementFee(managementFee);
+        _setManagementFee(feeManagerRole, managementFee);
 
         uint256 equityInCollateralAsset = 80 ether;
         MockLeverageManagerStateForAction memory beforeState =
