@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
+// External imports
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 // Internal imports
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
@@ -175,11 +178,17 @@ contract RedeemTest is LeverageRouterTest {
         _mint(30 ether, 60 ether, 30 ether, 30 ether, totalShares);
         leverageToken.approve(address(leverageRouter), totalShares);
 
-        // The total shares are passed as the maxShares parameter
+        // Expect the total shares to be transferred to the LeverageRouter, and the remaining shares to be returned
+        // to the sender
+        vm.expectEmit(true, true, true, true);
+        emit IERC20.Transfer(address(this), address(leverageRouter), totalShares);
+        vm.expectEmit(true, true, true, true);
+        emit IERC20.Transfer(address(leverageRouter), address(this), totalShares - redeemShares);
+
         leverageRouter.redeem(
             leverageToken,
             redeemEquityInCollateralAsset,
-            totalShares,
+            totalShares, // The total shares are passed as the maxShares parameter
             redeemEquityInCollateralAsset,
             ISwapAdapter.SwapContext({
                 path: new address[](0),
