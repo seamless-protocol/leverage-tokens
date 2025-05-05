@@ -59,7 +59,7 @@ contract MintInvariants is InvariantTestBase {
             _assertBeforeSharesValue(stateBefore, mintData, stateAfter);
             _assertMintedSharesValue(lendingAdapter, mintData, stateBefore, stateAfter, sharesMinted);
         } else if (stateBefore.totalSupply == 0 && sharesMinted > 0) {
-            _assertMintedSharesEqualEquity(lendingAdapter, mintData, stateBefore, stateAfter, sharesMinted);
+            _assertMintedSharesEqualTotalEquity(lendingAdapter, mintData, stateBefore, stateAfter, sharesMinted);
         }
     }
 
@@ -123,14 +123,14 @@ contract MintInvariants is InvariantTestBase {
         );
     }
 
-    function _assertMintedSharesEqualEquity(
+    function _assertMintedSharesEqualTotalEquity(
         ILendingAdapter lendingAdapter,
         LeverageManagerHandler.MintActionData memory mintData,
         LeverageManagerHandler.LeverageTokenStateData memory stateBefore,
         LeverageTokenState memory stateAfter,
         uint256 sharesMinted
     ) internal view {
-        uint256 mintedSharesValue = _convertToAssets(mintData.leverageToken, sharesMinted, Math.Rounding.Ceil);
+        uint256 mintedSharesValue = _convertToAssets(mintData.leverageToken, sharesMinted, Math.Rounding.Floor);
         assertEq(
             mintedSharesValue,
             lendingAdapter.getEquityInCollateralAsset(),
