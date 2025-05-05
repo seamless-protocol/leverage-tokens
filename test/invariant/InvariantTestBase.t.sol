@@ -41,6 +41,8 @@ abstract contract InvariantTestBase is Test {
         uint256 initMarketDebt;
     }
 
+    uint256 public constant MAX_FEE = 1e4;
+
     uint256 public BASE_RATIO;
 
     address public defaultAdmin = makeAddr("defaultAdmin");
@@ -269,18 +271,31 @@ abstract contract InvariantTestBase is Test {
         return _morpho;
     }
 
-    function _getMintDataDebugString(LeverageManagerHandler.MintActionData memory mintData)
-        internal
-        pure
-        returns (string memory)
+    function _convertToAssets(ILeverageToken leverageToken, uint256 shares, Math.Rounding rounding)
+        public
+        view
+        returns (uint256)
     {
+        return Math.mulDiv(
+            shares,
+            leverageManager.getLeverageTokenLendingAdapter(leverageToken).getEquityInCollateralAsset(),
+            leverageToken.totalSupply(),
+            rounding
+        );
+    }
+
+    function _getInvariantDescriptionString(
+        string memory invariantDescription,
+        LeverageManagerHandler.LeverageTokenStateData memory stateBefore,
+        LeverageTokenState memory stateAfter
+    ) internal pure returns (string memory) {
         return string.concat(
-            " mintData.leverageToken: ",
-            Strings.toHexString(address(mintData.leverageToken)),
-            " mintData.equityInCollateralAsset: ",
-            Strings.toString(mintData.equityInCollateralAsset),
-            " mintData.equityInDebtAsset: ",
-            Strings.toString(mintData.equityInDebtAsset)
+            "Invariant Violated: ",
+            invariantDescription,
+            " ",
+            _getStateBeforeDebugString(stateBefore),
+            " ",
+            _getStateAfterDebugString(stateAfter)
         );
     }
 

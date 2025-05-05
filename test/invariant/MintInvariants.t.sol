@@ -5,20 +5,19 @@ pragma solidity 0.8.26;
 import {stdMath} from "forge-std/StdMath.sol";
 
 // Dependency imports
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IOracle} from "@morpho-blue/interfaces/IOracle.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 // Internal imports
+import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
-import {LeverageTokenState} from "src/types/DataTypes.sol";
+import {ExternalAction, LeverageTokenState} from "src/types/DataTypes.sol";
 import {LeverageManagerHandler} from "test/invariant/handlers/LeverageManagerHandler.t.sol";
 import {InvariantTestBase} from "test/invariant/InvariantTestBase.t.sol";
 
-// Mint Invariants:
-// - Collateral ratio must equal the collateral ratio before the mint (within some allowed precision loss margin)
-// - Shares minted to the user must be equal to the amount of equity added to the LT, minus the token action fee and treasury fee
-// - Shares before the mint must be worth greater than or equal to the value before the mint (share price >= before)
 contract MintInvariants is InvariantTestBase {
     function invariant_mint() public view {
         LeverageManagerHandler.LeverageTokenStateData memory stateBefore =
@@ -44,6 +43,73 @@ contract MintInvariants is InvariantTestBase {
         if (type(uint256).max / IOracle(oracle).price() >= lendingAdapter.getCollateral()) {
             LeverageTokenState memory stateAfter = leverageManager.getLeverageTokenState(mintData.leverageToken);
             _assertCollateralRatioInvariants(mintData, stateBefore, stateAfter, rebalanceAdapter);
+
+            _assertSharesInvariants(lendingAdapter, mintData, stateBefore, stateAfter);
+        }
+    }
+
+    function _assertSharesInvariants(
+        ILendingAdapter lendingAdapter,
+        LeverageManagerHandler.MintActionData memory mintData,
+        LeverageManagerHandler.LeverageTokenStateData memory stateBefore,
+        LeverageTokenState memory stateAfter
+    ) internal view {
+        uint256 totalSupplyAfter = mintData.leverageToken.totalSupply();
+        uint256 sharesMinted = totalSupplyAfter - stateBefore.totalSupply;
+
+        if (stateBefore.totalSupply != 0) {
+            // When the total supply before is 0, this invariant fails as zero shares are always worthless
+            assertGe(
+                _convertToAssets(stateBefore.leverageToken, stateBefore.totalSupply, Math.Rounding.Ceil),
+                stateBefore.equityInCollateralAsset,
+                string.concat(
+                    "Invariant Violated: The value of the total supply of shares before the mint must be greater than or equal to before the new mint.",
+                    _getStateBeforeDebugString(stateBefore),
+                    _getStateAfterDebugString(stateAfter),
+                    _getMintDataDebugString(mintData)
+                )
+            );
+
+            uint256 mintedSharesValue = _convertToAssets(mintData.leverageToken, sharesMinted, Math.Rounding.Floor);
+            uint256 deltaEquityInCollateralAsset =
+                lendingAdapter.getEquityInCollateralAsset() - stateBefore.equityInCollateralAsset;
+
+            // This invariant can fail when there is no shares and > 0 equity before the mint due to actors adding collateral to the LT for free
+            assertLe(
+                mintedSharesValue,
+                deltaEquityInCollateralAsset,
+                string.concat(
+                    "Invariant Violated: The value of the shares minted must be less than or equal to the amount of equity added to the LT, due to fees and rounding.",
+                    _getStateBeforeDebugString(stateBefore),
+                    _getStateAfterDebugString(stateAfter),
+                    _getMintDataDebugString(mintData)
+                )
+            );
+        } else if (stateBefore.totalSupply == 0 && sharesMinted > 0) {
+            uint256 mintedSharesValue = _convertToAssets(mintData.leverageToken, sharesMinted, Math.Rounding.Floor);
+            assertEq(
+                mintedSharesValue,
+                lendingAdapter.getEquityInCollateralAsset(),
+                string.concat(
+                    "Invariant Violated: When there are no shares before the mint, the value of the shares minted must be equal to the total equity in the LT.",
+                    _getStateBeforeDebugString(stateBefore),
+                    _getStateAfterDebugString(stateAfter),
+                    _getMintDataDebugString(mintData)
+                )
+            );
+        }
+
+        if (sharesMinted == 0 && stateBefore.totalSupply != 0) {
+            assertGe(
+                _convertToAssets(mintData.leverageToken, stateBefore.totalSupply, Math.Rounding.Floor),
+                stateBefore.equityInCollateralAsset,
+                string.concat(
+                    "Invariant Violated: When no shares are minted, the value of the total supply of shares before the mint must be greater than or equal to the total equity in the LT before the mint call.",
+                    _getStateBeforeDebugString(stateBefore),
+                    _getStateAfterDebugString(stateAfter),
+                    _getMintDataDebugString(mintData)
+                )
+            );
         }
     }
 
@@ -93,5 +159,20 @@ contract MintInvariants is InvariantTestBase {
                 );
             }
         }
+    }
+
+    function _getMintDataDebugString(LeverageManagerHandler.MintActionData memory mintData)
+        internal
+        pure
+        returns (string memory)
+    {
+        return string.concat(
+            " mintData.leverageToken: ",
+            Strings.toHexString(address(mintData.leverageToken)),
+            " mintData.equityInCollateralAsset: ",
+            Strings.toString(mintData.equityInCollateralAsset),
+            " mintData.equityInDebtAsset: ",
+            Strings.toString(mintData.equityInDebtAsset)
+        );
     }
 }
