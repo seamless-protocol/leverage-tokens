@@ -5,7 +5,6 @@ pragma solidity 0.8.26;
 import {stdMath} from "forge-std/StdMath.sol";
 
 // Dependency imports
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IOracle} from "@morpho-blue/interfaces/IOracle.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
@@ -14,7 +13,7 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
-import {ExternalAction, LeverageTokenState} from "src/types/DataTypes.sol";
+import {LeverageTokenState} from "src/types/DataTypes.sol";
 import {LeverageManagerHandler} from "test/invariant/handlers/LeverageManagerHandler.t.sol";
 import {InvariantTestBase} from "test/invariant/InvariantTestBase.t.sol";
 
@@ -35,9 +34,8 @@ contract MintInvariants is InvariantTestBase {
 
         (,, address oracle,,) = lendingAdapter.marketParams();
 
-        // Check if lendingAdapter.convertCollateralToDebtAsset(total collateral) will overflow. If it does, we cannot
-        // check collateral ratio invariants without running into overflows, since calculating collateral ratio requires
-        // normalizing collateral and debt.
+        // Check if lendingAdapter.convertCollateralToDebtAsset(total collateral) will overflow. If it does,
+        // LeverageManager.getLeverageTokenState will overflow when calculating collateral ratio.
         // Note: Mints can still occur if ILendingAdapter.convertCollateralToDebtAsset(leverageToken collateral) overflows,
         //       because the logic in LeverageManager does not convert collateral to debt during a mint.
         if (type(uint256).max / IOracle(oracle).price() >= lendingAdapter.getCollateral()) {
@@ -71,14 +69,14 @@ contract MintInvariants is InvariantTestBase {
         LeverageTokenState memory stateAfter,
         IRebalanceAdapterBase rebalanceAdapter
     ) internal view {
-        // Check if the initial state is empty and equity is non-zero
+        // Check if the initial state was empty
         bool isInitialStateEmpty =
             (stateBefore.totalSupply == 0 || stateBefore.debt == 0) && stateBefore.collateral == 0;
         if (isInitialStateEmpty && mintData.equityInCollateralAsset != 0) {
             _assertInitialCollateralRatio(mintData, stateBefore, stateAfter, rebalanceAdapter);
         }
 
-        // Check if there is existing supply and debt
+        // Check if there was existing supply and debt
         bool hasExistingSupplyAndDebt = stateBefore.totalSupply != 0 && stateBefore.debt != 0;
         if (hasExistingSupplyAndDebt) {
             _assertCollateralRatioUnchanged(stateBefore, stateAfter, mintData);
@@ -132,7 +130,7 @@ contract MintInvariants is InvariantTestBase {
         LeverageTokenState memory stateAfter,
         uint256 sharesMinted
     ) internal view {
-        uint256 mintedSharesValue = _convertToAssets(mintData.leverageToken, sharesMinted, Math.Rounding.Floor);
+        uint256 mintedSharesValue = _convertToAssets(mintData.leverageToken, sharesMinted, Math.Rounding.Ceil);
         assertEq(
             mintedSharesValue,
             lendingAdapter.getEquityInCollateralAsset(),
