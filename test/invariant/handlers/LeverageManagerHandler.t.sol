@@ -12,9 +12,10 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
+import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {ActionData, LeverageTokenState} from "src/types/DataTypes.sol";
-import {MockLendingAdapter} from "test/unit/mock/MockLendingAdapter.sol";
 import {LeverageManagerHarness} from "test/unit/harness/LeverageManagerHarness.t.sol";
+import {MockMorphoOracle} from "test/unit/mock/MockMorphoOracle.sol";
 
 contract LeverageManagerHandler is Test {
     enum ActionType {
@@ -132,10 +133,12 @@ contract LeverageManagerHandler is Test {
 
     /// @dev Simulates someone adding collateral to the position held by the leverage token directly, not through the LeverageManager.
     function addCollateral(uint256 seed) public useLeverageToken {
-        MockLendingAdapter lendingAdapter =
-            MockLendingAdapter(address(leverageManager.getLeverageTokenLendingAdapter(currentLeverageToken)));
+        IMorphoLendingAdapter lendingAdapter =
+            IMorphoLendingAdapter(address(leverageManager.getLeverageTokenLendingAdapter(currentLeverageToken)));
+
         uint256 collateral = lendingAdapter.getCollateral();
-        IERC20 collateralAsset = lendingAdapter.collateralAsset();
+        (, address collateralAsset,,,) = lendingAdapter.marketParams();
+
         uint256 collateralToAdd = bound(seed, 0, type(uint128).max - collateral);
 
         _saveLeverageTokenState(
@@ -145,16 +148,18 @@ contract LeverageManagerHandler is Test {
         );
 
         deal(address(collateralAsset), address(this), collateralToAdd);
-        collateralAsset.approve(address(lendingAdapter), collateralToAdd);
+        IERC20(collateralAsset).approve(address(lendingAdapter), collateralToAdd);
         lendingAdapter.addCollateral(collateralToAdd);
     }
 
     /// @dev Simulates someone repaying debt from the position held by the leverage token directly, not through the LeverageManager.
     function repayDebt(uint256 seed) public useLeverageToken {
-        MockLendingAdapter lendingAdapter =
-            MockLendingAdapter(address(leverageManager.getLeverageTokenLendingAdapter(currentLeverageToken)));
+        IMorphoLendingAdapter lendingAdapter =
+            IMorphoLendingAdapter(address(leverageManager.getLeverageTokenLendingAdapter(currentLeverageToken)));
+
         uint256 debt = lendingAdapter.getDebt();
-        IERC20 debtAsset = lendingAdapter.debtAsset();
+        (address debtAsset,,,,) = lendingAdapter.marketParams();
+
         uint256 debtToRemove = bound(seed, 0, debt);
 
         _saveLeverageTokenState(
@@ -162,7 +167,7 @@ contract LeverageManagerHandler is Test {
         );
 
         deal(address(debtAsset), address(this), debtToRemove);
-        debtAsset.approve(address(lendingAdapter), debtToRemove);
+        IERC20(debtAsset).approve(address(lendingAdapter), debtToRemove);
         lendingAdapter.repay(debtToRemove);
     }
 
@@ -191,11 +196,13 @@ contract LeverageManagerHandler is Test {
 
     /// @dev Simulates updates to the oracle used by the lending adapter of a leverage token
     function updateOraclePrice(uint256 seed) public useLeverageToken {
-        MockLendingAdapter lendingAdapter =
-            MockLendingAdapter(address(leverageManager.getLeverageTokenLendingAdapter(currentLeverageToken)));
+        IMorphoLendingAdapter lendingAdapter =
+            IMorphoLendingAdapter(address(leverageManager.getLeverageTokenLendingAdapter(currentLeverageToken)));
 
-        uint256 newExchangeRate = bound(seed, 0, type(uint256).max);
-        lendingAdapter.mockConvertCollateralToDebtAssetExchangeRate(newExchangeRate);
+        (,, address oracle,,) = lendingAdapter.marketParams();
+
+        uint256 newPrice = bound(seed, 0, type(uint256).max);
+        MockMorphoOracle(oracle).setPrice(newPrice);
 
         _saveLeverageTokenState(currentLeverageToken, ActionType.UpdateOraclePrice, "");
     }
