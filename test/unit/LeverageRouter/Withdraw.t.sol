@@ -165,12 +165,13 @@ contract RedeemTest is LeverageRouterTest {
         );
     }
 
-    function test_redeem_RemainingSharesAreReturnedToSender() public {
+    function test_redeem_TransfersPreviewSharesNotMaxShares() public {
         uint256 totalShares = 60 ether;
         uint256 redeemShares = totalShares / 2;
         uint256 redeemEquityInCollateralAsset = 15 ether;
 
-        // Mock the redeem to burn half of the user's shares. Other values are mocked and don't matter for this test
+        // Mock the redeem to burn half of the user's shares (redeemShares). Other values are mocked and don't matter
+        // for this test
         _mockLeverageManagerRedeem(
             30 ether, redeemEquityInCollateralAsset, 15 ether, 15 ether, redeemShares, totalShares
         );
