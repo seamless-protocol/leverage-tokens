@@ -236,16 +236,16 @@ contract LeverageRouter is ILeverageRouter {
 
         // Redeem the equity from the leverage token
         SafeERC20.forceApprove(debtAsset, address(leverageManager), debtLoanAmount);
-        ActionData memory redeemData =
-            leverageManager.redeem(params.token, params.equityInCollateralAsset, params.maxShares);
+        uint256 collateralWithdrawn =
+            leverageManager.redeem(params.token, params.equityInCollateralAsset, params.maxShares).collateral;
 
         // Swap the collateral asset received from the redeem to the debt asset, used to repay the flash loan
-        SafeERC20.forceApprove(collateralAsset, address(swapper), redeemData.collateral);
+        SafeERC20.forceApprove(collateralAsset, address(swapper), collateralWithdrawn);
         uint256 collateralAmountSwapped =
-            swapper.swapExactOutput(collateralAsset, debtLoanAmount, redeemData.collateral, params.swapContext);
+            swapper.swapExactOutput(collateralAsset, debtLoanAmount, collateralWithdrawn, params.swapContext);
 
         // Check if the amount of collateral swapped to repay the flash loan is greater than the allowed cost
-        uint256 remainingCollateral = redeemData.collateral - collateralAmountSwapped;
+        uint256 remainingCollateral = collateralWithdrawn - collateralAmountSwapped;
         if (remainingCollateral < params.equityInCollateralAsset - params.maxSwapCostInCollateralAsset) {
             revert MaxSwapCostExceeded(
                 params.equityInCollateralAsset - remainingCollateral, params.maxSwapCostInCollateralAsset
