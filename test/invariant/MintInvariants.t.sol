@@ -62,11 +62,11 @@ contract MintInvariants is InvariantTestBase {
             assertGe(
                 _convertToAssets(stateBefore.leverageToken, stateBefore.totalSupply, Math.Rounding.Ceil),
                 stateBefore.equityInCollateralAsset,
-                string.concat(
-                    "Invariant Violated: The value of the total supply of shares before the mint must be greater than or equal to before the new mint.",
-                    _getStateBeforeDebugString(stateBefore),
-                    _getStateAfterDebugString(stateAfter),
-                    _getMintDataDebugString(mintData)
+                _getMintInvariantDescriptionString(
+                    "The value of the total supply of shares before the mint must be greater than or equal to their value before the mint.",
+                    stateBefore,
+                    stateAfter,
+                    mintData
                 )
             );
 
@@ -78,11 +78,11 @@ contract MintInvariants is InvariantTestBase {
             assertLe(
                 mintedSharesValue,
                 deltaEquityInCollateralAsset,
-                string.concat(
-                    "Invariant Violated: The value of the shares minted must be less than or equal to the amount of equity added to the LT, due to fees and rounding.",
-                    _getStateBeforeDebugString(stateBefore),
-                    _getStateAfterDebugString(stateAfter),
-                    _getMintDataDebugString(mintData)
+                _getMintInvariantDescriptionString(
+                    "The value of the shares minted must be less than or equal to the amount of equity added to the LT, due to fees and rounding.",
+                    stateBefore,
+                    stateAfter,
+                    mintData
                 )
             );
         } else if (stateBefore.totalSupply == 0 && sharesMinted > 0) {
@@ -90,11 +90,11 @@ contract MintInvariants is InvariantTestBase {
             assertEq(
                 mintedSharesValue,
                 lendingAdapter.getEquityInCollateralAsset(),
-                string.concat(
-                    "Invariant Violated: When there are no shares before the mint, the value of the shares minted must be equal to the total equity in the LT.",
-                    _getStateBeforeDebugString(stateBefore),
-                    _getStateAfterDebugString(stateAfter),
-                    _getMintDataDebugString(mintData)
+                _getMintInvariantDescriptionString(
+                    "When there are no shares before the mint, the value of the shares minted must be equal to the total equity in the LT.",
+                    stateBefore,
+                    stateAfter,
+                    mintData
                 )
             );
         }
@@ -103,11 +103,12 @@ contract MintInvariants is InvariantTestBase {
             assertGe(
                 _convertToAssets(mintData.leverageToken, stateBefore.totalSupply, Math.Rounding.Floor),
                 stateBefore.equityInCollateralAsset,
-                string.concat(
-                    "Invariant Violated: When no shares are minted, the value of the total supply of shares before the mint must be greater than or equal to the total equity in the LT before the mint call.",
-                    _getStateBeforeDebugString(stateBefore),
-                    _getStateAfterDebugString(stateAfter),
-                    _getMintDataDebugString(mintData)
+                _getMintInvariantDescriptionString(
+                    // Share value can increase if an actor calls mint with a value too low, so that it adds collateral but does not mint any shares.
+                    "When no shares are minted, the value of the total supply of shares before the mint must be greater than or equal to the total equity in the LT before the mint call.",
+                    stateBefore,
+                    stateAfter,
+                    mintData
                 )
             );
         }
@@ -132,11 +133,11 @@ contract MintInvariants is InvariantTestBase {
                     stateAfter.collateralRatio,
                     initialCollateralRatio,
                     _getAllowedCollateralRatioSlippage(mintData.equityInDebtAsset),
-                    string.concat(
-                        "Invariant Violated: Collateral ratio after mint into an empty LT with no collateral must be equal to the initial collateral ratio, within the allowed slippage.",
-                        _getStateBeforeDebugString(stateBefore),
-                        _getStateAfterDebugString(stateAfter),
-                        _getMintDataDebugString(mintData)
+                    _getMintInvariantDescriptionString(
+                        "Collateral ratio after mint into an empty LT with no collateral must be equal to the initial collateral ratio, within the allowed slippage.",
+                        stateBefore,
+                        stateAfter,
+                        mintData
                     )
                 );
             }
@@ -150,15 +151,30 @@ contract MintInvariants is InvariantTestBase {
                     stateAfter.collateralRatio,
                     stateBefore.collateralRatio,
                     _getAllowedCollateralRatioSlippage(Math.min(stateBefore.collateral, stateBefore.debt)),
-                    string.concat(
-                        "Invariant Violated: Collateral ratio after mint into a non-empty strategy must be equal to the initial collateral ratio, within the allowed slippage.",
-                        _getStateBeforeDebugString(stateBefore),
-                        _getStateAfterDebugString(stateAfter),
-                        _getMintDataDebugString(mintData)
+                    _getMintInvariantDescriptionString(
+                        "Collateral ratio after mint must be equal to the collateral ratio before the mint, within the allowed slippage.",
+                        stateBefore,
+                        stateAfter,
+                        mintData
                     )
                 );
             }
         }
+    }
+
+    function _getMintInvariantDescriptionString(
+        string memory invariantDescription,
+        LeverageManagerHandler.LeverageTokenStateData memory stateBefore,
+        LeverageTokenState memory stateAfter,
+        LeverageManagerHandler.MintActionData memory mintData
+    ) internal pure returns (string memory) {
+        return string.concat(
+            "Invariant Violated: ",
+            invariantDescription,
+            _getStateBeforeDebugString(stateBefore),
+            _getStateAfterDebugString(stateAfter),
+            _getMintDataDebugString(mintData)
+        );
     }
 
     function _getMintDataDebugString(LeverageManagerHandler.MintActionData memory mintData)
