@@ -41,7 +41,7 @@ contract MintInvariants is InvariantTestBase {
             LeverageTokenState memory stateAfter = leverageManager.getLeverageTokenState(mintData.leverageToken);
 
             _assertSharesInvariants(lendingAdapter, mintData, stateBefore, stateAfter);
-            _assertCollateralRatioInvariants(mintData, stateBefore, stateAfter, rebalanceAdapter);
+            _assertCollateralRatioInvariants(lendingAdapter, mintData, stateBefore, stateAfter, rebalanceAdapter);
         }
     }
 
@@ -59,13 +59,14 @@ contract MintInvariants is InvariantTestBase {
     }
 
     function _assertCollateralRatioInvariants(
+        ILendingAdapter lendingAdapter,
         LeverageManagerHandler.MintActionData memory mintData,
         LeverageManagerHandler.LeverageTokenStateData memory stateBefore,
         LeverageTokenState memory stateAfter,
         IRebalanceAdapterBase rebalanceAdapter
     ) internal view {
         _assertInitialCollateralRatio(mintData, stateBefore, stateAfter, rebalanceAdapter);
-        _assertCollateralRatioUnchanged(stateBefore, stateAfter, mintData);
+        _assertCollateralRatioChange(lendingAdapter, stateBefore, stateAfter, mintData);
     }
 
     function _assertBeforeSharesValue(
@@ -164,11 +165,12 @@ contract MintInvariants is InvariantTestBase {
         }
     }
 
-    function _assertCollateralRatioUnchanged(
+    function _assertCollateralRatioChange(
+        ILendingAdapter lendingAdapter,
         LeverageManagerHandler.LeverageTokenStateData memory stateBefore,
         LeverageTokenState memory stateAfter,
         LeverageManagerHandler.MintActionData memory mintData
-    ) internal pure {
+    ) internal view {
         if (stateBefore.totalSupply != 0 && stateBefore.debt != 0) {
             assertApproxEqRel(
                 stateAfter.collateralRatio,
@@ -176,6 +178,31 @@ contract MintInvariants is InvariantTestBase {
                 _getAllowedCollateralRatioSlippage(Math.min(stateBefore.collateral, stateBefore.debt)),
                 _getMintInvariantDescriptionString(
                     "Collateral ratio after mint must be equal to the collateral ratio before the mint, within the allowed slippage.",
+                    stateBefore,
+                    stateAfter,
+                    mintData
+                )
+            );
+
+            uint256 collateralRatioUsingDebtNormalized = Math.mulDiv(
+                lendingAdapter.getCollateral(),
+                BASE_RATIO,
+                lendingAdapter.convertDebtToCollateralAsset(lendingAdapter.getDebt()),
+                Math.Rounding.Floor
+            );
+            bool isCollateralRatioGe = collateralRatioUsingDebtNormalized
+                >= stateBefore.collateralRatioUsingDebtNormalized
+                || stateAfter.collateralRatio >= stateBefore.collateralRatio;
+            assertTrue(
+                isCollateralRatioGe,
+                _getMintInvariantDescriptionString(
+                    string.concat(
+                        "Collateral ratio after mint must be greater than or equal to the collateral ratio before the mint.",
+                        " Collateral ratio calculated by normalizing collateral to the debt asset: ",
+                        Strings.toString(collateralRatioUsingDebtNormalized),
+                        " Collateral ratio calculated by normalizing debt to the collateral asset: ",
+                        Strings.toString(stateAfter.collateralRatio)
+                    ),
                     stateBefore,
                     stateAfter,
                     mintData
