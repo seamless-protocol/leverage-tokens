@@ -13,7 +13,7 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
-import {LeverageTokenState} from "src/types/DataTypes.sol";
+import {ExternalAction, LeverageTokenState} from "src/types/DataTypes.sol";
 import {LeverageManagerHandler} from "test/invariant/handlers/LeverageManagerHandler.t.sol";
 import {InvariantTestBase} from "test/invariant/InvariantTestBase.t.sol";
 
@@ -31,7 +31,6 @@ contract MintInvariants is InvariantTestBase {
             leverageManager.getLeverageTokenRebalanceAdapter(mintData.leverageToken);
         IMorphoLendingAdapter lendingAdapter =
             IMorphoLendingAdapter(address(leverageManager.getLeverageTokenLendingAdapter(mintData.leverageToken)));
-
         (,, address oracle,,) = lendingAdapter.marketParams();
 
         // Check if lendingAdapter.convertCollateralToDebtAsset(total collateral) will overflow. If it does,
@@ -41,8 +40,8 @@ contract MintInvariants is InvariantTestBase {
         if (type(uint256).max / IOracle(oracle).price() >= lendingAdapter.getCollateral()) {
             LeverageTokenState memory stateAfter = leverageManager.getLeverageTokenState(mintData.leverageToken);
 
-            _assertCollateralRatioInvariants(mintData, stateBefore, stateAfter, rebalanceAdapter);
             _assertSharesInvariants(lendingAdapter, mintData, stateBefore, stateAfter);
+            _assertCollateralRatioInvariants(mintData, stateBefore, stateAfter, rebalanceAdapter);
         }
     }
 
@@ -55,12 +54,8 @@ contract MintInvariants is InvariantTestBase {
         uint256 totalSupplyAfter = mintData.leverageToken.totalSupply();
         uint256 sharesMinted = totalSupplyAfter - stateBefore.totalSupply;
 
-        if (stateBefore.totalSupply != 0) {
-            _assertBeforeSharesValue(stateBefore, mintData, stateAfter);
-            _assertMintedSharesValue(lendingAdapter, mintData, stateBefore, stateAfter, sharesMinted);
-        } else if (stateBefore.totalSupply == 0 && sharesMinted > 0) {
-            _assertMintedSharesEqualTotalEquity(lendingAdapter, mintData, stateBefore, stateAfter, sharesMinted);
-        }
+        _assertBeforeSharesValue(stateBefore, mintData, stateAfter);
+        _assertMintedSharesValue(lendingAdapter, mintData, stateBefore, stateAfter, sharesMinted);
     }
 
     function _assertCollateralRatioInvariants(
@@ -69,18 +64,8 @@ contract MintInvariants is InvariantTestBase {
         LeverageTokenState memory stateAfter,
         IRebalanceAdapterBase rebalanceAdapter
     ) internal view {
-        // Check if the initial state was empty
-        bool isInitialStateEmpty =
-            (stateBefore.totalSupply == 0 || stateBefore.debt == 0) && stateBefore.collateral == 0;
-        if (isInitialStateEmpty && mintData.equityInCollateralAsset != 0) {
-            _assertInitialCollateralRatio(mintData, stateBefore, stateAfter, rebalanceAdapter);
-        }
-
-        // Check if there was existing supply and debt
-        bool hasExistingSupplyAndDebt = stateBefore.totalSupply != 0 && stateBefore.debt != 0;
-        if (hasExistingSupplyAndDebt) {
-            _assertCollateralRatioUnchanged(stateBefore, stateAfter, mintData);
-        }
+        _assertInitialCollateralRatio(mintData, stateBefore, stateAfter, rebalanceAdapter);
+        _assertCollateralRatioUnchanged(stateBefore, stateAfter, mintData);
     }
 
     function _assertBeforeSharesValue(
@@ -88,16 +73,18 @@ contract MintInvariants is InvariantTestBase {
         LeverageManagerHandler.MintActionData memory mintData,
         LeverageTokenState memory stateAfter
     ) internal view {
-        assertGe(
-            _convertToAssets(stateBefore.leverageToken, stateBefore.totalSupply, Math.Rounding.Ceil),
-            stateBefore.equityInCollateralAsset,
-            _getMintInvariantDescriptionString(
-                "The value of the total supply of shares before the mint must be greater than or equal to their value before the mint.",
-                stateBefore,
-                stateAfter,
-                mintData
-            )
-        );
+        if (stateBefore.totalSupply != 0) {
+            assertGe(
+                _convertToAssets(stateBefore.leverageToken, stateBefore.totalSupply, Math.Rounding.Ceil),
+                stateBefore.equityInCollateralAsset,
+                _getMintInvariantDescriptionString(
+                    "The value of the total supply of shares before the mint must be greater than or equal to their value before the mint.",
+                    stateBefore,
+                    stateAfter,
+                    mintData
+                )
+            );
+        }
     }
 
     function _assertMintedSharesValue(
@@ -107,79 +94,82 @@ contract MintInvariants is InvariantTestBase {
         LeverageTokenState memory stateAfter,
         uint256 sharesMinted
     ) internal view {
-        uint256 mintedSharesValue = _convertToAssets(mintData.leverageToken, sharesMinted, Math.Rounding.Floor);
-        uint256 deltaEquityInCollateralAsset =
-            lendingAdapter.getEquityInCollateralAsset() - stateBefore.equityInCollateralAsset;
+        if (sharesMinted != 0) {
+            uint256 mintedSharesValue = _convertToAssets(mintData.leverageToken, sharesMinted, Math.Rounding.Floor);
 
-        assertLe(
-            mintedSharesValue,
-            deltaEquityInCollateralAsset,
-            _getMintInvariantDescriptionString(
-                "The value of the shares minted must be less than or equal to the amount of equity added to the LT, due to fees and rounding.",
-                stateBefore,
-                stateAfter,
-                mintData
-            )
-        );
+            if (stateBefore.totalSupply != 0) {
+                uint256 deltaEquityInCollateralAsset =
+                    lendingAdapter.getEquityInCollateralAsset() - stateBefore.equityInCollateralAsset;
+
+                assertLe(
+                    mintedSharesValue,
+                    deltaEquityInCollateralAsset,
+                    _getMintInvariantDescriptionString(
+                        "The value of the shares minted must be less than or equal to the amount of equity added to the LT, due to rounding and the mint token action fee.",
+                        stateBefore,
+                        stateAfter,
+                        mintData
+                    )
+                );
+            } else {
+                assertEq(
+                    mintedSharesValue,
+                    lendingAdapter.getEquityInCollateralAsset(),
+                    _getMintInvariantDescriptionString(
+                        "When there are no shares before the mint, the value of the shares minted must be equal to the total equity in the LT.",
+                        stateBefore,
+                        stateAfter,
+                        mintData
+                    )
+                );
+            }
+        }
     }
 
-    function _assertMintedSharesEqualTotalEquity(
-        ILendingAdapter lendingAdapter,
-        LeverageManagerHandler.MintActionData memory mintData,
-        LeverageManagerHandler.LeverageTokenStateData memory stateBefore,
-        LeverageTokenState memory stateAfter,
-        uint256 sharesMinted
-    ) internal view {
-        uint256 mintedSharesValue = _convertToAssets(mintData.leverageToken, sharesMinted, Math.Rounding.Floor);
-        assertEq(
-            mintedSharesValue,
-            lendingAdapter.getEquityInCollateralAsset(),
-            _getMintInvariantDescriptionString(
-                "When there are no shares before the mint, the value of the shares minted must be equal to the total equity in the LT.",
-                stateBefore,
-                stateAfter,
-                mintData
-            )
-        );
-    }
-
-    // Helper function to assert initial collateral ratio
     function _assertInitialCollateralRatio(
         LeverageManagerHandler.MintActionData memory mintData,
         LeverageManagerHandler.LeverageTokenStateData memory stateBefore,
         LeverageTokenState memory stateAfter,
         IRebalanceAdapterBase rebalanceAdapter
     ) internal view {
-        uint256 initialCollateralRatio = rebalanceAdapter.getLeverageTokenInitialCollateralRatio(mintData.leverageToken);
+        bool isInitialStateEmpty = stateBefore.totalSupply == 0 && stateBefore.collateral == 0;
 
-        // assertApproxEqRel scales the difference by 1e18, so we can't check assertApproxEqRel if the difference between
-        // the two collateral ratios is too high
-        uint256 collateralRatioDiff = stdMath.delta(stateAfter.collateralRatio, initialCollateralRatio);
-        if (collateralRatioDiff == 0 || type(uint256).max / 1e18 >= collateralRatioDiff) {
-            assertApproxEqRel(
-                stateAfter.collateralRatio,
-                initialCollateralRatio,
-                _getAllowedCollateralRatioSlippage(mintData.equityInDebtAsset),
-                _getMintInvariantDescriptionString(
-                    "Collateral ratio after mint into an empty LT with no collateral must be equal to the initial collateral ratio, within the allowed slippage.",
-                    stateBefore,
-                    stateAfter,
-                    mintData
-                )
-            );
+        if (isInitialStateEmpty && mintData.equityInCollateralAsset != 0) {
+            if (mintData.equityInDebtAsset == 0) {
+                assertEq(
+                    stateAfter.collateralRatio,
+                    type(uint256).max,
+                    _getMintInvariantDescriptionString(
+                        "Minting into an empty LT for zero equity in debt asset must result in type(uint256).max collateral ratio.",
+                        stateBefore,
+                        stateAfter,
+                        mintData
+                    )
+                );
+            } else {
+                uint256 initialCollateralRatio =
+                    rebalanceAdapter.getLeverageTokenInitialCollateralRatio(mintData.leverageToken);
+                assertApproxEqRel(
+                    stateAfter.collateralRatio,
+                    initialCollateralRatio,
+                    _getAllowedCollateralRatioSlippage(mintData.equityInDebtAsset),
+                    _getMintInvariantDescriptionString(
+                        "Collateral ratio after mint into an empty LT with no collateral must be equal to the specified initial collateral ratio, within the allowed slippage.",
+                        stateBefore,
+                        stateAfter,
+                        mintData
+                    )
+                );
+            }
         }
     }
 
-    // Helper function to assert collateral ratio remains unchanged
     function _assertCollateralRatioUnchanged(
         LeverageManagerHandler.LeverageTokenStateData memory stateBefore,
         LeverageTokenState memory stateAfter,
         LeverageManagerHandler.MintActionData memory mintData
     ) internal pure {
-        // assertApproxEqRel scales the difference by 1e18, so we can't check assertApproxEqRel if the difference between
-        // the two collateral ratios is too high
-        uint256 collateralRatioDiff = stdMath.delta(stateAfter.collateralRatio, stateBefore.collateralRatio);
-        if (collateralRatioDiff == 0 || type(uint256).max / 1e18 >= collateralRatioDiff) {
+        if (stateBefore.totalSupply != 0 && stateBefore.debt != 0) {
             assertApproxEqRel(
                 stateAfter.collateralRatio,
                 stateBefore.collateralRatio,
