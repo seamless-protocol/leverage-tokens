@@ -46,6 +46,7 @@ contract LeverageManagerHandler is Test {
     struct RedeemActionData {
         ILeverageToken leverageToken;
         uint256 equityInCollateralAsset;
+        uint256 equityInDebtAsset;
         ActionData preview;
     }
 
@@ -175,6 +176,7 @@ contract LeverageManagerHandler is Test {
         uint256 equityForRedeem = _boundEquityForRedeem(currentLeverageToken, currentActor, seed);
 
         ActionData memory preview = leverageManager.previewRedeem(currentLeverageToken, equityForRedeem);
+        ILendingAdapter lendingAdapter = leverageManager.getLeverageTokenLendingAdapter(currentLeverageToken);
 
         _saveLeverageTokenState(
             currentLeverageToken,
@@ -183,6 +185,7 @@ contract LeverageManagerHandler is Test {
                 RedeemActionData({
                     leverageToken: currentLeverageToken,
                     equityInCollateralAsset: equityForRedeem,
+                    equityInDebtAsset: lendingAdapter.convertCollateralToDebtAsset(equityForRedeem),
                     preview: preview
                 })
             )
