@@ -378,7 +378,7 @@ abstract contract InvariantTestBase is Test {
         uint256 i = Math.log10(amount);
 
         // This is the minimum slippage that we can support due to the precision of the collateral ratio being
-        // 1e8 (1e18 / 1e8 = 1e10 = 0.00000001e18)
+        // 1e18 (1e18 / 1e18 = 1 (0.000000000000000001e18))
         if (i > 18) return 0.000000000000000001e18;
 
         // If i <= 1, that means amount < 100, thus slippage = 1e18
