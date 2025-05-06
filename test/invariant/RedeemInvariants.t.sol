@@ -39,7 +39,7 @@ contract RedeemInvariants is InvariantTestBase {
         if (type(uint256).max / IOracle(oracle).price() >= lendingAdapter.getCollateral()) {
             LeverageTokenState memory stateAfter = leverageManager.getLeverageTokenState(redeemData.leverageToken);
 
-            _assertCollateralRatioInvariants(lendingAdapter, redeemData, stateBefore, stateAfter);
+            _assertCollateralRatioInvariants(redeemData, stateBefore, stateAfter);
             _assertSharesInvariants(lendingAdapter, redeemData, stateBefore, stateAfter);
         }
     }
@@ -61,7 +61,6 @@ contract RedeemInvariants is InvariantTestBase {
     }
 
     function _assertCollateralRatioInvariants(
-        ILendingAdapter lendingAdapter,
         LeverageManagerHandler.RedeemActionData memory redeemData,
         LeverageManagerHandler.LeverageTokenStateData memory stateBefore,
         LeverageTokenState memory stateAfter
@@ -71,7 +70,7 @@ contract RedeemInvariants is InvariantTestBase {
         if (totalSupplyAfter == 0) {
             _assertEmptyStateCollateralRatio(redeemData, stateBefore, stateAfter);
         } else {
-            _assertCollateralRatioUnchanged(lendingAdapter, stateBefore, stateAfter, redeemData);
+            _assertCollateralRatioUnchanged(stateBefore, stateAfter, redeemData);
         }
     }
 
@@ -164,12 +163,10 @@ contract RedeemInvariants is InvariantTestBase {
 
     // Helper function to assert collateral ratio remains unchanged
     function _assertCollateralRatioUnchanged(
-        ILendingAdapter lendingAdapter,
         LeverageManagerHandler.LeverageTokenStateData memory stateBefore,
         LeverageTokenState memory stateAfter,
         LeverageManagerHandler.RedeemActionData memory redeemData
     ) internal view {
-        uint256 equityInCollateralAssetAfter = lendingAdapter.getEquityInCollateralAsset();
         uint256 totalSupplyAfter = redeemData.leverageToken.totalSupply();
 
         // If zero shares were burned, or zero equity was passed to the redeem function, strategy collateral ratio should not change
@@ -180,7 +177,7 @@ contract RedeemInvariants is InvariantTestBase {
                 "Invariant Violated: Collateral ratio should not change if zero shares were burnt or zero equity was passed to the redeem function."
             );
         } else {
-            if (equityInCollateralAssetAfter != 0) {
+            if (stateAfter.debt != 0) {
                 // assertApproxEqRel scales the difference by 1e18, so we can't check this if the difference between the
                 // two collateral ratios is too high
                 uint256 collateralRatioDiff = stdMath.delta(stateAfter.collateralRatio, stateBefore.collateralRatio);
@@ -189,14 +186,24 @@ contract RedeemInvariants is InvariantTestBase {
                         stateAfter.collateralRatio,
                         stateBefore.collateralRatio,
                         _getAllowedCollateralRatioSlippage(Math.min(stateBefore.collateral, stateBefore.debt)),
-                        "Invariant Violated: Collateral ratio after redeem must be equal to the initial collateral ratio, within the allowed slippage."
+                        _getRedeemInvariantDescriptionString(
+                            "Collateral ratio after redeem must be equal to the initial collateral ratio, within the allowed slippage.",
+                            stateBefore,
+                            stateAfter,
+                            redeemData
+                        )
                     );
                 }
             } else {
                 assertEq(
                     stateAfter.collateralRatio,
                     type(uint256).max,
-                    "Invariant Violated: Collateral ratio after redeeming all equity should be max uint256."
+                    _getRedeemInvariantDescriptionString(
+                        "Collateral ratio after redeeming all debt should be max uint256.",
+                        stateBefore,
+                        stateAfter,
+                        redeemData
+                    )
                 );
             }
         }
