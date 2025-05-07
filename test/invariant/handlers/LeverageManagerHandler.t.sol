@@ -279,15 +279,13 @@ contract LeverageManagerHandler is Test {
         uint256 collateral = lendingAdapter.getCollateral();
         uint256 collateralInDebtAsset = lendingAdapter.convertCollateralToDebtAsset(collateral);
         uint256 debt = lendingAdapter.getDebt();
+        uint256 debtInCollateralAsset = lendingAdapter.convertDebtToCollateralAsset(debt);
         uint256 totalSupply = leverageToken.totalSupply();
         uint256 equityInCollateralAsset = lendingAdapter.getEquityInCollateralAsset();
         uint256 equityInDebtAsset = lendingAdapter.getEquityInDebtAsset();
-        uint256 collateralRatioUsingDebtNormalized = Math.mulDiv(
-            lendingAdapter.getCollateral(),
-            BASE_RATIO,
-            lendingAdapter.convertDebtToCollateralAsset(lendingAdapter.getDebt()),
-            Math.Rounding.Floor
-        );
+        uint256 collateralRatioUsingDebtNormalized = debtInCollateralAsset > 0
+            ? Math.mulDiv(collateral, BASE_RATIO, debtInCollateralAsset, Math.Rounding.Floor)
+            : type(uint256).max;
 
         leverageTokenStateBefore = LeverageTokenStateData({
             leverageToken: leverageToken,
