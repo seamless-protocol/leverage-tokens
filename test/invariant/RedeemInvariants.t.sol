@@ -54,16 +54,6 @@ contract RedeemInvariants is InvariantTestBase {
         _assertTotalSupplyRedeemedEqualsTotalEquity(lendingAdapter, redeemData, stateBefore, stateAfter);
     }
 
-    function _assertCollateralRatioInvariants(
-        ILendingAdapter lendingAdapter,
-        LeverageManagerHandler.RedeemActionData memory redeemData,
-        LeverageManagerHandler.LeverageTokenStateData memory stateBefore,
-        LeverageTokenState memory stateAfter
-    ) internal view {
-        _assertEmptyStateCollateralRatio(redeemData, stateBefore, stateAfter);
-        _assertCollateralRatioChange(lendingAdapter, stateBefore, stateAfter, redeemData);
-    }
-
     function _assertRemainingSharesValue(
         LeverageManagerHandler.LeverageTokenStateData memory stateBefore,
         LeverageManagerHandler.RedeemActionData memory redeemData,
@@ -127,86 +117,71 @@ contract RedeemInvariants is InvariantTestBase {
         }
     }
 
-    function _assertEmptyStateCollateralRatio(
+    function _assertCollateralRatioInvariants(
+        ILendingAdapter lendingAdapter,
         LeverageManagerHandler.RedeemActionData memory redeemData,
         LeverageManagerHandler.LeverageTokenStateData memory stateBefore,
         LeverageTokenState memory stateAfter
     ) internal view {
         uint256 totalSupplyAfter = redeemData.leverageToken.totalSupply();
 
-        if (totalSupplyAfter == 0) {
+        // If zero shares were burned, or zero equity was passed to the redeem function, strategy collateral ratio should not change
+        if (stateBefore.totalSupply == totalSupplyAfter || redeemData.equityInCollateralAsset == 0) {
             assertEq(
+                stateBefore.collateralRatio,
                 stateAfter.collateralRatio,
-                type(uint256).max,
+                "Invariant Violated: Collateral ratio should not change if zero shares were burnt or zero equity was passed to the redeem function."
+            );
+        } else {
+            uint256 debtInCollateralAsset = lendingAdapter.convertDebtToCollateralAsset(lendingAdapter.getDebt());
+            uint256 collateralRatioUsingDebtNormalized = debtInCollateralAsset > 0
+                ? Math.mulDiv(lendingAdapter.getCollateral(), BASE_RATIO, debtInCollateralAsset, Math.Rounding.Floor)
+                : type(uint256).max;
+            bool isCollateralRatioGe = collateralRatioUsingDebtNormalized
+                >= stateBefore.collateralRatioUsingDebtNormalized
+                || stateAfter.collateralRatio >= stateBefore.collateralRatio;
+
+            assertTrue(
+                isCollateralRatioGe,
                 _getRedeemInvariantDescriptionString(
-                    "The collateral ratio of an LT with no shares remaining after a redeem must be type(uint256).max.",
+                    string.concat(
+                        "Collateral ratio after redeem must be greater than or equal to the collateral ratio before the redeem.",
+                        " Collateral ratio calculated by normalizing collateral to the debt asset: ",
+                        Strings.toString(collateralRatioUsingDebtNormalized),
+                        " Collateral ratio calculated by normalizing debt to the collateral asset: ",
+                        Strings.toString(stateAfter.collateralRatio)
+                    ),
                     stateBefore,
                     stateAfter,
                     redeemData
                 )
             );
-        }
-    }
 
-    function _assertCollateralRatioChange(
-        ILendingAdapter lendingAdapter,
-        LeverageManagerHandler.LeverageTokenStateData memory stateBefore,
-        LeverageTokenState memory stateAfter,
-        LeverageManagerHandler.RedeemActionData memory redeemData
-    ) internal view {
-        uint256 totalSupplyAfter = redeemData.leverageToken.totalSupply();
+            if (stateAfter.debt != 0) {
+                uint256 allowedSlippage =
+                    _getAllowedCollateralRatioSlippage(Math.min(stateBefore.collateral, stateBefore.debt));
+                bool isCollateralRatioWithinAllowedSlippage = stdMath.percentDelta(
+                    stateAfter.collateralRatio, stateBefore.collateralRatio
+                ) <= allowedSlippage
+                    || stdMath.percentDelta(
+                        collateralRatioUsingDebtNormalized, stateBefore.collateralRatioUsingDebtNormalized
+                    ) <= allowedSlippage;
 
-        if (totalSupplyAfter != 0) {
-            // If zero shares were burned, or zero equity was passed to the redeem function, strategy collateral ratio should not change
-            if (stateBefore.totalSupply == totalSupplyAfter || redeemData.equityInCollateralAsset == 0) {
-                assertEq(
-                    stateBefore.collateralRatio,
-                    stateAfter.collateralRatio,
-                    "Invariant Violated: Collateral ratio should not change if zero shares were burnt or zero equity was passed to the redeem function."
+                assertTrue(
+                    isCollateralRatioWithinAllowedSlippage,
+                    _getRedeemInvariantDescriptionString(
+                        "Collateral ratio after a redeem must be equal to the collateral ratio before the redeem, within the allowed slippage.",
+                        stateBefore,
+                        stateAfter,
+                        redeemData
+                    )
                 );
             } else {
-                if (stateAfter.debt != 0) {
-                    assertApproxEqRel(
-                        stateAfter.collateralRatio,
-                        stateBefore.collateralRatio,
-                        _getAllowedCollateralRatioSlippage(Math.min(stateBefore.collateral, stateBefore.debt)),
-                        _getRedeemInvariantDescriptionString(
-                            "Collateral ratio after a redeem must be equal to the collateral ratio before the redeem, within the allowed slippage.",
-                            stateBefore,
-                            stateAfter,
-                            redeemData
-                        )
-                    );
-                } else {
-                    assertEq(
-                        stateAfter.collateralRatio,
-                        type(uint256).max,
-                        _getRedeemInvariantDescriptionString(
-                            "Collateral ratio after redeeming all debt should be max uint256.",
-                            stateBefore,
-                            stateAfter,
-                            redeemData
-                        )
-                    );
-                }
-
-                uint256 debtInCollateralAsset = lendingAdapter.convertDebtToCollateralAsset(lendingAdapter.getDebt());
-                uint256 collateralRatioUsingDebtNormalized = debtInCollateralAsset > 0
-                    ? Math.mulDiv(lendingAdapter.getCollateral(), BASE_RATIO, debtInCollateralAsset, Math.Rounding.Floor)
-                    : type(uint256).max;
-                bool isCollateralRatioGe = collateralRatioUsingDebtNormalized
-                    >= stateBefore.collateralRatioUsingDebtNormalized
-                    || stateAfter.collateralRatio >= stateBefore.collateralRatio;
-                assertTrue(
-                    isCollateralRatioGe,
+                assertEq(
+                    stateAfter.collateralRatio,
+                    type(uint256).max,
                     _getRedeemInvariantDescriptionString(
-                        string.concat(
-                            "Collateral ratio after redeem must be greater than or equal to the collateral ratio before the redeem.",
-                            " Collateral ratio calculated by normalizing collateral to the debt asset: ",
-                            Strings.toString(collateralRatioUsingDebtNormalized),
-                            " Collateral ratio calculated by normalizing debt to the collateral asset: ",
-                            Strings.toString(stateAfter.collateralRatio)
-                        ),
+                        "Collateral ratio after redeeming all debt should be max uint256.",
                         stateBefore,
                         stateAfter,
                         redeemData
