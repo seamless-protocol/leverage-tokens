@@ -95,7 +95,7 @@ contract RedeemInvariants is InvariantTestBase {
                 stateBefore.equityInDebtAsset,
                 stateAfter.equity,
                 _getRedeemInvariantDescriptionString(
-                    "The equity in the LT must be the same before and after the redeem if no shares were burned.",
+                    "The equity in the LT must be the same before and after the redeem if no shares were burned (and thus share value as well).",
                     stateBefore,
                     stateAfter,
                     redeemData
