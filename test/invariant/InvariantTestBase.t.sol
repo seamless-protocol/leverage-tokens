@@ -319,6 +319,8 @@ abstract contract InvariantTestBase is Test {
             Strings.toString(stateBefore.equityInDebtAsset),
             " stateBefore.collateralRatio: ",
             Strings.toString(stateBefore.collateralRatio),
+            " stateBefore.collateralRatioUsingDebtNormalized: ",
+            Strings.toString(stateBefore.collateralRatioUsingDebtNormalized),
             " stateBefore.totalSupply: ",
             Strings.toString(stateBefore.totalSupply)
         );
