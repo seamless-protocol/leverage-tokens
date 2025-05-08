@@ -78,5 +78,6 @@ contract SetManagementFeeTest is FeeManagerTest {
 
         assertEq(leverageToken.totalSupply(), initialSupply + expectedOutstandingFees);
         assertEq(feeManager.getManagementFee(leverageToken), newManagementFee);
+        assertEq(feeManager.getLastManagementFeeAccrualTimestamp(leverageToken), block.timestamp);
     }
 }
