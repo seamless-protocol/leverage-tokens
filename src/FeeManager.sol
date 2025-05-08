@@ -107,6 +107,9 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
 
     /// @inheritdoc IFeeManager
     function setManagementFee(ILeverageToken token, uint256 fee) external onlyRole(FEE_MANAGER_ROLE) {
+        // Charge any accrued management fees before setting the new management fee
+        chargeManagementFee(token);
+
         _validateFee(fee);
 
         _getFeeManagerStorage().managementFee[token] = fee;

@@ -44,4 +44,26 @@ contract SetManagementFeeTest is FeeManagerTest {
         );
         _setManagementFee(caller, token, 0);
     }
+
+    function test_setManagementFee_ChargesOutstandingFees() public {
+        uint256 managementFee = 0.1e4; // 10%
+        _setManagementFee(feeManagerRole, leverageToken, managementFee);
+
+        uint256 initialSupply = 100 ether;
+        leverageToken.mint(address(this), initialSupply);
+
+        skip(SECONDS_ONE_YEAR);
+
+        uint256 expectedOutstandingFees = 10 ether;
+        uint256 newManagementFee = 0.2e4;
+
+        vm.expectEmit(true, true, true, true);
+        emit IFeeManager.ManagementFeeCharged(leverageToken, expectedOutstandingFees);
+        vm.expectEmit(true, true, true, true);
+        emit IFeeManager.ManagementFeeSet(leverageToken, newManagementFee);
+        _setManagementFee(feeManagerRole, leverageToken, newManagementFee);
+
+        assertEq(leverageToken.totalSupply(), initialSupply + expectedOutstandingFees);
+        assertEq(feeManager.getManagementFee(leverageToken), newManagementFee);
+    }
 }
