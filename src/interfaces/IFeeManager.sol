@@ -95,8 +95,7 @@ interface IFeeManager {
     function setManagementFee(ILeverageToken token, uint256 fee) external;
 
     /// @notice Sets the address of the treasury. The treasury receives all treasury and management fees from the
-    /// LeverageManager. If the treasury is set to the zero address, the treasury and management fees are reset to 0 as
-    /// well
+    /// LeverageManager.
     /// @param treasury The address of the treasury
     /// @dev Only `FEE_MANAGER_ROLE` can call this function
     function setTreasury(address treasury) external;
