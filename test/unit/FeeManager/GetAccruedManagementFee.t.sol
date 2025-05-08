@@ -14,7 +14,6 @@ contract GetAccruedManagementFeeTest is FeeManagerTest {
         uint256 totalSupply = 1000;
         leverageToken.mint(address(this), totalSupply);
 
-        vm.warp(0);
         feeManager.chargeManagementFee(leverageToken);
         skip(SECONDS_ONE_YEAR / 2);
 
@@ -36,7 +35,6 @@ contract GetAccruedManagementFeeTest is FeeManagerTest {
 
         leverageToken.mint(address(this), totalSupply);
 
-        vm.warp(0);
         feeManager.chargeManagementFee(leverageToken);
         skip(SECONDS_ONE_YEAR);
 
@@ -51,7 +49,6 @@ contract GetAccruedManagementFeeTest is FeeManagerTest {
 
         leverageToken.mint(address(this), totalSupply);
 
-        vm.warp(0);
         feeManager.chargeManagementFee(leverageToken);
 
         _setManagementFee(feeManagerRole, leverageToken, managementFee);

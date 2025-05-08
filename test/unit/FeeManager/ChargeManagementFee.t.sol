@@ -12,7 +12,6 @@ contract ChargeManagementFeeTest is FeeManagerTest {
         uint256 totalSupply = 1000;
         leverageToken.mint(address(this), totalSupply);
 
-        vm.warp(0);
         vm.expectEmit(true, true, true, true);
         emit IFeeManager.ManagementFeeCharged(leverageToken, 0);
         feeManager.chargeManagementFee(leverageToken);

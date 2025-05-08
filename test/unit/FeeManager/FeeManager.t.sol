@@ -9,6 +9,7 @@ import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 // Local imports
+import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {FeeManager} from "src/FeeManager.sol";
 import {FeeManagerHarness} from "test/unit/harness/FeeManagerHarness.sol";
@@ -49,6 +50,16 @@ contract FeeManagerTest is Test {
     function test_feeManagerInit_RevertsIfNotInitializer() public {
         vm.expectRevert(Initializable.NotInitializing.selector);
         feeManager.__FeeManager_init(address(this), treasury);
+    }
+
+    function test_feeManagerInit_RevertsIfTreasuryIsZeroAddress() public {
+        address feeManagerImplementation = address(new FeeManagerHarness());
+
+        vm.expectRevert(abi.encodeWithSelector(IFeeManager.ZeroAddressTreasury.selector));
+        UnsafeUpgrades.deployUUPSProxy(
+            feeManagerImplementation,
+            abi.encodeWithSelector(FeeManagerHarness.initialize.selector, address(this), address(0))
+        );
     }
 
     function _setTreasuryActionFee(address caller, ExternalAction action, uint256 fee) internal {
