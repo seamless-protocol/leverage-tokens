@@ -39,8 +39,14 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
         address treasury;
         /// @dev Annual management fee. 100_00 is 100% per year
         uint256 managementFee;
+        /// @dev Timestamps when the management fee was updated. The last index is the most recent update.
+        uint120[] managementFeeUpdateTimestamps;
+        /// @dev Management fee updates. The last index is the current management fee.
+        uint256[] managementFeeUpdates;
         /// @dev Timestamp when the management fee was most recently accrued for each LeverageToken
         mapping(ILeverageToken token => uint120) lastManagementFeeAccrualTimestamp;
+        /// @dev Management fee index used by the last management fee accrual for LeverageTokens
+        mapping(ILeverageToken token => uint256) lastManagementFeeAccrualIndex;
         /// @dev Treasury action fee for each action. 100_00 is 100%
         mapping(ExternalAction action => uint256) treasuryActionFee;
         /// @dev Token action fee for each action. 100_00 is 100%
@@ -62,6 +68,10 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
 
     function __FeeManager_init_unchained(address defaultAdmin) internal onlyInitializing {
         _grantRole(DEFAULT_ADMIN_ROLE, defaultAdmin);
+
+        // Initialize management fee indices with zero
+        _getFeeManagerStorage().managementFeeUpdateTimestamps.push(uint120(block.timestamp));
+        _getFeeManagerStorage().managementFeeUpdates.push(0);
     }
 
     /// @inheritdoc IFeeManager
@@ -76,7 +86,8 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
 
     /// @inheritdoc IFeeManager
     function getManagementFee() public view returns (uint256 fee) {
-        return _getFeeManagerStorage().managementFee;
+        // return _getFeeManagerStorage().managementFee;
+        return _getFeeManagerStorage().managementFeeUpdates[_getFeeManagerStorage().managementFeeUpdateTimestamps.length - 1];
     }
 
     /// @inheritdoc IFeeManager
@@ -96,7 +107,10 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
             revert TreasuryNotSet();
         }
 
-        _getFeeManagerStorage().managementFee = fee;
+        // _getFeeManagerStorage().managementFee = fee;
+        _getFeeManagerStorage().managementFeeUpdateTimestamps.push(uint120(block.timestamp));
+        _getFeeManagerStorage().managementFeeUpdates.push(fee);
+
         emit ManagementFeeSet(fee);
     }
 
@@ -109,7 +123,9 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
         if (treasury == address(0)) {
             $.treasuryActionFee[ExternalAction.Mint] = 0;
             $.treasuryActionFee[ExternalAction.Redeem] = 0;
-            $.managementFee = 0;
+            // $.managementFee = 0;
+            $.managementFeeUpdateTimestamps.push(uint120(block.timestamp));
+            $.managementFeeUpdates.push(0);
         }
 
         emit TreasurySet(treasury);
@@ -131,7 +147,10 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     function chargeManagementFee(ILeverageToken token) public {
         // Shares fee must be obtained before the last management fee accrual timestamp is updated
         uint256 sharesFee = _getAccruedManagementFee(token);
+
+        // Update the last management fee accrual timestamp and fee index for the LeverageToken
         _getFeeManagerStorage().lastManagementFeeAccrualTimestamp[token] = uint120(block.timestamp);
+        _getFeeManagerStorage().lastManagementFeeAccrualIndex[token] = _getFeeManagerStorage().managementFeeUpdateTimestamps.length - 1;
 
         address treasury = getTreasury();
         if (treasury != address(0)) {
@@ -203,14 +222,48 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     /// @param token LeverageToken to calculate management fee shares for
     /// @return shares Shares to mint
     function _getAccruedManagementFee(ILeverageToken token) internal view returns (uint256) {
-        uint256 managementFee = getManagementFee();
-        uint120 lastManagementFeeAccrualTimestamp = getLastManagementFeeAccrualTimestamp(token);
-        uint256 totalSupply = token.totalSupply();
+        // Example:
+        // 0 lastManagementFeeAccrualIndex
+        // 0 lastManagementFeeAccrualTimestamp
+        // [0, 5, 20] managementFeeUpdateTimestamps
+        // [0, 0.5e4, 0.6e4] managementFeeUpdates
 
-        uint256 duration = block.timestamp - lastManagementFeeAccrualTimestamp;
+        uint256 tokenTotalSupply = token.totalSupply();
+        if (tokenTotalSupply == 0) {
+            return 0;
+        }
 
-        uint256 sharesFee =
-            Math.mulDiv(managementFee * totalSupply, duration, MAX_FEE * SECS_PER_YEAR, Math.Rounding.Ceil);
+        // Cache to reduce SLOADs during loop iteration
+        uint256[] memory managementFeeUpdates = _getFeeManagerStorage().managementFeeUpdates;
+        uint120[] memory managementFeeUpdateTimestamps = _getFeeManagerStorage().managementFeeUpdateTimestamps;
+
+        uint256 lastManagementFeeAccrualTimestamp = _getFeeManagerStorage().lastManagementFeeAccrualTimestamp[token];
+        uint256 lastManagementFeeAccrualIndex = _getFeeManagerStorage().lastManagementFeeAccrualIndex[token];
+        uint256 numManagementFeeUpdates = managementFeeUpdates.length;
+
+        // Initialize the start timestamp to the last time management fees were accrued for the LeverageToken
+        uint256 startTimestamp = lastManagementFeeAccrualTimestamp;
+
+        // Iterate over each fee period, accumulating shares fees for each
+        uint256 sharesFee = 0;
+        for (uint256 i = lastManagementFeeAccrualIndex; i < numManagementFeeUpdates; i++) {
+            uint256 endTimestamp = i == numManagementFeeUpdates - 1
+                ? block.timestamp
+                : managementFeeUpdateTimestamps[i + 1];
+
+            uint256 feePeriod = endTimestamp - startTimestamp;
+            if (feePeriod == 0) {
+                continue;
+            }
+
+            uint256 managementFee = managementFeeUpdates[i];
+
+            sharesFee += Math.mulDiv(managementFee * tokenTotalSupply, feePeriod, MAX_FEE * SECS_PER_YEAR, Math.Rounding.Ceil);
+
+            // Update the start timestamp to the end timestamp for calculation of the next fee period in the next loop iteration
+            startTimestamp = endTimestamp;
+        }
+
         return sharesFee;
     }
 

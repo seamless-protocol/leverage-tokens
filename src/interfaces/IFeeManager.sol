@@ -73,9 +73,10 @@ interface IFeeManager {
     /// @return fee Fee for action, 100_00 is 100%
     function getTreasuryActionFee(ExternalAction action) external view returns (uint256 fee);
 
-    /// @notice Sets the management fee
+    /// @notice Sets the management fee.
     /// @param fee Management fee, 100_00 is 100%
     /// @dev Only `FEE_MANAGER_ROLE` can call this function
+    /// @dev The management fee cannot be set if the treasury is not set
     function setManagementFee(uint256 fee) external;
 
     /// @notice Sets the address of the treasury. The treasury receives all treasury and management fees from the
