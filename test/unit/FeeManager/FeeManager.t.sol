@@ -29,14 +29,12 @@ contract FeeManagerTest is Test {
     function setUp() public virtual {
         address feeManagerImplementation = address(new FeeManagerHarness());
         address feeManagerProxy = UnsafeUpgrades.deployUUPSProxy(
-            feeManagerImplementation, abi.encodeWithSelector(FeeManagerHarness.initialize.selector, address(this))
+            feeManagerImplementation,
+            abi.encodeWithSelector(FeeManagerHarness.initialize.selector, address(this), treasury)
         );
 
         feeManager = FeeManagerHarness(feeManagerProxy);
         feeManager.grantRole(feeManager.FEE_MANAGER_ROLE(), feeManagerRole);
-
-        vm.prank(feeManagerRole);
-        feeManager.setTreasury(treasury);
     }
 
     function test_setUp() public view virtual {
@@ -50,7 +48,7 @@ contract FeeManagerTest is Test {
 
     function test_feeManagerInit_RevertsIfNotInitializer() public {
         vm.expectRevert(Initializable.NotInitializing.selector);
-        feeManager.__FeeManager_init(address(this));
+        feeManager.__FeeManager_init(address(this), treasury);
     }
 
     function _setTreasuryActionFee(address caller, ExternalAction action, uint256 fee) internal {
@@ -58,9 +56,14 @@ contract FeeManagerTest is Test {
         feeManager.setTreasuryActionFee(action, fee);
     }
 
-    function _setManagementFee(address caller, uint256 fee) internal {
+    function _setManagementFee(address caller, ILeverageToken token, uint256 fee) internal {
         vm.prank(caller);
-        feeManager.setManagementFee(uint128(fee));
+        feeManager.setManagementFee(token, fee);
+    }
+
+    function _setDefaultNewLeverageTokenManagementFee(address caller, uint256 fee) internal {
+        vm.prank(caller);
+        feeManager.setDefaultNewLeverageTokenManagementFee(fee);
     }
 
     function _setTreasury(address caller, address _treasury) internal {

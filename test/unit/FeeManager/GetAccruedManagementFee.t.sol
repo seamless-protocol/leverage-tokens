@@ -9,7 +9,7 @@ import {FeeManagerTest} from "test/unit/FeeManager/FeeManager.t.sol";
 
 contract GetAccruedManagementFeeTest is FeeManagerTest {
     function test_getAccruedManagementFee() public {
-        _setManagementFee(feeManagerRole, 0.1e4); // 10% management fee
+        _setManagementFee(feeManagerRole, leverageToken, 0.1e4); // 10% management fee
 
         uint256 totalSupply = 1000;
         leverageToken.mint(address(this), totalSupply);
@@ -32,7 +32,7 @@ contract GetAccruedManagementFeeTest is FeeManagerTest {
     function testFuzz_getAccruedManagementFee_RoundsUp(uint128 totalSupply, uint256 managementFee) public {
         managementFee = bound(managementFee, 1, MAX_FEE);
 
-        _setManagementFee(feeManagerRole, managementFee);
+        _setManagementFee(feeManagerRole, leverageToken, managementFee);
 
         leverageToken.mint(address(this), totalSupply);
 
@@ -54,7 +54,7 @@ contract GetAccruedManagementFeeTest is FeeManagerTest {
         vm.warp(0);
         feeManager.chargeManagementFee(leverageToken);
 
-        _setManagementFee(feeManagerRole, managementFee);
+        _setManagementFee(feeManagerRole, leverageToken, managementFee);
 
         uint256 shares = feeManager.exposed_getAccruedManagementFee(leverageToken);
 
@@ -63,7 +63,7 @@ contract GetAccruedManagementFeeTest is FeeManagerTest {
 
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_getAccruedManagementFee_ZeroManagementFee(uint256 totalSupply, uint120 deltaT) public {
-        _setManagementFee(feeManagerRole, 0);
+        _setManagementFee(feeManagerRole, leverageToken, 0);
 
         leverageToken.mint(address(this), totalSupply);
 
@@ -82,7 +82,7 @@ contract GetAccruedManagementFeeTest is FeeManagerTest {
         feeManager.chargeManagementFee(leverageToken);
         skip(deltaT);
 
-        _setManagementFee(feeManagerRole, managementFee);
+        _setManagementFee(feeManagerRole, leverageToken, managementFee);
 
         uint256 shares = feeManager.exposed_getAccruedManagementFee(leverageToken);
 

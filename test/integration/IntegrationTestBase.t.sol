@@ -59,7 +59,9 @@ contract IntegrationTestBase is Test {
         leverageManager = ILeverageManager(
             UnsafeUpgrades.deployUUPSProxy(
                 leverageManagerImplementation,
-                abi.encodeWithSelector(LeverageManager.initialize.selector, address(this), leverageTokenFactory)
+                abi.encodeWithSelector(
+                    LeverageManager.initialize.selector, address(this), treasury, leverageTokenFactory
+                )
             )
         );
         LeverageManager(address(leverageManager)).grantRole(keccak256("FEE_MANAGER_ROLE"), address(this));
@@ -86,8 +88,6 @@ contract IntegrationTestBase is Test {
             "Seamless ETH/USDC 2x leverage token",
             "ltETH/USDC-2x"
         );
-
-        leverageManager.setTreasury(treasury);
 
         vm.label(address(user), "user");
         vm.label(address(treasury), "treasury");

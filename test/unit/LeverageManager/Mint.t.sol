@@ -30,7 +30,7 @@ contract MintTest is PreviewActionTest {
         leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Mint, 0.05e4); // 5% fee
         _setTreasuryActionFee(ExternalAction.Mint, 0.1e4); // 10% fee
 
-        _setManagementFee(feeManagerRole, 0.1e4); // 10% management fee
+        _setManagementFee(feeManagerRole, leverageToken, 0.1e4); // 10% management fee
         feeManager.chargeManagementFee(leverageToken);
 
         MockLeverageManagerStateForAction memory beforeState =
@@ -40,22 +40,6 @@ contract MintTest is PreviewActionTest {
 
         uint256 equityToAddInCollateralAsset = 10 ether;
         _testMint(equityToAddInCollateralAsset, 0, SECONDS_ONE_YEAR);
-    }
-
-    function test_mint_WithFeesTreasuryNotSet() public {
-        _setTreasuryActionFee(ExternalAction.Mint, 0.1e4); // 10% fee
-        _setTreasury(feeManagerRole, address(0));
-
-        MockLeverageManagerStateForAction memory beforeState =
-            MockLeverageManagerStateForAction({collateral: 200 ether, debt: 50 ether, sharesTotalSupply: 100 ether});
-
-        _prepareLeverageManagerStateForAction(beforeState);
-
-        uint256 equityToAddInCollateralAsset = 10 ether;
-        _testMint(equityToAddInCollateralAsset, 0, SECONDS_ONE_YEAR);
-
-        // Treasury (zero address) should not receive any shares, even though there is a treasury action fee
-        assertEq(leverageToken.balanceOf(address(treasury)), 0);
     }
 
     function testFuzz_mint_SharesTotalSupplyGreaterThanZero(

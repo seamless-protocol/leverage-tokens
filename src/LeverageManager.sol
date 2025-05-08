@@ -102,8 +102,11 @@ contract LeverageManager is
         }
     }
 
-    function initialize(address initialAdmin, IBeaconProxyFactory leverageTokenFactory) external initializer {
-        __FeeManager_init(initialAdmin);
+    function initialize(address initialAdmin, address treasury, IBeaconProxyFactory leverageTokenFactory)
+        external
+        initializer
+    {
+        __FeeManager_init(initialAdmin, treasury);
         __ReentrancyGuardTransient_init();
         _grantRole(DEFAULT_ADMIN_ROLE, initialAdmin);
         _getLeverageManagerStorage().tokenFactory = leverageTokenFactory;
@@ -201,7 +204,7 @@ contract LeverageManager is
         });
         _setLeverageTokenActionFee(token, ExternalAction.Mint, tokenConfig.mintTokenFee);
         _setLeverageTokenActionFee(token, ExternalAction.Redeem, tokenConfig.redeemTokenFee);
-        chargeManagementFee(token);
+        _setNewLeverageTokenManagementFee(token);
 
         tokenConfig.lendingAdapter.postLeverageTokenCreation(msg.sender, address(token));
         tokenConfig.rebalanceAdapter.postLeverageTokenCreation(msg.sender, address(token));

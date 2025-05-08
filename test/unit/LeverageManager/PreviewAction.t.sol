@@ -33,7 +33,7 @@ contract PreviewActionTest is LeverageManagerTest {
     }
 
     function test_previewAction_WithFee() public {
-        _setManagementFee(feeManagerRole, 0.1e4); // 10% management fee
+        _setManagementFee(feeManagerRole, leverageToken, 0.1e4); // 10% management fee
         feeManager.chargeManagementFee(leverageToken);
 
         _setTreasuryActionFee(feeManagerRole, ExternalAction.Mint, 0.1e4); // 10% fee
@@ -217,7 +217,7 @@ contract PreviewActionTest is LeverageManagerTest {
         leverageManager.exposed_setLeverageTokenActionFee(leverageToken, action, fee);
 
         managementFee = uint16(bound(managementFee, 0, MAX_FEE)); // 0% to 100% management fee
-        _setManagementFee(feeManagerRole, managementFee);
+        _setManagementFee(feeManagerRole, leverageToken, managementFee);
 
         initialDebtInCollateralAsset = uint128(bound(initialDebtInCollateralAsset, 0, initialCollateral));
 

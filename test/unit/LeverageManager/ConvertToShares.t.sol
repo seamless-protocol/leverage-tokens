@@ -143,7 +143,7 @@ contract ConvertToSharesTest is LeverageManagerTest {
         uint128 totalEquity = 100;
 
         uint256 managementFee = 0.1e4; // 10%
-        _setManagementFee(feeManagerRole, managementFee);
+        _setManagementFee(feeManagerRole, leverageToken, managementFee);
         feeManager.chargeManagementFee(leverageToken);
 
         _mockState_ConvertToShares(
@@ -168,7 +168,7 @@ contract ConvertToSharesTest is LeverageManagerTest {
 
         uint256 managementFee = 0.1e4; // 10%
 
-        _setManagementFee(feeManagerRole, managementFee);
+        _setManagementFee(feeManagerRole, leverageToken, managementFee);
         feeManager.chargeManagementFee(leverageToken);
 
         _mockState_ConvertToShares(

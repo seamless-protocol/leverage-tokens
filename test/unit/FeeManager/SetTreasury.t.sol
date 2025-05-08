@@ -32,15 +32,9 @@ contract SetTreasuryTest is FeeManagerTest {
         _setTreasury(caller, _treasury);
     }
 
-    function test_setTreasury_ZeroAddressResetsTreasuryAndManagementFees() public {
-        _setTreasury(feeManagerRole, makeAddr("treasury"));
-        _setTreasuryActionFee(feeManagerRole, ExternalAction.Mint, 100);
-        _setTreasuryActionFee(feeManagerRole, ExternalAction.Redeem, 100);
-        _setManagementFee(feeManagerRole, 100);
-
+    /// forge-config: default.fuzz.runs = 1
+    function test_setTreasury_RevertIf_TreasuryIsZeroAddress() public {
+        vm.expectRevert(abi.encodeWithSelector(IFeeManager.ZeroAddressTreasury.selector));
         _setTreasury(feeManagerRole, address(0));
-        assertEq(feeManager.getTreasuryActionFee(ExternalAction.Mint), 0);
-        assertEq(feeManager.getTreasuryActionFee(ExternalAction.Redeem), 0);
-        assertEq(feeManager.getManagementFee(), 0);
     }
 }

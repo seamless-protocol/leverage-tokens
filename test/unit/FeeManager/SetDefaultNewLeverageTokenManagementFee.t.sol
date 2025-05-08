@@ -10,38 +10,40 @@ import {FeeManager} from "src/FeeManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 
-contract SetManagementFeeTest is FeeManagerTest {
+contract SetDefaultNewLeverageTokenManagementFeeTest is FeeManagerTest {
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_setManagementFee(ILeverageToken token, uint256 managementFee) public {
+    function testFuzz_setDefaultNewLeverageTokenManagementFee(uint256 managementFee) public {
         managementFee = bound(managementFee, 0, MAX_FEE);
 
         vm.expectEmit(true, true, true, true);
-        emit IFeeManager.ManagementFeeSet(token, managementFee);
-        _setManagementFee(feeManagerRole, token, managementFee);
+        emit IFeeManager.DefaultNewLeverageTokenManagementFeeSet(managementFee);
+        _setDefaultNewLeverageTokenManagementFee(feeManagerRole, managementFee);
 
-        assertEq(feeManager.getManagementFee(token), managementFee);
+        assertEq(feeManager.getDefaultNewLeverageTokenManagementFee(), managementFee);
     }
 
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_setManagementFee_RevertIf_FeeTooHigh(ILeverageToken token, uint256 managementFee) public {
+    function testFuzz_setDefaultNewLeverageTokenManagementFee_RevertIf_FeeTooHigh(uint256 managementFee) public {
         managementFee = bound(managementFee, MAX_FEE + 1, type(uint256).max);
 
         vm.expectRevert(abi.encodeWithSelector(IFeeManager.FeeTooHigh.selector, managementFee, MAX_FEE));
-        vm.prank(feeManagerRole);
-        feeManager.setManagementFee(token, managementFee);
+        _setDefaultNewLeverageTokenManagementFee(feeManagerRole, managementFee);
     }
 
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_setManagementFee_RevertIf_CallerIsNotFeeManagerRole(address caller, ILeverageToken token)
-        public
-    {
+    function testFuzz_setDefaultNewLeverageTokenManagementFee_RevertIf_CallerIsNotFeeManagerRole(
+        address caller,
+        uint256 managementFee
+    ) public {
         vm.assume(caller != feeManagerRole);
+
+        managementFee = bound(managementFee, 0, MAX_FEE);
 
         vm.expectRevert(
             abi.encodeWithSelector(
                 IAccessControl.AccessControlUnauthorizedAccount.selector, caller, feeManager.FEE_MANAGER_ROLE()
             )
         );
-        _setManagementFee(caller, token, 0);
+        _setDefaultNewLeverageTokenManagementFee(caller, managementFee);
     }
 }

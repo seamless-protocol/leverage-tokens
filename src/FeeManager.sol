@@ -37,8 +37,10 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     struct FeeManagerStorage {
         /// @dev Treasury address that receives treasury fees and management fees
         address treasury;
-        /// @dev Annual management fee. 100_00 is 100% per year
-        uint256 managementFee;
+        /// @dev Annual management fee for LeverageToken at creation. 100_00 is 100% per year
+        uint256 defaultNewLeverageTokenManagementFee;
+        /// @dev Annual management fee for each LeverageToken. 100_00 is 100% per year
+        mapping(ILeverageToken token => uint256) managementFee;
         /// @dev Timestamp when the management fee was most recently accrued for each LeverageToken
         mapping(ILeverageToken token => uint120) lastManagementFeeAccrualTimestamp;
         /// @dev Treasury action fee for each action. 100_00 is 100%
@@ -55,13 +57,19 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
         }
     }
 
-    function __FeeManager_init(address defaultAdmin) public onlyInitializing {
+    function __FeeManager_init(address defaultAdmin, address treasury) public onlyInitializing {
         __AccessControl_init_unchained();
-        __FeeManager_init_unchained(defaultAdmin);
+        __FeeManager_init_unchained(defaultAdmin, treasury);
     }
 
-    function __FeeManager_init_unchained(address defaultAdmin) internal onlyInitializing {
+    function __FeeManager_init_unchained(address defaultAdmin, address treasury) internal onlyInitializing {
         _grantRole(DEFAULT_ADMIN_ROLE, defaultAdmin);
+        _setTreasury(treasury);
+    }
+
+    /// @inheritdoc IFeeManager
+    function getDefaultNewLeverageTokenManagementFee() public view returns (uint256) {
+        return _getFeeManagerStorage().defaultNewLeverageTokenManagementFee;
     }
 
     /// @inheritdoc IFeeManager
@@ -75,8 +83,8 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     }
 
     /// @inheritdoc IFeeManager
-    function getManagementFee() public view returns (uint256 fee) {
-        return _getFeeManagerStorage().managementFee;
+    function getManagementFee(ILeverageToken token) public view returns (uint256 fee) {
+        return _getFeeManagerStorage().managementFee[token];
     }
 
     /// @inheritdoc IFeeManager
@@ -90,38 +98,29 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     }
 
     /// @inheritdoc IFeeManager
-    function setManagementFee(uint256 fee) external onlyRole(FEE_MANAGER_ROLE) {
+    function setDefaultNewLeverageTokenManagementFee(uint256 fee) external onlyRole(FEE_MANAGER_ROLE) {
         _validateFee(fee);
-        if (getTreasury() == address(0)) {
-            revert TreasuryNotSet();
-        }
 
-        _getFeeManagerStorage().managementFee = fee;
-        emit ManagementFeeSet(fee);
+        _getFeeManagerStorage().defaultNewLeverageTokenManagementFee = fee;
+        emit DefaultNewLeverageTokenManagementFeeSet(fee);
+    }
+
+    /// @inheritdoc IFeeManager
+    function setManagementFee(ILeverageToken token, uint256 fee) external onlyRole(FEE_MANAGER_ROLE) {
+        _validateFee(fee);
+
+        _getFeeManagerStorage().managementFee[token] = fee;
+        emit ManagementFeeSet(token, fee);
     }
 
     /// @inheritdoc IFeeManager
     function setTreasury(address treasury) external onlyRole(FEE_MANAGER_ROLE) {
-        FeeManagerStorage storage $ = _getFeeManagerStorage();
-        $.treasury = treasury;
-
-        // If the treasury is reset, the treasury action fees and management fee should be reset as well
-        if (treasury == address(0)) {
-            $.treasuryActionFee[ExternalAction.Mint] = 0;
-            $.treasuryActionFee[ExternalAction.Redeem] = 0;
-            $.managementFee = 0;
-        }
-
-        emit TreasurySet(treasury);
+        _setTreasury(treasury);
     }
 
     /// @inheritdoc IFeeManager
     function setTreasuryActionFee(ExternalAction action, uint256 fee) external onlyRole(FEE_MANAGER_ROLE) {
         _validateFee(fee);
-        if (getTreasury() == address(0)) {
-            revert TreasuryNotSet();
-        }
-
         _getFeeManagerStorage().treasuryActionFee[action] = fee;
 
         emit TreasuryActionFeeSet(action, fee);
@@ -133,24 +132,17 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
         uint256 sharesFee = _getAccruedManagementFee(token);
         _getFeeManagerStorage().lastManagementFeeAccrualTimestamp[token] = uint120(block.timestamp);
 
-        address treasury = getTreasury();
-        if (treasury != address(0)) {
-            // slither-disable-next-line reentrancy-events
-            token.mint(treasury, sharesFee);
-            emit ManagementFeeCharged(token, sharesFee);
-        }
+        // slither-disable-next-line reentrancy-events
+        token.mint(getTreasury(), sharesFee);
+        emit ManagementFeeCharged(token, sharesFee);
     }
 
     /// @notice Function that mints shares to the treasury for the treasury action fee, if the treasury is set
     /// @param token LeverageToken to mint shares to treasury for
     /// @param shares Shares to mint
-    /// @dev If the treasury is not set, this function does not mint any shares and does not revert
     /// @dev This contract must be authorized to mint shares for the LeverageToken
     function _chargeTreasuryFee(ILeverageToken token, uint256 shares) internal {
-        address treasury = getTreasury();
-        if (treasury != address(0)) {
-            token.mint(treasury, shares);
-        }
+        token.mint(getTreasury(), shares);
     }
 
     /// @notice Computes the token action fee for a given action
@@ -181,12 +173,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     /// @param action Action to compute treasury action fee for
     /// @param shares Shares to compute treasury action fee for
     /// @return treasuryFee Treasury action fee amount in shares
-    /// @dev If the treasury is not set, this function returns 0, regardless of what the treasury action fee is set to
     function _computeTreasuryFee(ExternalAction action, uint256 shares) internal view returns (uint256) {
-        if (getTreasury() == address(0)) {
-            return 0;
-        }
-
         return Math.mulDiv(shares, getTreasuryActionFee(action), MAX_FEE, Math.Rounding.Ceil);
     }
 
@@ -203,7 +190,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     /// @param token LeverageToken to calculate management fee shares for
     /// @return shares Shares to mint
     function _getAccruedManagementFee(ILeverageToken token) internal view returns (uint256) {
-        uint256 managementFee = getManagementFee();
+        uint256 managementFee = getManagementFee(token);
         uint120 lastManagementFeeAccrualTimestamp = getLastManagementFeeAccrualTimestamp(token);
         uint256 totalSupply = token.totalSupply();
 
@@ -224,6 +211,29 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
 
         _getFeeManagerStorage().tokenActionFee[token][action] = fee;
         emit LeverageTokenActionFeeSet(token, action, fee);
+    }
+
+    /// @notice Sets the management fee for a new LeverageToken and the last management fee accrual timestamp to the
+    /// current timestamp
+    /// @param token LeverageToken to set management fee for
+    function _setNewLeverageTokenManagementFee(ILeverageToken token) internal {
+        uint256 fee = _getFeeManagerStorage().defaultNewLeverageTokenManagementFee;
+
+        _getFeeManagerStorage().managementFee[token] = fee;
+        _getFeeManagerStorage().lastManagementFeeAccrualTimestamp[token] = uint120(block.timestamp);
+        emit ManagementFeeSet(token, fee);
+    }
+
+    /// @notice Sets the treasury address
+    /// @param treasury Treasury address to set
+    /// @dev Reverts if the treasury address is zero
+    function _setTreasury(address treasury) internal {
+        if (treasury == address(0)) {
+            revert ZeroAddressTreasury();
+        }
+
+        _getFeeManagerStorage().treasury = treasury;
+        emit TreasurySet(treasury);
     }
 
     /// @notice Validates that the fee is not higher than 100%

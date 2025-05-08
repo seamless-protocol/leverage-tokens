@@ -14,7 +14,7 @@ contract RedeemTest is PreviewActionTest {
         leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Redeem, 0.05e4); // 5% fee
         _setTreasuryActionFee(ExternalAction.Redeem, 0.05e4); // 5% fee
 
-        _setManagementFee(feeManagerRole, 0.1e4); // 10% management fee
+        _setManagementFee(feeManagerRole, leverageToken, 0.1e4); // 10% management fee
         feeManager.chargeManagementFee(leverageToken);
 
         // 1:2 exchange rate
@@ -37,22 +37,6 @@ contract RedeemTest is PreviewActionTest {
 
         uint256 equityToRedeem = 10 ether;
         _testRedeem(equityToRedeem, type(uint256).max);
-    }
-
-    function test_redeem_TreasuryNotSet() public {
-        _setTreasuryActionFee(ExternalAction.Redeem, 0.05e4); // 5% fee
-        _setTreasury(feeManagerRole, address(0));
-
-        MockLeverageManagerStateForAction memory beforeState =
-            MockLeverageManagerStateForAction({collateral: 200 ether, debt: 100 ether, sharesTotalSupply: 100 ether});
-
-        _prepareLeverageManagerStateForAction(beforeState);
-
-        uint256 equityToRedeem = 10 ether;
-        _testRedeem(equityToRedeem, type(uint256).max);
-
-        // Treasury (zero address) should not receive any shares, even though there is a treasury action fee
-        assertEq(leverageToken.balanceOf(address(0)), 0);
     }
 
     function test_redeem_ZeroEquity() public {
