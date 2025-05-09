@@ -15,7 +15,7 @@ interface IFeeManager {
 
     /// @notice Emitted when the default management fee for new LeverageTokens is updated
     /// @param fee The default management fee for new LeverageTokens, 100_00 is 100%
-    event DefaultNewLeverageTokenManagementFeeSet(uint256 fee);
+    event DefaultManagementFeeAtCreationSet(uint256 fee);
 
     /// @notice Emitted when a LeverageToken fee is set for a specific action
     /// @param leverageToken The LeverageToken that the fee was set for
@@ -50,7 +50,7 @@ interface IFeeManager {
 
     /// @notice Returns the default management fee for new LeverageTokens
     /// @return fee The default management fee for new LeverageTokens, 100_00 is 100%
-    function getDefaultNewLeverageTokenManagementFee() external view returns (uint256 fee);
+    function getDefaultManagementFeeAtCreation() external view returns (uint256 fee);
 
     /// @notice Returns the timestamp of the most recent management fee accrual for a LeverageToken
     /// @param leverageToken The LeverageToken to get the timestamp for
@@ -72,7 +72,7 @@ interface IFeeManager {
     /// @notice Returns the management fee for a LeverageToken
     /// @param token LeverageToken to get management fee for
     /// @return fee Management fee for the LeverageToken, 100_00 is 100%
-    function getManagementFee(ILeverageToken token) external view returns (uint256 fee);
+    function getLeverageTokenManagementFee(ILeverageToken token) external view returns (uint256 fee);
 
     /// @notice Returns the address of the treasury
     /// @return treasury The address of the treasury
@@ -86,7 +86,7 @@ interface IFeeManager {
     /// @notice Sets the default management fee for new LeverageTokens
     /// @param fee The default management fee for new LeverageTokens, 100_00 is 100%
     /// @dev Only `FEE_MANAGER_ROLE` can call this function
-    function setDefaultNewLeverageTokenManagementFee(uint256 fee) external;
+    function setDefaultManagementFeeAtCreation(uint256 fee) external;
 
     /// @notice Sets the management fee for a LeverageToken
     /// @param token LeverageToken to set management fee for

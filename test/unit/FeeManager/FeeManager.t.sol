@@ -72,9 +72,9 @@ contract FeeManagerTest is Test {
         feeManager.setManagementFee(token, fee);
     }
 
-    function _setDefaultNewLeverageTokenManagementFee(address caller, uint256 fee) internal {
+    function _setDefaultManagementFeeAtCreation(address caller, uint256 fee) internal {
         vm.prank(caller);
-        feeManager.setDefaultNewLeverageTokenManagementFee(fee);
+        feeManager.setDefaultManagementFeeAtCreation(fee);
     }
 
     function _setTreasury(address caller, address _treasury) internal {

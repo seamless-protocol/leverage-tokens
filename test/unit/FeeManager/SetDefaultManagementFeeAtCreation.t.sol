@@ -10,28 +10,28 @@ import {FeeManager} from "src/FeeManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 
-contract SetDefaultNewLeverageTokenManagementFeeTest is FeeManagerTest {
+contract SetDefaultManagementFeeAtCreationTest is FeeManagerTest {
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_setDefaultNewLeverageTokenManagementFee(uint256 managementFee) public {
+    function testFuzz_setDefaultManagementFeeAtCreation(uint256 managementFee) public {
         managementFee = bound(managementFee, 0, MAX_FEE);
 
         vm.expectEmit(true, true, true, true);
-        emit IFeeManager.DefaultNewLeverageTokenManagementFeeSet(managementFee);
-        _setDefaultNewLeverageTokenManagementFee(feeManagerRole, managementFee);
+        emit IFeeManager.DefaultManagementFeeAtCreationSet(managementFee);
+        _setDefaultManagementFeeAtCreation(feeManagerRole, managementFee);
 
-        assertEq(feeManager.getDefaultNewLeverageTokenManagementFee(), managementFee);
+        assertEq(feeManager.getDefaultManagementFeeAtCreation(), managementFee);
     }
 
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_setDefaultNewLeverageTokenManagementFee_RevertIf_FeeTooHigh(uint256 managementFee) public {
+    function testFuzz_setDefaultManagementFeeAtCreation_RevertIf_FeeTooHigh(uint256 managementFee) public {
         managementFee = bound(managementFee, MAX_FEE + 1, type(uint256).max);
 
         vm.expectRevert(abi.encodeWithSelector(IFeeManager.FeeTooHigh.selector, managementFee, MAX_FEE));
-        _setDefaultNewLeverageTokenManagementFee(feeManagerRole, managementFee);
+        _setDefaultManagementFeeAtCreation(feeManagerRole, managementFee);
     }
 
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_setDefaultNewLeverageTokenManagementFee_RevertIf_CallerIsNotFeeManagerRole(
+    function testFuzz_setDefaultManagementFeeAtCreation_RevertIf_CallerIsNotFeeManagerRole(
         address caller,
         uint256 managementFee
     ) public {
@@ -44,6 +44,6 @@ contract SetDefaultNewLeverageTokenManagementFeeTest is FeeManagerTest {
                 IAccessControl.AccessControlUnauthorizedAccount.selector, caller, feeManager.FEE_MANAGER_ROLE()
             )
         );
-        _setDefaultNewLeverageTokenManagementFee(caller, managementFee);
+        _setDefaultManagementFeeAtCreation(caller, managementFee);
     }
 }

@@ -37,8 +37,8 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     struct FeeManagerStorage {
         /// @dev Treasury address that receives treasury fees and management fees
         address treasury;
-        /// @dev Annual management fee for LeverageToken at creation. 100_00 is 100% per year
-        uint256 defaultNewLeverageTokenManagementFee;
+        /// @dev Default annual management fee for LeverageTokens at creation. 100_00 is 100% per year
+        uint256 defaultManagementFeeAtCreation;
         /// @dev Annual management fee for each LeverageToken. 100_00 is 100% per year
         mapping(ILeverageToken token => uint256) managementFee;
         /// @dev Timestamp when the management fee was most recently accrued for each LeverageToken
@@ -68,8 +68,8 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     }
 
     /// @inheritdoc IFeeManager
-    function getDefaultNewLeverageTokenManagementFee() public view returns (uint256) {
-        return _getFeeManagerStorage().defaultNewLeverageTokenManagementFee;
+    function getDefaultManagementFeeAtCreation() public view returns (uint256) {
+        return _getFeeManagerStorage().defaultManagementFeeAtCreation;
     }
 
     /// @inheritdoc IFeeManager
@@ -83,7 +83,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     }
 
     /// @inheritdoc IFeeManager
-    function getManagementFee(ILeverageToken token) public view returns (uint256 fee) {
+    function getLeverageTokenManagementFee(ILeverageToken token) public view returns (uint256 fee) {
         return _getFeeManagerStorage().managementFee[token];
     }
 
@@ -98,11 +98,11 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     }
 
     /// @inheritdoc IFeeManager
-    function setDefaultNewLeverageTokenManagementFee(uint256 fee) external onlyRole(FEE_MANAGER_ROLE) {
+    function setDefaultManagementFeeAtCreation(uint256 fee) external onlyRole(FEE_MANAGER_ROLE) {
         _validateFee(fee);
 
-        _getFeeManagerStorage().defaultNewLeverageTokenManagementFee = fee;
-        emit DefaultNewLeverageTokenManagementFeeSet(fee);
+        _getFeeManagerStorage().defaultManagementFeeAtCreation = fee;
+        emit DefaultManagementFeeAtCreationSet(fee);
     }
 
     /// @inheritdoc IFeeManager
@@ -193,7 +193,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     /// @param token LeverageToken to calculate management fee shares for
     /// @return shares Shares to mint
     function _getAccruedManagementFee(ILeverageToken token) internal view returns (uint256) {
-        uint256 managementFee = getManagementFee(token);
+        uint256 managementFee = getLeverageTokenManagementFee(token);
         uint120 lastManagementFeeAccrualTimestamp = getLastManagementFeeAccrualTimestamp(token);
         uint256 totalSupply = token.totalSupply();
 
@@ -220,7 +220,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     /// current timestamp
     /// @param token LeverageToken to set management fee for
     function _setNewLeverageTokenManagementFee(ILeverageToken token) internal {
-        uint256 fee = _getFeeManagerStorage().defaultNewLeverageTokenManagementFee;
+        uint256 fee = _getFeeManagerStorage().defaultManagementFeeAtCreation;
 
         _getFeeManagerStorage().managementFee[token] = fee;
         _getFeeManagerStorage().lastManagementFeeAccrualTimestamp[token] = uint120(block.timestamp);
