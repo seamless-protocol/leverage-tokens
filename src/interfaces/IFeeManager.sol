@@ -72,7 +72,7 @@ interface IFeeManager {
     /// @notice Returns the management fee for a LeverageToken
     /// @param token LeverageToken to get management fee for
     /// @return fee Management fee for the LeverageToken, 100_00 is 100%
-    function getLeverageTokenManagementFee(ILeverageToken token) external view returns (uint256 fee);
+    function getManagementFee(ILeverageToken token) external view returns (uint256 fee);
 
     /// @notice Returns the address of the treasury
     /// @return treasury The address of the treasury

@@ -26,7 +26,7 @@ contract SetManagementFeeTest is FeeManagerTest {
         emit IFeeManager.ManagementFeeSet(token, managementFee);
         _setManagementFee(feeManagerRole, token, managementFee);
 
-        assertEq(feeManager.getLeverageTokenManagementFee(token), managementFee);
+        assertEq(feeManager.getManagementFee(token), managementFee);
     }
 
     /// forge-config: default.fuzz.runs = 1
@@ -77,7 +77,7 @@ contract SetManagementFeeTest is FeeManagerTest {
         _setManagementFee(feeManagerRole, leverageToken, newManagementFee);
 
         assertEq(leverageToken.totalSupply(), initialSupply + expectedOutstandingFees);
-        assertEq(feeManager.getLeverageTokenManagementFee(leverageToken), newManagementFee);
+        assertEq(feeManager.getManagementFee(leverageToken), newManagementFee);
         assertEq(feeManager.getLastManagementFeeAccrualTimestamp(leverageToken), block.timestamp);
     }
 }

@@ -83,7 +83,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     }
 
     /// @inheritdoc IFeeManager
-    function getLeverageTokenManagementFee(ILeverageToken token) public view returns (uint256 fee) {
+    function getManagementFee(ILeverageToken token) public view returns (uint256 fee) {
         return _getFeeManagerStorage().managementFee[token];
     }
 
@@ -193,7 +193,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     /// @param token LeverageToken to calculate management fee shares for
     /// @return shares Shares to mint
     function _getAccruedManagementFee(ILeverageToken token) internal view returns (uint256) {
-        uint256 managementFee = getLeverageTokenManagementFee(token);
+        uint256 managementFee = getManagementFee(token);
         uint120 lastManagementFeeAccrualTimestamp = getLastManagementFeeAccrualTimestamp(token);
         uint256 totalSupply = token.totalSupply();
 
