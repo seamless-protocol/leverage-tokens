@@ -24,8 +24,16 @@ contract CreateNewLeverageTokenTest is LeverageManagerTest {
         string memory name,
         string memory symbol,
         string memory rebalanceAdapterName,
-        string memory lendingAdapterName
+        string memory lendingAdapterName,
+        address _treasury,
+        uint256 defaultManagementFeeAtCreation
     ) public {
+        vm.assume(_treasury != address(0));
+        defaultManagementFeeAtCreation = bound(defaultManagementFeeAtCreation, 0, MAX_FEE);
+
+        _setTreasury(feeManagerRole, _treasury);
+        _setDefaultManagementFeeAtCreation(feeManagerRole, defaultManagementFeeAtCreation);
+
         config.rebalanceAdapter = IRebalanceAdapterBase(makeAddr(rebalanceAdapterName));
         config.lendingAdapter = ILendingAdapter(makeAddr(lendingAdapterName));
 

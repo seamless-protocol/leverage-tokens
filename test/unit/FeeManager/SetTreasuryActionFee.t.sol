@@ -48,11 +48,4 @@ contract SetTreasuryActionFeeTest is FeeManagerTest {
         vm.expectRevert(abi.encodeWithSelector(IFeeManager.FeeTooHigh.selector, fee, MAX_FEE));
         _setTreasuryActionFee(feeManagerRole, action, fee);
     }
-
-    function test_setTreasuryActionFee_RevertIf_TreasuryNotSet() public {
-        _setTreasury(feeManagerRole, address(0));
-
-        vm.expectRevert(abi.encodeWithSelector(IFeeManager.TreasuryNotSet.selector));
-        _setTreasuryActionFee(feeManagerRole, ExternalAction.Mint, 100);
-    }
 }

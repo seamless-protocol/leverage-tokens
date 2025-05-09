@@ -169,12 +169,13 @@ contract LeverageManagerRedeemTest is LeverageManagerTest {
         uint256 treasuryActionFee = 10_00; // 10%
         leverageManager.setTreasuryActionFee(ExternalAction.Redeem, treasuryActionFee); // 10%
 
-        uint128 managementFee = 10_00; // 10%
-        leverageManager.setManagementFee(managementFee);
-
         uint256 tokenActionFee = 10_00; // 10%
         leverageToken =
             _createNewLeverageToken(BASE_RATIO, 2 * BASE_RATIO, 3 * BASE_RATIO, tokenActionFee, tokenActionFee);
+
+        uint256 managementFee = 10_00; // 10%
+        leverageManager.setManagementFee(leverageToken, managementFee);
+
         morphoLendingAdapter =
             MorphoLendingAdapter(address(leverageManager.getLeverageTokenLendingAdapter(leverageToken)));
 

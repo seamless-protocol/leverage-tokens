@@ -48,7 +48,7 @@ contract LeverageManagerTest is FeeManagerTest {
 
         address leverageManagerProxy = UnsafeUpgrades.deployUUPSProxy(
             leverageManagerImplementation,
-            abi.encodeWithSelector(LeverageManager.initialize.selector, defaultAdmin, leverageTokenFactory)
+            abi.encodeWithSelector(LeverageManager.initialize.selector, defaultAdmin, treasury, leverageTokenFactory)
         );
         leverageManager = LeverageManagerHarness(leverageManagerProxy);
 
@@ -57,8 +57,6 @@ contract LeverageManagerTest is FeeManagerTest {
 
         feeManager = FeeManagerHarness(address(leverageManager));
         vm.stopPrank();
-
-        _setTreasury(feeManagerRole, treasury);
     }
 
     function test_setUp() public view virtual override {

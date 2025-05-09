@@ -18,18 +18,4 @@ contract ComputeTreasuryFeeTest is FeeManagerTest {
         assertEq(treasuryFee, Math.mulDiv(shares, treasuryActionFee, MAX_FEE, Math.Rounding.Ceil));
         assertLe(treasuryFee, shares); // Treasury fee is less than or equal to the shares
     }
-
-    /// forge-config: default.fuzz.runs = 1
-    function testFuzz_computeTreasuryFee_TreasuryNotSet(uint8 actionNum, uint128 shares, uint256 treasuryActionFee)
-        public
-    {
-        ExternalAction action = ExternalAction(actionNum % 2);
-        treasuryActionFee = bound(treasuryActionFee, 0, MAX_FEE);
-
-        _setTreasuryActionFee(feeManagerRole, action, treasuryActionFee);
-        _setTreasury(feeManagerRole, address(0));
-
-        uint256 treasuryFee = feeManager.exposed_computeTreasuryFee(action, shares);
-        assertEq(treasuryFee, 0);
-    }
 }
