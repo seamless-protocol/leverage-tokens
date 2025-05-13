@@ -46,6 +46,7 @@ contract LeverageManagerHandler is Test {
     struct RedeemActionData {
         ILeverageToken leverageToken;
         uint256 equityInCollateralAsset;
+        uint256 equityInDebtAsset;
         ActionData preview;
     }
 
@@ -176,6 +177,7 @@ contract LeverageManagerHandler is Test {
         uint256 equityForRedeem = _boundEquityForRedeem(currentLeverageToken, currentActor, seed);
 
         ActionData memory preview = leverageManager.previewRedeem(currentLeverageToken, equityForRedeem);
+        ILendingAdapter lendingAdapter = leverageManager.getLeverageTokenLendingAdapter(currentLeverageToken);
 
         _saveLeverageTokenState(
             currentLeverageToken,
@@ -184,6 +186,7 @@ contract LeverageManagerHandler is Test {
                 RedeemActionData({
                     leverageToken: currentLeverageToken,
                     equityInCollateralAsset: equityForRedeem,
+                    equityInDebtAsset: lendingAdapter.convertCollateralToDebtAsset(equityForRedeem),
                     preview: preview
                 })
             )
@@ -276,15 +279,13 @@ contract LeverageManagerHandler is Test {
         uint256 collateral = lendingAdapter.getCollateral();
         uint256 collateralInDebtAsset = lendingAdapter.convertCollateralToDebtAsset(collateral);
         uint256 debt = lendingAdapter.getDebt();
+        uint256 debtInCollateralAsset = lendingAdapter.convertDebtToCollateralAsset(debt);
         uint256 totalSupply = leverageToken.totalSupply();
         uint256 equityInCollateralAsset = lendingAdapter.getEquityInCollateralAsset();
         uint256 equityInDebtAsset = lendingAdapter.getEquityInDebtAsset();
-        uint256 collateralRatioUsingDebtNormalized = Math.mulDiv(
-            lendingAdapter.getCollateral(),
-            BASE_RATIO,
-            lendingAdapter.convertDebtToCollateralAsset(lendingAdapter.getDebt()),
-            Math.Rounding.Floor
-        );
+        uint256 collateralRatioUsingDebtNormalized = debtInCollateralAsset > 0
+            ? Math.mulDiv(collateral, BASE_RATIO, debtInCollateralAsset, Math.Rounding.Floor)
+            : type(uint256).max;
 
         leverageTokenStateBefore = LeverageTokenStateData({
             leverageToken: leverageToken,

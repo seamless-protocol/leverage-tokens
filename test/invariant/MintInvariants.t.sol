@@ -184,12 +184,10 @@ contract MintInvariants is InvariantTestBase {
                 )
             );
 
-            uint256 collateralRatioUsingDebtNormalized = Math.mulDiv(
-                lendingAdapter.getCollateral(),
-                BASE_RATIO,
-                lendingAdapter.convertDebtToCollateralAsset(lendingAdapter.getDebt()),
-                Math.Rounding.Floor
-            );
+            uint256 debtInCollateralAsset = lendingAdapter.convertDebtToCollateralAsset(lendingAdapter.getDebt());
+            uint256 collateralRatioUsingDebtNormalized = debtInCollateralAsset > 0
+                ? Math.mulDiv(lendingAdapter.getCollateral(), BASE_RATIO, debtInCollateralAsset, Math.Rounding.Floor)
+                : type(uint256).max;
             bool isCollateralRatioGe = collateralRatioUsingDebtNormalized
                 >= stateBefore.collateralRatioUsingDebtNormalized
                 || stateAfter.collateralRatio >= stateBefore.collateralRatio;
