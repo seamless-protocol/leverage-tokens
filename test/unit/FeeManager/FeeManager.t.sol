@@ -9,6 +9,7 @@ import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 // Local imports
+import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {FeeManager} from "src/FeeManager.sol";
 import {FeeManagerHarness} from "test/unit/harness/FeeManagerHarness.sol";
@@ -29,14 +30,12 @@ contract FeeManagerTest is Test {
     function setUp() public virtual {
         address feeManagerImplementation = address(new FeeManagerHarness());
         address feeManagerProxy = UnsafeUpgrades.deployUUPSProxy(
-            feeManagerImplementation, abi.encodeWithSelector(FeeManagerHarness.initialize.selector, address(this))
+            feeManagerImplementation,
+            abi.encodeWithSelector(FeeManagerHarness.initialize.selector, address(this), treasury)
         );
 
         feeManager = FeeManagerHarness(feeManagerProxy);
         feeManager.grantRole(feeManager.FEE_MANAGER_ROLE(), feeManagerRole);
-
-        vm.prank(feeManagerRole);
-        feeManager.setTreasury(treasury);
     }
 
     function test_setUp() public view virtual {
@@ -50,12 +49,32 @@ contract FeeManagerTest is Test {
 
     function test_feeManagerInit_RevertsIfNotInitializer() public {
         vm.expectRevert(Initializable.NotInitializing.selector);
-        feeManager.__FeeManager_init(address(this));
+        feeManager.__FeeManager_init(address(this), treasury);
+    }
+
+    function test_feeManagerInit_RevertsIfTreasuryIsZeroAddress() public {
+        address feeManagerImplementation = address(new FeeManagerHarness());
+
+        vm.expectRevert(abi.encodeWithSelector(IFeeManager.ZeroAddressTreasury.selector));
+        UnsafeUpgrades.deployUUPSProxy(
+            feeManagerImplementation,
+            abi.encodeWithSelector(FeeManagerHarness.initialize.selector, address(this), address(0))
+        );
     }
 
     function _setTreasuryActionFee(address caller, ExternalAction action, uint256 fee) internal {
         vm.prank(caller);
         feeManager.setTreasuryActionFee(action, fee);
+    }
+
+    function _setManagementFee(address caller, ILeverageToken token, uint256 fee) internal {
+        vm.prank(caller);
+        feeManager.setManagementFee(token, fee);
+    }
+
+    function _setDefaultManagementFeeAtCreation(address caller, uint256 fee) internal {
+        vm.prank(caller);
+        feeManager.setDefaultManagementFeeAtCreation(fee);
     }
 
     function _setTreasury(address caller, address _treasury) internal {

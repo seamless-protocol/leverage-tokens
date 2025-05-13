@@ -54,6 +54,8 @@ contract LeverageRouter is ILeverageRouter {
         ILeverageToken token;
         // Amount of equity to receive by redeeming, denominated in the collateral asset
         uint256 equityInCollateralAsset;
+        // Amount of LeverageToken shares to redeem for the equity
+        uint256 shares;
         // Maximum amount of shares (LeverageTokens) to be burned during the redeem
         uint256 maxShares;
         // Maximum cost to the sender for the swap of debt to collateral during the redeem to repay the flash loan,
@@ -128,12 +130,13 @@ contract LeverageRouter is ILeverageRouter {
         uint256 maxSwapCostInCollateralAsset,
         ISwapAdapter.SwapContext memory swapContext
     ) external {
-        uint256 debtToBorrow = leverageManager.previewRedeem(token, equityInCollateralAsset).debt;
+        ActionData memory actionData = leverageManager.previewRedeem(token, equityInCollateralAsset);
 
         bytes memory redeemData = abi.encode(
             RedeemParams({
                 token: token,
                 equityInCollateralAsset: equityInCollateralAsset,
+                shares: actionData.shares,
                 maxShares: maxShares,
                 maxSwapCostInCollateralAsset: maxSwapCostInCollateralAsset,
                 sender: msg.sender,
@@ -144,7 +147,7 @@ contract LeverageRouter is ILeverageRouter {
         // Flash loan the debt asset required to repay the flash loan, and pass the required data to the Morpho flash loan callback handler for the redeem.
         morpho.flashLoan(
             address(leverageManager.getLeverageTokenDebtAsset(token)),
-            debtToBorrow,
+            actionData.debt,
             abi.encode(MorphoCallbackData({action: ExternalAction.Redeem, data: redeemData}))
         );
     }
@@ -229,7 +232,7 @@ contract LeverageRouter is ILeverageRouter {
 
         // Transfer the shares from the sender
         // slither-disable-next-line arbitrary-send-erc20
-        SafeERC20.safeTransferFrom(params.token, params.sender, address(this), params.maxShares);
+        SafeERC20.safeTransferFrom(params.token, params.sender, address(this), params.shares);
 
         // Redeem the equity from the leverage token
         SafeERC20.forceApprove(debtAsset, address(leverageManager), debtLoanAmount);

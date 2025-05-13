@@ -14,15 +14,4 @@ contract ChargeTreasuryFeeTest is FeeManagerTest {
 
         assertEq(leverageToken.balanceOf(treasury), shares);
     }
-
-    /// forge-config: default.fuzz.runs = 1
-    function testFuzz_chargeTreasuryFee_NoTreasury(uint256 shares) public {
-        vm.prank(feeManagerRole);
-        feeManager.setTreasury(address(0));
-
-        feeManager.exposed_chargeTreasuryFee(leverageToken, shares);
-
-        // No shares are minted to the treasury, and does not revert
-        assertEq(leverageToken.balanceOf(treasury), 0);
-    }
 }

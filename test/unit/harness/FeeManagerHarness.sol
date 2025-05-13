@@ -12,8 +12,8 @@ import {FeeManager} from "src/FeeManager.sol";
 
 /// @notice Wrapper contract that exposes all internal functions ofFeeManager
 contract FeeManagerHarness is FeeManager {
-    function initialize(address defaultAdmin) external initializer {
-        __FeeManager_init(defaultAdmin);
+    function initialize(address defaultAdmin, address treasury) external initializer {
+        __FeeManager_init(defaultAdmin, treasury);
     }
 
     function exposed_getFeeManagerStorageSlot() external pure returns (bytes32 slot) {

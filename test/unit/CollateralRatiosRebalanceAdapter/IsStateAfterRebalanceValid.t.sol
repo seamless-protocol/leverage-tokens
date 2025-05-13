@@ -6,6 +6,8 @@ import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageTokenState} from "src/types/DataTypes.sol";
 
+import "forge-std/console.sol";
+
 contract IsStateAfterRebalanceValidTest is CollateralRatiosRebalanceAdapterTest {
     function test_isStateAfterRebalanceValid_WhenMovingCloserToTarget() public {
         // Initial state is at 3x, moving closer to 2x target
@@ -59,6 +61,7 @@ contract IsStateAfterRebalanceValidTest is CollateralRatiosRebalanceAdapterTest 
         uint256 ratioBefore,
         uint256 ratioAfter
     ) public {
+        vm.assume(ratioBefore != 2e18);
         if (ratioBefore > 2e18) {
             ratioAfter = bound(ratioAfter, 2e18, ratioBefore - 1);
         } else {
@@ -73,8 +76,6 @@ contract IsStateAfterRebalanceValidTest is CollateralRatiosRebalanceAdapterTest 
         });
 
         _mockCollateralRatio(ratioAfter);
-
-        uint256 targetRatio = rebalanceAdapter.getLeverageTokenTargetCollateralRatio();
 
         vm.prank(address(leverageManager));
         bool isValid = rebalanceAdapter.isStateAfterRebalanceValid(leverageToken, stateBefore);

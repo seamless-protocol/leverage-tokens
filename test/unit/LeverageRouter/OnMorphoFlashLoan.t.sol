@@ -73,6 +73,7 @@ contract OnMorphoFlashLoanTest is LeverageRouterTest {
             equityInCollateralAsset,
             requiredDebt,
             requiredCollateral - equityInCollateralAsset,
+            shares,
             shares
         );
 
@@ -80,6 +81,7 @@ contract OnMorphoFlashLoanTest is LeverageRouterTest {
             LeverageRouter.RedeemParams({
                 token: leverageToken,
                 equityInCollateralAsset: equityInCollateralAsset,
+                shares: shares,
                 maxShares: shares,
                 maxSwapCostInCollateralAsset: 0,
                 sender: address(this),

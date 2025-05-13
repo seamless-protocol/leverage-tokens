@@ -135,7 +135,8 @@ contract LeverageRouterTest is Test {
         uint256 equityInCollateralAsset,
         uint256 requiredDebt,
         uint256 requiredCollateralForSwap,
-        uint256 shares
+        uint256 shares,
+        uint256 maxShares
     ) internal {
         swapper.mockNextExactOutputSwap(collateralToken, debtToken, requiredCollateralForSwap);
 
@@ -159,7 +160,7 @@ contract LeverageRouterTest is Test {
             MockLeverageManager.RedeemParams({
                 leverageToken: leverageToken,
                 equityInCollateralAsset: equityInCollateralAsset,
-                maxShares: shares
+                maxShares: maxShares
             }),
             MockLeverageManager.MockRedeemData({
                 collateral: requiredCollateral,

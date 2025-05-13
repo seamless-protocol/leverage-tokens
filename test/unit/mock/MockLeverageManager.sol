@@ -247,7 +247,6 @@ contract MockLeverageManager is Test {
                 leverageTokenData.collateralAsset.transfer(msg.sender, _mockRedeemData.collateral);
 
                 // Burn the sender's shares
-                deal(address(leverageTokenData.leverageToken), address(this), _mockRedeemData.shares);
                 leverageTokenData.leverageToken.burn(msg.sender, _mockRedeemData.shares);
 
                 // Set the mock redeem data to executed
