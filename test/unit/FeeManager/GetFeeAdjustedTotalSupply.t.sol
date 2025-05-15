@@ -6,8 +6,7 @@ import {FeeManagerTest} from "test/unit/FeeManager/FeeManager.t.sol";
 
 contract GetFeeAdjustedTotalSupplyTest is FeeManagerTest {
     function test_getFeeAdjustedTotalSupply() public {
-        vm.prank(feeManagerRole);
-        feeManager.setManagementFee(0.1e4); // 10% management fee
+        _setManagementFee(feeManagerRole, leverageToken, 0.1e4); // 10% management fee
         feeManager.chargeManagementFee(leverageToken);
 
         uint256 totalSupply = 1000;
@@ -33,8 +32,7 @@ contract GetFeeAdjustedTotalSupplyTest is FeeManagerTest {
     }
 
     function test_getFeeAdjustedTotalSupply_MultipleYears() public {
-        vm.prank(feeManagerRole);
-        feeManager.setManagementFee(0.1e4); // 10% management fee
+        _setManagementFee(feeManagerRole, leverageToken, 0.1e4); // 10% management fee
         feeManager.chargeManagementFee(leverageToken);
 
         uint256 totalSupply = 1000;
