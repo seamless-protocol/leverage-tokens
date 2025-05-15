@@ -64,7 +64,9 @@ abstract contract InvariantTestBase is Test {
         address leverageManagerImplementation = address(new LeverageManagerHarness());
         address leverageManagerProxy = UnsafeUpgrades.deployUUPSProxy(
             leverageManagerImplementation,
-            abi.encodeWithSelector(LeverageManager.initialize.selector, defaultAdmin, address(leverageTokenFactory))
+            abi.encodeWithSelector(
+                LeverageManager.initialize.selector, defaultAdmin, treasury, address(leverageTokenFactory)
+            )
         );
         leverageManager = LeverageManagerHarness(leverageManagerProxy);
 
@@ -73,9 +75,6 @@ abstract contract InvariantTestBase is Test {
         vm.startPrank(defaultAdmin);
         leverageManager.grantRole(leverageManager.FEE_MANAGER_ROLE(), feeManagerRole);
         vm.stopPrank();
-
-        vm.prank(feeManagerRole);
-        leverageManager.setTreasury(treasury);
 
         // TODO: Set treasury action and management fees
 
@@ -245,9 +244,9 @@ abstract contract InvariantTestBase is Test {
         leverageManager.setTreasuryActionFee(action, newTreasuryFee);
     }
 
-    function _setManagementFee(uint128 newManagementFee) internal {
+    function _setManagementFee(ILeverageToken leverageToken, uint256 newManagementFee) internal {
         vm.prank(feeManagerRole);
-        leverageManager.setManagementFee(newManagementFee);
+        leverageManager.setManagementFee(leverageToken, newManagementFee);
     }
 
     function _deployAdaptiveCurveIrm() internal returns (address) {
