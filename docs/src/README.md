@@ -4,7 +4,7 @@ The Seamless Leverage Token protocol is comprised of smart contracts that provid
 
 ## Getting Started
 
-This project uses (Foundry)[https://book.getfoundry.sh/] for development.
+This project uses [Foundry](https://book.getfoundry.sh/) for development.
 
 Install dependencies: `forge install`
 
@@ -14,7 +14,7 @@ Build: `forge build`
 
 ## Architecture
 
-The protocol is composed of modular contracts that abstract away the complexities of managing leverage. These components are designed to be flexible, composable, and upgradeable, making it easy to integrate new lending markets, rebalancing strategies, or token configurations.
+The protocol is composed of modular contracts that abstract away the complexities of managing leveraged positions. These components are designed to be flexible, composable, and upgradeable, making it easy to integrate new lending markets, rebalancing strategies, or token configurations.
 
 ### LeverageManager
 
@@ -36,8 +36,8 @@ Each LeverageToken has the following properties:
 LendingAdapters are periphery contracts responsible for interfacing with external lending protocols (e.g., Morpho). Each LeverageToken is configured with a LendingAdapter at the time of creation and must implement the minimal interface `ILendingAdapter`.
 
 Key responsibilities:
-- Own and expose the underlying debt and collateral positions.
-- Abstract lending protocol-specific logic behind a standard interface for the LeverageManager to consume.
+- Own the underlying debt and collateral positions.
+- Abstract lending protocol-specific logic behind a standard interface for the LeverageManager to consume to manage the positions.
 
 ### RebalanceAdapter
 
