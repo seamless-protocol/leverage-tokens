@@ -4,7 +4,7 @@ The Seamless Leverage Token protocol is comprised of smart contracts that provid
 
 ## Getting Started
 
-This project uses (Foundry)[https://book.getfoundry.sh/] for development.
+This project uses [Foundry](https://book.getfoundry.sh/) for development.
 
 Install dependencies: `forge install`
 
