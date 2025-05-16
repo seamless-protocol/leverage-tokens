@@ -1,5 +1,5 @@
 # IFeeManager
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/c66c8e188b984325bffdd199b88ca303e9f58b11/src/interfaces/IFeeManager.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/6c745a1fb2c5cc77df7fd3106f57db1adc947b75/src/interfaces/IFeeManager.sol)
 
 
 ## Functions
@@ -19,6 +19,21 @@ function chargeManagementFee(ILeverageToken token) external;
 |Name|Type|Description|
 |----|----|-----------|
 |`token`|`ILeverageToken`|LeverageToken to charge management fee for|
+
+
+### getDefaultManagementFeeAtCreation
+
+Returns the default management fee for new LeverageTokens
+
+
+```solidity
+function getDefaultManagementFeeAtCreation() external view returns (uint256 fee);
+```
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`fee`|`uint256`|The default management fee for new LeverageTokens, 100_00 is 100%|
 
 
 ### getLastManagementFeeAccrualTimestamp
@@ -69,17 +84,23 @@ function getLeverageTokenActionFee(ILeverageToken leverageToken, ExternalAction 
 
 ### getManagementFee
 
-Returns the management fee for the LeverageManager
+Returns the management fee for a LeverageToken
 
 
 ```solidity
-function getManagementFee() external view returns (uint256 fee);
+function getManagementFee(ILeverageToken token) external view returns (uint256 fee);
 ```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`ILeverageToken`|LeverageToken to get management fee for|
+
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`fee`|`uint256`|Management fee for the LeverageManager, 100_00 is 100%|
+|`fee`|`uint256`|Management fee for the LeverageToken, 100_00 is 100%|
 
 
 ### getTreasury
@@ -118,27 +139,45 @@ function getTreasuryActionFee(ExternalAction action) external view returns (uint
 |`fee`|`uint256`|Fee for action, 100_00 is 100%|
 
 
-### setManagementFee
+### setDefaultManagementFeeAtCreation
 
-Sets the management fee
+Sets the default management fee for new LeverageTokens
 
 *Only `FEE_MANAGER_ROLE` can call this function*
 
 
 ```solidity
-function setManagementFee(uint128 fee) external;
+function setDefaultManagementFeeAtCreation(uint256 fee) external;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`fee`|`uint128`|Management fee, 100_00 is 100%|
+|`fee`|`uint256`|The default management fee for new LeverageTokens, 100_00 is 100%|
+
+
+### setManagementFee
+
+Sets the management fee for a LeverageToken
+
+*Only `FEE_MANAGER_ROLE` can call this function*
+
+
+```solidity
+function setManagementFee(ILeverageToken token, uint256 fee) external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`ILeverageToken`|LeverageToken to set management fee for|
+|`fee`|`uint256`|Management fee, 100_00 is 100%|
 
 
 ### setTreasury
 
-Sets the address of the treasury. The treasury receives all treasury fees from the LeverageManager. If the
-treasury is set to the zero address, the treasury fees are reset to 0 as well
+Sets the address of the treasury. The treasury receives all treasury and management fees from the
+LeverageManager.
 
 *Only `FEE_MANAGER_ROLE` can call this function*
 
@@ -172,6 +211,20 @@ function setTreasuryActionFee(ExternalAction action, uint256 fee) external;
 
 
 ## Events
+### DefaultManagementFeeAtCreationSet
+Emitted when the default management fee for new LeverageTokens is updated
+
+
+```solidity
+event DefaultManagementFeeAtCreationSet(uint256 fee);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`fee`|`uint256`|The default management fee for new LeverageTokens, 100_00 is 100%|
+
 ### LeverageTokenActionFeeSet
 Emitted when a LeverageToken fee is set for a specific action
 
@@ -208,14 +261,15 @@ Emitted when the management fee is set
 
 
 ```solidity
-event ManagementFeeSet(uint128 fee);
+event ManagementFeeSet(ILeverageToken indexed token, uint256 fee);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`fee`|`uint128`|The fee that was set|
+|`token`|`ILeverageToken`|The LeverageToken that the management fee was set for|
+|`fee`|`uint256`|The fee that was set|
 
 ### TreasuryActionFeeSet
 Emitted when a treasury fee is set for a specific action
@@ -262,11 +316,11 @@ error FeeTooHigh(uint256 fee, uint256 maxFee);
 |`fee`|`uint256`|The fee that was set|
 |`maxFee`|`uint256`|The maximum fee that can be set|
 
-### TreasuryNotSet
-Error emitted when trying to set a treasury fee when the treasury address is not set
+### ZeroAddressTreasury
+Error emitted when trying to set the treasury address to the zero address
 
 
 ```solidity
-error TreasuryNotSet();
+error ZeroAddressTreasury();
 ```
 

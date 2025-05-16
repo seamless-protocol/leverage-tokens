@@ -1,5 +1,5 @@
 # LeverageManager
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/c66c8e188b984325bffdd199b88ca303e9f58b11/src/LeverageManager.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/6c745a1fb2c5cc77df7fd3106f57db1adc947b75/src/LeverageManager.sol)
 
 **Inherits:**
 [ILeverageManager](/src/interfaces/ILeverageManager.sol/interface.ILeverageManager.md), AccessControlUpgradeable, ReentrancyGuardTransientUpgradeable, [FeeManager](/src/FeeManager.sol/abstract.FeeManager.md), UUPSUpgradeable
@@ -69,7 +69,9 @@ function _getLeverageManagerStorage() internal pure returns (LeverageManagerStor
 
 
 ```solidity
-function initialize(address initialAdmin, IBeaconProxyFactory leverageTokenFactory) external initializer;
+function initialize(address initialAdmin, address treasury, IBeaconProxyFactory leverageTokenFactory)
+    external
+    initializer;
 ```
 
 ### _authorizeUpgrade
