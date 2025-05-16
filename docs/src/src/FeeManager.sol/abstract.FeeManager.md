@@ -1,5 +1,5 @@
 # FeeManager
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/c66c8e188b984325bffdd199b88ca303e9f58b11/src/FeeManager.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/6c745a1fb2c5cc77df7fd3106f57db1adc947b75/src/FeeManager.sol)
 
 **Inherits:**
 [IFeeManager](/src/interfaces/IFeeManager.sol/interface.IFeeManager.md), Initializable, AccessControlUpgradeable
@@ -50,15 +50,30 @@ function _getFeeManagerStorage() internal pure returns (FeeManagerStorage storag
 
 
 ```solidity
-function __FeeManager_init(address defaultAdmin) public onlyInitializing;
+function __FeeManager_init(address defaultAdmin, address treasury) public onlyInitializing;
 ```
 
 ### __FeeManager_init_unchained
 
 
 ```solidity
-function __FeeManager_init_unchained(address defaultAdmin) internal onlyInitializing;
+function __FeeManager_init_unchained(address defaultAdmin, address treasury) internal onlyInitializing;
 ```
+
+### getDefaultManagementFeeAtCreation
+
+Returns the default management fee for new LeverageTokens
+
+
+```solidity
+function getDefaultManagementFeeAtCreation() public view returns (uint256);
+```
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`uint256`|fee The default management fee for new LeverageTokens, 100_00 is 100%|
+
 
 ### getLastManagementFeeAccrualTimestamp
 
@@ -105,17 +120,23 @@ function getLeverageTokenActionFee(ILeverageToken token, ExternalAction action) 
 
 ### getManagementFee
 
-Returns the management fee for the LeverageManager
+Returns the management fee for a LeverageToken
 
 
 ```solidity
-function getManagementFee() public view returns (uint256 fee);
+function getManagementFee(ILeverageToken token) public view returns (uint256 fee);
 ```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`ILeverageToken`|LeverageToken to get management fee for|
+
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`fee`|`uint256`|Management fee for the LeverageManager, 100_00 is 100%|
+|`fee`|`uint256`|Management fee for the LeverageToken, 100_00 is 100%|
 
 
 ### getTreasury
@@ -154,27 +175,45 @@ function getTreasuryActionFee(ExternalAction action) public view returns (uint25
 |`fee`|`uint256`|Fee for action, 100_00 is 100%|
 
 
-### setManagementFee
+### setDefaultManagementFeeAtCreation
 
-Sets the management fee
+Sets the default management fee for new LeverageTokens
 
 *Only `FEE_MANAGER_ROLE` can call this function*
 
 
 ```solidity
-function setManagementFee(uint128 fee) external onlyRole(FEE_MANAGER_ROLE);
+function setDefaultManagementFeeAtCreation(uint256 fee) external onlyRole(FEE_MANAGER_ROLE);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`fee`|`uint128`|Management fee, 100_00 is 100%|
+|`fee`|`uint256`|The default management fee for new LeverageTokens, 100_00 is 100%|
+
+
+### setManagementFee
+
+Sets the management fee for a LeverageToken
+
+*Only `FEE_MANAGER_ROLE` can call this function*
+
+
+```solidity
+function setManagementFee(ILeverageToken token, uint256 fee) external onlyRole(FEE_MANAGER_ROLE);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`ILeverageToken`|LeverageToken to set management fee for|
+|`fee`|`uint256`|Management fee, 100_00 is 100%|
 
 
 ### setTreasury
 
-Sets the address of the treasury. The treasury receives all treasury fees from the LeverageManager. If the
-treasury is set to the zero address, the treasury fees are reset to 0 as well
+Sets the address of the treasury. The treasury receives all treasury and management fees from the
+LeverageManager.
 
 *Only `FEE_MANAGER_ROLE` can call this function*
 
@@ -229,8 +268,6 @@ function chargeManagementFee(ILeverageToken token) public;
 
 Function that mints shares to the treasury for the treasury action fee, if the treasury is set
 
-*If the treasury is not set, this function does not mint any shares and does not revert*
-
 *This contract must be authorized to mint shares for the LeverageToken*
 
 
@@ -277,8 +314,6 @@ function _computeTokenFee(ILeverageToken token, uint256 equity, ExternalAction a
 ### _computeTreasuryFee
 
 Computes the treasury action fee for a given action
-
-*If the treasury is not set, this function returns 0, regardless of what the treasury action fee is set to*
 
 
 ```solidity
@@ -359,6 +394,39 @@ function _setLeverageTokenActionFee(ILeverageToken token, ExternalAction action,
 |`fee`|`uint256`|Fee for action, 100_00 is 100%|
 
 
+### _setNewLeverageTokenManagementFee
+
+Sets the management fee for a new LeverageToken and the last management fee accrual timestamp to the
+current timestamp
+
+
+```solidity
+function _setNewLeverageTokenManagementFee(ILeverageToken token) internal;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`ILeverageToken`|LeverageToken to set management fee for|
+
+
+### _setTreasury
+
+Sets the treasury address
+
+*Reverts if the treasury address is zero*
+
+
+```solidity
+function _setTreasury(address treasury) internal;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`treasury`|`address`|Treasury address to set|
+
+
 ### _validateFee
 
 Validates that the fee is not higher than 100%
@@ -385,7 +453,8 @@ storage-location: erc7201:seamless.contracts.storage.FeeManager
 ```solidity
 struct FeeManagerStorage {
     address treasury;
-    uint256 managementFee;
+    uint256 defaultManagementFeeAtCreation;
+    mapping(ILeverageToken token => uint256) managementFee;
     mapping(ILeverageToken token => uint120) lastManagementFeeAccrualTimestamp;
     mapping(ExternalAction action => uint256) treasuryActionFee;
     mapping(ILeverageToken token => mapping(ExternalAction action => uint256)) tokenActionFee;
