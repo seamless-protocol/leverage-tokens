@@ -16,10 +16,10 @@ fmt                     :; forge fmt
 test                    :; forge test -vvvv --gas-report
 
 # Deploy
-deploy-core-tenderly		:; forge script script/Core.s.sol:CoreDeploy --force --rpc-url tenderly --account dummy_deployer --slow --broadcast -vvvv --verify  
-deploy-periphery-tenderly	:; forge script script/Periphery.s.sol:PeripheryDeploy --force --rpc-url tenderly --account dummy_deployer --slow --broadcast -vvvv --verify
-deploy-create-leverage-token-tenderly	:; forge script script/CreateLeverageToken.s.sol:CreateLeverageToken --force --rpc-url tenderly --account dummy_deployer --slow --broadcast -vvvv 
+deploy-core-tenderly		:; forge script script/Core.s.sol:CoreDeploy --force --rpc-url tenderly --account ${DEPLOYER_ACCOUNT_NAME} --slow --broadcast -vvvv --verify  
+deploy-periphery-tenderly	:; forge script script/Periphery.s.sol:PeripheryDeploy --force --rpc-url tenderly --account ${DEPLOYER_ACCOUNT_NAME} --slow --broadcast -vvvv --verify
+deploy-create-leverage-token-tenderly	:; forge script script/CreateLeverageToken.s.sol:CreateLeverageToken --force --rpc-url tenderly --account ${DEPLOYER_ACCOUNT_NAME} --slow --broadcast -vvvv --verify
 
-deploy-core-base		:; forge script script/Core.s.sol:CoreDeploy --force --rpc-url base --account dummy_deployer --slow --broadcast -vvvv --verify  
-deploy-periphery-base	:; forge script script/Periphery.s.sol:PeripheryDeploy --force --rpc-url base --account dummy_deployer --slow --broadcast -vvvv --verify
-deploy-create-leverage-token-base	:; forge script script/CreateLeverageToken.s.sol:CreateLeverageToken --force --rpc-url base --account dummy_deployer --slow --broadcast -vvvv 
+deploy-core-base		:; forge script script/Core.s.sol:CoreDeploy --force --rpc-url base --account ${DEPLOYER_ACCOUNT_NAME} --slow --broadcast -vvvv --verify  
+deploy-periphery-base	:; forge script script/Periphery.s.sol:PeripheryDeploy --force --rpc-url base --account ${DEPLOYER_ACCOUNT_NAME} --slow --broadcast -vvvv --verify
+deploy-create-leverage-token-base	:; forge script script/CreateLeverageToken.s.sol:CreateLeverageToken --force --rpc-url base --account ${DEPLOYER_ACCOUNT_NAME} --slow --broadcast -vvvv --verify
