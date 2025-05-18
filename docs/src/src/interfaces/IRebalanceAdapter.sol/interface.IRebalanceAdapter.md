@@ -1,5 +1,5 @@
 # IRebalanceAdapter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e2065c10183acb51865104847d299ff5ad4684d2/src/interfaces/IRebalanceAdapter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/40214436ae3956021858cb95e6ff881f6ede8e11/src/interfaces/IRebalanceAdapter.sol)
 
 **Inherits:**
 [IRebalanceAdapterBase](/src/interfaces/IRebalanceAdapterBase.sol/interface.IRebalanceAdapterBase.md)
@@ -44,6 +44,13 @@ Event emitted when the rebalance adapter is initialized
 ```solidity
 event RebalanceAdapterInitialized(address indexed authorizedCreator, ILeverageManager indexed leverageManager);
 ```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`authorizedCreator`|`address`|The authorized creator of the RebalanceAdapter, allowed to create LeverageTokens using this adapter|
+|`leverageManager`|`ILeverageManager`|The LeverageManager of the RebalanceAdapter|
 
 ## Errors
 ### Unauthorized

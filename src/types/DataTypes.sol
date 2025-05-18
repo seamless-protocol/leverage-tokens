@@ -15,8 +15,8 @@ enum ActionType {
 
 /// @dev Enum defining actions that users can perform on a LeverageToken
 enum ExternalAction {
-    Deposit,
-    Withdraw
+    Mint,
+    Redeem
 }
 
 /// @dev Struct that contains all data related to a LeverageToken action
@@ -27,11 +27,11 @@ struct ActionData {
     uint256 debt;
     /// @dev Amount of equity added or withdrawn before fees, denominated in collateral asset
     uint256 equity;
-    /// @dev Amount of shares minted or burned to user
+    /// @dev Amount of shares the user gains or loses for the action (whether that be via minting, burning, or fees)
     uint256 shares;
     /// @dev Fee charged for the action to the leverage token, denominated in collateral asset
     uint256 tokenFee;
-    /// @dev Fee charged for the action to the treasury, denominated in collateral asset
+    /// @dev Fee charged for the action to the treasury, denominated in shares
     uint256 treasuryFee;
 }
 
@@ -40,9 +40,9 @@ struct Auction {
     /// @dev Whether the LeverageToken is over-collateralized
     bool isOverCollateralized;
     /// @dev Timestamp when the auction started
-    uint256 startTimestamp;
+    uint120 startTimestamp;
     /// @dev Timestamp when the auction ends/ended
-    uint256 endTimestamp;
+    uint120 endTimestamp;
 }
 
 /// @dev Struct that contains the base LeverageToken config stored in LeverageManager
@@ -59,10 +59,10 @@ struct LeverageTokenConfig {
     ILendingAdapter lendingAdapter;
     /// @dev RebalanceAdapter for the LeverageToken
     IRebalanceAdapterBase rebalanceAdapter;
-    /// @dev Fee for deposit action
-    uint256 depositTokenFee;
-    /// @dev Fee for withdraw action, defined as a percentage
-    uint256 withdrawTokenFee;
+    /// @dev Fee for mint action, defined as a percentage
+    uint256 mintTokenFee;
+    /// @dev Fee for redeem action, defined as a percentage
+    uint256 redeemTokenFee;
 }
 
 /// @dev Struct that contains all data describing the state of a LeverageToken
@@ -79,18 +79,8 @@ struct LeverageTokenState {
 
 /// @dev Struct that contains all data related to a rebalance action
 struct RebalanceAction {
-    /// @dev LeverageToken to perform the action on
-    ILeverageToken leverageToken;
     /// @dev Type of action to perform
     ActionType actionType;
     /// @dev Amount to perform the action with
-    uint256 amount;
-}
-
-/// @dev Struct that contains all data related to a token transfer
-struct TokenTransfer {
-    /// @dev Token to transfer
-    address token;
-    /// @dev Amount to transfer
     uint256 amount;
 }

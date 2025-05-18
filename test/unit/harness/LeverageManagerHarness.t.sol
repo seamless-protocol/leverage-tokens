@@ -1,18 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
+// Dependency imports
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+// Internal imports
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {FeeManagerHarness} from "test/unit/harness/FeeManagerHarness.sol";
 import {LeverageManager} from "src/LeverageManager.sol";
-import {
-    ActionData,
-    ActionType,
-    ExternalAction,
-    RebalanceAction,
-    TokenTransfer,
-    LeverageTokenState
-} from "src/types/DataTypes.sol";
+import {ActionData, ActionType, ExternalAction, LeverageTokenState} from "src/types/DataTypes.sol";
 
 /// @notice Wrapper contract that exposes all internal functions of LeverageManager
 contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
@@ -28,16 +25,8 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
         _authorizeUpgrade(newImplementation);
     }
 
-    function exposed_isElementInSlice(
-        RebalanceAction[] calldata actions,
-        ILeverageToken leverageToken,
-        uint256 untilIndex
-    ) external pure returns (bool) {
-        return _isElementInSlice(actions, leverageToken, untilIndex);
-    }
-
-    function exposed_transferTokens(TokenTransfer[] calldata transfers, address from, address to) external {
-        _transferTokens(transfers, from, to);
+    function exposed_transferTokens(IERC20 token, address from, address to, uint256 amount) external {
+        _transferTokens(token, from, to, amount);
     }
 
     function exposed_executeLendingAdapterAction(ILeverageToken leverageToken, ActionType actionType, uint256 amount)
@@ -46,12 +35,12 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
         _executeLendingAdapterAction(leverageToken, actionType, amount);
     }
 
-    function exposed_convertToShares(ILeverageToken leverageToken, uint256 equity)
+    function exposed_convertToShares(ILeverageToken leverageToken, uint256 equity, ExternalAction action)
         external
         view
         returns (uint256 shares)
     {
-        return _convertToShares(leverageToken, equity);
+        return _convertToShares(leverageToken, equity, action);
     }
 
     function exposed_previewAction(ILeverageToken leverageToken, uint256 equityInCollateralAsset, ExternalAction action)
@@ -68,5 +57,17 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
         ExternalAction action
     ) external view returns (uint256 collateral, uint256 debt) {
         return _computeCollateralAndDebtForAction(leverageToken, equityInCollateralAsset, action);
+    }
+
+    function exposed_getReentrancyGuardTransientStorage() external view returns (bool) {
+        // slot used in OZ's ReentrancyGuardTransient
+        bytes32 slot = 0x9b779b17422d0df92223018b32b4d1fa46e071723d6817e2486d003becc55f00;
+
+        bool value;
+        assembly {
+            value := tload(slot)
+        }
+
+        return value;
     }
 }

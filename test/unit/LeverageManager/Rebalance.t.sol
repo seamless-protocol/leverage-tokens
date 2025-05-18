@@ -13,16 +13,9 @@ import {LeverageManagerTest} from "test/unit/LeverageManager/LeverageManager.t.s
 import {MockLendingAdapter} from "test/unit/mock/MockLendingAdapter.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {RebalanceAction, ActionType, TokenTransfer, LeverageTokenState} from "src/types/DataTypes.sol";
 import {MockRebalanceAdapter} from "test/unit/mock/MockRebalanceAdapter.sol";
 import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
-import {
-    RebalanceAction,
-    ActionType,
-    TokenTransfer,
-    LeverageTokenConfig,
-    LeverageTokenState
-} from "src/types/DataTypes.sol";
+import {RebalanceAction, ActionType, LeverageTokenConfig, LeverageTokenState} from "src/types/DataTypes.sol";
 
 contract RebalanceTest is LeverageManagerTest {
     ERC20Mock public WETH = new ERC20Mock();
@@ -43,8 +36,8 @@ contract RebalanceTest is LeverageManagerTest {
             LeverageTokenConfig({
                 lendingAdapter: ILendingAdapter(address(adapter)),
                 rebalanceAdapter: IRebalanceAdapter(address(rebalanceAdapter)),
-                depositTokenFee: 0,
-                withdrawTokenFee: 0
+                mintTokenFee: 0,
+                redeemTokenFee: 0
             }),
             address(WETH),
             address(USDC),
@@ -67,25 +60,14 @@ contract RebalanceTest is LeverageManagerTest {
 
         WETH.mint(address(this), amountToSupply);
 
-        // Rebalancer gives collateral that will be supplied
-        TokenTransfer[] memory transfersIn = new TokenTransfer[](1);
-        transfersIn[0] = TokenTransfer({token: address(WETH), amount: amountToSupply});
-
-        // Rebalancer takes debt that will be borrowed and will swap it on his own
-        TokenTransfer[] memory transfersOut = new TokenTransfer[](1);
-        transfersOut[0] = TokenTransfer({token: address(USDC), amount: amountToBorrow});
-
         RebalanceAction[] memory actions = new RebalanceAction[](2);
-        actions[0] = RebalanceAction({
-            leverageToken: leverageToken,
-            actionType: ActionType.AddCollateral,
-            amount: amountToSupply
-        });
-        actions[1] =
-            RebalanceAction({leverageToken: leverageToken, actionType: ActionType.Borrow, amount: amountToBorrow});
+        actions[0] = RebalanceAction({actionType: ActionType.AddCollateral, amount: amountToSupply});
+        actions[1] = RebalanceAction({actionType: ActionType.Borrow, amount: amountToBorrow});
 
         WETH.approve(address(leverageManager), amountToSupply);
-        leverageManager.rebalance(actions, transfersIn, transfersOut);
+        leverageManager.rebalance(
+            leverageToken, actions, IERC20(address(WETH)), IERC20(address(USDC)), amountToSupply, amountToBorrow
+        );
 
         LeverageTokenState memory state = leverageManager.getLeverageTokenState(leverageToken);
         assertEq(state.collateralInDebtAsset, 30_000 ether); // 15 ETH = 30,000 USDC
@@ -109,25 +91,14 @@ contract RebalanceTest is LeverageManagerTest {
 
         WETH.mint(address(this), amountToSupply);
 
-        // Rebalancer gives collateral that will be supplied
-        TokenTransfer[] memory transfersIn = new TokenTransfer[](1);
-        transfersIn[0] = TokenTransfer({token: address(WETH), amount: amountToSupply});
-
-        // Rebalancer takes debt that will be borrowed and will swap it on his own
-        TokenTransfer[] memory transfersOut = new TokenTransfer[](1);
-        transfersOut[0] = TokenTransfer({token: address(USDC), amount: amountToBorrow});
-
         RebalanceAction[] memory actions = new RebalanceAction[](2);
-        actions[0] = RebalanceAction({
-            leverageToken: leverageToken,
-            actionType: ActionType.AddCollateral,
-            amount: amountToSupply
-        });
-        actions[1] =
-            RebalanceAction({leverageToken: leverageToken, actionType: ActionType.Borrow, amount: amountToBorrow});
+        actions[0] = RebalanceAction({actionType: ActionType.AddCollateral, amount: amountToSupply});
+        actions[1] = RebalanceAction({actionType: ActionType.Borrow, amount: amountToBorrow});
 
         WETH.approve(address(leverageManager), amountToSupply);
-        leverageManager.rebalance(actions, transfersIn, transfersOut);
+        leverageManager.rebalance(
+            leverageToken, actions, IERC20(address(WETH)), IERC20(address(USDC)), amountToSupply, amountToBorrow
+        );
 
         LeverageTokenState memory state = leverageManager.getLeverageTokenState(leverageToken);
         assertEq(state.collateralInDebtAsset, 24_500 ether); // 12,25 ETH = 24,500 USDC
@@ -147,36 +118,25 @@ contract RebalanceTest is LeverageManagerTest {
 
         // Current leverage is 1,333x and leverageToken needs to be rebalanced, current equity is 5,000 USDC
         uint256 amountToRepay = 10_000 ether; // 10,000 USDC
-        uint256 amountToWithdraw = 5.5 ether; // 5,5 ETH = 11,000 USDC
+        uint256 amountToRedeem = 5.5 ether; // 5,5 ETH = 11,000 USDC
 
         USDC.mint(address(this), amountToRepay);
 
-        // Rebalancer gives debt that will be repaid
-        TokenTransfer[] memory transfersIn = new TokenTransfer[](1);
-        transfersIn[0] = TokenTransfer({token: address(USDC), amount: amountToRepay});
-
-        // Rebalancer takes collateral that will be withdrawn
-        TokenTransfer[] memory transfersOut = new TokenTransfer[](1);
-        transfersOut[0] = TokenTransfer({token: address(WETH), amount: amountToWithdraw});
-
         RebalanceAction[] memory actions = new RebalanceAction[](2);
-        actions[0] =
-            RebalanceAction({leverageToken: leverageToken, actionType: ActionType.Repay, amount: amountToRepay});
-        actions[1] = RebalanceAction({
-            leverageToken: leverageToken,
-            actionType: ActionType.RemoveCollateral,
-            amount: amountToWithdraw
-        });
+        actions[0] = RebalanceAction({actionType: ActionType.Repay, amount: amountToRepay});
+        actions[1] = RebalanceAction({actionType: ActionType.RemoveCollateral, amount: amountToRedeem});
 
         USDC.approve(address(leverageManager), amountToRepay);
-        leverageManager.rebalance(actions, transfersIn, transfersOut);
+        leverageManager.rebalance(
+            leverageToken, actions, IERC20(address(USDC)), IERC20(address(WETH)), amountToRepay, amountToRedeem
+        );
 
         LeverageTokenState memory state = leverageManager.getLeverageTokenState(leverageToken);
         assertEq(state.collateralInDebtAsset, 9_000 ether); // 4,5 ETH = 9,000 USDC
         assertEq(state.debt, 5_000 ether); // 5,000 USDC
         assertEq(state.equity, 4_000 ether); // 4,500 USDC, 10% reward
         assertEq(state.collateralRatio, 180 * _BASE_RATIO() / 100); // Back to 1,8x leverage which is better than 1,333x
-        assertEq(WETH.balanceOf(address(this)), amountToWithdraw); // Rebalancer took collateral
+        assertEq(WETH.balanceOf(address(this)), amountToRedeem); // Rebalancer took collateral
     }
 
     function test_rebalance_RevertIf_NotEligibleForRebalance() external {
@@ -192,29 +152,16 @@ contract RebalanceTest is LeverageManagerTest {
 
         WETH.mint(address(this), amountToSupply);
 
-        // Rebalancer gives collateral that will be supplied
-        TokenTransfer[] memory transfersIn = new TokenTransfer[](1);
-        transfersIn[0] = TokenTransfer({token: address(WETH), amount: amountToSupply});
-
-        // Rebalancer takes debt that will be borrowed and will swap it on his own
-        TokenTransfer[] memory transfersOut = new TokenTransfer[](1);
-        transfersOut[0] = TokenTransfer({token: address(USDC), amount: amountToBorrow});
-
         RebalanceAction[] memory actions = new RebalanceAction[](2);
-        actions[0] = RebalanceAction({
-            leverageToken: leverageToken,
-            actionType: ActionType.AddCollateral,
-            amount: amountToSupply
-        });
-        actions[1] =
-            RebalanceAction({leverageToken: leverageToken, actionType: ActionType.Borrow, amount: amountToBorrow});
+        actions[0] = RebalanceAction({actionType: ActionType.AddCollateral, amount: amountToSupply});
+        actions[1] = RebalanceAction({actionType: ActionType.Borrow, amount: amountToBorrow});
 
         WETH.approve(address(leverageManager), amountToSupply);
 
-        vm.expectRevert(
-            abi.encodeWithSelector(ILeverageManager.LeverageTokenNotEligibleForRebalance.selector, leverageToken)
+        vm.expectRevert(ILeverageManager.LeverageTokenNotEligibleForRebalance.selector);
+        leverageManager.rebalance(
+            leverageToken, actions, IERC20(address(WETH)), IERC20(address(USDC)), amountToSupply, amountToBorrow
         );
-        leverageManager.rebalance(actions, transfersIn, transfersOut);
     }
 
     function test_rebalance_RevertIf_InvalidStateAfterRebalance() external {
@@ -231,28 +178,17 @@ contract RebalanceTest is LeverageManagerTest {
 
         WETH.mint(address(this), amountToSupply);
 
-        // Rebalancer gives collateral that will be supplied
-        TokenTransfer[] memory transfersIn = new TokenTransfer[](1);
-        transfersIn[0] = TokenTransfer({token: address(WETH), amount: amountToSupply});
-
-        // Rebalancer takes debt that will be borrowed and will swap it on his own
-        TokenTransfer[] memory transfersOut = new TokenTransfer[](1);
-        transfersOut[0] = TokenTransfer({token: address(USDC), amount: amountToBorrow});
-
         RebalanceAction[] memory actions = new RebalanceAction[](2);
-        actions[0] = RebalanceAction({
-            leverageToken: leverageToken,
-            actionType: ActionType.AddCollateral,
-            amount: amountToSupply
-        });
-        actions[1] =
-            RebalanceAction({leverageToken: leverageToken, actionType: ActionType.Borrow, amount: amountToBorrow});
+        actions[0] = RebalanceAction({actionType: ActionType.AddCollateral, amount: amountToSupply});
+        actions[1] = RebalanceAction({actionType: ActionType.Borrow, amount: amountToBorrow});
 
         WETH.approve(address(leverageManager), amountToSupply);
 
         vm.expectRevert(
             abi.encodeWithSelector(ILeverageManager.InvalidLeverageTokenStateAfterRebalance.selector, leverageToken)
         );
-        leverageManager.rebalance(actions, transfersIn, transfersOut);
+        leverageManager.rebalance(
+            leverageToken, actions, IERC20(address(WETH)), IERC20(address(USDC)), amountToSupply, amountToBorrow
+        );
     }
 }

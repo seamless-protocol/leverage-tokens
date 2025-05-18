@@ -97,12 +97,17 @@ abstract contract CollateralRatiosRebalanceAdapter is ICollateralRatiosRebalance
     }
 
     /// @inheritdoc ICollateralRatiosRebalanceAdapter
-    function isEligibleForRebalance(ILeverageToken, LeverageTokenState memory state, address)
+    function isEligibleForRebalance(ILeverageToken token, LeverageTokenState memory state, address)
         public
         view
         virtual
         returns (bool isEligible)
     {
+        // If leverage token is empty return false otherwise someone will be able to start auction when leverage token is created
+        if (state.collateralInDebtAsset == 0 || token.totalSupply() == 0) {
+            return false;
+        }
+
         uint256 minCollateralRatio = getLeverageTokenMinCollateralRatio();
         uint256 maxCollateralRatio = getLeverageTokenMaxCollateralRatio();
 
@@ -130,6 +135,11 @@ abstract contract CollateralRatiosRebalanceAdapter is ICollateralRatiosRebalance
         uint256 maxRatioAfter = ratioBefore > targetRatio ? ratioBefore : targetRatio;
 
         if (ratioAfter < minRatioAfter || ratioAfter > maxRatioAfter) {
+            return false;
+        }
+
+        // Do not allow worse or the same state, force it to be better
+        if (ratioAfter == ratioBefore) {
             return false;
         }
 

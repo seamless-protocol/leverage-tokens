@@ -30,6 +30,7 @@ import {RebalanceAdapter} from "src/rebalance/RebalanceAdapter.sol";
 contract IntegrationTestBase is Test {
     uint256 public constant FORK_BLOCK_NUMBER = 25473904;
     uint256 public constant BASE_RATIO = 1e18;
+    uint256 public constant SECONDS_ONE_YEAR = 31536000;
 
     IERC20 public constant WETH = IERC20(0x4200000000000000000000000000000000000006);
     IERC20 public constant USDC = IERC20(0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913);
@@ -58,7 +59,9 @@ contract IntegrationTestBase is Test {
         leverageManager = ILeverageManager(
             UnsafeUpgrades.deployUUPSProxy(
                 leverageManagerImplementation,
-                abi.encodeWithSelector(LeverageManager.initialize.selector, address(this), leverageTokenFactory)
+                abi.encodeWithSelector(
+                    LeverageManager.initialize.selector, address(this), treasury, leverageTokenFactory
+                )
             )
         );
         LeverageManager(address(leverageManager)).grantRole(keccak256("FEE_MANAGER_ROLE"), address(this));
@@ -79,14 +82,12 @@ contract IntegrationTestBase is Test {
             LeverageTokenConfig({
                 lendingAdapter: ILendingAdapter(address(morphoLendingAdapter)),
                 rebalanceAdapter: IRebalanceAdapter(address(rebalanceAdapter)),
-                depositTokenFee: 0,
-                withdrawTokenFee: 0
+                mintTokenFee: 0,
+                redeemTokenFee: 0
             }),
             "Seamless ETH/USDC 2x leverage token",
             "ltETH/USDC-2x"
         );
-
-        leverageManager.setTreasury(treasury);
 
         vm.label(address(user), "user");
         vm.label(address(treasury), "treasury");
@@ -123,8 +124,8 @@ contract IntegrationTestBase is Test {
         uint256 minColRatio,
         uint256 targetCollateralRatio,
         uint256 maxColRatio,
-        uint256 depositFee,
-        uint256 withdrawFee
+        uint256 mintFee,
+        uint256 redeemFee
     ) internal returns (ILeverageToken) {
         ILendingAdapter lendingAdapter = ILendingAdapter(
             morphoLendingAdapterFactory.deployAdapter(WETH_USDC_MARKET_ID, address(this), bytes32(vm.randomUint()))
@@ -140,8 +141,8 @@ contract IntegrationTestBase is Test {
             LeverageTokenConfig({
                 lendingAdapter: lendingAdapter,
                 rebalanceAdapter: IRebalanceAdapter(_rebalanceAdapter),
-                depositTokenFee: depositFee,
-                withdrawTokenFee: withdrawFee
+                mintTokenFee: mintFee,
+                redeemTokenFee: redeemFee
             }),
             "dummy name",
             "dummy symbol"
@@ -154,7 +155,7 @@ contract IntegrationTestBase is Test {
         uint256 minCollateralRatio,
         uint256 targetCollateralRatio,
         uint256 maxCollateralRatio,
-        uint256 auctionDuration,
+        uint120 auctionDuration,
         uint256 initialPriceMultiplier,
         uint256 minPriceMultiplier,
         uint256 collateralRatioThreshold,

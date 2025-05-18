@@ -2,6 +2,7 @@
 pragma solidity ^0.8.26;
 
 // Dependency imports
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -24,10 +25,8 @@ import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 
 contract LeverageManagerTest is FeeManagerTest {
-    ILeverageToken public leverageToken;
     address public defaultAdmin = makeAddr("defaultAdmin");
     address public manager = makeAddr("manager");
-    address public treasury = makeAddr("treasury");
 
     MockERC20 public collateralToken = new MockERC20();
     MockERC20 public debtToken = new MockERC20();
@@ -49,7 +48,7 @@ contract LeverageManagerTest is FeeManagerTest {
 
         address leverageManagerProxy = UnsafeUpgrades.deployUUPSProxy(
             leverageManagerImplementation,
-            abi.encodeWithSelector(LeverageManager.initialize.selector, defaultAdmin, leverageTokenFactory)
+            abi.encodeWithSelector(LeverageManager.initialize.selector, defaultAdmin, treasury, leverageTokenFactory)
         );
         leverageManager = LeverageManagerHarness(leverageManagerProxy);
 
@@ -58,8 +57,6 @@ contract LeverageManagerTest is FeeManagerTest {
 
         feeManager = FeeManagerHarness(address(leverageManager));
         vm.stopPrank();
-
-        _setTreasury(feeManagerRole, treasury);
     }
 
     function test_setUp() public view virtual override {
@@ -76,12 +73,13 @@ contract LeverageManagerTest is FeeManagerTest {
         return leverageManager.BASE_RATIO();
     }
 
-    function _MAX_FEE() internal view returns (uint256) {
-        return IFeeManager(address(leverageManager)).MAX_FEE();
-    }
-
-    function _DECIMALS_OFFSET() internal view returns (uint256) {
-        return leverageManager.DECIMALS_OFFSET();
+    function _convertToAssets(uint256 shares, ExternalAction action) internal view returns (uint256) {
+        return Math.mulDiv(
+            shares,
+            lendingAdapter.getEquityInCollateralAsset() + 1,
+            leverageToken.totalSupply() + 1,
+            action == ExternalAction.Mint ? Math.Rounding.Ceil : Math.Rounding.Floor
+        );
     }
 
     function _getLendingAdapter() internal view returns (ILendingAdapter) {
@@ -96,8 +94,8 @@ contract LeverageManagerTest is FeeManagerTest {
                 LeverageTokenConfig({
                     lendingAdapter: ILendingAdapter(address(lendingAdapter)),
                     rebalanceAdapter: IRebalanceAdapter(address(0)),
-                    depositTokenFee: 0,
-                    withdrawTokenFee: 0
+                    mintTokenFee: 0,
+                    redeemTokenFee: 0
                 }),
                 address(0),
                 address(0),

@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
+// External imports
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 // Internal imports
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
@@ -11,8 +14,8 @@ import {ExternalAction} from "src/types/DataTypes.sol";
 import {LeverageRouterTest} from "./LeverageRouter.t.sol";
 import {MockLeverageManager} from "../mock/MockLeverageManager.sol";
 
-contract WithdrawTest is LeverageRouterTest {
-    function testFuzz_withdraw_CollateralSwapWithinMaxCostForFlashLoanRepaymentDebt(
+contract RedeemTest is LeverageRouterTest {
+    function testFuzz_redeem_CollateralSwapWithinMaxCostForFlashLoanRepaymentDebt(
         uint128 requiredCollateral,
         uint128 requiredDebt,
         uint128 equityInCollateralAsset,
@@ -21,8 +24,8 @@ contract WithdrawTest is LeverageRouterTest {
     ) public {
         vm.assume(requiredDebt < requiredCollateral);
 
-        uint256 depositShares = 10 ether; // Doesn't matter for this test as the shares received and previewed are mocked
-        uint256 withdrawShares = 5 ether; // Doesn't matter for this test as the shares received and previewed are mocked
+        uint256 mintShares = 10 ether; // Doesn't matter for this test as the shares received and previewed are mocked
+        uint256 redeemShares = 5 ether; // Doesn't matter for this test as the shares received and previewed are mocked
 
         equityInCollateralAsset = requiredCollateral - requiredDebt;
         maxSwapCostInCollateralAsset = uint128(bound(maxSwapCostInCollateralAsset, 0, equityInCollateralAsset - 1));
@@ -36,26 +39,31 @@ contract WithdrawTest is LeverageRouterTest {
             )
         );
 
-        _mockLeverageManagerWithdraw(
-            requiredCollateral, equityInCollateralAsset, requiredDebt, requiredCollateralForSwap, withdrawShares
+        _mockLeverageManagerRedeem(
+            requiredCollateral,
+            equityInCollateralAsset,
+            requiredDebt,
+            requiredCollateralForSwap,
+            redeemShares,
+            redeemShares
         );
 
-        _deposit(
+        _mint(
             equityInCollateralAsset,
             requiredCollateral,
             requiredDebt,
             requiredCollateral - equityInCollateralAsset,
-            depositShares
+            mintShares
         );
 
-        // Execute the withdraw
+        // Execute the redeem
         deal(address(debtToken), address(this), requiredDebt);
         debtToken.approve(address(leverageRouter), requiredDebt);
-        leverageToken.approve(address(leverageRouter), withdrawShares);
-        leverageRouter.withdraw(
+        leverageToken.approve(address(leverageRouter), redeemShares);
+        leverageRouter.redeem(
             leverageToken,
             equityInCollateralAsset,
-            withdrawShares,
+            redeemShares,
             maxSwapCostInCollateralAsset,
             // Mock the swap context (doesn't matter for this test as the swap is mocked)
             ISwapAdapter.SwapContext({
@@ -75,7 +83,7 @@ contract WithdrawTest is LeverageRouterTest {
         );
 
         // Senders shares are burned
-        assertEq(leverageToken.balanceOf(address(this)), depositShares - withdrawShares);
+        assertEq(leverageToken.balanceOf(address(this)), mintShares - redeemShares);
 
         // The LeverageRouter has the required debt to repay the flash loan and Morpho is approved to spend it
         assertEq(debtToken.balanceOf(address(leverageRouter)), requiredDebt);
@@ -86,7 +94,7 @@ contract WithdrawTest is LeverageRouterTest {
         assertGe(collateralToken.balanceOf(address(this)), equityInCollateralAsset - maxSwapCostInCollateralAsset);
     }
 
-    function testFuzz_withdraw_CollateralSwapMoreThanMaxCostForFlashLoanRepaymentDebt(
+    function testFuzz_redeem_CollateralSwapMoreThanMaxCostForFlashLoanRepaymentDebt(
         uint128 requiredCollateral,
         uint128 requiredDebt,
         uint128 equityInCollateralAsset,
@@ -110,11 +118,11 @@ contract WithdrawTest is LeverageRouterTest {
             )
         );
 
-        _mockLeverageManagerWithdraw(
-            requiredCollateral, equityInCollateralAsset, requiredDebt, requiredCollateralForSwap, shares
+        _mockLeverageManagerRedeem(
+            requiredCollateral, equityInCollateralAsset, requiredDebt, requiredCollateralForSwap, shares, shares
         );
 
-        _deposit(
+        _mint(
             equityInCollateralAsset,
             requiredCollateral,
             requiredDebt,
@@ -122,7 +130,7 @@ contract WithdrawTest is LeverageRouterTest {
             shares
         );
 
-        // Execute the withdraw
+        // Execute the redeem
         deal(address(debtToken), address(this), requiredDebt);
         debtToken.approve(address(leverageRouter), requiredDebt);
         leverageToken.approve(address(leverageRouter), shares);
@@ -134,7 +142,7 @@ contract WithdrawTest is LeverageRouterTest {
                 maxSwapCostInCollateralAsset
             )
         );
-        leverageRouter.withdraw(
+        leverageRouter.redeem(
             leverageToken,
             equityInCollateralAsset,
             shares,
@@ -155,5 +163,48 @@ contract WithdrawTest is LeverageRouterTest {
                 })
             })
         );
+    }
+
+    function test_redeem_TransfersPreviewSharesNotMaxShares() public {
+        uint256 totalShares = 60 ether;
+        uint256 redeemShares = totalShares / 2;
+        uint256 redeemEquityInCollateralAsset = 15 ether;
+
+        // Mock the redeem to burn half of the user's shares (redeemShares). Other values are mocked and don't matter
+        // for this test
+        _mockLeverageManagerRedeem(
+            30 ether, redeemEquityInCollateralAsset, 15 ether, 15 ether, redeemShares, totalShares
+        );
+
+        _mint(30 ether, 60 ether, 30 ether, 30 ether, totalShares);
+        leverageToken.approve(address(leverageRouter), totalShares);
+
+        // Expect the shares to be redeemed to be transferred to the LeverageRouter, not the maxShares parameter (totalShares)
+        vm.expectEmit(true, true, true, true);
+        emit IERC20.Transfer(address(this), address(leverageRouter), redeemShares);
+
+        leverageRouter.redeem(
+            leverageToken,
+            redeemEquityInCollateralAsset,
+            totalShares, // The total shares are passed as the maxShares parameter
+            redeemEquityInCollateralAsset,
+            ISwapAdapter.SwapContext({
+                path: new address[](0),
+                encodedPath: new bytes(0),
+                fees: new uint24[](0),
+                tickSpacing: new int24[](0),
+                exchange: ISwapAdapter.Exchange.AERODROME,
+                exchangeAddresses: ISwapAdapter.ExchangeAddresses({
+                    aerodromeRouter: address(0),
+                    aerodromePoolFactory: address(0),
+                    aerodromeSlipstreamRouter: address(0),
+                    uniswapSwapRouter02: address(0),
+                    uniswapV2Router02: address(0)
+                })
+            })
+        );
+
+        // Half of the user's shares were burned
+        assertEq(leverageToken.balanceOf(address(this)), redeemShares);
     }
 }

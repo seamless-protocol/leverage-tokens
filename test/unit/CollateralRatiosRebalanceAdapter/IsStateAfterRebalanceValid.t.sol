@@ -6,6 +6,8 @@ import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageTokenState} from "src/types/DataTypes.sol";
 
+import "forge-std/console.sol";
+
 contract IsStateAfterRebalanceValidTest is CollateralRatiosRebalanceAdapterTest {
     function test_isStateAfterRebalanceValid_WhenMovingCloserToTarget() public {
         // Initial state is at 3x, moving closer to 2x target
@@ -59,10 +61,11 @@ contract IsStateAfterRebalanceValidTest is CollateralRatiosRebalanceAdapterTest 
         uint256 ratioBefore,
         uint256 ratioAfter
     ) public {
+        vm.assume(ratioBefore != 2e18);
         if (ratioBefore > 2e18) {
-            ratioAfter = bound(ratioAfter, 2e18, ratioBefore);
+            ratioAfter = bound(ratioAfter, 2e18, ratioBefore - 1);
         } else {
-            ratioAfter = bound(ratioAfter, ratioBefore, 2e18);
+            ratioAfter = bound(ratioAfter, ratioBefore + 1, 2e18);
         }
 
         LeverageTokenState memory stateBefore = LeverageTokenState({
@@ -99,6 +102,21 @@ contract IsStateAfterRebalanceValidTest is CollateralRatiosRebalanceAdapterTest 
         });
 
         _mockCollateralRatio(ratioAfter);
+
+        vm.prank(address(leverageManager));
+        bool isValid = rebalanceAdapter.isStateAfterRebalanceValid(leverageToken, stateBefore);
+        assertFalse(isValid);
+    }
+
+    function testFuzz_isStateAfterRebalanceValid_FalseIf_NoCollateralRatioChange(uint256 ratioBefore) public {
+        LeverageTokenState memory stateBefore = LeverageTokenState({
+            collateralInDebtAsset: 0, // Not important for this test
+            debt: 0, // Not important for this test
+            equity: 0, // Not important for this test
+            collateralRatio: ratioBefore
+        });
+
+        _mockCollateralRatio(ratioBefore);
 
         vm.prank(address(leverageManager));
         bool isValid = rebalanceAdapter.isStateAfterRebalanceValid(leverageToken, stateBefore);

@@ -22,27 +22,24 @@ contract LeverageManagerTest is IntegrationTestBase {
         assertEq(address(leverageManager.getLeverageTokenDebtAsset(leverageToken)), address(USDC));
     }
 
-    function _deposit(address caller, uint256 equityInCollateralAsset, uint256 collateralToAdd)
+    function _mint(address caller, uint256 equityInCollateralAsset, uint256 collateralToAdd)
         internal
         returns (uint256)
     {
         deal(address(WETH), caller, collateralToAdd);
         vm.startPrank(caller);
         WETH.approve(address(leverageManager), collateralToAdd);
-        uint256 shares = leverageManager.deposit(leverageToken, equityInCollateralAsset, 0).shares;
+        uint256 shares = leverageManager.mint(leverageToken, equityInCollateralAsset, 0).shares;
         vm.stopPrank();
 
         return shares;
     }
 
-    function _withdraw(address caller, uint256 equityInCollateralAsset, uint256 debtToRepay)
-        internal
-        returns (uint256)
-    {
+    function _redeem(address caller, uint256 equityInCollateralAsset, uint256 debtToRepay) internal returns (uint256) {
         deal(address(USDC), caller, debtToRepay);
         vm.startPrank(caller);
         USDC.approve(address(leverageManager), debtToRepay);
-        uint256 shares = leverageManager.withdraw(leverageToken, equityInCollateralAsset, type(uint256).max).shares;
+        uint256 shares = leverageManager.redeem(leverageToken, equityInCollateralAsset, type(uint256).max).shares;
         vm.stopPrank();
 
         return shares;

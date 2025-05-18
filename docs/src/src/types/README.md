@@ -9,4 +9,3 @@
 - [LeverageTokenConfig](DataTypes.sol/struct.LeverageTokenConfig.md)
 - [LeverageTokenState](DataTypes.sol/struct.LeverageTokenState.md)
 - [RebalanceAction](DataTypes.sol/struct.RebalanceAction.md)
-- [TokenTransfer](DataTypes.sol/struct.TokenTransfer.md)

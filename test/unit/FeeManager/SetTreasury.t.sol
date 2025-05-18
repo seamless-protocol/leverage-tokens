@@ -12,16 +12,16 @@ import {FeeManagerTest} from "test/unit/FeeManager/FeeManager.t.sol";
 
 contract SetTreasuryTest is FeeManagerTest {
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_setTreasury(address treasury) public {
+    function testFuzz_setTreasury(address _treasury) public {
         vm.expectEmit(true, true, true, true);
-        emit IFeeManager.TreasurySet(treasury);
+        emit IFeeManager.TreasurySet(_treasury);
 
-        _setTreasury(feeManagerRole, treasury);
-        assertEq(feeManager.getTreasury(), treasury);
+        _setTreasury(feeManagerRole, _treasury);
+        assertEq(feeManager.getTreasury(), _treasury);
     }
 
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_setTreasury_RevertIf_CallerIsNotFeeManagerRole(address caller, address treasury) public {
+    function testFuzz_setTreasury_RevertIf_CallerIsNotFeeManagerRole(address caller, address _treasury) public {
         vm.assume(caller != feeManagerRole);
 
         vm.expectRevert(
@@ -29,16 +29,12 @@ contract SetTreasuryTest is FeeManagerTest {
                 IAccessControl.AccessControlUnauthorizedAccount.selector, caller, feeManager.FEE_MANAGER_ROLE()
             )
         );
-        _setTreasury(caller, treasury);
+        _setTreasury(caller, _treasury);
     }
 
-    function test_setTreasury_ZeroAddressResetsTreasuryFees() public {
-        _setTreasury(feeManagerRole, makeAddr("treasury"));
-        _setTreasuryActionFee(feeManagerRole, ExternalAction.Deposit, 100);
-        _setTreasuryActionFee(feeManagerRole, ExternalAction.Withdraw, 100);
-
+    /// forge-config: default.fuzz.runs = 1
+    function test_setTreasury_RevertIf_TreasuryIsZeroAddress() public {
+        vm.expectRevert(abi.encodeWithSelector(IFeeManager.ZeroAddressTreasury.selector));
         _setTreasury(feeManagerRole, address(0));
-        assertEq(feeManager.getTreasuryActionFee(ExternalAction.Deposit), 0);
-        assertEq(feeManager.getTreasuryActionFee(ExternalAction.Withdraw), 0);
     }
 }

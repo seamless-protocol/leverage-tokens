@@ -24,8 +24,8 @@ contract ExecuteActionTest is LeverageManagerTest {
             LeverageTokenConfig({
                 lendingAdapter: ILendingAdapter(address(lendingAdapter)),
                 rebalanceAdapter: IRebalanceAdapterBase(address(0)),
-                depositTokenFee: 0,
-                withdrawTokenFee: 0
+                mintTokenFee: 0,
+                redeemTokenFee: 0
             }),
             address(collateralToken),
             address(debtToken),

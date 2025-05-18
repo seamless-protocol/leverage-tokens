@@ -1,5 +1,5 @@
 # IDutchAuctionRebalanceAdapter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e2065c10183acb51865104847d299ff5ad4684d2/src/interfaces/IDutchAuctionRebalanceAdapter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/40214436ae3956021858cb95e6ff881f6ede8e11/src/interfaces/IDutchAuctionRebalanceAdapter.sol)
 
 
 ## Functions
@@ -56,13 +56,13 @@ Returns the maximum duration of all auctions in seconds
 
 
 ```solidity
-function getAuctionDuration() external view returns (uint256 auctionDuration);
+function getAuctionDuration() external view returns (uint120 auctionDuration);
 ```
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`auctionDuration`|`uint256`|The maximum duration of all auctions in seconds|
+|`auctionDuration`|`uint120`|The maximum duration of all auctions in seconds|
 
 
 ### getInitialPriceMultiplier
@@ -282,6 +282,14 @@ event DutchAuctionRebalanceAdapterInitialized(
 );
 ```
 
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`auctionDuration`|`uint256`|The duration of auctions|
+|`initialPriceMultiplier`|`uint256`|The initial price multiplier for auctions|
+|`minPriceMultiplier`|`uint256`|The minimum price multiplier for auctions|
+
 ### LeverageTokenSet
 Event emitted when the LeverageToken is set
 
@@ -289,6 +297,12 @@ Event emitted when the LeverageToken is set
 ```solidity
 event LeverageTokenSet(ILeverageToken leverageToken);
 ```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`leverageToken`|`ILeverageToken`|The LeverageToken|
 
 ### AuctionCreated
 Event emitted when a new auction is created
@@ -298,6 +312,12 @@ Event emitted when a new auction is created
 event AuctionCreated(Auction auction);
 ```
 
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`auction`|`Auction`|The auction|
+
 ### Take
 Event emitted when an auction is taken
 
@@ -306,36 +326,20 @@ Event emitted when an auction is taken
 event Take(address indexed taker, uint256 amountIn, uint256 amountOut);
 ```
 
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`taker`|`address`|The taker of the auction|
+|`amountIn`|`uint256`|The amount of tokens provided|
+|`amountOut`|`uint256`|The amount of tokens received|
+
 ### AuctionEnded
 Event emitted when an auction ends
 
 
 ```solidity
 event AuctionEnded();
-```
-
-### AuctionDurationSet
-Event emitted when the auction duration is updated
-
-
-```solidity
-event AuctionDurationSet(uint256 newDuration);
-```
-
-### InitialPriceMultiplierSet
-Event emitted when the initial price multiplier is updated
-
-
-```solidity
-event InitialPriceMultiplierSet(uint256 newMultiplier);
-```
-
-### MinPriceMultiplierSet
-Event emitted when the minimum price multiplier is updated
-
-
-```solidity
-event MinPriceMultiplierSet(uint256 newMultiplier);
 ```
 
 ## Errors

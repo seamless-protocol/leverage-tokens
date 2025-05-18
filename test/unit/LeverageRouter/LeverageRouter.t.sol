@@ -89,7 +89,7 @@ contract LeverageRouterTest is Test {
         return leverageManager.BASE_RATIO();
     }
 
-    function _mockLeverageManagerDeposit(
+    function _mockLeverageManagerMint(
         uint256 requiredCollateral,
         uint256 equityInCollateralAsset,
         uint256 requiredDebt,
@@ -99,13 +99,13 @@ contract LeverageRouterTest is Test {
         // Mock the swap of the debt asset to the collateral asset
         swapper.mockNextExactInputSwap(debtToken, collateralToken, collateralReceivedFromDebtSwap);
 
-        // Mock the deposit preview
-        leverageManager.setMockPreviewDepositData(
+        // Mock the mint preview
+        leverageManager.setMockPreviewMintData(
             MockLeverageManager.PreviewParams({
                 leverageToken: leverageToken,
                 equityInCollateralAsset: equityInCollateralAsset
             }),
-            MockLeverageManager.MockPreviewDepositData({
+            MockLeverageManager.MockPreviewMintData({
                 collateralToAdd: requiredCollateral,
                 debtToBorrow: requiredDebt,
                 shares: shares,
@@ -114,14 +114,14 @@ contract LeverageRouterTest is Test {
             })
         );
 
-        // Mock the LeverageManager deposit
-        leverageManager.setMockDepositData(
-            MockLeverageManager.DepositParams({
+        // Mock the LeverageManager mint
+        leverageManager.setMockMintData(
+            MockLeverageManager.MintParams({
                 leverageToken: leverageToken,
                 equityInCollateralAsset: equityInCollateralAsset,
                 minShares: shares
             }),
-            MockLeverageManager.MockDepositData({
+            MockLeverageManager.MockMintData({
                 collateral: requiredCollateral,
                 debt: requiredDebt,
                 shares: shares,
@@ -130,22 +130,23 @@ contract LeverageRouterTest is Test {
         );
     }
 
-    function _mockLeverageManagerWithdraw(
+    function _mockLeverageManagerRedeem(
         uint256 requiredCollateral,
         uint256 equityInCollateralAsset,
         uint256 requiredDebt,
         uint256 requiredCollateralForSwap,
-        uint256 shares
+        uint256 shares,
+        uint256 maxShares
     ) internal {
         swapper.mockNextExactOutputSwap(collateralToken, debtToken, requiredCollateralForSwap);
 
-        // Mock the withdraw preview
-        leverageManager.setMockPreviewWithdrawData(
+        // Mock the redeem preview
+        leverageManager.setMockPreviewRedeemData(
             MockLeverageManager.PreviewParams({
                 leverageToken: leverageToken,
                 equityInCollateralAsset: equityInCollateralAsset
             }),
-            MockLeverageManager.MockPreviewWithdrawData({
+            MockLeverageManager.MockPreviewRedeemData({
                 collateralToRemove: requiredCollateral,
                 debtToRepay: requiredDebt,
                 shares: shares,
@@ -154,14 +155,14 @@ contract LeverageRouterTest is Test {
             })
         );
 
-        // Mock the LeverageManager withdraw
-        leverageManager.setMockWithdrawData(
-            MockLeverageManager.WithdrawParams({
+        // Mock the LeverageManager redeem
+        leverageManager.setMockRedeemData(
+            MockLeverageManager.RedeemParams({
                 leverageToken: leverageToken,
                 equityInCollateralAsset: equityInCollateralAsset,
-                maxShares: shares
+                maxShares: maxShares
             }),
-            MockLeverageManager.MockWithdrawData({
+            MockLeverageManager.MockRedeemData({
                 collateral: requiredCollateral,
                 debt: requiredDebt,
                 shares: shares,
@@ -170,19 +171,19 @@ contract LeverageRouterTest is Test {
         );
     }
 
-    function _deposit(
+    function _mint(
         uint256 equityInCollateralAsset,
         uint256 requiredCollateral,
         uint256 requiredDebt,
         uint256 collateralReceivedFromDebtSwap,
         uint256 shares
     ) internal {
-        _mockLeverageManagerDeposit(
+        _mockLeverageManagerMint(
             requiredCollateral, equityInCollateralAsset, requiredDebt, collateralReceivedFromDebtSwap, shares
         );
 
-        bytes memory depositData = abi.encode(
-            LeverageRouter.DepositParams({
+        bytes memory mintData = abi.encode(
+            LeverageRouter.MintParams({
                 token: leverageToken,
                 equityInCollateralAsset: equityInCollateralAsset,
                 minShares: shares,
@@ -208,14 +209,14 @@ contract LeverageRouterTest is Test {
         deal(address(collateralToken), address(this), equityInCollateralAsset);
         collateralToken.approve(address(leverageRouter), equityInCollateralAsset);
 
-        // Also mock morpho flash loaning the additional collateral required for the deposit
+        // Also mock morpho flash loaning the additional collateral required for the mint
         uint256 flashLoanAmount = requiredCollateral - equityInCollateralAsset;
         deal(address(collateralToken), address(leverageRouter), flashLoanAmount);
 
         vm.prank(address(morpho));
         leverageRouter.onMorphoFlashLoan(
             flashLoanAmount,
-            abi.encode(LeverageRouter.MorphoCallbackData({action: ExternalAction.Deposit, data: depositData}))
+            abi.encode(LeverageRouter.MorphoCallbackData({action: ExternalAction.Mint, data: mintData}))
         );
     }
 }

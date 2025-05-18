@@ -1,5 +1,5 @@
 # IMorphoLendingAdapter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e2065c10183acb51865104847d299ff5ad4684d2/src/interfaces/IMorphoLendingAdapter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/40214436ae3956021858cb95e6ff881f6ede8e11/src/interfaces/IMorphoLendingAdapter.sol)
 
 **Inherits:**
 [IPreLiquidationLendingAdapter](/src/interfaces/IPreLiquidationLendingAdapter.sol/interface.IPreLiquidationLendingAdapter.md)
@@ -118,8 +118,16 @@ event MorphoLendingAdapterInitialized(
 );
 ```
 
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`morphoMarketId`|`Id`|The ID of the Morpho market that the MorphoLendingAdapter manages a position in|
+|`marketParams`|`MarketParams`|The market parameters of the Morpho market|
+|`authorizedCreator`|`address`|The authorized creator of the MorphoLendingAdapter, allowed to create LeverageTokens using this adapter|
+
 ### MorphoLendingAdapterUsed
-Event emitted when the MorphoLendingAdapter is flagged as used in post LeverageToken creation
+Event emitted when the MorphoLendingAdapter is flagged as used
 
 
 ```solidity

@@ -1,5 +1,5 @@
 # RebalanceAdapter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e2065c10183acb51865104847d299ff5ad4684d2/src/rebalance/RebalanceAdapter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/40214436ae3956021858cb95e6ff881f6ede8e11/src/rebalance/RebalanceAdapter.sol)
 
 **Inherits:**
 [IRebalanceAdapter](/src/interfaces/IRebalanceAdapter.sol/interface.IRebalanceAdapter.md), UUPSUpgradeable, OwnableUpgradeable, [CollateralRatiosRebalanceAdapter](/src/rebalance/CollateralRatiosRebalanceAdapter.sol/abstract.CollateralRatiosRebalanceAdapter.md), [DutchAuctionRebalanceAdapter](/src/rebalance/DutchAuctionRebalanceAdapter.sol/abstract.DutchAuctionRebalanceAdapter.md), [PreLiquidationRebalanceAdapter](/src/rebalance/PreLiquidationRebalanceAdapter.sol/abstract.PreLiquidationRebalanceAdapter.md)
@@ -98,7 +98,7 @@ function getLeverageManager()
 
 Returns the initial collateral ratio for a LeverageToken
 
-*Initial collateral ratio is followed when the LeverageToken has no shares and on deposits when debt is 0.*
+*Initial collateral ratio is followed when the LeverageToken has no shares and on mints when debt is 0.*
 
 
 ```solidity
@@ -228,7 +228,7 @@ struct RebalanceAdapterInitParams {
     uint256 minCollateralRatio;
     uint256 targetCollateralRatio;
     uint256 maxCollateralRatio;
-    uint256 auctionDuration;
+    uint120 auctionDuration;
     uint256 initialPriceMultiplier;
     uint256 minPriceMultiplier;
     uint256 preLiquidationCollateralRatioThreshold;

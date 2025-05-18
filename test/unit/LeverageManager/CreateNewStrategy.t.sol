@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-// Forge imports
-import {console} from "forge-std/console.sol";
-
 // Dependency imports
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -27,13 +24,21 @@ contract CreateNewLeverageTokenTest is LeverageManagerTest {
         string memory name,
         string memory symbol,
         string memory rebalanceAdapterName,
-        string memory lendingAdapterName
+        string memory lendingAdapterName,
+        address _treasury,
+        uint256 defaultManagementFeeAtCreation
     ) public {
+        vm.assume(_treasury != address(0));
+        defaultManagementFeeAtCreation = bound(defaultManagementFeeAtCreation, 0, MAX_FEE);
+
+        _setTreasury(feeManagerRole, _treasury);
+        _setDefaultManagementFeeAtCreation(feeManagerRole, defaultManagementFeeAtCreation);
+
         config.rebalanceAdapter = IRebalanceAdapterBase(makeAddr(rebalanceAdapterName));
         config.lendingAdapter = ILendingAdapter(makeAddr(lendingAdapterName));
 
-        config.depositTokenFee = bound(config.depositTokenFee, 0, _MAX_FEE());
-        config.withdrawTokenFee = bound(config.withdrawTokenFee, 0, _MAX_FEE());
+        config.mintTokenFee = bound(config.mintTokenFee, 0, MAX_FEE);
+        config.redeemTokenFee = bound(config.redeemTokenFee, 0, MAX_FEE);
 
         address expectedLeverageTokenAddress = leverageTokenFactory.computeProxyAddress(
             address(leverageManager),
@@ -52,8 +57,8 @@ contract CreateNewLeverageTokenTest is LeverageManagerTest {
         assertEq(address(configAfter.lendingAdapter), address(config.lendingAdapter));
         assertEq(address(configAfter.rebalanceAdapter), address(config.rebalanceAdapter));
 
-        assertEq(configAfter.depositTokenFee, config.depositTokenFee);
-        assertEq(configAfter.withdrawTokenFee, config.withdrawTokenFee);
+        assertEq(configAfter.mintTokenFee, config.mintTokenFee);
+        assertEq(configAfter.redeemTokenFee, config.redeemTokenFee);
 
         assertEq(address(leverageManager.getLeverageTokenCollateralAsset(leverageToken)), collateralAsset);
         assertEq(address(leverageManager.getLeverageTokenDebtAsset(leverageToken)), debtAsset);
@@ -63,5 +68,6 @@ contract CreateNewLeverageTokenTest is LeverageManagerTest {
         );
 
         assertEq(leverageManager.getLeverageTokenInitialCollateralRatio(leverageToken), targetCollateralRatio);
+        assertEq(leverageManager.getLastManagementFeeAccrualTimestamp(leverageToken), block.timestamp);
     }
 }

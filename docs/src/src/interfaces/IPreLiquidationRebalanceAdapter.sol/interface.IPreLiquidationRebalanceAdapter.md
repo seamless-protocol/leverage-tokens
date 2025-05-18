@@ -1,5 +1,5 @@
 # IPreLiquidationRebalanceAdapter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e2065c10183acb51865104847d299ff5ad4684d2/src/interfaces/IPreLiquidationRebalanceAdapter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/40214436ae3956021858cb95e6ff881f6ede8e11/src/interfaces/IPreLiquidationRebalanceAdapter.sol)
 
 
 ## Functions
@@ -115,4 +115,11 @@ Emitted when the PreLiquidationRebalanceAdapter is initialized
 ```solidity
 event PreLiquidationRebalanceAdapterInitialized(uint256 collateralRatioThreshold, uint256 rebalanceReward);
 ```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`collateralRatioThreshold`|`uint256`|The collateral ratio threshold for pre-liquidation rebalancing. If the LeverageToken collateral ratio is below this threshold, the LeverageToken can be pre-liquidation rebalanced|
+|`rebalanceReward`|`uint256`|The rebalance reward percentage. The rebalance reward represents the percentage of liquidation penalty that will be rewarded to the caller of the rebalance function. 10_000 means 100%|
 

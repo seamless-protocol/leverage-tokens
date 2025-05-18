@@ -1,5 +1,5 @@
 # ICollateralRatiosRebalanceAdapter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/e2065c10183acb51865104847d299ff5ad4684d2/src/interfaces/ICollateralRatiosRebalanceAdapter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/40214436ae3956021858cb95e6ff881f6ede8e11/src/interfaces/ICollateralRatiosRebalanceAdapter.sol)
 
 Interface for the CollateralRatiosRebalanceAdapter contract
 
@@ -144,6 +144,14 @@ event CollateralRatiosRebalanceAdapterInitialized(
     uint256 minCollateralRatio, uint256 targetCollateralRatio, uint256 maxCollateralRatio
 );
 ```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`minCollateralRatio`|`uint256`|Minimum collateral ratio for the LeverageToken|
+|`targetCollateralRatio`|`uint256`|Target collateral ratio for the LeverageToken|
+|`maxCollateralRatio`|`uint256`|Maximum collateral ratio for the LeverageToken|
 
 ## Errors
 ### InvalidCollateralRatios
