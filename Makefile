@@ -16,6 +16,10 @@ fmt                     :; forge fmt
 test                    :; forge test -vvvv --gas-report
 
 # Deploy
-deploy-core-tenderly		:; forge script script/Core.s.sol:CoreDeploy --force --rpc-url tenderly --slow --broadcast -vvvv --verify --verifier-url ${TENDERLY_FORK_VERIFIER_URL} --etherscan-api-key ${TENDERLY_ACCESS_KEY}
-deploy-periphery-tenderly	:; forge script script/Periphery.s.sol:PeripheryDeploy --force --rpc-url tenderly --slow --broadcast -vvvv --verify --verifier-url ${TENDERLY_FORK_VERIFIER_URL} --etherscan-api-key ${TENDERLY_ACCESS_KEY}
-deploy-create-leverage-token-tenderly	:; forge script script/CreateLeverageToken.s.sol:CreateLeverageToken --force --rpc-url tenderly --slow --broadcast -vvvv --verify --verifier-url ${TENDERLY_FORK_VERIFIER_URL} --etherscan-api-key ${TENDERLY_ACCESS_KEY}
+deploy-core-tenderly		:; forge script script/Core.s.sol:CoreDeploy --force --rpc-url tenderly --account dummy_deployer --slow --broadcast -vvvv --verify  
+deploy-periphery-tenderly	:; forge script script/Periphery.s.sol:PeripheryDeploy --force --rpc-url tenderly --account dummy_deployer --slow --broadcast -vvvv --verify
+deploy-create-leverage-token-tenderly	:; forge script script/CreateLeverageToken.s.sol:CreateLeverageToken --force --rpc-url tenderly --account dummy_deployer --slow --broadcast -vvvv 
+
+deploy-core-base		:; forge script script/Core.s.sol:CoreDeploy --force --rpc-url base --account dummy_deployer --slow --broadcast -vvvv --verify  
+deploy-periphery-base	:; forge script script/Periphery.s.sol:PeripheryDeploy --force --rpc-url base --account dummy_deployer --slow --broadcast -vvvv --verify
+deploy-create-leverage-token-base	:; forge script script/CreateLeverageToken.s.sol:CreateLeverageToken --force --rpc-url base --account dummy_deployer --slow --broadcast -vvvv 

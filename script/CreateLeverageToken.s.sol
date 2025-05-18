@@ -41,17 +41,12 @@ contract CreateLeverageToken is Script {
     string public LT_SYMBOL = "SYMBOL";
 
     function run() public {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        address deployerAddress = vm.addr(deployerPrivateKey);
-
-        console.log("Deployer address: ", deployerAddress);
-        console.log("Deployer balance: ", deployerAddress.balance);
         console.log("BlockNumber: ", block.number);
         console.log("ChainId: ", block.chainid);
 
         console.log("Deploying...");
 
-        vm.startBroadcast(deployerPrivateKey);
+        vm.startBroadcast();
 
         RebalanceAdapter rebalanceAdapter = new RebalanceAdapter();
         console.log("RebalanceAdapter deployed at: ", address(rebalanceAdapter));

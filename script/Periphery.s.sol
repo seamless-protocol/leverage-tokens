@@ -17,23 +17,21 @@ import {DeployConstants} from "./DeployConstants.sol";
 
 contract PeripheryDeploy is Script {
     function run() public {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        address deployerAddress = vm.addr(deployerPrivateKey);
-
-        console.log("Deployer address: ", deployerAddress);
-        console.log("Deployer balance: ", deployerAddress.balance);
         console.log("BlockNumber: ", block.number);
         console.log("ChainId: ", block.chainid);
 
         console.log("Deploying...");
 
-        vm.startBroadcast(deployerPrivateKey);
+        vm.startBroadcast();
 
         SwapAdapter swapAdapter = new SwapAdapter();
         console.log("SwapAdapter deployed at: ", address(swapAdapter));
 
-        LeverageRouter leverageRouter =
-            new LeverageRouter(DeployConstants.LEVERAGE_MANAGER, DeployConstants.MORPHO, ISwapAdapter(swapAdapter));
+        LeverageRouter leverageRouter = new LeverageRouter(
+            ILeverageManager(DeployConstants.LEVERAGE_MANAGER),
+            IMorpho(DeployConstants.MORPHO),
+            ISwapAdapter(swapAdapter)
+        );
         console.log("LeverageRouter deployed at: ", address(leverageRouter));
 
         vm.stopBroadcast();

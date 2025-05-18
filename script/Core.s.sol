@@ -16,17 +16,12 @@ import {DeployConstants} from "script/DeployConstants.sol";
 
 contract CoreDeploy is Script {
     function run() public {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        address deployerAddress = vm.addr(deployerPrivateKey);
-
-        console.log("Deployer address: ", deployerAddress);
-        console.log("Deployer balance: ", deployerAddress.balance);
         console.log("BlockNumber: ", block.number);
         console.log("ChainId: ", block.chainid);
 
         console.log("Deploying...");
 
-        vm.startBroadcast(deployerPrivateKey);
+        vm.startBroadcast();
 
         LeverageToken leverageTokenImplementation = new LeverageToken();
         console.log("LeverageToken implementation deployed at: ", address(leverageTokenImplementation));
@@ -41,7 +36,10 @@ contract CoreDeploy is Script {
         ERC1967Proxy leverageManagerProxy = new ERC1967Proxy(
             address(leverageManagerImplementation),
             abi.encodeWithSelector(
-                LeverageManager.initialize.selector, DeployConstants.SEAMLESS_GOVERNOR_SHORT, leverageTokenFactory
+                LeverageManager.initialize.selector,
+                DeployConstants.SEAMLESS_GOVERNOR_SHORT,
+                DeployConstants.SEAMLESS_TREASURY,
+                leverageTokenFactory
             )
         );
         console.log("LeverageManager proxy deployed at: ", address(leverageManagerProxy));
