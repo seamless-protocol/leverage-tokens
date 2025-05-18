@@ -15,20 +15,16 @@ import {LeverageTokenConfig} from "src/types/DataTypes.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
+import {DeployConstants} from "./DeployConstants.sol";
 
 contract CreateLeverageToken is Script {
-    // TODO: Update this to the actual address
-    ILeverageManager public leverageManager = ILeverageManager(0x9Fe8bf017C062CAe35638c67EB985Ce216753403);
-    // TODO: Update this to the actual address
+    ILeverageManager public leverageManager = ILeverageManager(DeployConstants.LEVERAGE_MANAGER);
     IMorphoLendingAdapterFactory public lendingAdapterFactory =
-        IMorphoLendingAdapterFactory(0x26957b0D829E8E53C29D1b1f9c279A1c16fA6F59);
+        IMorphoLendingAdapterFactory(DeployConstants.LENDING_ADAPTER_FACTORY);
 
-    // TODO: Update this to the actual address
     Id public MORPHO_MARKET_ID = Id.wrap(0x8793cf302b8ffd655ab97bd1c695dbd967807e8367a65cb2f4edaf1380ba1bda);
-    // TODO: Update this to the actual address
-    bytes32 public BASE_SALT = bytes32(uint256(8));
+    bytes32 public BASE_SALT = bytes32(uint256(0));
 
-    // TODO: Update these to the actual values
     uint256 public MIN_COLLATERAL_RATIO = 1.8e18;
     uint256 public TARGET_COLLATERAL_RATIO = 2e18;
     uint256 public MAX_COLLATERAL_RATIO = 2.2e18;
@@ -37,6 +33,12 @@ contract CreateLeverageToken is Script {
     uint256 public MIN_PRICE_MULTIPLIER = 0.98e18;
     uint256 public PRE_LIQUIDATION_COLLATERAL_RATIO_THRESHOLD = 1.3e18;
     uint256 public REBALANCE_REWARD = 50_00;
+
+    uint256 public MINT_TOKEN_FEE = 1;
+    uint256 public REDEEM_TOKEN_FEE = 1;
+
+    string public LT_NAME = "NAME";
+    string public LT_SYMBOL = "SYMBOL";
 
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
@@ -58,7 +60,7 @@ contract CreateLeverageToken is Script {
             address(rebalanceAdapter),
             abi.encodeWithSelector(
                 RebalanceAdapter.initialize.selector,
-                deployerAddress,
+                DeployConstants.SEAMLESS_GOVERNOR_SHORT,
                 deployerAddress,
                 leverageManager,
                 MIN_COLLATERAL_RATIO,
@@ -81,11 +83,11 @@ contract CreateLeverageToken is Script {
             LeverageTokenConfig({
                 lendingAdapter: ILendingAdapter(address(lendingAdapter)),
                 rebalanceAdapter: IRebalanceAdapterBase(address(rebalanceAdapterProxy)),
-                mintTokenFee: 0,
-                redeemTokenFee: 0
+                mintTokenFee: MINT_TOKEN_FEE,
+                redeemTokenFee: REDEEM_TOKEN_FEE
             }),
-            "Seamless ETH Long 2x",
-            "LT-ETH-USDC-2x"
+            LT_NAME,
+            LT_SYMBOL
         );
 
         console.log("LeverageToken deployed at: ", address(leverageToken));

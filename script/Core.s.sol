@@ -12,10 +12,9 @@ import {MorphoLendingAdapter} from "src/lending/MorphoLendingAdapter.sol";
 import {MorphoLendingAdapterFactory} from "src/lending/MorphoLendingAdapterFactory.sol";
 import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
+import {DeployConstants} from "script/DeployConstants.sol";
 
 contract CoreDeploy is Script {
-    address public MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
-
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployerAddress = vm.addr(deployerPrivateKey);
@@ -33,7 +32,7 @@ contract CoreDeploy is Script {
         console.log("LeverageToken implementation deployed at: ", address(leverageTokenImplementation));
 
         BeaconProxyFactory leverageTokenFactory =
-            new BeaconProxyFactory(address(leverageTokenImplementation), deployerAddress);
+            new BeaconProxyFactory(address(leverageTokenImplementation), DeployConstants.SEAMLESS_GOVERNOR_SHORT);
         console.log("LeverageToken factory deployed at: ", address(leverageTokenFactory));
 
         LeverageManager leverageManagerImplementation = new LeverageManager();
@@ -41,12 +40,14 @@ contract CoreDeploy is Script {
 
         ERC1967Proxy leverageManagerProxy = new ERC1967Proxy(
             address(leverageManagerImplementation),
-            abi.encodeWithSelector(LeverageManager.initialize.selector, deployerAddress, leverageTokenFactory)
+            abi.encodeWithSelector(
+                LeverageManager.initialize.selector, DeployConstants.SEAMLESS_GOVERNOR_SHORT, leverageTokenFactory
+            )
         );
         console.log("LeverageManager proxy deployed at: ", address(leverageManagerProxy));
 
         MorphoLendingAdapter lendingAdapter =
-            new MorphoLendingAdapter(ILeverageManager(address(leverageManagerProxy)), IMorpho(MORPHO));
+            new MorphoLendingAdapter(ILeverageManager(address(leverageManagerProxy)), IMorpho(DeployConstants.MORPHO));
         console.log("LendingAdapter deployed at: ", address(lendingAdapter));
 
         MorphoLendingAdapterFactory lendingAdapterFactory = new MorphoLendingAdapterFactory(lendingAdapter);

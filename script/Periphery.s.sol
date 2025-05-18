@@ -13,12 +13,9 @@ import {MorphoLendingAdapter} from "src/lending/MorphoLendingAdapter.sol";
 import {MorphoLendingAdapterFactory} from "src/lending/MorphoLendingAdapterFactory.sol";
 import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
+import {DeployConstants} from "./DeployConstants.sol";
 
 contract PeripheryDeploy is Script {
-    // TODO: Update this to the actual address
-    address public LEVERAGE_MANAGER = 0x0000000000000000000000000000000000000000;
-    address public MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
-
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployerAddress = vm.addr(deployerPrivateKey);
@@ -36,7 +33,7 @@ contract PeripheryDeploy is Script {
         console.log("SwapAdapter deployed at: ", address(swapAdapter));
 
         LeverageRouter leverageRouter =
-            new LeverageRouter(ILeverageManager(LEVERAGE_MANAGER), IMorpho(MORPHO), ISwapAdapter(swapAdapter));
+            new LeverageRouter(DeployConstants.LEVERAGE_MANAGER, DeployConstants.MORPHO, ISwapAdapter(swapAdapter));
         console.log("LeverageRouter deployed at: ", address(leverageRouter));
 
         vm.stopBroadcast();
