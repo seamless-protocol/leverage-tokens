@@ -163,5 +163,11 @@ contract RedeemTest is PreviewActionTest {
 
         // Treasury action fee should be less than or equal to the shares burned from the user
         assertLe(redeemData.treasuryFee, redeemData.shares);
+
+        // Verify the collateral ratio is >= the collateral ratio before the redeem
+        // We use the comparison collateralBefore * debtAfter >= collateralAfter * debtBefore, which is equivalent to
+        // collateralRatioAfter >= collateralRatioBefore to avoid precision loss from division when calculating collateral
+        // ratios
+        assertGe(lendingAdapter.getCollateral() * debtBalanceBefore, collateralBalanceBefore * lendingAdapter.getDebt());
     }
 }

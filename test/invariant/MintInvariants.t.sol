@@ -172,10 +172,22 @@ contract MintInvariants is InvariantTestBase {
         LeverageManagerHandler.MintActionData memory mintData
     ) internal view {
         if (stateBefore.totalSupply != 0 && stateBefore.debt != 0) {
-            assertApproxEqRel(
-                stateAfter.collateralRatio,
-                stateBefore.collateralRatio,
-                _getAllowedCollateralRatioSlippage(Math.min(stateBefore.collateral, stateBefore.debt)),
+            uint256 debtInCollateralAsset = lendingAdapter.convertDebtToCollateralAsset(lendingAdapter.getDebt());
+            uint256 collateralRatioUsingDebtNormalized = debtInCollateralAsset > 0
+                ? Math.mulDiv(lendingAdapter.getCollateral(), BASE_RATIO, debtInCollateralAsset, Math.Rounding.Floor)
+                : type(uint256).max;
+
+            uint256 allowedSlippage =
+                _getAllowedCollateralRatioSlippage(Math.min(stateBefore.collateral, stateBefore.debt));
+
+            bool isCollateralRatioWithinAllowedSlippage = stdMath.percentDelta(
+                stateAfter.collateralRatio, stateBefore.collateralRatio
+            ) <= allowedSlippage
+                || stdMath.percentDelta(collateralRatioUsingDebtNormalized, stateBefore.collateralRatioUsingDebtNormalized)
+                    <= allowedSlippage;
+
+            assertTrue(
+                isCollateralRatioWithinAllowedSlippage,
                 _getMintInvariantDescriptionString(
                     "Collateral ratio after mint must be equal to the collateral ratio before the mint, within the allowed slippage.",
                     stateBefore,
@@ -184,10 +196,6 @@ contract MintInvariants is InvariantTestBase {
                 )
             );
 
-            uint256 debtInCollateralAsset = lendingAdapter.convertDebtToCollateralAsset(lendingAdapter.getDebt());
-            uint256 collateralRatioUsingDebtNormalized = debtInCollateralAsset > 0
-                ? Math.mulDiv(lendingAdapter.getCollateral(), BASE_RATIO, debtInCollateralAsset, Math.Rounding.Floor)
-                : type(uint256).max;
             bool isCollateralRatioGe = collateralRatioUsingDebtNormalized
                 >= stateBefore.collateralRatioUsingDebtNormalized
                 || stateAfter.collateralRatio >= stateBefore.collateralRatio;

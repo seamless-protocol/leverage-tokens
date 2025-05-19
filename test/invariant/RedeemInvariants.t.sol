@@ -13,7 +13,7 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
-import {LeverageTokenState} from "src/types/DataTypes.sol";
+import {ExternalAction, LeverageTokenState} from "src/types/DataTypes.sol";
 import {LeverageManagerHandler} from "test/invariant/handlers/LeverageManagerHandler.t.sol";
 import {InvariantTestBase} from "test/invariant/InvariantTestBase.t.sol";
 
@@ -133,49 +133,37 @@ contract RedeemInvariants is InvariantTestBase {
                 "Invariant Violated: Collateral ratio should not change if zero shares were burnt or zero equity was passed to the redeem function."
             );
         } else {
-            uint256 debtInCollateralAsset = lendingAdapter.convertDebtToCollateralAsset(lendingAdapter.getDebt());
-            uint256 collateralRatioUsingDebtNormalized = debtInCollateralAsset > 0
-                ? Math.mulDiv(lendingAdapter.getCollateral(), BASE_RATIO, debtInCollateralAsset, Math.Rounding.Floor)
-                : type(uint256).max;
-            bool isCollateralRatioGe = collateralRatioUsingDebtNormalized
-                >= stateBefore.collateralRatioUsingDebtNormalized
-                || stateAfter.collateralRatio >= stateBefore.collateralRatio;
-
-            assertTrue(
-                isCollateralRatioGe,
-                _getRedeemInvariantDescriptionString(
-                    string.concat(
-                        "Collateral ratio after redeem must be greater than or equal to the collateral ratio before the redeem.",
-                        " Collateral ratio calculated by normalizing collateral to the debt asset: ",
-                        Strings.toString(collateralRatioUsingDebtNormalized),
-                        " Collateral ratio calculated by normalizing debt to the collateral asset: ",
-                        Strings.toString(stateAfter.collateralRatio)
-                    ),
-                    stateBefore,
-                    stateAfter,
-                    redeemData
-                )
-            );
-
-            if (stateAfter.debt != 0) {
-                uint256 allowedSlippage =
-                    _getAllowedCollateralRatioSlippage(Math.min(stateBefore.collateral, stateBefore.debt));
-                bool isCollateralRatioWithinAllowedSlippage = stdMath.percentDelta(
-                    stateAfter.collateralRatio, stateBefore.collateralRatio
-                ) <= allowedSlippage
-                    || stdMath.percentDelta(
-                        collateralRatioUsingDebtNormalized, stateBefore.collateralRatioUsingDebtNormalized
-                    ) <= allowedSlippage;
-
+            uint256 collateralAfter = lendingAdapter.getCollateral();
+            if (
+                stateBefore.debt != 0 && stateBefore.collateral != 0
+                    && type(uint256).max / stateBefore.debt <= collateralAfter
+                    && type(uint256).max / stateBefore.collateral <= stateAfter.debt
+            ) {
+                // Verify the collateral ratio is >= the collateral ratio before the redeem
+                // We use the comparison collateralBefore * debtAfter >= collateralAfter * debtBefore, which is equivalent to
+                // collateralRatioAfter >= collateralRatioBefore to avoid precision loss from division when calculating collateral
+                // ratios
+                bool isCollateralRatioGe =
+                    collateralAfter * stateBefore.debt >= stateBefore.collateral * stateAfter.debt;
                 assertTrue(
-                    isCollateralRatioWithinAllowedSlippage,
+                    isCollateralRatioGe,
                     _getRedeemInvariantDescriptionString(
-                        "Collateral ratio after a redeem must be equal to the collateral ratio before the redeem, within the allowed slippage.",
+                        string.concat(
+                            "Collateral ratio after redeem must be greater than or equal to the collateral ratio before the redeem.",
+                            " collateralAfter * stateBefore.debt: ",
+                            Strings.toString(collateralAfter * stateBefore.debt),
+                            " stateBefore.collateral * stateAfter.debt: ",
+                            Strings.toString(stateBefore.collateral * stateAfter.debt)
+                        ),
                         stateBefore,
                         stateAfter,
                         redeemData
                     )
                 );
+            }
+
+            if (stateAfter.debt != 0) {
+                _assertCollateralRatioChangeWithinAllowedSlippage(lendingAdapter, stateBefore, stateAfter, redeemData);
             } else {
                 assertEq(
                     stateAfter.collateralRatio,
@@ -189,6 +177,40 @@ contract RedeemInvariants is InvariantTestBase {
                 );
             }
         }
+    }
+
+    function _assertCollateralRatioChangeWithinAllowedSlippage(
+        ILendingAdapter lendingAdapter,
+        LeverageManagerHandler.LeverageTokenStateData memory stateBefore,
+        LeverageTokenState memory stateAfter,
+        LeverageManagerHandler.RedeemActionData memory redeemData
+    ) internal view {
+        uint256 collateralAfter = lendingAdapter.getCollateral();
+        uint256 debtInCollateralAsset = lendingAdapter.convertDebtToCollateralAsset(stateAfter.debt);
+        uint256 collateralRatioUsingDebtNormalized = debtInCollateralAsset > 0
+            ? Math.mulDiv(collateralAfter, BASE_RATIO, debtInCollateralAsset, Math.Rounding.Floor)
+            : type(uint256).max;
+
+        uint256 minCollateral = Math.min(stateBefore.collateral, collateralAfter);
+        uint256 minDebt = Math.min(stateBefore.debt, stateAfter.debt);
+
+        uint256 allowedSlippage = _getAllowedCollateralRatioSlippage(Math.min(minDebt, minCollateral));
+
+        bool isCollateralRatioWithinAllowedSlippage = stdMath.percentDelta(
+            stateAfter.collateralRatio, stateBefore.collateralRatio
+        ) <= allowedSlippage
+            || stdMath.percentDelta(collateralRatioUsingDebtNormalized, stateBefore.collateralRatioUsingDebtNormalized)
+                <= allowedSlippage;
+
+        assertTrue(
+            isCollateralRatioWithinAllowedSlippage,
+            _getRedeemInvariantDescriptionString(
+                "Collateral ratio after a redeem must be equal to the collateral ratio before the redeem, within the allowed slippage.",
+                stateBefore,
+                stateAfter,
+                redeemData
+            )
+        );
     }
 
     function _getRedeemInvariantDescriptionString(
