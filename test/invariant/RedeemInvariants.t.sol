@@ -139,6 +139,10 @@ contract RedeemInvariants is InvariantTestBase {
                     && type(uint256).max / stateBefore.debt <= collateralAfter
                     && type(uint256).max / stateBefore.collateral <= stateAfter.debt
             ) {
+                // Verify the collateral ratio is >= the collateral ratio before the redeem
+                // We use the comparison collateralBefore * debtAfter >= collateralAfter * debtBefore, which is equivalent to
+                // collateralRatioAfter >= collateralRatioBefore to avoid precision loss from division when calculating collateral
+                // ratios
                 bool isCollateralRatioGe =
                     collateralAfter * stateBefore.debt >= stateBefore.collateral * stateAfter.debt;
                 assertTrue(

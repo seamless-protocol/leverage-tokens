@@ -33,9 +33,10 @@ contract LeverageManagerRedeemTest is LeverageManagerTest {
 
         // Ensure that collateral ratio is the same (with some rounding error)
         assertGe(stateAfter.collateralRatio, stateBefore.collateralRatio);
-        // Verify the collateral ratio is >= to before the redeem
-        // We use the comparison collateralBefore * DebtAfter >= CollateralAfter * DebtBefore to avoid precision loss
-        // from division when calculating collateral ratios
+        // Verify the collateral ratio is >= the collateral ratio before the redeem
+        // We use the comparison collateralBefore * debtAfter >= collateralAfter * debtBefore, which is equivalent to
+        // collateralRatioAfter >= collateralRatioBefore to avoid precision loss from division when calculating collateral
+        // ratios
         assertGe(morphoLendingAdapter.getCollateral() * stateBefore.debt, collateralBefore * stateAfter.debt);
         assertEq(stateAfter.collateralRatio, 2000000000058957180);
         assertEq(stateAfter.debt, stateBefore.debt - previewData.debt);
@@ -104,9 +105,10 @@ contract LeverageManagerRedeemTest is LeverageManagerTest {
 
         // Ensure that collateral ratio is the same (with some rounding error)
         assertGe(stateAfter.collateralRatio, stateBefore.collateralRatio);
-        // Verify the collateral ratio is >= to before the redeem
-        // We use the comparison collateralBefore * DebtAfter >= CollateralAfter * DebtBefore to avoid precision loss
-        // from division when calculating collateral ratios
+        // Verify the collateral ratio is >= the collateral ratio before the redeem
+        // We use the comparison collateralBefore * debtAfter >= collateralAfter * debtBefore, which is equivalent to
+        // collateralRatioAfter >= collateralRatioBefore to avoid precision loss from division when calculating collateral
+        // ratios
         assertGe(morphoLendingAdapter.getCollateral() * stateBefore.debt, collateralBefore * stateAfter.debt);
         assertEq(stateAfter.collateralRatio, 2000000000000000000);
 
@@ -138,9 +140,10 @@ contract LeverageManagerRedeemTest is LeverageManagerTest {
 
         // Ensure that collateral ratio is the same (with some rounding error)
         assertGe(stateAfter.collateralRatio, stateBefore.collateralRatio);
-        // Verify the collateral ratio is >= to before the redeem
-        // We use the comparison collateralBefore * DebtAfter >= CollateralAfter * DebtBefore to avoid precision loss
-        // from division when calculating collateral ratios
+        // Verify the collateral ratio is >= the collateral ratio before the redeem
+        // We use the comparison collateralBefore * debtAfter >= collateralAfter * debtBefore, which is equivalent to
+        // collateralRatioAfter >= collateralRatioBefore to avoid precision loss from division when calculating collateral
+        // ratios
         assertGe(morphoLendingAdapter.getCollateral() * stateBefore.debt, collateralBefore * stateAfter.debt);
         assertEq(stateAfter.collateralRatio, 2358287225265780836);
 
