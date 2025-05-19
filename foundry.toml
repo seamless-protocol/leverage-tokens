@@ -16,7 +16,6 @@ base = "${BASE_RPC_URL}"
 
 [etherscan]
 tenderly = { url = "${TENDERLY_VERIFIER_URL}", key = "${TENDERLY_VERIFIER_KEY}" }
-base = { url = "${BASE_VERIFIER_URL}", key = "${BASE_VERIFIER_KEY}" }
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
 

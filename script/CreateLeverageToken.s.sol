@@ -31,7 +31,7 @@ contract CreateLeverageToken is Script {
     uint256 public AUCTION_DURATION = 1 minutes;
     uint256 public INITIAL_PRICE_MULTIPLIER = 1.02e18;
     uint256 public MIN_PRICE_MULTIPLIER = 0.98e18;
-    uint256 public PRE_LIQUIDATION_COLLATERAL_RATIO_THRESHOLD = 1.3e18;
+    uint256 public PRE_LIQUIDATION_COLLATERAL_RATIO_THRESHOLD = type(uint256).max;
     uint256 public REBALANCE_REWARD = 50_00;
 
     uint256 public MINT_TOKEN_FEE = 1;
@@ -50,6 +50,8 @@ contract CreateLeverageToken is Script {
 
         RebalanceAdapter rebalanceAdapter = new RebalanceAdapter();
         console.log("RebalanceAdapter deployed at: ", address(rebalanceAdapter));
+
+        address deployerAddress = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
 
         ERC1967Proxy rebalanceAdapterProxy = new ERC1967Proxy(
             address(rebalanceAdapter),
