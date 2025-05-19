@@ -22,6 +22,7 @@ contract LeverageManagerRedeemTest is LeverageManagerTest {
         _mint(user, equityInCollateralAsset, collateralToAdd);
 
         LeverageTokenState memory stateBefore = getLeverageTokenState();
+        uint256 collateralBefore = morphoLendingAdapter.getCollateral();
         assertEq(stateBefore.collateralRatio, 1999999999970521409); // ~2x CR
 
         uint256 equityToRedeem = 5 ether;
@@ -32,6 +33,10 @@ contract LeverageManagerRedeemTest is LeverageManagerTest {
 
         // Ensure that collateral ratio is the same (with some rounding error)
         assertGe(stateAfter.collateralRatio, stateBefore.collateralRatio);
+        // Verify the collateral ratio is >= to before the redeem
+        // We use the comparison collateralBefore * DebtAfter >= CollateralAfter * DebtBefore to avoid precision loss
+        // from division when calculating collateral ratios
+        assertGe(morphoLendingAdapter.getCollateral() * stateBefore.debt, collateralBefore * stateAfter.debt);
         assertEq(stateAfter.collateralRatio, 2000000000058957180);
         assertEq(stateAfter.debt, stateBefore.debt - previewData.debt);
 
@@ -84,6 +89,7 @@ contract LeverageManagerRedeemTest is LeverageManagerTest {
         _mint(user, equityInCollateralAsset, collateralToAdd);
 
         LeverageTokenState memory stateBefore = getLeverageTokenState();
+        uint256 collateralBefore = morphoLendingAdapter.getCollateral();
         assertEq(stateBefore.collateralRatio, 1999999999950000000); // ~2x CR
 
         uint256 equityInCollateralAssetBeforeRedeem = morphoLendingAdapter.getEquityInCollateralAsset();
@@ -96,8 +102,12 @@ contract LeverageManagerRedeemTest is LeverageManagerTest {
         LeverageTokenState memory stateAfter = getLeverageTokenState();
         uint256 equityInCollateralAssetAfterRedeem = morphoLendingAdapter.getEquityInCollateralAsset();
 
-        // Ensure that collateral ratio is the same
+        // Ensure that collateral ratio is the same (with some rounding error)
         assertGe(stateAfter.collateralRatio, stateBefore.collateralRatio);
+        // Verify the collateral ratio is >= to before the redeem
+        // We use the comparison collateralBefore * DebtAfter >= CollateralAfter * DebtBefore to avoid precision loss
+        // from division when calculating collateral ratios
+        assertGe(morphoLendingAdapter.getCollateral() * stateBefore.debt, collateralBefore * stateAfter.debt);
         assertEq(stateAfter.collateralRatio, 2000000000000000000);
 
         // Ensure that after redeem debt and collateral is 50% of what was initially after mint
@@ -117,6 +127,7 @@ contract LeverageManagerRedeemTest is LeverageManagerTest {
         vm.mockCall(address(oracle), abi.encodeWithSelector(IOracle.price.selector), abi.encode(4000e24));
 
         LeverageTokenState memory stateBefore = getLeverageTokenState();
+        uint256 collateralBefore = morphoLendingAdapter.getCollateral();
         assertEq(stateBefore.collateralRatio, 2358287225224640032); // ~2x CR
 
         uint256 equityToRedeem = 5 ether;
@@ -125,8 +136,12 @@ contract LeverageManagerRedeemTest is LeverageManagerTest {
 
         LeverageTokenState memory stateAfter = getLeverageTokenState();
 
-        // Ensure that collateral ratio is the same, with some rounding error
+        // Ensure that collateral ratio is the same (with some rounding error)
         assertGe(stateAfter.collateralRatio, stateBefore.collateralRatio);
+        // Verify the collateral ratio is >= to before the redeem
+        // We use the comparison collateralBefore * DebtAfter >= CollateralAfter * DebtBefore to avoid precision loss
+        // from division when calculating collateral ratios
+        assertGe(morphoLendingAdapter.getCollateral() * stateBefore.debt, collateralBefore * stateAfter.debt);
         assertEq(stateAfter.collateralRatio, 2358287225265780836);
 
         assertEq(WETH.balanceOf(user), previewData.collateral);
