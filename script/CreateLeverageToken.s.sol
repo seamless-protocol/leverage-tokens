@@ -51,7 +51,6 @@ contract CreateLeverageToken is Script {
 
         vm.startBroadcast();
 
-
         RebalanceAdapter rebalanceAdapter = new RebalanceAdapter();
         console.log("RebalanceAdapter deployed at: ", address(rebalanceAdapter));
 

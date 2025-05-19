@@ -9,7 +9,6 @@ import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 import {SwapAdapter} from "src/periphery/SwapAdapter.sol";
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {LeverageRouter} from "src/periphery/LeverageRouter.sol";
-import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {MorphoLendingAdapter} from "src/lending/MorphoLendingAdapter.sol";
 import {MorphoLendingAdapterFactory} from "src/lending/MorphoLendingAdapterFactory.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
