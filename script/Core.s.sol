@@ -3,6 +3,7 @@ pragma solidity ^0.8.26;
 
 import {Script, console} from "forge-std/Script.sol";
 
+import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 
@@ -33,16 +34,11 @@ contract CoreDeploy is Script {
             new BeaconProxyFactory(address(leverageTokenImplementation), DeployConstants.SEAMLESS_TIMELOCK_SHORT);
         console.log("LeverageToken factory deployed at: ", address(leverageTokenFactory));
 
-        LeverageManager leverageManagerImplementation = new LeverageManager();
-        console.log("LeverageManager implementation deployed at: ", address(leverageManagerImplementation));
-
-        ERC1967Proxy leverageManagerProxy = new ERC1967Proxy(
-            address(leverageManagerImplementation),
-            abi.encodeWithSelector(
-                LeverageManager.initialize.selector,
-                DeployConstants.SEAMLESS_TIMELOCK_SHORT,
-                DeployConstants.SEAMLESS_TREASURY,
-                leverageTokenFactory
+        address leverageManagerProxy = Upgrades.deployUUPSProxy(
+            "LeverageManager.sol",
+            abi.encodeCall(
+                LeverageManager.initialize,
+                (DeployConstants.SEAMLESS_TIMELOCK_SHORT, DeployConstants.SEAMLESS_TREASURY, leverageTokenFactory)
             )
         );
         console.log("LeverageManager proxy deployed at: ", address(leverageManagerProxy));

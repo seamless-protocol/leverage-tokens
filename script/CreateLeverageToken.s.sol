@@ -4,7 +4,6 @@ pragma solidity ^0.8.26;
 import {Script, console} from "forge-std/Script.sol";
 
 import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
-
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {Id, MarketParams} from "@morpho-blue/interfaces/IMorpho.sol";
 import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
@@ -60,38 +59,38 @@ contract CreateLeverageToken is Script {
     string public LT_SYMBOL = "SYMBOL";
 
     function run() public {
-        address deployerAddress = msg.sender;
-
         console.log("BlockNumber: ", block.number);
         console.log("ChainId: ", block.chainid);
-        console.log("DeployerAddress: ", deployerAddress);
 
         console.log("Deploying...");
 
         vm.startBroadcast();
 
-        RebalanceAdapter rebalanceAdapter = new RebalanceAdapter();
-        console.log("RebalanceAdapter deployed at: ", address(rebalanceAdapter));
+        address deployerAddress = msg.sender;
+        console.log("DeployerAddress: ", deployerAddress);
 
-        ERC1967Proxy rebalanceAdapterProxy = new ERC1967Proxy(
-            address(rebalanceAdapter),
-            abi.encodeWithSelector(
-                RebalanceAdapter.initialize.selector,
-                RebalanceAdapter.RebalanceAdapterInitParams({
-                    owner: DeployConstants.SEAMLESS_TIMELOCK_SHORT,
-                    authorizedCreator: deployerAddress,
-                    leverageManager: leverageManager,
-                    minCollateralRatio: MIN_COLLATERAL_RATIO,
-                    targetCollateralRatio: TARGET_COLLATERAL_RATIO,
-                    maxCollateralRatio: MAX_COLLATERAL_RATIO,
-                    auctionDuration: AUCTION_DURATION,
-                    initialPriceMultiplier: INITIAL_PRICE_MULTIPLIER,
-                    minPriceMultiplier: MIN_PRICE_MULTIPLIER,
-                    preLiquidationCollateralRatioThreshold: PRE_LIQUIDATION_COLLATERAL_RATIO_THRESHOLD,
-                    rebalanceReward: REBALANCE_REWARD
-                })
+        address rebalanceAdapterProxy = Upgrades.deployUUPSProxy(
+            "RebalanceAdapter.sol",
+            abi.encodeCall(
+                RebalanceAdapter.initialize,
+                (
+                    RebalanceAdapter.RebalanceAdapterInitParams({
+                        owner: DeployConstants.SEAMLESS_TIMELOCK_SHORT,
+                        authorizedCreator: deployerAddress,
+                        leverageManager: leverageManager,
+                        minCollateralRatio: MIN_COLLATERAL_RATIO,
+                        targetCollateralRatio: TARGET_COLLATERAL_RATIO,
+                        maxCollateralRatio: MAX_COLLATERAL_RATIO,
+                        auctionDuration: AUCTION_DURATION,
+                        initialPriceMultiplier: INITIAL_PRICE_MULTIPLIER,
+                        minPriceMultiplier: MIN_PRICE_MULTIPLIER,
+                        preLiquidationCollateralRatioThreshold: PRE_LIQUIDATION_COLLATERAL_RATIO_THRESHOLD,
+                        rebalanceReward: REBALANCE_REWARD
+                    })
+                )
             )
         );
+
         console.log("RebalanceAdapter proxy deployed at: ", address(rebalanceAdapterProxy));
 
         IMorphoLendingAdapter lendingAdapter =
