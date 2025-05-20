@@ -23,3 +23,5 @@ create-leverage-token-tenderly	:; forge script script/CreateLeverageToken.s.sol:
 deploy-core-base		:; forge script script/Core.s.sol:CoreDeploy --force --rpc-url base --account ${DEPLOYER_ACCOUNT_NAME} --slow --broadcast -vvvv 
 deploy-periphery-base	:; forge script script/Periphery.s.sol:PeripheryDeploy --force --rpc-url base --account ${DEPLOYER_ACCOUNT_NAME} --slow --broadcast -vvvv --verify
 create-leverage-token-base	:; forge script script/CreateLeverageToken.s.sol:CreateLeverageToken --force --rpc-url base --account ${DEPLOYER_ACCOUNT_NAME} --slow --broadcast -vvvv 
+
+deploy-full-base		:; forge script script/FullDeploy.s.sol:FullDeploy --force --rpc-url base --account ${DEPLOYER_ACCOUNT_NAME} --slow --broadcast -vvvv 

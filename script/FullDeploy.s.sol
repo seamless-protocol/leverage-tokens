@@ -49,10 +49,9 @@ contract FullDeploy is Script {
         console.log("ChainId: ", block.chainid);
 
         console.log("Deploying...");
-
-        vm.startBroadcast();
-
         address deployerAddress = msg.sender;
+
+        vm.startBroadcast(deployerAddress);
 
         // Deploy leverage token factory that is used by LM
         LeverageToken leverageTokenImplementation = new LeverageToken();
@@ -89,9 +88,7 @@ contract FullDeploy is Script {
 
         // Deploy LeverageRouter
         LeverageRouter leverageRouter = new LeverageRouter(
-            ILeverageManager(DeployConstants.LEVERAGE_MANAGER),
-            IMorpho(DeployConstants.MORPHO),
-            ISwapAdapter(swapAdapter)
+            ILeverageManager(address(leverageManagerProxy)), IMorpho(DeployConstants.MORPHO), ISwapAdapter(swapAdapter)
         );
         console.log("LeverageRouter deployed at: ", address(leverageRouter));
 
@@ -103,7 +100,7 @@ contract FullDeploy is Script {
             address(rebalanceAdapter),
             abi.encodeWithSelector(
                 RebalanceAdapter.initialize.selector,
-                DeployConstants.SEAMLESS_GOVERNOR_SHORT,
+                deployerAddress,
                 deployerAddress,
                 ILeverageManager(address(leverageManagerProxy)),
                 MIN_COLLATERAL_RATIO,
