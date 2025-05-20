@@ -15,13 +15,17 @@ import {LeverageTokenConfig} from "src/types/DataTypes.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
+import {SwapAdapter} from "src/periphery/SwapAdapter.sol";
+import {LeverageManager} from "src/LeverageManager.sol";
+import {LeverageRouter} from "src/periphery/LeverageRouter.sol";
 import {DeployConstants} from "./DeployConstants.sol";
+import {MorphoLendingAdapterFactory} from "src/lending/MorphoLendingAdapterFactory.sol";
+import {LeverageToken} from "src/LeverageToken.sol";
+import {BeaconProxyFactory} from "src/BeaconProxyFactory.sol";
+import {MorphoLendingAdapter} from "src/lending/MorphoLendingAdapter.sol";
+import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 
-contract CreateLeverageToken is Script {
-    ILeverageManager public leverageManager = ILeverageManager(DeployConstants.LEVERAGE_MANAGER);
-    IMorphoLendingAdapterFactory public lendingAdapterFactory =
-        IMorphoLendingAdapterFactory(DeployConstants.LENDING_ADAPTER_FACTORY);
-
+contract FullDeploy is Script {
     Id public MORPHO_MARKET_ID = Id.wrap(0x8793cf302b8ffd655ab97bd1c695dbd967807e8367a65cb2f4edaf1380ba1bda);
     bytes32 public BASE_SALT = bytes32(uint256(0));
 
@@ -48,10 +52,52 @@ contract CreateLeverageToken is Script {
 
         vm.startBroadcast();
 
+        address deployerAddress = msg.sender;
+
+        // Deploy leverage token factory that is used by LM
+        LeverageToken leverageTokenImplementation = new LeverageToken();
+        console.log("LeverageToken implementation deployed at: ", address(leverageTokenImplementation));
+
+        BeaconProxyFactory leverageTokenFactory =
+            new BeaconProxyFactory(address(leverageTokenImplementation), deployerAddress);
+        console.log("LeverageToken factory deployed at: ", address(leverageTokenFactory));
+
+        // Deploy LM
+        LeverageManager leverageManagerImplementation = new LeverageManager();
+        console.log("LeverageManager implementation deployed at: ", address(leverageManagerImplementation));
+
+        ERC1967Proxy leverageManagerProxy = new ERC1967Proxy(
+            address(leverageManagerImplementation),
+            abi.encodeWithSelector(
+                LeverageManager.initialize.selector, deployerAddress, deployerAddress, leverageTokenFactory
+            )
+        );
+        console.log("LeverageManager proxy deployed at: ", address(leverageManagerProxy));
+
+        // Deploy Morpho LA factory
+        MorphoLendingAdapter lendingAdapterImplementation =
+            new MorphoLendingAdapter(ILeverageManager(address(leverageManagerProxy)), IMorpho(DeployConstants.MORPHO));
+        console.log("LendingAdapter implementation deployed at: ", address(lendingAdapterImplementation));
+
+        MorphoLendingAdapterFactory lendingAdapterFactory =
+            new MorphoLendingAdapterFactory(lendingAdapterImplementation);
+        console.log("LendingAdapterFactory deployed at: ", address(lendingAdapterFactory));
+
+        // Deploy SwapAdapter
+        SwapAdapter swapAdapter = new SwapAdapter();
+        console.log("SwapAdapter deployed at: ", address(swapAdapter));
+
+        // Deploy LeverageRouter
+        LeverageRouter leverageRouter = new LeverageRouter(
+            ILeverageManager(DeployConstants.LEVERAGE_MANAGER),
+            IMorpho(DeployConstants.MORPHO),
+            ISwapAdapter(swapAdapter)
+        );
+        console.log("LeverageRouter deployed at: ", address(leverageRouter));
+
+        // Deploy RebalanceAdapter and initialize it
         RebalanceAdapter rebalanceAdapter = new RebalanceAdapter();
         console.log("RebalanceAdapter deployed at: ", address(rebalanceAdapter));
-
-        address deployerAddress = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
 
         ERC1967Proxy rebalanceAdapterProxy = new ERC1967Proxy(
             address(rebalanceAdapter),
@@ -59,7 +105,7 @@ contract CreateLeverageToken is Script {
                 RebalanceAdapter.initialize.selector,
                 DeployConstants.SEAMLESS_GOVERNOR_SHORT,
                 deployerAddress,
-                leverageManager,
+                ILeverageManager(address(leverageManagerProxy)),
                 MIN_COLLATERAL_RATIO,
                 TARGET_COLLATERAL_RATIO,
                 MAX_COLLATERAL_RATIO,
@@ -72,11 +118,13 @@ contract CreateLeverageToken is Script {
         );
         console.log("RebalanceAdapter proxy deployed at: ", address(rebalanceAdapterProxy));
 
+        // Deploy LA and initialize it
         IMorphoLendingAdapter lendingAdapter =
             lendingAdapterFactory.deployAdapter(MORPHO_MARKET_ID, deployerAddress, BASE_SALT);
         console.log("LendingAdapter deployed at: ", address(lendingAdapter));
 
-        ILeverageToken leverageToken = leverageManager.createNewLeverageToken(
+        // Deploy LT
+        ILeverageToken leverageToken = ILeverageManager(address(leverageManagerProxy)).createNewLeverageToken(
             LeverageTokenConfig({
                 lendingAdapter: ILendingAdapter(address(lendingAdapter)),
                 rebalanceAdapter: IRebalanceAdapterBase(address(rebalanceAdapterProxy)),
