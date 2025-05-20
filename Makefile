@@ -20,6 +20,6 @@ deploy-core-tenderly		:; forge script script/Core.s.sol:CoreDeploy --force --rpc
 deploy-periphery-tenderly	:; forge script script/Periphery.s.sol:PeripheryDeploy --force --rpc-url tenderly --account ${DEPLOYER_ACCOUNT_NAME} --sender ${DEPLOYER_ACCOUNT_ADDRESS} --slow --broadcast -vvvv --verify
 create-leverage-token-tenderly	:; forge script script/CreateLeverageToken.s.sol:CreateLeverageToken --force --rpc-url tenderly --account ${DEPLOYER_ACCOUNT_NAME} --sender ${DEPLOYER_ACCOUNT_ADDRESS} --slow --broadcast -vvvv --verify
 
-deploy-core-base		:; forge script script/Core.s.sol:CoreDeploy --force --rpc-url base --account ${DEPLOYER_ACCOUNT_NAME} --sender ${DEPLOYER_ACCOUNT_ADDRESS} --slow --broadcast -vvvv 
-deploy-periphery-base	:; forge script script/Periphery.s.sol:PeripheryDeploy --force --rpc-url base --account ${DEPLOYER_ACCOUNT_NAME} --sender ${DEPLOYER_ACCOUNT_ADDRESS} --slow --broadcast -vvvv 
-create-leverage-token-base	:; forge script script/CreateLeverageToken.s.sol:CreateLeverageToken --force --rpc-url base --account ${DEPLOYER_ACCOUNT_NAME} --sender ${DEPLOYER_ACCOUNT_ADDRESS} --slow --broadcast -vvvv
+deploy-core-base		:; forge script script/Core.s.sol:CoreDeploy --force --rpc-url base --account ${DEPLOYER_ACCOUNT_NAME} --sender ${DEPLOYER_ACCOUNT_ADDRESS} --slow --broadcast -vvvv --verify
+deploy-periphery-base	:; forge script script/Periphery.s.sol:PeripheryDeploy --force --rpc-url base --account ${DEPLOYER_ACCOUNT_NAME} --sender ${DEPLOYER_ACCOUNT_ADDRESS} --slow --broadcast -vvvv  --verify
+create-leverage-token-base	:; forge script script/CreateLeverageToken.s.sol:CreateLeverageToken --force --rpc-url base --account ${DEPLOYER_ACCOUNT_NAME} --sender ${DEPLOYER_ACCOUNT_ADDRESS} --slow --broadcast -vvvv --verify
