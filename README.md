@@ -52,7 +52,7 @@ RebalanceAdapters are periphery contracts that facilitate rebalance actions and 
 
 ## Upgrades
 
-All contract are immutable except LeverageManager and RebalanceAdapter. During deployment and upgrade of those contract use Oz's foundry-upgrades plugin. For safe upgrades always add custom derivative `@custom:oz-upgrades-from <reference contract / previous version contract>` on the new implementation. More details about safe upgrades can be found a link [here](https://docs.openzeppelin.com/upgrades-plugins/foundry-upgrades#upgrade_a_proxy_or_beacon).
+All contracts are immutable except LeverageManager, LeverageToken, RebalanceAdapter, and BeaconProxyFactory. During deployment and upgrade of these contracts, OZ's foundry-upgrades plugin is used. For safe upgrades, the custom directive `@custom:oz-upgrades-from <reference contract>` must be added on the new implementation. More details on how to use OZ's upgrades plugin can be found [here](https://docs.openzeppelin.com/upgrades-plugins/foundry-upgrades#upgrade_a_proxy_or_beacon).
 
 ## Audits
 
