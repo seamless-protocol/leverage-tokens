@@ -88,9 +88,6 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
         console.log("authorizedCreator: ", authorizedCreator);
 
         if (creator != authorizedCreator) revert Unauthorized();
-
-        console.log("isUsed: ", isUsed);
-
         if (isUsed) revert LendingAdapterAlreadyInUse();
         isUsed = true;
 
