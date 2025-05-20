@@ -83,10 +83,6 @@ contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
 
     /// @inheritdoc ILendingAdapter
     function postLeverageTokenCreation(address creator, address) external onlyLeverageManager {
-        console.log("Post Leverage Token Creation");
-        console.log("creator: ", creator);
-        console.log("authorizedCreator: ", authorizedCreator);
-
         if (creator != authorizedCreator) revert Unauthorized();
         if (isUsed) revert LendingAdapterAlreadyInUse();
         isUsed = true;
