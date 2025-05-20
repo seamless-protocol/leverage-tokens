@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import {Script, console} from "forge-std/Script.sol";
-
 // Dependency imports
 import {Id, IMorpho, MarketParams, Market, Position} from "@morpho-blue/interfaces/IMorpho.sol";
 import {MAX_LIQUIDATION_INCENTIVE_FACTOR, LIQUIDATION_CURSOR} from "@morpho-blue/libraries/ConstantsLib.sol";
