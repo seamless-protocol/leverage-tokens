@@ -3,6 +3,8 @@ pragma solidity ^0.8.26;
 
 import {Script, console} from "forge-std/Script.sol";
 
+import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
+
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {Id, MarketParams} from "@morpho-blue/interfaces/IMorpho.sol";
 import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
@@ -22,22 +24,39 @@ contract CreateLeverageToken is Script {
     IMorphoLendingAdapterFactory public lendingAdapterFactory =
         IMorphoLendingAdapterFactory(DeployConstants.LENDING_ADAPTER_FACTORY);
 
+    /// @dev Market ID for Morpho market that LT will be created on top of
     Id public MORPHO_MARKET_ID = Id.wrap(0x8793cf302b8ffd655ab97bd1c695dbd967807e8367a65cb2f4edaf1380ba1bda);
+    /// @dev Salt that will be used to deploy the lending adapter. Should be unique for each LT. Update after each deployment.
     bytes32 public BASE_SALT = bytes32(uint256(0));
 
+    /// @dev Minimum collateral ratio for the LT on 18 decimals
     uint256 public MIN_COLLATERAL_RATIO = 1.8e18;
+    /// @dev Target collateral ratio for the LT on 18 decimals
     uint256 public TARGET_COLLATERAL_RATIO = 2e18;
+    /// @dev Maximum collateral ratio for the LT on 18 decimals
     uint256 public MAX_COLLATERAL_RATIO = 2.2e18;
+    /// @dev Duration of the dutch auction for the LT
     uint120 public AUCTION_DURATION = 1 minutes;
+    /// @dev Initial oracle price multiplier on Dutch auction on 18 decimals. In percentage.
     uint256 public INITIAL_PRICE_MULTIPLIER = 1.02e18;
+    /// @dev Minimum oracle price multiplier on Dutch auction on 18 decimals. In percentage.
     uint256 public MIN_PRICE_MULTIPLIER = 0.98e18;
+    /// @dev Collateral ratio threshold for the pre-liquidation rebalance adapter
+    /// @dev When collateral ratio falls below this value, rebalance adapter will allow rebalance without Dutch auction for special premium
     uint256 public PRE_LIQUIDATION_COLLATERAL_RATIO_THRESHOLD = 1.3e18;
+    /// @dev Rebalance reward for the rebalance adapter, 100% = 10000
+    /// @dev Represents reward for pre liquidation rebalance, relative to the liquidation penalty. 50_00 means 50% of liquidation penalty
+    /// @dev Liquidation penalty is relative to the lltv on Morpho market.
     uint256 public REBALANCE_REWARD = 50_00;
 
+    /// @dev Token fee when minting. 100% = 10000
     uint256 public MINT_TOKEN_FEE = 1;
+    /// @dev Token fee when redeeming. 100% = 10000
     uint256 public REDEEM_TOKEN_FEE = 1;
 
+    /// @dev Name of the LT
     string public LT_NAME = "NAME";
+    /// @dev Symbol of the LT
     string public LT_SYMBOL = "SYMBOL";
 
     function run() public {
@@ -59,7 +78,7 @@ contract CreateLeverageToken is Script {
             abi.encodeWithSelector(
                 RebalanceAdapter.initialize.selector,
                 RebalanceAdapter.RebalanceAdapterInitParams({
-                    owner: DeployConstants.SEAMLESS_GOVERNOR_SHORT,
+                    owner: DeployConstants.SEAMLESS_TIMELOCK_SHORT,
                     authorizedCreator: deployerAddress,
                     leverageManager: leverageManager,
                     minCollateralRatio: MIN_COLLATERAL_RATIO,

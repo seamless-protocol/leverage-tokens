@@ -7,8 +7,10 @@ src = "src"
 out = "out"
 libs = ["lib"]
 
-ast = true
 ffi = true
+ast = true
+build_info = true
+extra_output = ["storageLayout"]
 
 [rpc_endpoints]
 tenderly = "${TENDERLY_RPC_URL}"

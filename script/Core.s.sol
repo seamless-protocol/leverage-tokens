@@ -30,7 +30,7 @@ contract CoreDeploy is Script {
         console.log("LeverageToken implementation deployed at: ", address(leverageTokenImplementation));
 
         BeaconProxyFactory leverageTokenFactory =
-            new BeaconProxyFactory(address(leverageTokenImplementation), DeployConstants.SEAMLESS_GOVERNOR_SHORT);
+            new BeaconProxyFactory(address(leverageTokenImplementation), DeployConstants.SEAMLESS_TIMELOCK_SHORT);
         console.log("LeverageToken factory deployed at: ", address(leverageTokenFactory));
 
         LeverageManager leverageManagerImplementation = new LeverageManager();
@@ -40,7 +40,7 @@ contract CoreDeploy is Script {
             address(leverageManagerImplementation),
             abi.encodeWithSelector(
                 LeverageManager.initialize.selector,
-                DeployConstants.SEAMLESS_GOVERNOR_SHORT,
+                DeployConstants.SEAMLESS_TIMELOCK_SHORT,
                 DeployConstants.SEAMLESS_TREASURY,
                 leverageTokenFactory
             )
