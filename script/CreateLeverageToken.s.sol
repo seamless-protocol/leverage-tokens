@@ -28,7 +28,7 @@ contract CreateLeverageToken is Script {
     uint256 public MIN_COLLATERAL_RATIO = 1.8e18;
     uint256 public TARGET_COLLATERAL_RATIO = 2e18;
     uint256 public MAX_COLLATERAL_RATIO = 2.2e18;
-    uint256 public AUCTION_DURATION = 1 minutes;
+    uint120 public AUCTION_DURATION = 1 minutes;
     uint256 public INITIAL_PRICE_MULTIPLIER = 1.02e18;
     uint256 public MIN_PRICE_MULTIPLIER = 0.98e18;
     uint256 public PRE_LIQUIDATION_COLLATERAL_RATIO_THRESHOLD = 1.3e18;
@@ -58,17 +58,19 @@ contract CreateLeverageToken is Script {
             address(rebalanceAdapter),
             abi.encodeWithSelector(
                 RebalanceAdapter.initialize.selector,
-                DeployConstants.SEAMLESS_GOVERNOR_SHORT,
-                deployerAddress,
-                leverageManager,
-                MIN_COLLATERAL_RATIO,
-                TARGET_COLLATERAL_RATIO,
-                MAX_COLLATERAL_RATIO,
-                AUCTION_DURATION,
-                INITIAL_PRICE_MULTIPLIER,
-                MIN_PRICE_MULTIPLIER,
-                PRE_LIQUIDATION_COLLATERAL_RATIO_THRESHOLD,
-                REBALANCE_REWARD
+                RebalanceAdapter.RebalanceAdapterInitParams({
+                    owner: DeployConstants.SEAMLESS_GOVERNOR_SHORT,
+                    authorizedCreator: deployerAddress,
+                    leverageManager: leverageManager,
+                    minCollateralRatio: MIN_COLLATERAL_RATIO,
+                    targetCollateralRatio: TARGET_COLLATERAL_RATIO,
+                    maxCollateralRatio: MAX_COLLATERAL_RATIO,
+                    auctionDuration: AUCTION_DURATION,
+                    initialPriceMultiplier: INITIAL_PRICE_MULTIPLIER,
+                    minPriceMultiplier: MIN_PRICE_MULTIPLIER,
+                    preLiquidationCollateralRatioThreshold: PRE_LIQUIDATION_COLLATERAL_RATIO_THRESHOLD,
+                    rebalanceReward: REBALANCE_REWARD
+                })
             )
         );
         console.log("RebalanceAdapter proxy deployed at: ", address(rebalanceAdapterProxy));
