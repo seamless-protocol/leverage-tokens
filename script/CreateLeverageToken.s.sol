@@ -118,7 +118,7 @@ contract CreateLeverageToken is Script {
 
         console.log("LeverageToken deployed at: ", address(leverageToken));
 
-        require(Id.unwrap(lendingAdapter.morphoMarketId()) ==Id.unwrap( MORPHO_MARKET_ID), "Invalid market");
+        require(Id.unwrap(lendingAdapter.morphoMarketId()) == Id.unwrap(MORPHO_MARKET_ID), "Invalid market");
 
         IMorpho morpho = IMorpho(DeployConstants.MORPHO);
         MarketParams memory marketParams = morpho.idToMarketParams(MORPHO_MARKET_ID);
