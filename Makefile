@@ -24,4 +24,6 @@ deploy-core-base		:; forge script script/Core.s.sol:CoreDeploy --force --rpc-url
 deploy-periphery-base	:; forge script script/Periphery.s.sol:PeripheryDeploy --force --rpc-url base --account ${DEPLOYER_ACCOUNT_NAME} --slow --broadcast -vvvv --verify
 create-leverage-token-base	:; forge script script/CreateLeverageToken.s.sol:CreateLeverageToken --force --rpc-url base --account ${DEPLOYER_ACCOUNT_NAME} --slow --broadcast -vvvv 
 
-deploy-full-base		:; forge script script/FullDeploy.s.sol:FullDeploy --force --rpc-url base --account ${DEPLOYER_ACCOUNT_NAME} --slow --broadcast -vvvv 
+deploy-full-base		:; forge script script/FullDeploy.s.sol:FullDeploy --force --rpc-url base --slow --broadcast -vvvv 
+mint-base :; forge script script/Mint.s.sol:Mint --force --rpc-url base --slow --broadcast -vvvv 
+borrow-base :; forge script script/Borrow.s.sol:Borrow --force --rpc-url base --slow --broadcast -vvvv --unlocked

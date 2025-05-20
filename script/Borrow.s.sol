@@ -20,6 +20,25 @@ contract Borrow is Script {
         address lendingAdapterAddress =
             address(leverageManager.getLeverageTokenLendingAdapter(ILeverageToken(DeployConstants.LEVERAGE_TOKEN)));
 
+        string[] memory setBalanceInput = new string[](7);
+        setBalanceInput[0] = "cast";
+        setBalanceInput[1] = "rpc";
+        setBalanceInput[2] = "--rpc-url";
+        setBalanceInput[3] = "http://127.0.0.1:8545";
+        setBalanceInput[4] = "anvil_setBalance";
+        setBalanceInput[5] = vm.toString(lendingAdapterAddress);
+        setBalanceInput[6] = "1000000000000000000";
+
+        vm.ffi(setBalanceInput);
+
+        string[] memory impersonateInput = new string[](4);
+        impersonateInput[0] = "cast";
+        impersonateInput[1] = "rpc";
+        impersonateInput[2] = "anvil_impersonateAccount";
+        impersonateInput[3] = vm.toString(lendingAdapterAddress);
+
+        vm.ffi(impersonateInput);
+
         vm.startBroadcast(lendingAdapterAddress);
 
         (address loanToken, address collateralToken, address oracle, address irm, uint256 lltv) =

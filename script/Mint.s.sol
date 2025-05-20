@@ -10,11 +10,14 @@ import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {DeployConstants} from "./DeployConstants.sol";
 
-contract Deposit is Script {
+contract Mint is Script {
     address public WETH_ADDRESS = 0x4200000000000000000000000000000000000006;
 
     function run() public {
-        vm.startBroadcast();
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        address deployerAddress = vm.addr(deployerPrivateKey);
+
+        vm.startBroadcast(deployerPrivateKey);
 
         ILeverageManager leverageManager = ILeverageManager(DeployConstants.LEVERAGE_MANAGER);
         ILeverageToken leverageToken = ILeverageToken(DeployConstants.LEVERAGE_TOKEN);

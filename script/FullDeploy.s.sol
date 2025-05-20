@@ -49,9 +49,11 @@ contract FullDeploy is Script {
         console.log("ChainId: ", block.chainid);
 
         console.log("Deploying...");
-        address deployerAddress = msg.sender;
 
-        vm.startBroadcast(deployerAddress);
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        address deployerAddress = vm.addr(deployerPrivateKey);
+
+        vm.startBroadcast(deployerPrivateKey);
 
         // Deploy leverage token factory that is used by LM
         LeverageToken leverageTokenImplementation = new LeverageToken();
