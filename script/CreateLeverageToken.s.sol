@@ -7,6 +7,7 @@ import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {Id, MarketParams} from "@morpho-blue/interfaces/IMorpho.sol";
 import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 import {RebalanceAdapter} from "src/rebalance/RebalanceAdapter.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
@@ -57,6 +58,13 @@ contract CreateLeverageToken is Script {
     string public LT_NAME = "NAME";
     /// @dev Symbol of the LT
     string public LT_SYMBOL = "SYMBOL";
+
+    address public COLLATERAL_TOKEN_ADDRESS = 0x4200000000000000000000000000000000000006;
+    address public DEBT_TOKEN_ADDRESS = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
+    string public COLLATERAL_TOKEN_NAME = "Wrapped Ether";
+    string public COLLATERAL_TOKEN_SYMBOL = "WETH";
+    string public DEBT_TOKEN_NAME = "USD Coin";
+    string public DEBT_TOKEN_SYMBOL = "USDC";
 
     function run() public {
         console.log("BlockNumber: ", block.number);
@@ -110,6 +118,25 @@ contract CreateLeverageToken is Script {
 
         console.log("LeverageToken deployed at: ", address(leverageToken));
 
+        require(Id.unwrap(lendingAdapter.morphoMarketId()) ==Id.unwrap( MORPHO_MARKET_ID), "Invalid market");
+
+        IMorpho morpho = IMorpho(DeployConstants.MORPHO);
+        MarketParams memory marketParams = morpho.idToMarketParams(MORPHO_MARKET_ID);
+        IERC20Metadata loanToken = IERC20Metadata(marketParams.loanToken);
+        IERC20Metadata collateralToken = IERC20Metadata(marketParams.collateralToken);
+
+        require(address(loanToken) == DEBT_TOKEN_ADDRESS, "Incorrect debt token on Morpho market");
+        require(address(collateralToken) == COLLATERAL_TOKEN_ADDRESS, "Incorrect collateral token on Morpho market");
+
+        _assertEqString(loanToken.name(), DEBT_TOKEN_NAME);
+        _assertEqString(loanToken.symbol(), DEBT_TOKEN_SYMBOL);
+        _assertEqString(collateralToken.name(), COLLATERAL_TOKEN_NAME);
+        _assertEqString(collateralToken.symbol(), COLLATERAL_TOKEN_SYMBOL);
+
         vm.stopBroadcast();
+    }
+
+    function _assertEqString(string memory a, string memory b) internal pure {
+        require(keccak256(abi.encodePacked(a)) == keccak256(abi.encodePacked(b)), "Invalid token name or symbol");
     }
 }
