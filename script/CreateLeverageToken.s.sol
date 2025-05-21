@@ -20,6 +20,8 @@ import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
 import {DeployConstants} from "./DeployConstants.sol";
 
 contract CreateLeverageToken is Script {
+    uint256 public constant WAD = 1e18;
+
     ILeverageManager public leverageManager = ILeverageManager(DeployConstants.LEVERAGE_MANAGER);
     IMorphoLendingAdapterFactory public lendingAdapterFactory =
         IMorphoLendingAdapterFactory(DeployConstants.LENDING_ADAPTER_FACTORY);
@@ -27,7 +29,7 @@ contract CreateLeverageToken is Script {
     /// @dev Market ID for Morpho market that LT will be created on top of
     Id public MORPHO_MARKET_ID = Id.wrap(0x8793cf302b8ffd655ab97bd1c695dbd967807e8367a65cb2f4edaf1380ba1bda);
     /// @dev Salt that will be used to deploy the lending adapter. Should be unique for each LT. Update after each deployment.
-    bytes32 public BASE_SALT = bytes32(uint256(0));
+    bytes32 public BASE_SALT = bytes32(uint256(1));
 
     /// @dev Minimum collateral ratio for the LT on 18 decimals
     uint256 public MIN_COLLATERAL_RATIO = 1.8e18;
@@ -132,6 +134,19 @@ contract CreateLeverageToken is Script {
         _assertEqString(loanToken.symbol(), DEBT_TOKEN_SYMBOL);
         _assertEqString(collateralToken.name(), COLLATERAL_TOKEN_NAME);
         _assertEqString(collateralToken.symbol(), COLLATERAL_TOKEN_SYMBOL);
+
+        uint256 preLiquidationLltv = WAD * WAD / PRE_LIQUIDATION_COLLATERAL_RATIO_THRESHOLD;
+        uint256 marketLltv = marketParams.ltv;
+
+        require(marketLltv >= preLiquidationLltv, "Market LLTV is less than pre-liquidation LLTV");
+
+        uint256 minCollateralRatioLltv = WAD * WAD / MIN_COLLATERAL_RATIO;
+        require(marketLltv >= minCollateralRatioLltv, "Market LLTV is less than min collateral ratio LLTV");
+
+        require(
+            MIN_COLLATERAL_RATIO >= PRE_LIQUIDATION_COLLATERAL_RATIO_THRESHOLD,
+            "Min collateral ratio is less than pre-liquidation collateral ratio threshold"
+        );
 
         vm.stopBroadcast();
     }
