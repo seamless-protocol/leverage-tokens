@@ -25,6 +25,7 @@ The LeverageManager is the core singleton contract used for creating and maintai
 LeverageTokens are ERC20 tokens that represent a share of a specific leveraged position. These are deployed permissionlessly via the LeverageManager.
 
 Each LeverageToken has the following properties:
+
 - ERC20-compliant: Balances represent proportional ownership of a leveraged position.
 - Immutable configuration: Once deployed, the position’s parameters cannot be modified.
 - Configured with adapters:
@@ -36,6 +37,7 @@ Each LeverageToken has the following properties:
 LendingAdapters are periphery contracts responsible for interfacing with external lending protocols (e.g., Morpho). Each LeverageToken is configured with a LendingAdapter at the time of creation and must implement the minimal interface `ILendingAdapter`.
 
 Key responsibilities:
+
 - Own the underlying debt and collateral positions.
 - Abstract lending protocol-specific logic behind a standard interface for the LeverageManager to consume to manage the positions.
 
@@ -47,6 +49,10 @@ RebalanceAdapters are periphery contracts that facilitate rebalance actions and 
 - isStateValidAfterRebalance: Returns true if the LeverageToken’s state is valid after a rebalance
 - getLeverageTokenInitialCollateralRatio: Returns the collateral ratio that should be used when the LeverageToken is empty / total shares == 0
 - postLeverageTokenCreation: Post LeverageToken creation hook. Executed during LeverageToken creation in LeverageManager
+
+## Upgrades
+
+All contract are immutable except LeverageManager and RebalanceAdapter. During deployment and upgrade of those contract use Oz's foundry-upgrades plugin. For safe upgrades always add custom derivative `@custom:oz-upgrades-from <reference contract / previous version contract>` on the new implementation. More details about safe upgrades can be found a link [here](https://docs.openzeppelin.com/upgrades-plugins/foundry-upgrades#upgrade_a_proxy_or_beacon).
 
 ## Audits
 
