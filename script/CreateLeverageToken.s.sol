@@ -8,7 +8,9 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 import {Id, MarketParams} from "@morpho-blue/interfaces/IMorpho.sol";
 import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
+import {ActionData} from "src/types/DataTypes.sol";
 import {RebalanceAdapter} from "src/rebalance/RebalanceAdapter.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
@@ -29,7 +31,7 @@ contract CreateLeverageToken is Script {
     /// @dev Market ID for Morpho market that LT will be created on top of
     Id public MORPHO_MARKET_ID = Id.wrap(0x8793cf302b8ffd655ab97bd1c695dbd967807e8367a65cb2f4edaf1380ba1bda);
     /// @dev Salt that will be used to deploy the lending adapter. Should be unique for each LT. Update after each deployment.
-    bytes32 public BASE_SALT = bytes32(uint256(1));
+    bytes32 public BASE_SALT = bytes32(uint256(3));
 
     /// @dev Minimum collateral ratio for the LT on 18 decimals
     uint256 public MIN_COLLATERAL_RATIO = 1.8e18;
@@ -60,6 +62,9 @@ contract CreateLeverageToken is Script {
     string public LT_NAME = "NAME";
     /// @dev Symbol of the LT
     string public LT_SYMBOL = "SYMBOL";
+
+    /// @dev Initial equity deposit for the LT
+    uint256 public INITIAL_EQUITY_DEPOSIT = 0.0001 * 1e18;
 
     address public COLLATERAL_TOKEN_ADDRESS = 0x4200000000000000000000000000000000000006;
     address public DEBT_TOKEN_ADDRESS = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
@@ -135,18 +140,25 @@ contract CreateLeverageToken is Script {
         _assertEqString(collateralToken.name(), COLLATERAL_TOKEN_NAME);
         _assertEqString(collateralToken.symbol(), COLLATERAL_TOKEN_SYMBOL);
 
-        uint256 preLiquidationLltv = WAD * WAD / PRE_LIQUIDATION_COLLATERAL_RATIO_THRESHOLD;
-        uint256 marketLltv = marketParams.ltv;
+        uint256 preLiquidationLltv = Math.mulDiv(WAD, WAD, PRE_LIQUIDATION_COLLATERAL_RATIO_THRESHOLD);
+        uint256 marketLltv = marketParams.lltv;
 
         require(marketLltv >= preLiquidationLltv, "Market LLTV is less than pre-liquidation LLTV");
 
-        uint256 minCollateralRatioLltv = WAD * WAD / MIN_COLLATERAL_RATIO;
+        uint256 minCollateralRatioLltv = Math.mulDiv(WAD, WAD, MIN_COLLATERAL_RATIO);
         require(marketLltv >= minCollateralRatioLltv, "Market LLTV is less than min collateral ratio LLTV");
 
         require(
             MIN_COLLATERAL_RATIO >= PRE_LIQUIDATION_COLLATERAL_RATIO_THRESHOLD,
             "Min collateral ratio is less than pre-liquidation collateral ratio threshold"
         );
+
+        ActionData memory actionData = leverageManager.previewMint(leverageToken, INITIAL_EQUITY_DEPOSIT);
+
+        collateralToken.approve(address(leverageManager), actionData.collateral);
+        leverageManager.mint(leverageToken, INITIAL_EQUITY_DEPOSIT, 0);
+
+        console.log("Performed initial mint to leverage token");
 
         vm.stopBroadcast();
     }
