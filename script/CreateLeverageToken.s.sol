@@ -159,12 +159,12 @@ contract CreateLeverageToken is Script {
             "Min collateral ratio is less than pre-liquidation collateral ratio threshold"
         );
 
-        // ActionData memory actionData = leverageManager.previewMint(leverageToken, INITIAL_EQUITY_DEPOSIT);
+        ActionData memory actionData = leverageManager.previewMint(leverageToken, INITIAL_EQUITY_DEPOSIT);
 
-        // collateralToken.approve(address(leverageManager), actionData.collateral);
-        // leverageManager.mint(leverageToken, INITIAL_EQUITY_DEPOSIT, 0);
+        collateralToken.approve(address(leverageManager), actionData.collateral);
+        leverageManager.mint(leverageToken, INITIAL_EQUITY_DEPOSIT, 0);
 
-        // console.log("Performed initial mint to leverage token");
+        console.log("Performed initial mint to leverage token");
 
         vm.stopBroadcast();
     }
