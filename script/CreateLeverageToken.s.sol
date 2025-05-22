@@ -30,7 +30,7 @@ contract CreateLeverageToken is Script {
 
     /// @dev Market ID for Morpho market that LT will be created on top of
     Id public MORPHO_MARKET_ID = Id.wrap(0x8793cf302b8ffd655ab97bd1c695dbd967807e8367a65cb2f4edaf1380ba1bda);
-    /// @dev Salt that will be used to deploy the lending adapter. Should be unique for each LT. Update after each deployment.
+    /// @dev Salt that will be used to deploy the lending adapter. Should be unique for deployer. Update after each deployment.
     bytes32 public BASE_SALT = bytes32(uint256(3));
 
     /// @dev Minimum collateral ratio for the LT on 18 decimals
@@ -128,7 +128,7 @@ contract CreateLeverageToken is Script {
         require(Id.unwrap(lendingAdapter.morphoMarketId()) == Id.unwrap(MORPHO_MARKET_ID), "Invalid market");
 
         IMorpho morpho = IMorpho(DeployConstants.MORPHO);
-        MarketParams memory marketParams = morpho.idToMarketParams(MORPHO_MARKET_ID);
+        MarketParams memory marketParams = morpho.idToMarketParams(lendingAdapter.morphoMarketId());
         IERC20Metadata loanToken = IERC20Metadata(marketParams.loanToken);
         IERC20Metadata collateralToken = IERC20Metadata(marketParams.collateralToken);
 
@@ -145,8 +145,8 @@ contract CreateLeverageToken is Script {
 
         require(marketLltv >= preLiquidationLltv, "Market LLTV is less than pre-liquidation LLTV");
 
-        uint256 minCollateralRatioLltv = Math.mulDiv(WAD, WAD, MIN_COLLATERAL_RATIO);
-        require(marketLltv >= minCollateralRatioLltv, "Market LLTV is less than min collateral ratio LLTV");
+        uint256 minLtv = Math.mulDiv(WAD, WAD, MIN_COLLATERAL_RATIO);
+        require(marketLltv >= minLtv, "Market LLTV is less than min LTV");
 
         require(
             MIN_COLLATERAL_RATIO >= PRE_LIQUIDATION_COLLATERAL_RATIO_THRESHOLD,
