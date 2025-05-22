@@ -27,9 +27,9 @@ contract DutchAuctionRebalanceAdapterTest is Test {
     uint256 public constant MAX_RATIO = 3e18; // 3x
     uint256 public constant TARGET_RATIO = 2e18; // 2x
     uint120 public constant AUCTION_START_TIME = 1000;
-    uint120 public constant DEFAULT_DURATION = 1 days;
-    uint256 public constant DEFAULT_INITIAL_PRICE_MULTIPLIER = 1.1 * 1e18;
-    uint256 public constant DEFAULT_MIN_PRICE_MULTIPLIER = 0.1 * 1e18;
+    uint120 public constant DEFAULT_DURATION = 1 hours;
+    uint256 public constant DEFAULT_INITIAL_PRICE_MULTIPLIER = 1.01 * 1e18;
+    uint256 public constant DEFAULT_MIN_PRICE_MULTIPLIER = 0.9995 * 1e18;
 
     MockERC20 public collateralToken;
     MockERC20 public debtToken;

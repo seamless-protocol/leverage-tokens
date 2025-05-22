@@ -1,11 +1,54 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
+import {console} from "forge-std/console.sol";
+
 import {DutchAuctionRebalanceAdapterTest} from "./DutchAuctionRebalanceAdapter.t.sol";
 
 contract GetCurrentAuctionMultiplierTest is DutchAuctionRebalanceAdapterTest {
     function test_getCurrentAuctionMultiplier_NoAuction() public view {
         assertEq(auctionRebalancer.getCurrentAuctionMultiplier(), DEFAULT_MIN_PRICE_MULTIPLIER);
+    }
+
+    function test_getCurrentDutchAuctionMultiplier_MultiplierOverTime() public {
+        _setLeverageTokenCollateralRatio(3.1e18);
+
+        _createAuction();
+
+        for (uint256 i = 0; i < 60 * 6; i++) {
+            uint256 timePassed = i * 10 seconds;
+
+            vm.warp(AUCTION_START_TIME + timePassed);
+
+            uint256 multiplier = auctionRebalancer.getCurrentAuctionMultiplier();
+
+            uint256 multiplierIntegerPart = multiplier / 1e18;
+            uint256 multiplierDecimalPart = multiplier % 1e18;
+
+            string memory toAdd = "";
+            if (multiplierDecimalPart < 1e17) {
+                toAdd = "0";
+            }
+
+            if (multiplierDecimalPart < 1e16) {
+                toAdd = "00";
+            }
+
+            if (multiplierDecimalPart < 1e15) {
+                toAdd = "000";
+            }
+
+            string memory multiplierIntegerPartString = vm.toString(multiplierIntegerPart);
+            string memory multiplierDecimalPartString = vm.toString(multiplierDecimalPart);
+
+            string memory multiplierString =
+                string(abi.encodePacked(multiplierIntegerPartString, ".", toAdd, multiplierDecimalPartString));
+
+            uint256 minute = timePassed / 1 minutes;
+            uint256 second = timePassed % 1 minutes;
+
+            console.log("Minute %s:%s, Multiplier: %s", minute, second, multiplierString);
+        }
     }
 
     function test_getCurrentAuctionMultiplier_AtStart() public {
