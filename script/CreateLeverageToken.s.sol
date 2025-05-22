@@ -10,6 +10,8 @@ import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
+import {IPreLiquidationRebalanceAdapter} from "src/interfaces/IPreLiquidationRebalanceAdapter.sol";
+import {ICollateralRatiosRebalanceAdapter} from "src/interfaces/ICollateralRatiosRebalanceAdapter.sol";
 import {ActionData} from "src/types/DataTypes.sol";
 import {RebalanceAdapter} from "src/rebalance/RebalanceAdapter.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
@@ -140,25 +142,29 @@ contract CreateLeverageToken is Script {
         _assertEqString(collateralToken.name(), COLLATERAL_TOKEN_NAME);
         _assertEqString(collateralToken.symbol(), COLLATERAL_TOKEN_SYMBOL);
 
-        uint256 preLiquidationLltv = Math.mulDiv(WAD, WAD, PRE_LIQUIDATION_COLLATERAL_RATIO_THRESHOLD);
+        uint256 preLiquidationThreshold =
+            IPreLiquidationRebalanceAdapter(address(rebalanceAdapterProxy)).getCollateralRatioThreshold();
+        uint256 preLiquidationLltv = Math.mulDiv(WAD, WAD, preLiquidationThreshold);
         uint256 marketLltv = marketParams.lltv;
 
         require(marketLltv >= preLiquidationLltv, "Market LLTV is less than pre-liquidation LLTV");
 
-        uint256 minLtv = Math.mulDiv(WAD, WAD, MIN_COLLATERAL_RATIO);
+        uint256 minCollateralRatio =
+            ICollateralRatiosRebalanceAdapter(address(rebalanceAdapterProxy)).getLeverageTokenMinCollateralRatio();
+        uint256 minLtv = Math.mulDiv(WAD, WAD, minCollateralRatio);
         require(marketLltv >= minLtv, "Market LLTV is less than min LTV");
 
         require(
-            MIN_COLLATERAL_RATIO >= PRE_LIQUIDATION_COLLATERAL_RATIO_THRESHOLD,
+            minCollateralRatio >= preLiquidationThreshold,
             "Min collateral ratio is less than pre-liquidation collateral ratio threshold"
         );
 
-        ActionData memory actionData = leverageManager.previewMint(leverageToken, INITIAL_EQUITY_DEPOSIT);
+        // ActionData memory actionData = leverageManager.previewMint(leverageToken, INITIAL_EQUITY_DEPOSIT);
 
-        collateralToken.approve(address(leverageManager), actionData.collateral);
-        leverageManager.mint(leverageToken, INITIAL_EQUITY_DEPOSIT, 0);
+        // collateralToken.approve(address(leverageManager), actionData.collateral);
+        // leverageManager.mint(leverageToken, INITIAL_EQUITY_DEPOSIT, 0);
 
-        console.log("Performed initial mint to leverage token");
+        // console.log("Performed initial mint to leverage token");
 
         vm.stopBroadcast();
     }
