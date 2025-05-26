@@ -55,6 +55,14 @@ interface ILeverageManager is IFeeManager {
     /// @param actionData The action data of the mint
     event Mint(ILeverageToken indexed token, address indexed sender, ActionData actionData);
 
+    /// @notice Event emitted when a user rebalances a LeverageToken
+    /// @param token The LeverageToken
+    /// @param sender The sender of the rebalance
+    /// @param stateBefore The state of the LeverageToken before the rebalance
+    /// @param stateAfter The state of the LeverageToken after the rebalance
+    /// @param actions The actions that were taken
+    event Rebalance(ILeverageToken indexed token, address indexed sender, LeverageTokenState stateBefore, LeverageTokenState stateAfter, RebalanceAction[] actions);
+
     /// @notice Event emitted when a user redeems assets from a LeverageToken
     /// @param token The LeverageToken
     /// @param sender The sender of the redeem
