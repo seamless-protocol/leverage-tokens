@@ -347,13 +347,7 @@ contract LeverageManager is
 
         LeverageTokenState memory stateAfter = getLeverageTokenState(leverageToken);
 
-        emit Rebalance(
-            leverageToken,
-            msg.sender,
-            stateBefore,
-            stateAfter,
-            actions
-        );
+        emit Rebalance(leverageToken, msg.sender, stateBefore, stateAfter, actions);
     }
 
     /// @notice Function that converts user's equity to shares

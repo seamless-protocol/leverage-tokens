@@ -61,7 +61,13 @@ interface ILeverageManager is IFeeManager {
     /// @param stateBefore The state of the LeverageToken before the rebalance
     /// @param stateAfter The state of the LeverageToken after the rebalance
     /// @param actions The actions that were taken
-    event Rebalance(ILeverageToken indexed token, address indexed sender, LeverageTokenState stateBefore, LeverageTokenState stateAfter, RebalanceAction[] actions);
+    event Rebalance(
+        ILeverageToken indexed token,
+        address indexed sender,
+        LeverageTokenState stateBefore,
+        LeverageTokenState stateAfter,
+        RebalanceAction[] actions
+    );
 
     /// @notice Event emitted when a user redeems assets from a LeverageToken
     /// @param token The LeverageToken
