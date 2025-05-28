@@ -12,7 +12,6 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import {IPreLiquidationRebalanceAdapter} from "src/interfaces/IPreLiquidationRebalanceAdapter.sol";
 import {ICollateralRatiosRebalanceAdapter} from "src/interfaces/ICollateralRatiosRebalanceAdapter.sol";
-import {ActionData} from "src/types/DataTypes.sol";
 import {RebalanceAdapter} from "src/rebalance/RebalanceAdapter.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
@@ -21,6 +20,7 @@ import {LeverageTokenConfig} from "src/types/DataTypes.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
+import {IEtherFiLeverageRouter} from "src/interfaces/periphery/IEtherFiLeverageRouter.sol";
 import {DeployConstants} from "./DeployConstants.sol";
 
 contract CreateLeverageToken is Script {
@@ -29,6 +29,8 @@ contract CreateLeverageToken is Script {
     ILeverageManager public leverageManager = ILeverageManager(DeployConstants.LEVERAGE_MANAGER);
     IMorphoLendingAdapterFactory public lendingAdapterFactory =
         IMorphoLendingAdapterFactory(DeployConstants.LENDING_ADAPTER_FACTORY);
+    IEtherFiLeverageRouter public etherFiLeverageRouter =
+        IEtherFiLeverageRouter(DeployConstants.ETHERFI_LEVERAGE_ROUTER);
 
     /// @dev Market ID for Morpho market that LT will be created on top of
     Id public MORPHO_MARKET_ID = Id.wrap(0xfd0895ba253889c243bf59bc4b96fd1e06d68631241383947b04d1c293a0cfea);
@@ -68,8 +70,8 @@ contract CreateLeverageToken is Script {
     /// @dev Initial equity deposit for the LT
     uint256 public INITIAL_EQUITY_DEPOSIT = 0.0001 * 1e18;
 
-    address public COLLATERAL_TOKEN_ADDRESS = 0x04C0599Ae5A44757c0af6F9eC3b93da8976c150A;
-    address public DEBT_TOKEN_ADDRESS = 0x4200000000000000000000000000000000000006;
+    address public COLLATERAL_TOKEN_ADDRESS = DeployConstants.WEETH;
+    address public DEBT_TOKEN_ADDRESS = DeployConstants.WETH;
     string public COLLATERAL_TOKEN_NAME = "Wrapped eETH";
     string public COLLATERAL_TOKEN_SYMBOL = "weETH";
     string public DEBT_TOKEN_NAME = "Wrapped Ether";
@@ -159,10 +161,8 @@ contract CreateLeverageToken is Script {
             "Min collateral ratio is less than pre-liquidation collateral ratio threshold"
         );
 
-        ActionData memory actionData = leverageManager.previewMint(leverageToken, INITIAL_EQUITY_DEPOSIT);
-
-        collateralToken.approve(address(leverageManager), actionData.collateral);
-        leverageManager.mint(leverageToken, INITIAL_EQUITY_DEPOSIT, 0);
+        collateralToken.approve(address(etherFiLeverageRouter), INITIAL_EQUITY_DEPOSIT);
+        etherFiLeverageRouter.mint(leverageToken, INITIAL_EQUITY_DEPOSIT, 0);
 
         console.log("Performed initial mint to leverage token");
 
