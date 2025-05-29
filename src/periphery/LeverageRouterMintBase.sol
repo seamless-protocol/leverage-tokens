@@ -51,8 +51,7 @@ abstract contract LeverageRouterMintBase is LeverageRouterBase {
         ActionData memory actionData = _mint(params, collateralAsset, collateralLoanAmount);
 
         // Get collateral from debt received from the mint to repay the flash loan
-        uint256 collateralFromDebt =
-            _getCollateralFromDebt(debtAsset, actionData.debt, collateralLoanAmount, params.additionalData);
+        uint256 collateralFromDebt = _getCollateralFromDebt(debtAsset, actionData.debt, params.additionalData);
 
         // Transfer any surplus collateral assets to the sender
         uint256 assetsAvailableToRepayFlashLoan = collateralFromDebt + params.maxSwapCostInCollateralAsset;
@@ -105,13 +104,11 @@ abstract contract LeverageRouterMintBase is LeverageRouterBase {
     /// @notice Performs logic to obtain collateral assets from some amount of debt asset
     /// @param debtAsset The debt asset
     /// @param debtAmount The amount of debt to convert to collateral
-    /// @param minCollateralAmount The minimum amount of collateral to obtain from the debt
     /// @param additionalData Any additional data to pass to the logic
     /// @return The amount of collateral assets obtained
-    function _getCollateralFromDebt(
-        IERC20 debtAsset,
-        uint256 debtAmount,
-        uint256 minCollateralAmount,
-        bytes memory additionalData
-    ) internal virtual returns (uint256) {}
+    function _getCollateralFromDebt(IERC20 debtAsset, uint256 debtAmount, bytes memory additionalData)
+        internal
+        virtual
+        returns (uint256)
+    {}
 }

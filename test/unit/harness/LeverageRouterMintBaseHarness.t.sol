@@ -45,13 +45,11 @@ contract LeverageRouterMintBaseHarness is LeverageRouterMintBase, Test {
         _mint(params, collateralAsset, collateralLoanAmount);
     }
 
-    function exposed_getCollateralFromDebt(
-        IERC20 debtAsset,
-        uint256 debtAmount,
-        uint256 minCollateralAmount,
-        bytes memory additionalData
-    ) external returns (uint256) {
-        return _getCollateralFromDebt(debtAsset, debtAmount, minCollateralAmount, additionalData);
+    function exposed_getCollateralFromDebt(IERC20 debtAsset, uint256 debtAmount, bytes memory additionalData)
+        external
+        returns (uint256)
+    {
+        return _getCollateralFromDebt(debtAsset, debtAmount, additionalData);
     }
 
     function mock_setNextSwapAmountOut(uint256 amountOut) external {
@@ -60,18 +58,17 @@ contract LeverageRouterMintBaseHarness is LeverageRouterMintBase, Test {
     }
 
     /// @dev Dummy override to emit the additional data event and exchange the debt for collateral for testing purposes
-    function _getCollateralFromDebt(
-        IERC20 debtAsset,
-        uint256 debtAmount,
-        uint256 minCollateralAmount,
-        bytes memory additionalData
-    ) internal override returns (uint256) {
-        super._getCollateralFromDebt(debtAsset, debtAmount, minCollateralAmount, additionalData);
+    function _getCollateralFromDebt(IERC20 debtAsset, uint256 debtAmount, bytes memory additionalData)
+        internal
+        override
+        returns (uint256)
+    {
+        super._getCollateralFromDebt(debtAsset, debtAmount, additionalData);
 
         emit AdditionalData(additionalData);
 
         MockSwap memory nextSwap = mockSwap;
-        uint256 amountOut = nextSwap.mockNextSwap ? nextSwap.amountOut : minCollateralAmount;
+        uint256 amountOut = nextSwap.mockNextSwap ? nextSwap.amountOut : 0;
         mockSwap.mockNextSwap = false;
 
         // Burn the debt to simulate exchanging it for collateral

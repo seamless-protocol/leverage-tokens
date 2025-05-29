@@ -92,12 +92,11 @@ contract EtherFiLeverageRouter is LeverageRouterMintBase, IEtherFiLeverageRouter
     /// @param weth The WETH contract
     /// @param wethAmount The amount of WETH debt to convert to weETH collateral
     /// @return The amount of weETH collateral obtained
-    function _getCollateralFromDebt(
-        IERC20 weth,
-        uint256 wethAmount,
-        uint256, /* weethLoanAmount */
-        bytes memory /* additionalData */
-    ) internal override returns (uint256) {
+    function _getCollateralFromDebt(IERC20 weth, uint256 wethAmount, bytes memory /* additionalData */ )
+        internal
+        override
+        returns (uint256)
+    {
         IWETH9(address(weth)).withdraw(wethAmount);
 
         // Deposit the ETH into the EtherFi L2 Mode Sync Pool to obtain weETH
