@@ -94,7 +94,8 @@ abstract contract SwapExactInputUniV3Test is SwapAdapterTest {
                 aerodromeSlipstreamRouter: address(0),
                 uniswapSwapRouter02: address(mockUniswapSwapRouter02),
                 uniswapV2Router02: address(0)
-            })
+            }),
+            additionalData: new bytes(0)
         });
 
         vm.expectRevert(ISwapAdapter.InvalidNumFees.selector);
@@ -120,7 +121,8 @@ abstract contract SwapExactInputUniV3Test is SwapAdapterTest {
                 aerodromeSlipstreamRouter: address(0),
                 uniswapSwapRouter02: address(mockUniswapSwapRouter02),
                 uniswapV2Router02: address(0)
-            })
+            }),
+            additionalData: new bytes(0)
         });
 
         if (isMultiHop) {

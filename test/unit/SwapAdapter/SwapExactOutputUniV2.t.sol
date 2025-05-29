@@ -76,7 +76,8 @@ abstract contract SwapExactOutputUniV2Test is SwapAdapterTest {
                 aerodromeSlipstreamRouter: address(0),
                 uniswapSwapRouter02: address(0),
                 uniswapV2Router02: address(mockUniswapV2Router02)
-            })
+            }),
+            additionalData: new bytes(0)
         });
 
         MockUniswapV2Router02.MockV2Swap memory mockSwap = MockUniswapV2Router02.MockV2Swap({

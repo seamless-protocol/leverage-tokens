@@ -36,7 +36,8 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
                 aerodromeSlipstreamRouter: address(0),
                 uniswapSwapRouter02: address(0),
                 uniswapV2Router02: UNISWAP_V2_ROUTER02
-            })
+            }),
+            additionalData: new bytes(0)
         });
 
         _redeemAndAssertBalances(equityInCollateralAsset, additionalCollateralRequired, swapContext);
@@ -69,7 +70,8 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
                 aerodromeSlipstreamRouter: address(0),
                 uniswapSwapRouter02: address(0),
                 uniswapV2Router02: UNISWAP_V2_ROUTER02
-            })
+            }),
+            additionalData: new bytes(0)
         });
 
         _redeemAndAssertBalances(equityInCollateralAssetToRedeem, additionalCollateralRequired, swapContext);
@@ -105,7 +107,8 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
                 aerodromeSlipstreamRouter: address(0),
                 uniswapSwapRouter02: UNISWAP_SWAP_ROUTER02,
                 uniswapV2Router02: address(0)
-            })
+            }),
+            additionalData: new bytes(0)
         });
 
         _redeemAndAssertBalances(equityInCollateralAsset, additionalCollateralRequired, swapContext);
@@ -143,7 +146,8 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
                 aerodromeSlipstreamRouter: address(0),
                 uniswapSwapRouter02: UNISWAP_SWAP_ROUTER02,
                 uniswapV2Router02: address(0)
-            })
+            }),
+            additionalData: new bytes(0)
         });
 
         _redeemAndAssertBalances(equityInCollateralAssetToRedeem, additionalCollateralRequired, swapContext);
@@ -174,7 +178,8 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
                 aerodromeSlipstreamRouter: address(0),
                 uniswapSwapRouter02: address(0),
                 uniswapV2Router02: address(0)
-            })
+            }),
+            additionalData: new bytes(0)
         });
 
         _redeemAndAssertBalances(equityInCollateralAsset, additionalCollateralRequired, swapContext);
@@ -207,7 +212,8 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
                 aerodromeSlipstreamRouter: address(0),
                 uniswapSwapRouter02: address(0),
                 uniswapV2Router02: address(0)
-            })
+            }),
+            additionalData: new bytes(0)
         });
 
         _redeemAndAssertBalances(equityInCollateralAssetToRedeem, additionalCollateralRequired, swapContext);
@@ -243,7 +249,8 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
                 aerodromeSlipstreamRouter: AERODROME_SLIPSTREAM_ROUTER,
                 uniswapSwapRouter02: address(0),
                 uniswapV2Router02: address(0)
-            })
+            }),
+            additionalData: new bytes(0)
         });
 
         _redeemAndAssertBalances(equityInCollateralAsset, additionalCollateralRequired, swapContext);
@@ -281,7 +288,8 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
                 aerodromeSlipstreamRouter: AERODROME_SLIPSTREAM_ROUTER,
                 uniswapSwapRouter02: address(0),
                 uniswapV2Router02: address(0)
-            })
+            }),
+            additionalData: new bytes(0)
         });
 
         _redeemAndAssertBalances(equityInCollateralAssetToRedeem, additionalCollateralRequired, swapContext);
@@ -319,7 +327,8 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
                 aerodromeSlipstreamRouter: address(0),
                 uniswapSwapRouter02: UNISWAP_SWAP_ROUTER02,
                 uniswapV2Router02: address(0)
-            })
+            }),
+            additionalData: new bytes(0)
         });
 
         _redeemAndAssertBalances(equityInCollateralAsset, additionalCollateralRequired, swapContext);
@@ -351,7 +360,8 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
                 aerodromeSlipstreamRouter: address(0),
                 uniswapSwapRouter02: address(0),
                 uniswapV2Router02: address(0)
-            })
+            }),
+            additionalData: new bytes(0)
         });
 
         _redeemAndAssertBalances(equityInCollateralAsset, additionalCollateralRequired, swapContext);
@@ -389,7 +399,8 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
                 aerodromeSlipstreamRouter: AERODROME_SLIPSTREAM_ROUTER,
                 uniswapSwapRouter02: address(0),
                 uniswapV2Router02: address(0)
-            })
+            }),
+            additionalData: new bytes(0)
         });
 
         _redeemAndAssertBalances(equityInCollateralAsset, additionalCollateralRequired, swapContext);
@@ -419,7 +430,8 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
                 aerodromeSlipstreamRouter: address(0),
                 uniswapSwapRouter02: address(0),
                 uniswapV2Router02: UNISWAP_V2_ROUTER02
-            })
+            }),
+            additionalData: new bytes(0)
         });
 
         vm.startPrank(user);
@@ -461,7 +473,8 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
                 aerodromeSlipstreamRouter: address(0),
                 uniswapSwapRouter02: address(0),
                 uniswapV2Router02: UNISWAP_V2_ROUTER02
-            })
+            }),
+            additionalData: new bytes(0)
         });
 
         _dealAndMint(

@@ -5,7 +5,7 @@ import {MockERC20} from "./MockERC20.sol";
 
 contract MockEtherFiL2ModeSyncPool {
     /// @notice The ETH address per the EtherFi L2 Mode Sync Pool contract
-    address internal constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    address public constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     MockERC20 public weETH;
 

@@ -84,7 +84,8 @@ abstract contract SwapExactOutputAerodromeTest is SwapAdapterTest {
                 aerodromeSlipstreamRouter: address(0),
                 uniswapSwapRouter02: address(0),
                 uniswapV2Router02: address(0)
-            })
+            }),
+            additionalData: new bytes(0)
         });
 
         IAerodromeRouter.Route[] memory routes = new IAerodromeRouter.Route[](1);
@@ -144,7 +145,8 @@ abstract contract SwapExactOutputAerodromeTest is SwapAdapterTest {
                 aerodromeSlipstreamRouter: address(0),
                 uniswapSwapRouter02: address(0),
                 uniswapV2Router02: address(0)
-            })
+            }),
+            additionalData: new bytes(0)
         });
 
         IAerodromeRouter.Route[] memory routes = new IAerodromeRouter.Route[](path.length - 1);
