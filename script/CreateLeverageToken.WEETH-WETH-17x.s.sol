@@ -38,11 +38,11 @@ contract CreateLeverageToken is Script {
     bytes32 public BASE_SALT = bytes32(uint256(1));
 
     /// @dev Minimum collateral ratio for the LT on 18 decimals
-    uint256 public MIN_COLLATERAL_RATIO = 1.062893082e18;
+    uint256 public MIN_COLLATERAL_RATIO = 1.06135e18;
     /// @dev Target collateral ratio for the LT on 18 decimals
     uint256 public TARGET_COLLATERAL_RATIO = 1.0625e18;
     /// @dev Maximum collateral ratio for the LT on 18 decimals
-    uint256 public MAX_COLLATERAL_RATIO = 1.06135e18;
+    uint256 public MAX_COLLATERAL_RATIO = 1.062893082e18;
     /// @dev Duration of the dutch auction for the LT
     uint120 public AUCTION_DURATION = 1 hours;
     /// @dev Initial oracle price multiplier on Dutch auction on 18 decimals. In percentage.
@@ -162,7 +162,7 @@ contract CreateLeverageToken is Script {
         );
 
         collateralToken.approve(address(etherFiLeverageRouter), INITIAL_EQUITY_DEPOSIT);
-        etherFiLeverageRouter.mint(leverageToken, INITIAL_EQUITY_DEPOSIT, 0);
+        etherFiLeverageRouter.mint(leverageToken, INITIAL_EQUITY_DEPOSIT, 0, 0);
 
         console.log("Performed initial mint to leverage token");
 
