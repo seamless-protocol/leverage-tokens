@@ -16,7 +16,14 @@ import {MockERC20} from "../mock/MockERC20.sol";
 contract LeverageRouterMintBaseHarness is LeverageRouterMintBase, Test {
     event AdditionalData(bytes additionalData);
 
+    struct MockSwap {
+        bool mockNextSwap;
+        uint256 amountOut;
+    }
+
     IERC20 public collateralAsset;
+
+    MockSwap mockSwap;
 
     constructor(ILeverageManager _leverageManager, IMorpho _morpho, IERC20 _collateralAsset)
         LeverageRouterMintBase(_leverageManager, _morpho)
@@ -47,6 +54,11 @@ contract LeverageRouterMintBaseHarness is LeverageRouterMintBase, Test {
         return _getCollateralFromDebt(debtAsset, debtAmount, minCollateralAmount, additionalData);
     }
 
+    function mock_setNextSwapAmountOut(uint256 amountOut) external {
+        mockSwap.amountOut = amountOut;
+        mockSwap.mockNextSwap = true;
+    }
+
     /// @dev Dummy override to emit the additional data event and exchange the debt for collateral for testing purposes
     function _getCollateralFromDebt(
         IERC20 debtAsset,
@@ -58,10 +70,14 @@ contract LeverageRouterMintBaseHarness is LeverageRouterMintBase, Test {
 
         emit AdditionalData(additionalData);
 
+        MockSwap memory nextSwap = mockSwap;
+        uint256 amountOut = nextSwap.mockNextSwap ? nextSwap.amountOut : minCollateralAmount;
+        mockSwap.mockNextSwap = false;
+
         // Burn the debt to simulate exchanging it for collateral
         MockERC20(address(debtAsset)).burn(address(this), debtAmount);
-        deal(address(collateralAsset), address(this), minCollateralAmount);
+        deal(address(collateralAsset), address(this), amountOut + collateralAsset.balanceOf(address(this)));
 
-        return minCollateralAmount;
+        return amountOut;
     }
 }

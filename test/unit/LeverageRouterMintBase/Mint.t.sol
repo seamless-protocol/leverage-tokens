@@ -6,10 +6,15 @@ import {LeverageRouterMintBase} from "src/periphery/LeverageRouterMintBase.sol";
 import {LeverageRouterMintBaseTest} from "./LeverageRouterMintBase.t.sol";
 
 contract MintTest is LeverageRouterMintBaseTest {
-    function testFuzz_Mint(uint256 requiredCollateral, uint256 equityInCollateralAsset) public {
+    function testFuzz_Mint(
+        uint256 requiredCollateral,
+        uint256 equityInCollateralAsset,
+        uint256 maxSwapCostInCollateralAsset
+    ) public {
         requiredCollateral = bound(requiredCollateral, 1, type(uint256).max);
         // Ensure that a flash loan is required by making equity less than the required collateral for the mint
         equityInCollateralAsset = requiredCollateral > 1 ? bound(equityInCollateralAsset, 1, requiredCollateral - 1) : 0;
+        maxSwapCostInCollateralAsset = bound(maxSwapCostInCollateralAsset, 0, type(uint256).max - requiredCollateral);
 
         uint256 requiredFlashLoan = requiredCollateral - equityInCollateralAsset;
 
@@ -20,15 +25,16 @@ contract MintTest is LeverageRouterMintBaseTest {
 
         _mockLeverageManagerMint(requiredCollateral, equityInCollateralAsset, requiredDebt, shares);
 
-        // Deal the sender the equity and approve it to be spent
-        deal(address(collateralToken), address(this), equityInCollateralAsset);
-        collateralToken.approve(address(leverageRouterMintBase), equityInCollateralAsset);
+        // Deal the sender the equity and max swap cost and approve it to be spent
+        deal(address(collateralToken), address(this), equityInCollateralAsset + maxSwapCostInCollateralAsset);
+        collateralToken.approve(address(leverageRouterMintBase), equityInCollateralAsset + maxSwapCostInCollateralAsset);
 
         leverageRouterMintBase.exposed_mint(
             LeverageRouterMintBase.MintParams({
                 token: leverageToken,
                 equityInCollateralAsset: equityInCollateralAsset,
                 minShares: shares,
+                maxSwapCostInCollateralAsset: maxSwapCostInCollateralAsset,
                 sender: address(this),
                 additionalData: ""
             }),
@@ -36,7 +42,8 @@ contract MintTest is LeverageRouterMintBaseTest {
         );
 
         assertEq(leverageToken.balanceOf(address(leverageRouterMintBase)), shares);
-        assertEq(collateralToken.balanceOf(address(leverageRouterMintBase)), 0);
+        // The max swap cost is transferred to the router, but not used for the LM mint.
+        assertEq(collateralToken.balanceOf(address(leverageRouterMintBase)), maxSwapCostInCollateralAsset);
         assertEq(debtToken.balanceOf(address(leverageRouterMintBase)), requiredDebt);
     }
 }

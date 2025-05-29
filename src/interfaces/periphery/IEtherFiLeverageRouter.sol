@@ -15,8 +15,19 @@ interface IEtherFiLeverageRouter is ILeverageRouterBase {
     /// @param token LeverageToken to mint
     /// @param equityInCollateralAsset The amount of weETH equity to add to the LeverageToken and mint shares for.
     /// @param minShares Minimum shares (LeverageTokens) to receive from the mint
-    /// @dev Transfers `equityInCollateralAsset` of weETH to the LeverageRouter, flash loans the additional weETH collateral
-    ///      required to add the equity to the LeverageToken, receives WETH debt, then unwraps the WETH debt to ETH and deposits
-    ///      the ETH into the EtherFi L2 Mode Sync Pool to obtain weETH. The received weETH is used to repay the flash loan
-    function mint(ILeverageToken token, uint256 equityInCollateralAsset, uint256 minShares) external;
+    /// @param maxSwapCostInCollateralAsset The maximum amount of collateral asset to spend on the debt swap
+    /// @dev Transfers `equityInCollateralAsset + maxSwapCostInCollateralAsset` of weETH to the LeverageRouter, flash
+    ///      loans the additional weETH collateral required to add the equity to the LeverageToken, receives WETH debt, then
+    ///      unwraps the WETH debt to ETH and deposits the ETH into the EtherFi L2 Mode Sync Pool to obtain weETH. The received
+    ///      weETH and `maxSwapCostInCollateralAsset` is used to repay the flash loan. Any excess is returned to the sender
+    /// @dev The sender should approve the EtherFiLeverageRouter to spend an amount of collateral assets greater than the equity being added
+    ///      to facilitate the mint in the case that the mint requires additional collateral to cover swap slippage when swapping
+    ///      debt to collateral to repay the flash loan. The approved amount should equal at least `equityInCollateralAsset + maxSwapCostInCollateralAsset`.
+    ///      To see the preview of the mint, `LeverageRouter.leverageManager().previewMint(...)` can be used.
+    function mint(
+        ILeverageToken token,
+        uint256 equityInCollateralAsset,
+        uint256 minShares,
+        uint256 maxSwapCostInCollateralAsset
+    ) external;
 }

@@ -18,14 +18,15 @@ import {LeverageRouterMintBase} from "./LeverageRouterMintBase.sol";
  * to deposit equity into LeverageTokens that use weETH as collateral and WETH as debt.
  *
  * The high-level deposit flow is as follows:
- *   1. The user calls `deposit` with the amount of weETH equity to deposit, and the minimum amount of shares (LeverageTokens)
- *      to receive.
+ *   1. The user calls `deposit` with the amount of weETH equity to deposit, the minimum amount of shares (LeverageTokens)
+ *      to receive, and the maximum amount of extra weETH from them to spend on repaying the flash loan due to swap slippage.
  *   2. The EtherFiLeverageRouter will flash loan the additional required weETH from Morpho.
  *   3. The EtherFiLeverageRouter will use the flash loaned weETH and the weETH equity from the sender for the deposit into
  *      the LeverageToken, receiving LeverageTokens and WETH debt in return.
  *   4. The EtherFiLeverageRouter will unwrap the WETH debt to ETH and deposit the ETH into the EtherFi L2 Mode Sync Pool
  *      to obtain weETH.
- *   5. The weETH received from the EtherFi L2 Mode Sync Pool is used to repay the flash loan to Morpho.
+ *   5. The weETH received from the EtherFi L2 Mode Sync Pool is used to repay the flash loan to Morpho with the extra
+ *      weETH from the sender to account for swap slippage (if any).
  *   6. The EtherFiLeverageRouter will transfer the LeverageTokens and any remaining weETH to the sender.
  *
  * @dev Note: This router is intended to be used for LeverageTokens that use weETH as collateral and WETH as debt and will
@@ -49,7 +50,12 @@ contract EtherFiLeverageRouter is LeverageRouterMintBase, IEtherFiLeverageRouter
     }
 
     /// @inheritdoc IEtherFiLeverageRouter
-    function mint(ILeverageToken token, uint256 equityInCollateralAsset, uint256 minShares) external {
+    function mint(
+        ILeverageToken token,
+        uint256 equityInCollateralAsset,
+        uint256 minShares,
+        uint256 maxSwapCostInCollateralAsset
+    ) external {
         uint256 collateralToAdd = leverageManager.previewMint(token, equityInCollateralAsset).collateral;
 
         bytes memory mintData = abi.encode(
@@ -57,6 +63,7 @@ contract EtherFiLeverageRouter is LeverageRouterMintBase, IEtherFiLeverageRouter
                 token: token,
                 equityInCollateralAsset: equityInCollateralAsset,
                 minShares: minShares,
+                maxSwapCostInCollateralAsset: maxSwapCostInCollateralAsset,
                 sender: msg.sender,
                 additionalData: ""
             })
@@ -84,20 +91,23 @@ contract EtherFiLeverageRouter is LeverageRouterMintBase, IEtherFiLeverageRouter
     /// @notice Performs logic to obtain weETH collateral from WETH debt
     /// @param weth The WETH contract
     /// @param wethAmount The amount of WETH debt to convert to weETH collateral
-    /// @param weethLoanAmount The amount of weETH flash loaned
     /// @return The amount of weETH collateral obtained
     function _getCollateralFromDebt(
         IERC20 weth,
         uint256 wethAmount,
-        uint256 weethLoanAmount,
+        uint256, /* weethLoanAmount */
         bytes memory /* additionalData */
     ) internal override returns (uint256) {
         IWETH9(address(weth)).withdraw(wethAmount);
 
         // Deposit the ETH into the EtherFi L2 Mode Sync Pool to obtain weETH
         // Note: The EtherFi L2 Mode Sync Pool requires ETH to mint weETH. WETH is unsupported
-        uint256 collateralFromEtherFi =
-            etherFiL2ModeSyncPool.deposit{value: wethAmount}(ETH_ADDRESS, wethAmount, weethLoanAmount, address(0));
+        uint256 collateralFromEtherFi = etherFiL2ModeSyncPool.deposit{value: wethAmount}(
+            ETH_ADDRESS,
+            wethAmount,
+            0, // Set to zero because additional collateral from the sender is used to help repay the flash loan
+            address(0)
+        );
 
         return collateralFromEtherFi;
     }

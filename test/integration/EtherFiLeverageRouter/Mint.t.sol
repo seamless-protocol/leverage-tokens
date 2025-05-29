@@ -5,9 +5,8 @@ pragma solidity ^0.8.26;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
-import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
+import {ActionData} from "src/types/DataTypes.sol";
 import {EtherFiLeverageRouterTest} from "./EtherFiLeverageRouter.t.sol";
-import {SwapPathLib} from "../../utils/SwapPathLib.sol";
 
 contract EtherFiLeverageRouterMintTest is EtherFiLeverageRouterTest {
     function testFork_Mint() public {
@@ -15,7 +14,7 @@ contract EtherFiLeverageRouterMintTest is EtherFiLeverageRouterTest {
         uint256 collateralToAdd = 2 * equityInCollateralAsset;
         uint256 userBalanceOfCollateralAsset = 4 ether; // User has more than enough assets for the mint of equity
 
-        _dealAndMint(WEETH, userBalanceOfCollateralAsset, equityInCollateralAsset);
+        _dealAndMint(WEETH, userBalanceOfCollateralAsset, equityInCollateralAsset, 0);
 
         // Initial mint results in 1:1 shares to equity
         assertEq(leverageToken.balanceOf(user), equityInCollateralAsset);
@@ -30,5 +29,23 @@ contract EtherFiLeverageRouterMintTest is EtherFiLeverageRouterTest {
         assertEq(WEETH.balanceOf(address(leverageRouter)), 0);
         assertEq(WETH.balanceOf(address(leverageRouter)), 0);
         assertEq(address(leverageRouter).balance, 0);
+    }
+
+    function testFuzzFork_Mint(uint256 equityInCollateralAsset) public {
+        vm.assume(equityInCollateralAsset > 1 ether && equityInCollateralAsset < 500 ether);
+
+        ActionData memory actionData = leverageManager.previewMint(leverageToken, equityInCollateralAsset);
+
+        uint256 expectedWeEthFromDebtSwap =
+            etherFiL2ExchangeRateProvider.getConversionAmount(ETH_ADDRESS, actionData.debt);
+
+        uint256 additionalCollateralForSwap = actionData.collateral - expectedWeEthFromDebtSwap;
+
+        _dealAndMint(
+            WEETH,
+            equityInCollateralAsset + additionalCollateralForSwap,
+            equityInCollateralAsset,
+            additionalCollateralForSwap
+        );
     }
 }

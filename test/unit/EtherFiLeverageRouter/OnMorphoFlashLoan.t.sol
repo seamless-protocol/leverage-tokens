@@ -23,6 +23,7 @@ contract OnMorphoFlashLoanTest is EtherFiLeverageRouterTest {
                 token: leverageToken,
                 equityInCollateralAsset: equityInCollateralAsset,
                 minShares: shares,
+                maxSwapCostInCollateralAsset: 0,
                 sender: address(this),
                 additionalData: ""
             })

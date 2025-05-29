@@ -25,6 +25,9 @@ abstract contract LeverageRouterMintBase is LeverageRouterBase {
         uint256 equityInCollateralAsset;
         // Minimum amount of shares (LeverageTokens) to receive
         uint256 minShares;
+        // Maximum cost to the sender for the swap of debt to collateral during the mint to repay the flash loan,
+        // denominated in the collateral asset
+        uint256 maxSwapCostInCollateralAsset;
         // Address of the sender of the mint, who will also receive the shares
         address sender;
         // Any additional data to pass to the Morpho flash loan callback handler
@@ -51,10 +54,16 @@ abstract contract LeverageRouterMintBase is LeverageRouterBase {
         uint256 collateralFromDebt =
             _getCollateralFromDebt(debtAsset, actionData.debt, collateralLoanAmount, params.additionalData);
 
-        // Return any surplus collateral assets received from the swap to the sender
-        uint256 collateralAssetSurplus = collateralFromDebt - collateralLoanAmount;
-        if (collateralAssetSurplus > 0) {
-            SafeERC20.safeTransfer(collateralAsset, params.sender, collateralAssetSurplus);
+        // Transfer any surplus collateral assets to the sender
+        uint256 assetsAvailableToRepayFlashLoan = collateralFromDebt + params.maxSwapCostInCollateralAsset;
+        if (collateralLoanAmount > assetsAvailableToRepayFlashLoan) {
+            revert MaxSwapCostExceeded(collateralLoanAmount - collateralFromDebt, params.maxSwapCostInCollateralAsset);
+        } else {
+            // Return any surplus collateral assets to the sender
+            uint256 collateralAssetSurplus = assetsAvailableToRepayFlashLoan - collateralLoanAmount;
+            if (collateralAssetSurplus > 0) {
+                SafeERC20.safeTransfer(collateralAsset, params.sender, collateralAssetSurplus);
+            }
         }
 
         // Transfer shares received from the mint to the mint sender
@@ -76,7 +85,12 @@ abstract contract LeverageRouterMintBase is LeverageRouterBase {
     {
         // Transfer the collateral from the sender for the mint
         // slither-disable-next-line arbitrary-send-erc20
-        SafeERC20.safeTransferFrom(collateralAsset, params.sender, address(this), params.equityInCollateralAsset);
+        SafeERC20.safeTransferFrom(
+            collateralAsset,
+            params.sender,
+            address(this),
+            params.equityInCollateralAsset + params.maxSwapCostInCollateralAsset
+        );
 
         // Use the flash loaned collateral and the equity from the sender for the mint
         SafeERC20.forceApprove(

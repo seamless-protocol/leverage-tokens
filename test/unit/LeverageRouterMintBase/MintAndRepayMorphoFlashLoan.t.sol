@@ -10,13 +10,21 @@ contract MintAndRepayMorphoFlashLoanTest is LeverageRouterMintBaseTest {
     function testFuzz_MintAndRepayMorphoFlashLoan(
         uint256 requiredCollateral,
         uint256 equityInCollateralAsset,
+        uint256 swapAmountOut,
         bytes memory additionalData
     ) public {
-        requiredCollateral = bound(requiredCollateral, 1, type(uint256).max);
+        requiredCollateral = bound(requiredCollateral, 1, type(uint128).max);
         // Ensure that a flash loan is required by making equity less than the required collateral for the mint
         equityInCollateralAsset = requiredCollateral > 1 ? bound(equityInCollateralAsset, 1, requiredCollateral - 1) : 0;
 
         uint256 requiredFlashLoan = requiredCollateral - equityInCollateralAsset;
+
+        // Mock the amount of collateral received from the debt swap to be less than required to repay the flash loan
+        swapAmountOut = bound(swapAmountOut, 0, requiredFlashLoan);
+        leverageRouterMintBase.mock_setNextSwapAmountOut(swapAmountOut);
+
+        // Set the swap slipapge to be the additional collateral required to repay the flash loan
+        uint256 maxSwapCostInCollateralAsset = requiredFlashLoan - swapAmountOut;
 
         // Mocked exchange rate of shares (Doesn't matter for this test as the shares received and previewed are mocked)
         uint256 shares = 10 ether;
@@ -26,8 +34,8 @@ contract MintAndRepayMorphoFlashLoanTest is LeverageRouterMintBaseTest {
         _mockLeverageManagerMint(requiredCollateral, equityInCollateralAsset, requiredDebt, shares);
 
         // Deal the sender the equity and approve it to be spent
-        deal(address(collateralToken), address(this), equityInCollateralAsset);
-        collateralToken.approve(address(leverageRouterMintBase), equityInCollateralAsset);
+        deal(address(collateralToken), address(this), equityInCollateralAsset + maxSwapCostInCollateralAsset);
+        collateralToken.approve(address(leverageRouterMintBase), equityInCollateralAsset + maxSwapCostInCollateralAsset);
 
         // Dummy event for checking that the additional data is passed correctly to the _getCollateralFromDebt function
         vm.expectEmit(true, true, true, true);
@@ -38,6 +46,7 @@ contract MintAndRepayMorphoFlashLoanTest is LeverageRouterMintBaseTest {
                 token: leverageToken,
                 equityInCollateralAsset: equityInCollateralAsset,
                 minShares: shares,
+                maxSwapCostInCollateralAsset: maxSwapCostInCollateralAsset,
                 sender: address(this),
                 additionalData: additionalData
             }),

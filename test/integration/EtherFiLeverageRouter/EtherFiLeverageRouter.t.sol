@@ -7,6 +7,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Id} from "@morpho-blue/interfaces/IMorpho.sol";
 
 // Internal imports
+import {IEtherFiL2ExchangeRateProvider} from "src/interfaces/periphery/IEtherFiL2ExchangeRateProvider.sol";
 import {IEtherFiL2ModeSyncPool} from "src/interfaces/periphery/IEtherFiL2ModeSyncPool.sol";
 import {IEtherFiLeverageRouter} from "src/interfaces/periphery/IEtherFiLeverageRouter.sol";
 import {EtherFiLeverageRouter} from "src/periphery/EtherFiLeverageRouter.sol";
@@ -21,10 +22,16 @@ import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 import {IntegrationTestBase} from "../IntegrationTestBase.t.sol";
 
 contract EtherFiLeverageRouterTest is IntegrationTestBase {
+    /// @notice The ETH address per the EtherFi L2 Mode Sync Pool contract
+    address internal constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
     IERC20 public constant WEETH = IERC20(0x04C0599Ae5A44757c0af6F9eC3b93da8976c150A);
 
     IEtherFiL2ModeSyncPool public constant etherFiL2ModeSyncPool =
         IEtherFiL2ModeSyncPool(0xc38e046dFDAdf15f7F56853674242888301208a5);
+
+    IEtherFiL2ExchangeRateProvider public constant etherFiL2ExchangeRateProvider =
+        IEtherFiL2ExchangeRateProvider(0xF2c5519c634796B73dE90c7Dc27B4fEd560fC3ca);
 
     IEtherFiLeverageRouter public leverageRouter;
 
@@ -56,6 +63,8 @@ contract EtherFiLeverageRouterTest is IntegrationTestBase {
 
         vm.label(address(leverageRouter), "leverageRouter");
         vm.label(address(etherFiL2ModeSyncPool), "etherFiL2ModeSyncPool");
+        vm.label(address(WEETH), "WEETH");
+        vm.label(address(WETH), "WETH");
     }
 
     function testFork_setUp() public view virtual override {
@@ -67,12 +76,17 @@ contract EtherFiLeverageRouterTest is IntegrationTestBase {
         assertEq(address(leverageRouter.etherFiL2ModeSyncPool()), address(etherFiL2ModeSyncPool));
     }
 
-    function _dealAndMint(IERC20 collateralAsset, uint256 dealAmount, uint256 equityInCollateralAsset) internal {
+    function _dealAndMint(
+        IERC20 collateralAsset,
+        uint256 dealAmount,
+        uint256 equityInCollateralAsset,
+        uint256 maxSwapCostInCollateralAsset
+    ) internal {
         deal(address(collateralAsset), user, dealAmount);
 
         vm.startPrank(user);
-        collateralAsset.approve(address(leverageRouter), equityInCollateralAsset);
-        leverageRouter.mint(leverageToken, equityInCollateralAsset, 0);
+        collateralAsset.approve(address(leverageRouter), equityInCollateralAsset + maxSwapCostInCollateralAsset);
+        leverageRouter.mint(leverageToken, equityInCollateralAsset, 0, maxSwapCostInCollateralAsset);
         vm.stopPrank();
 
         // No leftover assets in the LeverageRouter
