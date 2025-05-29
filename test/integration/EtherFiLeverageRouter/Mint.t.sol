@@ -39,13 +39,18 @@ contract EtherFiLeverageRouterMintTest is EtherFiLeverageRouterTest {
         uint256 expectedWeEthFromDebtSwap =
             etherFiL2ExchangeRateProvider.getConversionAmount(ETH_ADDRESS, actionData.debt);
 
-        uint256 additionalCollateralForSwap = actionData.collateral - expectedWeEthFromDebtSwap;
+        uint256 requiredFlashLoan = actionData.collateral - equityInCollateralAsset;
+        uint256 additionalCollateralForSwap = requiredFlashLoan - expectedWeEthFromDebtSwap;
+        uint256 excessCollateralForSwap = 100;
 
         _dealAndMint(
             WEETH,
-            equityInCollateralAsset + additionalCollateralForSwap,
+            equityInCollateralAsset + additionalCollateralForSwap + excessCollateralForSwap,
             equityInCollateralAsset,
-            additionalCollateralForSwap
+            additionalCollateralForSwap + excessCollateralForSwap
         );
+
+        assertEq(leverageToken.balanceOf(user), actionData.shares);
+        assertEq(WEETH.balanceOf(user), 100); // Excess collateral is returned to the user
     }
 }
