@@ -158,6 +158,7 @@ contract SwapAdapter is ISwapAdapter {
 
         // Deposit the ETH into the EtherFi L2 Mode Sync Pool to obtain weETH
         // Note: The EtherFi L2 Mode Sync Pool requires ETH to mint weETH. WETH is unsupported
+        // slither-disable-next-line arbitrary-send-eth
         uint256 weETHAmount = etherFiSwapContext.etherFiL2ModeSyncPool.deposit{value: inputAmount}(
             etherFiSwapContext.tokenIn, inputAmount, minAmountOut, etherFiSwapContext.referral
         );
