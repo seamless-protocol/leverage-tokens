@@ -64,16 +64,27 @@ contract RebalanceTest is LeverageManagerTest {
         actions[0] = RebalanceAction({actionType: ActionType.AddCollateral, amount: amountToSupply});
         actions[1] = RebalanceAction({actionType: ActionType.Borrow, amount: amountToBorrow});
 
+        LeverageTokenState memory stateBefore = leverageManager.getLeverageTokenState(leverageToken);
+        LeverageTokenState memory expectedStateAfter = LeverageTokenState({
+            collateralInDebtAsset: 30_000 ether, // 15 ETH = 30,000 USDC
+            debt: 15_000 ether, // 15,000 USDC
+            equity: 15_000 ether, // 15,000 USDC
+            collateralRatio: 2 * _BASE_RATIO() // Back to2x leverage
+        });
+
         WETH.approve(address(leverageManager), amountToSupply);
+
+        vm.expectEmit(true, true, true, true);
+        emit ILeverageManager.Rebalance(leverageToken, address(this), stateBefore, expectedStateAfter, actions);
         leverageManager.rebalance(
             leverageToken, actions, IERC20(address(WETH)), IERC20(address(USDC)), amountToSupply, amountToBorrow
         );
 
         LeverageTokenState memory state = leverageManager.getLeverageTokenState(leverageToken);
-        assertEq(state.collateralInDebtAsset, 30_000 ether); // 15 ETH = 30,000 USDC
-        assertEq(state.debt, 15_000 ether); // 15,000 USDC
-        assertEq(state.equity, 15_000 ether); // 15,000 USDC
-        assertEq(state.collateralRatio, 2 * _BASE_RATIO()); // Back to 2x leverage
+        assertEq(state.collateralInDebtAsset, expectedStateAfter.collateralInDebtAsset);
+        assertEq(state.debt, expectedStateAfter.debt);
+        assertEq(state.equity, expectedStateAfter.equity);
+        assertEq(state.collateralRatio, expectedStateAfter.collateralRatio);
         assertEq(USDC.balanceOf(address(this)), amountToBorrow); // Rebalancer took debt
     }
 
