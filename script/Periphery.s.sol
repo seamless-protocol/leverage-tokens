@@ -12,7 +12,6 @@ import {LeverageRouter} from "src/periphery/LeverageRouter.sol";
 import {MorphoLendingAdapter} from "src/lending/MorphoLendingAdapter.sol";
 import {MorphoLendingAdapterFactory} from "src/lending/MorphoLendingAdapterFactory.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {EtherFiLeverageRouter} from "src/periphery/EtherFiLeverageRouter.sol";
 import {IEtherFiL2ModeSyncPool} from "src/interfaces/periphery/IEtherFiL2ModeSyncPool.sol";
 import {DeployConstants} from "./DeployConstants.sol";
 
@@ -37,13 +36,6 @@ contract PeripheryDeploy is Script {
             ISwapAdapter(swapAdapter)
         );
         console.log("LeverageRouter deployed at: ", address(leverageRouter));
-
-        EtherFiLeverageRouter etherFiLeverageRouter = new EtherFiLeverageRouter(
-            ILeverageManager(DeployConstants.LEVERAGE_MANAGER),
-            IMorpho(DeployConstants.MORPHO),
-            IEtherFiL2ModeSyncPool(DeployConstants.ETHERFI_L2_MODE_SYNC_POOL)
-        );
-        console.log("EtherFiLeverageRouter deployed at: ", address(etherFiLeverageRouter));
 
         vm.stopBroadcast();
     }

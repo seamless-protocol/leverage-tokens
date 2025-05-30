@@ -10,17 +10,19 @@ import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
+import {IEtherFiL2ModeSyncPool} from "src/interfaces/periphery/IEtherFiL2ModeSyncPool.sol";
 import {IPreLiquidationRebalanceAdapter} from "src/interfaces/IPreLiquidationRebalanceAdapter.sol";
 import {ICollateralRatiosRebalanceAdapter} from "src/interfaces/ICollateralRatiosRebalanceAdapter.sol";
 import {RebalanceAdapter} from "src/rebalance/RebalanceAdapter.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
+import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
 import {IMorphoLendingAdapterFactory} from "src/interfaces/IMorphoLendingAdapterFactory.sol";
 import {LeverageTokenConfig} from "src/types/DataTypes.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
-import {IEtherFiLeverageRouter} from "src/interfaces/periphery/IEtherFiLeverageRouter.sol";
+import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {DeployConstants} from "./DeployConstants.sol";
 
 contract CreateLeverageToken is Script {
@@ -29,8 +31,7 @@ contract CreateLeverageToken is Script {
     ILeverageManager public leverageManager = ILeverageManager(DeployConstants.LEVERAGE_MANAGER);
     IMorphoLendingAdapterFactory public lendingAdapterFactory =
         IMorphoLendingAdapterFactory(DeployConstants.LENDING_ADAPTER_FACTORY);
-    IEtherFiLeverageRouter public etherFiLeverageRouter =
-        IEtherFiLeverageRouter(DeployConstants.ETHERFI_LEVERAGE_ROUTER);
+    ILeverageRouter public leverageRouter = ILeverageRouter(DeployConstants.LEVERAGE_ROUTER);
 
     /// @dev Market ID for Morpho market that LT will be created on top of
     Id public MORPHO_MARKET_ID = Id.wrap(0xfd0895ba253889c243bf59bc4b96fd1e06d68631241383947b04d1c293a0cfea);
@@ -38,11 +39,11 @@ contract CreateLeverageToken is Script {
     bytes32 public BASE_SALT = bytes32(uint256(1));
 
     /// @dev Minimum collateral ratio for the LT on 18 decimals
-    uint256 public MIN_COLLATERAL_RATIO = 1.062893082e18;
+    uint256 public MIN_COLLATERAL_RATIO = 1.06135e18;
     /// @dev Target collateral ratio for the LT on 18 decimals
     uint256 public TARGET_COLLATERAL_RATIO = 1.0625e18;
     /// @dev Maximum collateral ratio for the LT on 18 decimals
-    uint256 public MAX_COLLATERAL_RATIO = 1.06135e18;
+    uint256 public MAX_COLLATERAL_RATIO = 1.062893082e18;
     /// @dev Duration of the dutch auction for the LT
     uint120 public AUCTION_DURATION = 1 hours;
     /// @dev Initial oracle price multiplier on Dutch auction on 18 decimals. In percentage.
@@ -69,6 +70,8 @@ contract CreateLeverageToken is Script {
 
     /// @dev Initial equity deposit for the LT
     uint256 public INITIAL_EQUITY_DEPOSIT = 0.0001 * 1e18;
+    /// @dev Initial equity deposit max swap cost
+    uint256 public INITIAL_EQUITY_DEPOSIT_MAX_SWAP_COST = 1;
 
     address public COLLATERAL_TOKEN_ADDRESS = DeployConstants.WEETH;
     address public DEBT_TOKEN_ADDRESS = DeployConstants.WETH;
@@ -161,8 +164,31 @@ contract CreateLeverageToken is Script {
             "Min collateral ratio is less than pre-liquidation collateral ratio threshold"
         );
 
-        collateralToken.approve(address(etherFiLeverageRouter), INITIAL_EQUITY_DEPOSIT);
-        etherFiLeverageRouter.mint(leverageToken, INITIAL_EQUITY_DEPOSIT, 0);
+        ISwapAdapter.EtherFiSwapContext memory etherFiSwapContext = ISwapAdapter.EtherFiSwapContext({
+            etherFiL2ModeSyncPool: IEtherFiL2ModeSyncPool(DeployConstants.ETHERFI_L2_MODE_SYNC_POOL),
+            tokenIn: DeployConstants.ETHERFI_ETH_IDENTIFIER,
+            weETH: DeployConstants.WEETH,
+            referral: address(0)
+        });
+
+        ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
+            path: new address[](0),
+            encodedPath: new bytes(0),
+            fees: new uint24[](0),
+            tickSpacing: new int24[](0),
+            exchange: ISwapAdapter.Exchange.ETHERFI,
+            exchangeAddresses: ISwapAdapter.ExchangeAddresses({
+                aerodromeRouter: address(0),
+                aerodromePoolFactory: address(0),
+                aerodromeSlipstreamRouter: address(0),
+                uniswapSwapRouter02: address(0),
+                uniswapV2Router02: address(0)
+            }),
+            additionalData: abi.encode(etherFiSwapContext)
+        });
+
+        collateralToken.approve(address(leverageRouter), INITIAL_EQUITY_DEPOSIT + 1);
+        leverageRouter.mint(leverageToken, INITIAL_EQUITY_DEPOSIT, 0, INITIAL_EQUITY_DEPOSIT_MAX_SWAP_COST, swapContext);
 
         console.log("Performed initial mint to leverage token");
 

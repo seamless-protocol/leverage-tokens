@@ -8,9 +8,11 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 // Internal imports
 import {IAerodromeRouter} from "../interfaces/periphery/IAerodromeRouter.sol";
 import {IAerodromeSlipstreamRouter} from "../interfaces/periphery/IAerodromeSlipstreamRouter.sol";
+import {IEtherFiL2ModeSyncPool} from "../interfaces/periphery/IEtherFiL2ModeSyncPool.sol";
 import {IUniswapSwapRouter02} from "../interfaces/periphery/IUniswapSwapRouter02.sol";
 import {IUniswapV2Router02} from "../interfaces/periphery/IUniswapV2Router02.sol";
 import {ISwapAdapter} from "../interfaces/periphery/ISwapAdapter.sol";
+import {IWETH9} from "../interfaces/periphery/IWETH9.sol";
 
 /**
  * @dev The SwapAdapter contract is a periphery contract that facilitates the use of various DEXes for swaps.
@@ -34,6 +36,8 @@ contract SwapAdapter is ISwapAdapter {
             outputAmount = _swapExactInputUniV2(inputAmount, minOutputAmount, swapContext);
         } else if (swapContext.exchange == Exchange.UNISWAP_V3) {
             outputAmount = _swapExactInputUniV3(inputAmount, minOutputAmount, swapContext);
+        } else if (swapContext.exchange == Exchange.ETHERFI) {
+            outputAmount = _swapExactInputEtherFi(inputToken, inputAmount, minOutputAmount, swapContext);
         }
 
         return outputAmount;
@@ -140,6 +144,28 @@ contract SwapAdapter is ISwapAdapter {
 
             return aerodromeSlipstreamRouter.exactInput(swapParams);
         }
+    }
+
+    function _swapExactInputEtherFi(
+        IERC20 inputToken,
+        uint256 inputAmount,
+        uint256 minAmountOut,
+        SwapContext memory swapContext
+    ) internal returns (uint256 outputAmount) {
+        IWETH9(address(inputToken)).withdraw(inputAmount);
+
+        EtherFiSwapContext memory etherFiSwapContext = abi.decode(swapContext.additionalData, (EtherFiSwapContext));
+
+        // Deposit the ETH into the EtherFi L2 Mode Sync Pool to obtain weETH
+        // Note: The EtherFi L2 Mode Sync Pool requires ETH to mint weETH. WETH is unsupported
+        // slither-disable-next-line arbitrary-send-eth
+        uint256 weETHAmount = etherFiSwapContext.etherFiL2ModeSyncPool.deposit{value: inputAmount}(
+            etherFiSwapContext.tokenIn, inputAmount, minAmountOut, etherFiSwapContext.referral
+        );
+
+        SafeERC20.safeTransfer(IERC20(etherFiSwapContext.weETH), msg.sender, weETHAmount);
+
+        return weETHAmount;
     }
 
     function _swapExactInputUniV2(uint256 inputAmount, uint256 minOutputAmount, SwapContext memory swapContext)
@@ -334,4 +360,6 @@ contract SwapAdapter is ISwapAdapter {
             reversedPath[i] = path[path.length - i - 1];
         }
     }
+
+    receive() external payable {}
 }

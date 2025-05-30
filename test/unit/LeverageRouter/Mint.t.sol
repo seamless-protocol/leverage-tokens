@@ -64,7 +64,8 @@ contract MintTest is LeverageRouterTest {
                     aerodromeSlipstreamRouter: address(0),
                     uniswapSwapRouter02: address(0),
                     uniswapV2Router02: address(0)
-                })
+                }),
+                additionalData: new bytes(0)
             })
         );
 
@@ -130,7 +131,8 @@ contract MintTest is LeverageRouterTest {
                     aerodromeSlipstreamRouter: address(0),
                     uniswapSwapRouter02: address(0),
                     uniswapV2Router02: address(0)
-                })
+                }),
+                additionalData: new bytes(0)
             })
         );
 
@@ -211,7 +213,8 @@ contract MintTest is LeverageRouterTest {
                     aerodromeSlipstreamRouter: address(0),
                     uniswapSwapRouter02: address(0),
                     uniswapV2Router02: address(0)
-                })
+                }),
+                additionalData: new bytes(0)
             })
         );
     }

@@ -1,5 +1,5 @@
 # ISwapAdapter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/40214436ae3956021858cb95e6ff881f6ede8e11/src/interfaces/periphery/ISwapAdapter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/1dbcbcfe9a8bcf9392b2ada63dd8f1827a90783b/src/interfaces/periphery/ISwapAdapter.sol)
 
 
 ## Functions
@@ -80,6 +80,19 @@ error InvalidNumFees();
 ```
 
 ## Structs
+### EtherFiSwapContext
+Contextual data required for EtherFi swaps using the EtherFi L2 Mode Sync Pool
+
+
+```solidity
+struct EtherFiSwapContext {
+    IEtherFiL2ModeSyncPool etherFiL2ModeSyncPool;
+    address tokenIn;
+    address weETH;
+    address referral;
+}
+```
+
 ### ExchangeAddresses
 Addresses required to facilitate swaps on the supported exchanges
 
@@ -106,6 +119,7 @@ struct SwapContext {
     int24[] tickSpacing;
     Exchange exchange;
     ExchangeAddresses exchangeAddresses;
+    bytes additionalData;
 }
 ```
 
@@ -118,6 +132,7 @@ The exchanges supported by SwapAdapter
 enum Exchange {
     AERODROME,
     AERODROME_SLIPSTREAM,
+    ETHERFI,
     UNISWAP_V2,
     UNISWAP_V3
 }

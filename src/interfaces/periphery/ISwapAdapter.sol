@@ -2,14 +2,28 @@
 pragma solidity ^0.8.26;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IEtherFiL2ModeSyncPool} from "./IEtherFiL2ModeSyncPool.sol";
 
 interface ISwapAdapter {
     /// @notice The exchanges supported by SwapAdapter
     enum Exchange {
         AERODROME,
         AERODROME_SLIPSTREAM,
+        ETHERFI,
         UNISWAP_V2,
         UNISWAP_V3
+    }
+
+    /// @notice Contextual data required for EtherFi swaps using the EtherFi L2 Mode Sync Pool
+    struct EtherFiSwapContext {
+        // The EtherFi L2 Mode Sync Pool to use for the swap
+        IEtherFiL2ModeSyncPool etherFiL2ModeSyncPool;
+        // The token to swap for weETH
+        address tokenIn;
+        // The address of weETH
+        address weETH;
+        // The referral to use for the swap
+        address referral;
     }
 
     /// @notice Addresses required to facilitate swaps on the supported exchanges
@@ -35,6 +49,8 @@ interface ISwapAdapter {
         Exchange exchange;
         // The addresses required to facilitate swaps on the supported exchanges
         ExchangeAddresses exchangeAddresses;
+        // Additional encoded data required for the swap
+        bytes additionalData;
     }
 
     /// @notice Error thrown when the number of ticks is invalid

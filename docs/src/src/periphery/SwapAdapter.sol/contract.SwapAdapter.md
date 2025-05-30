@@ -1,5 +1,5 @@
 # SwapAdapter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/40214436ae3956021858cb95e6ff881f6ede8e11/src/periphery/SwapAdapter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/1dbcbcfe9a8bcf9392b2ada63dd8f1827a90783b/src/periphery/SwapAdapter.sol)
 
 **Inherits:**
 [ISwapAdapter](/src/interfaces/periphery/ISwapAdapter.sol/interface.ISwapAdapter.md)
@@ -101,6 +101,18 @@ function _swapExactInputAerodromeSlipstream(
 ) internal returns (uint256 outputAmount);
 ```
 
+### _swapExactInputEtherFi
+
+
+```solidity
+function _swapExactInputEtherFi(
+    IERC20 inputToken,
+    uint256 inputAmount,
+    uint256 minAmountOut,
+    SwapContext memory swapContext
+) internal returns (uint256 outputAmount);
+```
+
 ### _swapExactInputUniV2
 
 
@@ -176,5 +188,12 @@ Reverses a path of addresses
 
 ```solidity
 function _reversePath(address[] memory path) internal pure returns (address[] memory reversedPath);
+```
+
+### receive
+
+
+```solidity
+receive() external payable;
 ```
 
