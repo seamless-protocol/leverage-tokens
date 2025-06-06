@@ -61,3 +61,21 @@ Audits reports can be found in the [audits](./audits/) folder.
 ## Security
 
 To report any issues, please contact security@seamlessprotocol.com.
+
+## Deployed Contracts (Base)
+
+### Core
+
+- LeverageToken implementation: `0x057A2a1CC13A9Af430976af912A27A05DE537673`
+- LeverageToken factory proxy: `0xE0b2e40EDeb53B96C923381509a25a615c1Abe57`
+- LeverageToken factory implementation: `0x057a2a1cc13a9af430976af912a27a05de537673`
+- LeverageManager implementation: `0xeb0221bf6cdaa74c94129771d5b0c9a994bb2b7c`
+- LeverageManager proxy: `0x38Ba21C6Bf31dF1b1798FCEd07B4e9b07C5ec3a8`
+- MorphoLendingAdapterFactory: `0xDd33419F0c01879a23051edbcdA997A0f9E68e61`
+- MorphoLendingAdapter implementation: `0x585cc1c8AF5C8aD79C64ac66D264590A3Ff65C51`
+- RebalanceAdapter implementation: `0xD923b2522E1f369e207d151cFE6A1BCd8EC24912`
+
+### Periphery
+
+- SwapAdapter: `0xfdF71E2c2B34cD1f8bb852e7c55E8b926Fe38942`
+- LeverageRouter: `0xDbA92fC3dc10a17b96b6E807a908155C389A887C`
