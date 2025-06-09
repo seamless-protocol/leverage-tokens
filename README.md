@@ -79,3 +79,4 @@ To report any issues, please contact security@seamlessprotocol.com.
 
 - SwapAdapter: `0xfdF71E2c2B34cD1f8bb852e7c55E8b926Fe38942`
 - LeverageRouter: `0xDbA92fC3dc10a17b96b6E807a908155C389A887C`
+- PricingAdapter: `0x94E337608d6F3AFD4E5e1dE9Aaa0804e3ab92C4c`
