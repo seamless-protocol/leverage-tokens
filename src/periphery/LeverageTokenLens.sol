@@ -7,11 +7,12 @@ import {IAggregatorV2V3Interface} from "../interfaces/periphery/IAggregatorV2V3I
 import {ILendingAdapter} from "../interfaces/ILendingAdapter.sol";
 import {ILeverageToken} from "../interfaces/ILeverageToken.sol";
 import {ILeverageManager} from "../interfaces/ILeverageManager.sol";
+import {ILeverageTokenLens} from "../interfaces/periphery/ILeverageTokenLens.sol";
 
-contract LeverageTokenLens {
+contract LeverageTokenLens is ILeverageTokenLens {
     uint256 internal constant WAD = 1e18;
 
-    /// @notice The LeverageManager contract
+    /// @inheritdoc ILeverageTokenLens
     ILeverageManager public immutable leverageManager;
 
     /// @notice Constructor
@@ -20,9 +21,7 @@ contract LeverageTokenLens {
         leverageManager = _leverageManager;
     }
 
-    /// @notice Returns the price of one LeverageToken (1e18 wei) denominated in collateral asset of the LeverageToken
-    /// @param leverageToken The LeverageToken to get the price for
-    /// @return price The price of one LeverageToken denominated in collateral asset
+    /// @inheritdoc ILeverageTokenLens
     function getLeverageTokenPriceInCollateral(ILeverageToken leverageToken) public view returns (uint256) {
         uint256 totalSupply = leverageToken.totalSupply();
 
@@ -34,20 +33,14 @@ contract LeverageTokenLens {
         return (WAD * totalCollateral) / totalSupply;
     }
 
-    /// @notice Returns the price of one LeverageToken (1e18 wei) denominated in debt asset of the LeverageToken
-    /// @param leverageToken The LeverageToken to get the price for
-    /// @return price The price of one LeverageToken denominated in debt asset
+    /// @inheritdoc ILeverageTokenLens
     function getLeverageTokenPriceInDebt(ILeverageToken leverageToken) public view returns (uint256) {
         ILendingAdapter lendingAdapter = leverageManager.getLeverageTokenLendingAdapter(leverageToken);
         uint256 priceInCollateral = getLeverageTokenPriceInCollateral(leverageToken);
         return lendingAdapter.convertCollateralToDebtAsset(priceInCollateral);
     }
 
-    /// @notice Returns the price of one LeverageToken (1e18 wei) adjusted to the price on the Chainlink oracle
-    /// @param leverageToken The LeverageToken to get the price for
-    /// @param chainlinkOracle The Chainlink oracle to use for pricing
-    /// @param isBaseDebtAsset True if the debt asset is the base asset of the Chainlink oracle, false if the collateral asset is the base asset
-    /// @return price The price of one LeverageToken adjusted to the price on the Chainlink oracle, in the decimals of the oracle
+    /// @inheritdoc ILeverageTokenLens
     function getLeverageTokenPriceAdjusted(
         ILeverageToken leverageToken,
         IAggregatorV2V3Interface chainlinkOracle,
