@@ -30,7 +30,17 @@ contract GetLeverageTokenPriceAdjustedTest is LeverageTokenLensTest {
 
         _mint(user, equityInCollateralAsset, collateralToAdd);
 
+        int256 oraclePrice = USDC_USD_ORACLE.latestAnswer();
+        assertEq(oraclePrice, 100002875); // Price in this block for 1 USDC is 1.00002875 USD
+
+        uint256 leverageTokenEquity =
+            leverageManager.getLeverageTokenLendingAdapter(leverageToken).getEquityInDebtAsset();
+        assertEq(leverageTokenEquity, 3392292471); // The amount of equity in debt asset is 3392292471 (~3392.292471 USDC)
+
+        uint256 expectedPrice = uint256(oraclePrice) * leverageTokenEquity / 1e6;
+        assertEq(expectedPrice, 339238999940);
+
         int256 result = leverageTokenLens.getLeverageTokenPriceAdjusted(leverageToken, USDC_USD_ORACLE, true);
-        assertEq(result, 339238999940); // 3392.38999940 / 1e8 USD
+        assertEq(result, 339238999940); // 3392.38999940 USD
     }
 }
