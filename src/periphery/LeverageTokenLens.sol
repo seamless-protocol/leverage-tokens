@@ -38,9 +38,17 @@ contract LeverageTokenLens is ILeverageTokenLens {
 
     /// @inheritdoc ILeverageTokenLens
     function getLeverageTokenPriceInDebt(ILeverageToken leverageToken) public view returns (uint256) {
-        ILendingAdapter lendingAdapter = leverageManager.getLeverageTokenLendingAdapter(leverageToken);
-        uint256 priceInCollateral = getLeverageTokenPriceInCollateral(leverageToken);
-        return lendingAdapter.convertCollateralToDebtAsset(priceInCollateral);
+        uint256 totalSupply = leverageToken.totalSupply();
+
+        if (totalSupply == 0) {
+            return 0;
+        }
+
+        uint256 totalEquityInDebtAsset =
+            leverageManager.getLeverageTokenLendingAdapter(leverageToken).getEquityInDebtAsset();
+
+        // LT is on 18 decimals, so 1 LT is WAD wei
+        return (WAD * totalEquityInDebtAsset) / totalSupply;
     }
 
     /// @inheritdoc ILeverageTokenLens
