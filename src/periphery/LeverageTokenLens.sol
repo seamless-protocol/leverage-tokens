@@ -60,10 +60,10 @@ contract LeverageTokenLens {
             ? IERC20Metadata(address(leverageManager.getLeverageTokenDebtAsset(leverageToken))).decimals()
             : IERC20Metadata(address(leverageManager.getLeverageTokenCollateralAsset(leverageToken))).decimals();
 
-        uint256 oraclePrice = uint256(chainlinkOracle.latestAnswer());
+        int256 oraclePrice = chainlinkOracle.latestAnswer();
 
-        uint256 adjustedPrice = (oraclePrice * priceInBaseAsset) / 10 ** baseAssetDecimals;
+        int256 adjustedPrice = (oraclePrice * int256(priceInBaseAsset)) / int256(10 ** baseAssetDecimals);
 
-        return int256(adjustedPrice);
+        return adjustedPrice;
     }
 }
