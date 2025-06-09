@@ -29,8 +29,11 @@ contract LeverageTokenLens is ILeverageTokenLens {
             return 0;
         }
 
-        uint256 totalCollateral = leverageManager.getLeverageTokenLendingAdapter(leverageToken).getCollateral();
-        return (WAD * totalCollateral) / totalSupply;
+        uint256 totalEquityInCollateralAsset =
+            leverageManager.getLeverageTokenLendingAdapter(leverageToken).getEquityInCollateralAsset();
+
+        // LT is on 18 decimals, so 1 LT is WAD wei
+        return (WAD * totalEquityInCollateralAsset) / totalSupply;
     }
 
     /// @inheritdoc ILeverageTokenLens
