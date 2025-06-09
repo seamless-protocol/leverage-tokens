@@ -4,7 +4,7 @@ pragma solidity ^0.8.26;
 import {LeverageTokenLensTest} from "./LeverageTokenLens.t.sol";
 
 contract GetLeverageTokenPriceInDebtTest is LeverageTokenLensTest {
-    function test_getLeverageTokenPriceInDebt() public {
+    function testFork_getLeverageTokenPriceInDebt() public {
         uint256 equityInCollateralAsset = 1e18;
         uint256 collateralToAdd = 2 * equityInCollateralAsset;
 
@@ -15,7 +15,7 @@ contract GetLeverageTokenPriceInDebtTest is LeverageTokenLensTest {
         assertEq(result, leverageManager.getLeverageTokenLendingAdapter(leverageToken).getEquityInDebtAsset());
     }
 
-    function test_getLeverageTokenPriceInDebt_noShares() public view {
+    function testFork_getLeverageTokenPriceInDebt_noShares() public view {
         uint256 result = leverageTokenLens.getLeverageTokenPriceInDebt(leverageToken);
         assertEq(result, 0);
     }
