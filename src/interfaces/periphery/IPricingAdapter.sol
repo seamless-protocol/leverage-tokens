@@ -6,7 +6,7 @@ import {ILeverageManager} from "../ILeverageManager.sol";
 import {ILeverageToken} from "../ILeverageToken.sol";
 import {IAggregatorV2V3Interface} from "./IAggregatorV2V3Interface.sol";
 
-interface ILeverageTokenLens {
+interface IPricingAdapter {
     /// @notice The LeverageManager contract
     /// @return _leverageManager The LeverageManager contract
     function leverageManager() external view returns (ILeverageManager _leverageManager);

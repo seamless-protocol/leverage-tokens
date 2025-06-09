@@ -3,12 +3,12 @@ pragma solidity ^0.8.26;
 
 // Internal imports
 import {IAggregatorV2V3Interface} from "src/interfaces/periphery/IAggregatorV2V3Interface.sol";
-import {ILeverageTokenLens} from "src/interfaces/periphery/ILeverageTokenLens.sol";
-import {LeverageTokenLens} from "src/periphery/LeverageTokenLens.sol";
+import {IPricingAdapter} from "src/interfaces/periphery/IPricingAdapter.sol";
+import {PricingAdapter} from "src/periphery/PricingAdapter.sol";
 import {LeverageManagerTest} from "../LeverageManager/LeverageManager.t.sol";
 
-contract LeverageTokenLensTest is LeverageManagerTest {
-    ILeverageTokenLens public leverageTokenLens;
+contract PricingAdapterTest is LeverageManagerTest {
+    IPricingAdapter public pricingAdapter;
 
     IAggregatorV2V3Interface public constant WETH_USD_ORACLE =
         IAggregatorV2V3Interface(0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70);
@@ -18,10 +18,10 @@ contract LeverageTokenLensTest is LeverageManagerTest {
     function setUp() public virtual override {
         super.setUp();
 
-        leverageTokenLens = new LeverageTokenLens(leverageManager);
+        pricingAdapter = new PricingAdapter(leverageManager);
     }
 
     function testFork_setUp() public view virtual override {
-        assertEq(address(leverageTokenLens.leverageManager()), address(leverageManager));
+        assertEq(address(pricingAdapter.leverageManager()), address(leverageManager));
     }
 }

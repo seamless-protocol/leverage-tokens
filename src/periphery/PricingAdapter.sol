@@ -7,12 +7,12 @@ import {IAggregatorV2V3Interface} from "../interfaces/periphery/IAggregatorV2V3I
 import {ILendingAdapter} from "../interfaces/ILendingAdapter.sol";
 import {ILeverageToken} from "../interfaces/ILeverageToken.sol";
 import {ILeverageManager} from "../interfaces/ILeverageManager.sol";
-import {ILeverageTokenLens} from "../interfaces/periphery/ILeverageTokenLens.sol";
+import {IPricingAdapter} from "../interfaces/periphery/IPricingAdapter.sol";
 
-contract LeverageTokenLens is ILeverageTokenLens {
+contract PricingAdapter is IPricingAdapter {
     uint256 internal constant WAD = 1e18;
 
-    /// @inheritdoc ILeverageTokenLens
+    /// @inheritdoc IPricingAdapter
     ILeverageManager public immutable leverageManager;
 
     /// @notice Constructor
@@ -21,7 +21,7 @@ contract LeverageTokenLens is ILeverageTokenLens {
         leverageManager = _leverageManager;
     }
 
-    /// @inheritdoc ILeverageTokenLens
+    /// @inheritdoc IPricingAdapter
     function getLeverageTokenPriceInCollateral(ILeverageToken leverageToken) public view returns (uint256) {
         uint256 totalSupply = leverageToken.totalSupply();
 
@@ -36,7 +36,7 @@ contract LeverageTokenLens is ILeverageTokenLens {
         return (WAD * totalEquityInCollateralAsset) / totalSupply;
     }
 
-    /// @inheritdoc ILeverageTokenLens
+    /// @inheritdoc IPricingAdapter
     function getLeverageTokenPriceInDebt(ILeverageToken leverageToken) public view returns (uint256) {
         uint256 totalSupply = leverageToken.totalSupply();
 
@@ -51,7 +51,7 @@ contract LeverageTokenLens is ILeverageTokenLens {
         return (WAD * totalEquityInDebtAsset) / totalSupply;
     }
 
-    /// @inheritdoc ILeverageTokenLens
+    /// @inheritdoc IPricingAdapter
     function getLeverageTokenPriceAdjusted(
         ILeverageToken leverageToken,
         IAggregatorV2V3Interface chainlinkOracle,
