@@ -9,7 +9,7 @@ import {ILeverageToken} from "../interfaces/ILeverageToken.sol";
 import {ILeverageManager} from "../interfaces/ILeverageManager.sol";
 
 contract LeverageTokenLens {
-    uint256 public constant WAD = 1e18;
+    uint256 internal constant WAD = 1e18;
 
     /// @notice The LeverageManager contract
     ILeverageManager public immutable leverageManager;
