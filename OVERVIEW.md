@@ -1,4 +1,4 @@
-# Seamless Leverage Tokens Flows
+# Seamless Leverage Token Flows
 
 ## Creating the Leverage Token
 
