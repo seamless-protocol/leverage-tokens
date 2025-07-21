@@ -484,7 +484,12 @@ contract LeverageManager is
     /// @param token LeverageToken to execute action for
     /// @param actionType Type of the action to execute
     /// @param amount Amount to execute action with
-    function _executeLendingAdapterAction(ILeverageToken token, ActionType actionType, IERC20 actionToken, uint256 amount) internal {
+    function _executeLendingAdapterAction(
+        ILeverageToken token,
+        ActionType actionType,
+        IERC20 actionToken,
+        uint256 amount
+    ) internal {
         ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
 
         if (actionType == ActionType.AddCollateral) {

@@ -37,7 +37,9 @@ contract ExecuteActionTest is LeverageManagerTest {
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_executeLendingAdapterAction_AddCollateral(uint256 amount) public {
         collateralToken.mint(address(leverageManager), amount);
-        leverageManager.exposed_executeLendingAdapterAction(leverageToken, ActionType.AddCollateral, collateralToken, amount);
+        leverageManager.exposed_executeLendingAdapterAction(
+            leverageToken, ActionType.AddCollateral, collateralToken, amount
+        );
 
         assertEq(collateralToken.balanceOf(address(leverageManager)), 0);
         assertEq(
@@ -47,7 +49,9 @@ contract ExecuteActionTest is LeverageManagerTest {
 
     /// forge-config: default.fuzz.runs = 1
     function tesFuzz_executeLendingAdapterAction_RemoveCollateral(uint256 amount) public {
-        leverageManager.exposed_executeLendingAdapterAction(leverageToken, ActionType.RemoveCollateral, collateralToken, amount);
+        leverageManager.exposed_executeLendingAdapterAction(
+            leverageToken, ActionType.RemoveCollateral, collateralToken, amount
+        );
 
         assertEq(collateralToken.balanceOf(address(leverageManager)), amount);
         assertEq(collateralToken.balanceOf(address(leverageManager.getLeverageTokenLendingAdapter(leverageToken))), 0);
