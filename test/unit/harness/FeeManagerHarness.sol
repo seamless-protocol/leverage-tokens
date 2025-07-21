@@ -45,7 +45,7 @@ contract FeeManagerHarness is FeeManager {
     }
 
     function exposed_getAccruedManagementFee(ILeverageToken token) external view returns (uint256) {
-        return _getAccruedManagementFee(token);
+        return _getAccruedManagementFee(token, token.totalSupply());
     }
 
     function exposed_getFeeAdjustedTotalSupply(ILeverageToken token) external view returns (uint256) {

@@ -29,10 +29,10 @@ contract LeverageManagerHarness is LeverageManager, FeeManagerHarness {
         _transferTokens(token, from, to, amount);
     }
 
-    function exposed_executeLendingAdapterAction(ILeverageToken leverageToken, ActionType actionType, uint256 amount)
+    function exposed_executeLendingAdapterAction(ILeverageToken leverageToken, ActionType actionType, IERC20 actionToken, uint256 amount)
         external
     {
-        _executeLendingAdapterAction(leverageToken, actionType, amount);
+        _executeLendingAdapterAction(leverageToken, actionType, actionToken, amount);
     }
 
     function exposed_convertToShares(ILeverageToken leverageToken, uint256 equity, ExternalAction action)
