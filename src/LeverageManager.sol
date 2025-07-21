@@ -165,21 +165,7 @@ contract LeverageManager is
 
     /// @inheritdoc ILeverageManager
     function getLeverageTokenState(ILeverageToken token) public view returns (LeverageTokenState memory state) {
-        ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
-
-        uint256 collateral = lendingAdapter.getCollateralInDebtAsset();
-        uint256 debt = lendingAdapter.getDebt();
-        uint256 equity = lendingAdapter.getEquityInDebtAsset();
-
-        uint256 collateralRatio =
-            debt > 0 ? Math.mulDiv(collateral, BASE_RATIO, debt, Math.Rounding.Floor) : type(uint256).max;
-
-        return LeverageTokenState({
-            collateralInDebtAsset: collateral,
-            debt: debt,
-            equity: equity,
-            collateralRatio: collateralRatio
-        });
+        return _getLeverageTokenState(getLeverageTokenLendingAdapter(token));
     }
 
     /// @inheritdoc ILeverageManager
@@ -253,16 +239,19 @@ contract LeverageManager is
             revert SlippageTooHigh(mintData.shares, minShares);
         }
 
-        // Take collateral asset from sender
-        IERC20 collateralAsset = getLeverageTokenCollateralAsset(token);
+        // Cache LendingAdapter to avoid multiple SLOADs
+        ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
+        IERC20 collateralAsset = lendingAdapter.getCollateralAsset();
+        IERC20 debtAsset = lendingAdapter.getDebtAsset();
+
         SafeERC20.safeTransferFrom(collateralAsset, msg.sender, address(this), mintData.collateral);
 
         // Add collateral to LeverageToken
-        _executeLendingAdapterAction(token, ActionType.AddCollateral, mintData.collateral);
+        _executeLendingAdapterAction(token, ActionType.AddCollateral, collateralAsset, mintData.collateral);
 
         // Borrow and send debt assets to caller
-        _executeLendingAdapterAction(token, ActionType.Borrow, mintData.debt);
-        SafeERC20.safeTransfer(getLeverageTokenDebtAsset(token), msg.sender, mintData.debt);
+        _executeLendingAdapterAction(token, ActionType.Borrow, debtAsset, mintData.debt);
+        SafeERC20.safeTransfer(debtAsset, msg.sender, mintData.debt);
 
         // Charge treasury fee
         _chargeTreasuryFee(token, mintData.treasuryFee);
@@ -299,15 +288,18 @@ contract LeverageManager is
         // Mint shares to treasury for the treasury action fee
         _chargeTreasuryFee(token, redeemData.treasuryFee);
 
+        ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
+        IERC20 debtAsset = lendingAdapter.getDebtAsset();
+        IERC20 collateralAsset = lendingAdapter.getCollateralAsset();
+
         // Take assets from sender and repay the debt
-        SafeERC20.safeTransferFrom(getLeverageTokenDebtAsset(token), msg.sender, address(this), redeemData.debt);
-        _executeLendingAdapterAction(token, ActionType.Repay, redeemData.debt);
+        SafeERC20.safeTransferFrom(debtAsset, msg.sender, address(this), redeemData.debt);
+        _executeLendingAdapterAction(token, ActionType.Repay, debtAsset, redeemData.debt);
 
         // Remove collateral from lending pool
-        _executeLendingAdapterAction(token, ActionType.RemoveCollateral, redeemData.collateral);
+        _executeLendingAdapterAction(token, ActionType.RemoveCollateral, collateralAsset, redeemData.collateral);
 
         // Send collateral assets to sender
-        IERC20 collateralAsset = getLeverageTokenCollateralAsset(token);
         SafeERC20.safeTransfer(collateralAsset, msg.sender, redeemData.collateral);
 
         // Emit event and explicit return statement
@@ -326,8 +318,10 @@ contract LeverageManager is
     ) external nonReentrant {
         _transferTokens(tokenIn, msg.sender, address(this), amountIn);
 
+        ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(leverageToken);
+
         // Check if the LeverageToken is eligible for rebalance
-        LeverageTokenState memory stateBefore = getLeverageTokenState(leverageToken);
+        LeverageTokenState memory stateBefore = _getLeverageTokenState(lendingAdapter);
 
         IRebalanceAdapterBase rebalanceAdapter = getLeverageTokenRebalanceAdapter(leverageToken);
         if (!rebalanceAdapter.isEligibleForRebalance(leverageToken, stateBefore, msg.sender)) {
@@ -335,7 +329,11 @@ contract LeverageManager is
         }
 
         for (uint256 i = 0; i < actions.length; i++) {
-            _executeLendingAdapterAction(leverageToken, actions[i].actionType, actions[i].amount);
+            if (actions[i].actionType == ActionType.AddCollateral || actions[i].actionType == ActionType.Repay) {
+                _executeLendingAdapterAction(leverageToken, actions[i].actionType, tokenIn, actions[i].amount);
+            } else {
+                _executeLendingAdapterAction(leverageToken, actions[i].actionType, tokenOut, actions[i].amount);
+            }
         }
 
         // Validate the LeverageToken state after rebalancing
@@ -386,6 +384,29 @@ contract LeverageManager is
 
         Math.Rounding rounding = action == ExternalAction.Mint ? Math.Rounding.Floor : Math.Rounding.Ceil;
         return Math.mulDiv(equityInCollateralAsset, totalSupply, totalEquityInCollateralAsset, rounding);
+    }
+
+    //// @notice Returns all data required to describe current LeverageToken state - collateral, debt, equity and collateral ratio
+    /// @param lendingAdapter LendingAdapter of the LeverageToken
+    /// @return state LeverageToken state
+    function _getLeverageTokenState(ILendingAdapter lendingAdapter)
+        internal
+        view
+        returns (LeverageTokenState memory state)
+    {
+        uint256 collateral = lendingAdapter.getCollateralInDebtAsset();
+        uint256 debt = lendingAdapter.getDebt();
+        uint256 equity = lendingAdapter.getEquityInDebtAsset();
+
+        uint256 collateralRatio =
+            debt > 0 ? Math.mulDiv(collateral, BASE_RATIO, debt, Math.Rounding.Floor) : type(uint256).max;
+
+        return LeverageTokenState({
+            collateralInDebtAsset: collateral,
+            debt: debt,
+            equity: equity,
+            collateralRatio: collateralRatio
+        });
     }
 
     /// @notice Previews parameters related to a mint action
@@ -463,13 +484,12 @@ contract LeverageManager is
     /// @param token LeverageToken to execute action for
     /// @param actionType Type of the action to execute
     /// @param amount Amount to execute action with
-    function _executeLendingAdapterAction(ILeverageToken token, ActionType actionType, uint256 amount) internal {
+    function _executeLendingAdapterAction(ILeverageToken token, ActionType actionType, IERC20 actionToken, uint256 amount) internal {
         ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
 
         if (actionType == ActionType.AddCollateral) {
-            IERC20 collateralAsset = lendingAdapter.getCollateralAsset();
             // slither-disable-next-line reentrancy-events
-            SafeERC20.forceApprove(collateralAsset, address(lendingAdapter), amount);
+            SafeERC20.forceApprove(actionToken, address(lendingAdapter), amount);
             // slither-disable-next-line reentrancy-events
             lendingAdapter.addCollateral(amount);
         } else if (actionType == ActionType.RemoveCollateral) {
@@ -479,9 +499,8 @@ contract LeverageManager is
             // slither-disable-next-line reentrancy-events
             lendingAdapter.borrow(amount);
         } else if (actionType == ActionType.Repay) {
-            IERC20 debtAsset = lendingAdapter.getDebtAsset();
             // slither-disable-next-line reentrancy-events
-            SafeERC20.forceApprove(debtAsset, address(lendingAdapter), amount);
+            SafeERC20.forceApprove(actionToken, address(lendingAdapter), amount);
             // slither-disable-next-line reentrancy-events
             lendingAdapter.repay(amount);
         }
