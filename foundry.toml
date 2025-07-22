@@ -14,7 +14,7 @@ ast = true
 build_info = true
 extra_output = ["storageLayout"]
 
-additional_compiler_profiles = [ { name = "no-opt", via_ir = false, optimizer = true } ]
+additional_compiler_profiles = [ { name = "no-opt", via_ir = false, optimizer = false } ]
 
 compilation_restrictions = [
   { paths = "test/**", optimizer = false, via_ir = false }
