@@ -1,16 +1,28 @@
 [profile.default]
 solc = "0.8.26"
-optimizer = false
+optimizer = true
+optimizer_runs = 10000
 via_ir = true
 evm_version = "cancun"
 src = "src"
 out = "out"
 libs = ["lib"]
+dynamic_test_linking = true
 
 ffi = true
 ast = true
 build_info = true
 extra_output = ["storageLayout"]
+
+additional_compiler_profiles = [ { name = "no-opt", via_ir = false, optimizer = true } ]
+
+compilation_restrictions = [
+  { paths = "test/**", optimizer = false, via_ir = false }
+]
+
+[profile.lite]
+optimizer=false
+via_ir=false
 
 [rpc_endpoints]
 tenderly = "${TENDERLY_RPC_URL}"
