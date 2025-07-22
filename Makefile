@@ -14,6 +14,7 @@ snapshot                :; forge snapshot
 clean                   :; forge clean
 fmt                     :; forge fmt
 test                    :; forge test -vvvv --gas-report
+test-lite               :; FOUNDRY_PROFILE=lite forge test -vvvv
 
 # Deploy
 deploy-core-tenderly		:; forge script script/Core.s.sol:CoreDeploy --force --rpc-url tenderly --account ${DEPLOYER_ACCOUNT_NAME} --sender ${DEPLOYER_ACCOUNT_ADDRESS} --slow --broadcast -vvvv --verify --verifier-url ${TENDERLY_VERIFIER_URL} --etherscan-api-key ${TENDERLY_VERIFIER_KEY}
