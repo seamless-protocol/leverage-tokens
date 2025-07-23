@@ -228,6 +228,9 @@ contract LeverageManager is
     }
 
     /// @inheritdoc ILeverageManager
+    function previewMintV2(ILeverageToken token, uint256 collateral) external view returns (ActionData memory) {}
+
+    /// @inheritdoc ILeverageManager
     function previewRedeem(ILeverageToken token, uint256 equityInCollateralAsset)
         public
         view
@@ -275,6 +278,13 @@ contract LeverageManager is
         emit Mint(token, msg.sender, mintData);
         return mintData;
     }
+
+    /// @inheritdoc ILeverageManager
+    function mintV2(ILeverageToken token, uint256 collateral, uint256 minShares)
+        external
+        nonReentrant
+        returns (ActionData memory actionData)
+    {}
 
     /// @inheritdoc ILeverageManager
     function redeem(ILeverageToken token, uint256 equityInCollateralAsset, uint256 maxShares)
