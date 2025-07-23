@@ -220,7 +220,7 @@ interface ILeverageManager is IFeeManager {
     /// @param minShares The minimum amount of shares to mint
     /// @return actionData Data about the mint
     ///         - collateral Amount of collateral that was added, including any fees
-    ///         - debt Amount of debt that will be borrowed and sent to sender
+    ///         - debt Amount of debt that was borrowed and sent to sender
     ///         - equity Amount of equity that was added before fees, denominated in collateral asset
     ///         - shares Amount of shares minted to the sender
     ///         - tokenFee Amount of shares that was charged for the mint that are given to the LeverageToken
