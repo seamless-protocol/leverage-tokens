@@ -231,6 +231,9 @@ contract LeverageManager is
     function previewMintV2(ILeverageToken token, uint256 collateral) external view returns (ActionData memory) {}
 
     /// @inheritdoc ILeverageManager
+    function previewMintV2Borrow(ILeverageToken token, uint256 debt) external view returns (ActionData memory) {}
+
+    /// @inheritdoc ILeverageManager
     function previewRedeem(ILeverageToken token, uint256 equityInCollateralAsset)
         public
         view

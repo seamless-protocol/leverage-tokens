@@ -164,6 +164,23 @@ interface ILeverageManager is IFeeManager {
         view
         returns (ActionData memory previewData);
 
+    /// @notice Previews mint function call for a desired debt amount and returns all required data
+    /// @param token LeverageToken to preview mint for
+    /// @param debt Debt to add to the LeverageToken
+    /// @return previewData Preview data for mint
+    ///         - collateral Amount of collateral that sender needs to approve the LeverageManager to spend,
+    ///           this includes any fees
+    ///         - debt Amount of debt that will be borrowed and sent to sender
+    ///         - equity Amount of equity that will be used for minting shares before fees, denominated in collateral asset
+    ///         - shares Amount of shares that will be minted to the sender
+    ///         - tokenFee Amount of shares that will be charged for the mint that are given to the LeverageToken
+    ///         - treasuryFee Amount of shares that will be charged for the mint that are given to the treasury
+    /// @dev Sender should approve the LeverageManager to spend collateral amount of collateral asset
+    function previewMintV2Borrow(ILeverageToken token, uint256 debt)
+        external
+        view
+        returns (ActionData memory previewData);
+
     /// @notice Previews redeem function call and returns all required data
     /// @param token LeverageToken to preview redeem for
     /// @param equityInCollateralAsset Equity to receive by redeem denominated in collateral asset
