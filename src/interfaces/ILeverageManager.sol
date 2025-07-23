@@ -134,36 +134,64 @@ interface ILeverageManager is IFeeManager {
     /// @param token LeverageToken to preview mint for
     /// @param equityInCollateralAsset Equity to mint LeverageTokens (shares) for, denominated in the collateral asset
     /// @return previewData Preview data for mint
-    ///         - collateralToAdd Amount of collateral that sender needs to approve the LeverageManager to spend,
+    ///         - collateral Amount of collateral that sender needs to approve the LeverageManager to spend,
     ///           this includes any fees
-    ///         - debtToBorrow Amount of debt that will be borrowed and sent to sender
+    ///         - debt Amount of debt that will be borrowed and sent to sender
     ///         - equity Amount of equity that will be used for minting shares before fees, denominated in collateral asset
     ///         - shares Amount of shares that will be minted to the sender
     ///         - tokenFee Amount of shares that will be charged for the mint that are given to the LeverageToken
     ///         - treasuryFee Amount of shares that will be charged for the mint that are given to the treasury
-    /// @dev Sender should approve leverage manager to spend collateralToAdd amount of collateral asset
+    /// @dev Sender should approve the LeverageManager to spend collateral amount of collateral asset
     function previewMint(ILeverageToken token, uint256 equityInCollateralAsset)
         external
         view
         returns (ActionData memory previewData);
 
+    /// @notice Previews depositCollateral function call and returns all required data
+    /// @param token LeverageToken to preview depositCollateral for
+    /// @param collateral Collateral to add to the LeverageToken
+    /// @return previewData Preview data for depositCollateral
+    ///         - collateral Amount of collateral that sender needs to approve the LeverageManager to spend,
+    ///           this includes any fees
+    ///         - debt Amount of debt that will be borrowed and sent to sender
+    ///         - equity Amount of equity that will be used for minting shares before fees, denominated in collateral asset
+    ///         - shares Amount of shares that will be minted to the sender
+    ///         - tokenFee Amount of shares that will be charged for the mint that are given to the LeverageToken
+    ///         - treasuryFee Amount of shares that will be charged for the mint that are given to the treasury
+    /// @dev Sender should approve the LeverageManager to spend collateral amount of collateral asset
+    function previewMintV2_0(ILeverageToken token, uint256 collateral) external view returns (ActionData memory previewData);
+
+    /// @notice Previews addDebt function call and returns all required data
+    /// @param token LeverageToken to preview addDebt for
+    /// @param debt Debt to add to the LeverageToken
+    /// @return previewData Preview data for addDebt
+    ///         - collateral Amount of collateral that sender needs to approve the LeverageManager to spend,
+    ///           this includes any fees
+    ///         - debt Amount of debt that will be borrowed and sent to sender
+    ///         - equity Amount of equity that will be used for minting shares before fees, denominated in collateral asset
+    ///         - shares Amount of shares that will be minted to the sender
+    ///         - tokenFee Amount of shares that will be charged for the mint that are given to the LeverageToken
+    ///         - treasuryFee Amount of shares that will be charged for the mint that are given to the treasury
+    /// @dev Sender should approve the LeverageManager to spend collateral amount of collateral asset
+    function previewMintV2_1(ILeverageToken token, uint256 debt) external view returns (ActionData memory previewData);
+
     /// @notice Previews redeem function call and returns all required data
     /// @param token LeverageToken to preview redeem for
     /// @param equityInCollateralAsset Equity to receive by redeem denominated in collateral asset
     /// @return previewData Preview data for redeem
-    ///         - collateralToRemove Amount of collateral that will be removed from the LeverageToken and sent to the sender
-    ///         - debtToRepay Amount of debt that will be taken from sender and repaid to the LeverageToken
+    ///         - collateral Amount of collateral that will be removed from the LeverageToken and sent to the sender
+    ///         - debt Amount of debt that will be taken from sender and repaid to the LeverageToken
     ///         - equity Amount of equity that will be received for the redeem before fees, denominated in collateral asset
     ///         - shares Amount of shares that will be burned from sender
     ///         - tokenFee Amount of shares that will be charged for the redeem that are given to the LeverageToken
     ///         - treasuryFee Amount of shares that will be charged for the redeem that are given to the treasury
-    /// @dev Sender should approve leverage manager to spend debtToRepay amount of debt asset
+    /// @dev Sender should approve the LeverageManager to spend debt amount of debt asset
     function previewRedeem(ILeverageToken token, uint256 equityInCollateralAsset)
         external
         view
         returns (ActionData memory previewData);
 
-    /// @notice Adds equity to a LeverageToken and mints shares of it to the sender
+    /// @notice Adds equity to a LeverageToken and mints shares of it to the sender. The sender also receives the borrowed debt assets.
     /// @param token The LeverageToken to mint shares of
     /// @param equityInCollateralAsset The amount of equity to mint shares for, denominated in the collateral asset of the LeverageToken
     /// @param minShares The minimum amount of shares to mint
@@ -174,9 +202,39 @@ interface ILeverageManager is IFeeManager {
     ///         - shares Amount of shares minted to the sender
     ///         - tokenFee Amount of shares that was charged for the mint that are given to the LeverageToken
     ///         - treasuryFee Amount of shares that was charged for the mint that are given to the treasury
+    /// @dev The sender must approve the LeverageManager to spend the collateral required for the amount of equity being added to the LeverageToken.
     function mint(ILeverageToken token, uint256 equityInCollateralAsset, uint256 minShares)
         external
         returns (ActionData memory actionData);
+
+    /// @notice Adds collateral to a LeverageToken and mints shares of the resulting equity added to the LeverageToken to the sender. The
+    /// sender also receives the borrowed debt assets.
+    /// @param token The LeverageToken to mint shares of
+    /// @param collateral The amount of collateral to add
+    /// @param minShares The minimum amount of shares to mint
+    /// @return actionData Data about the mint
+    ///         - collateral Amount of collateral that was added, including any fees
+    ///         - debt Amount of debt that was added
+    ///         - equity Amount of equity that was added before fees, denominated in collateral asset
+    ///         - shares Amount of shares minted to the sender
+    ///         - tokenFee Amount of shares that was charged for the mint that are given to the LeverageToken
+    ///         - treasuryFee Amount of shares that was charged for the mint that are given to the treasury
+    /// @dev The sender must approve the LeverageManager to spend the collateral amount.
+    function mintV2_0(ILeverageToken token, uint256 collateral, uint256 minShares) external returns (ActionData memory actionData);
+
+    /// @notice Borrows debt assets from a LeverageToken and mints shares of the resulting equity added to the sender.
+    /// @param token The LeverageToken to mint shares of
+    /// @param debt The amount of debt to add
+    /// @param minShares The minimum amount of shares to mint
+    /// @return actionData Data about the mint
+    ///         - collateral Amount of collateral that was added, including any fees
+    ///         - debt Amount of debt that was added
+    ///         - equity Amount of equity that was added before fees, denominated in collateral asset
+    ///         - shares Amount of shares minted to the sender
+    ///         - tokenFee Amount of shares that was charged for the mint that are given to the LeverageToken
+    ///         - treasuryFee Amount of shares that was charged for the mint that are given to the treasury
+    /// @dev The sender must approve the LeverageManager to spend the collateral required for the amount of debt being added to the LeverageToken.
+    function mintV2_1(ILeverageToken token, uint256 debt, uint256 minShares) external returns (ActionData memory actionData);
 
     /// @notice Redeems equity from a LeverageToken and burns shares from sender
     /// @param token The LeverageToken to redeem from
