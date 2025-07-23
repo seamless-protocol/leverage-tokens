@@ -171,8 +171,7 @@ contract LeverageManager is
         uint256 debt = lendingAdapter.getDebt();
         uint256 equity = lendingAdapter.getEquityInDebtAsset();
 
-        uint256 collateralRatio =
-            debt > 0 ? Math.mulDiv(collateral, BASE_RATIO, debt, Math.Rounding.Floor) : type(uint256).max;
+        uint256 collateralRatio = _computeCollateralRatio(collateral, debt);
 
         return LeverageTokenState({
             collateralInDebtAsset: collateral,
@@ -224,14 +223,27 @@ contract LeverageManager is
         view
         returns (ActionData memory)
     {
-        return _previewAction(token, equityInCollateralAsset, ExternalAction.Mint);
+        (uint256 collateral, uint256 debt) =
+            _computeCollateralAndDebtForAction(token, equityInCollateralAsset, ExternalAction.Mint);
+
+        return _previewAction(token, equityInCollateralAsset, collateral, debt, ExternalAction.Mint);
     }
 
     /// @inheritdoc ILeverageManager
-    function previewMintV2(ILeverageToken token, uint256 collateral) external view returns (ActionData memory) {}
+    function previewMintV2(ILeverageToken token, uint256 collateral) external view returns (ActionData memory) {
+        (uint256 debt, uint256 equityInCollateralAsset) =
+            _computeDebtAndEquityForAction(token, collateral, ExternalAction.Mint);
+
+        return _previewAction(token, equityInCollateralAsset, collateral, debt, ExternalAction.Mint);
+    }
 
     /// @inheritdoc ILeverageManager
-    function previewMintV2Borrow(ILeverageToken token, uint256 debt) external view returns (ActionData memory) {}
+    function previewMintV2Borrow(ILeverageToken token, uint256 debt) external view returns (ActionData memory) {
+        (uint256 collateral, uint256 equityInCollateralAsset) =
+            _computeCollateralAndEquityForAction(token, debt, ExternalAction.Mint);
+
+        return _previewAction(token, equityInCollateralAsset, collateral, debt, ExternalAction.Mint);
+    }
 
     /// @inheritdoc ILeverageManager
     function previewRedeem(ILeverageToken token, uint256 equityInCollateralAsset)
@@ -239,7 +251,10 @@ contract LeverageManager is
         view
         returns (ActionData memory)
     {
-        return _previewAction(token, equityInCollateralAsset, ExternalAction.Redeem);
+        (uint256 collateral, uint256 debt) =
+            _computeCollateralAndDebtForAction(token, equityInCollateralAsset, ExternalAction.Redeem);
+
+        return _previewAction(token, equityInCollateralAsset, collateral, debt, ExternalAction.Redeem);
     }
 
     /// @inheritdoc ILeverageManager
@@ -401,6 +416,14 @@ contract LeverageManager is
         return Math.mulDiv(equityInCollateralAsset, totalSupply, totalEquityInCollateralAsset, rounding);
     }
 
+    /// @notice Computes collateral ratio from collateral in debt asset and debt
+    /// @param collateralInDebtAsset Collateral in debt asset
+    /// @param debt Debt
+    /// @return collateralRatio Collateral ratio
+    function _computeCollateralRatio(uint256 collateralInDebtAsset, uint256 debt) internal pure returns (uint256) {
+        return debt > 0 ? Math.mulDiv(collateralInDebtAsset, BASE_RATIO, debt, Math.Rounding.Floor) : type(uint256).max;
+    }
+
     /// @notice Previews parameters related to a mint action
     /// @param token LeverageToken to preview mint for
     /// @param equityInCollateralAsset Amount of equity to give or receive, denominated in collateral asset
@@ -417,6 +440,40 @@ contract LeverageManager is
     {
         (uint256 collateral, uint256 debt) = _computeCollateralAndDebtForAction(token, equityInCollateralAsset, action);
 
+        (uint256 equityForShares, uint256 tokenFee) = _computeTokenFee(token, equityInCollateralAsset, action);
+        uint256 shares = _convertToShares(token, equityForShares, action);
+        uint256 treasuryFee = _computeTreasuryFee(action, shares);
+
+        // On mints, some of the minted shares are for the treasury fee
+        // On redeems, additional shares are taken from the user to cover the treasury fee
+        uint256 userSharesDelta = action == ExternalAction.Mint ? shares - treasuryFee : shares + treasuryFee;
+
+        return ActionData({
+            collateral: collateral,
+            debt: debt,
+            equity: equityInCollateralAsset,
+            shares: userSharesDelta,
+            tokenFee: tokenFee,
+            treasuryFee: treasuryFee
+        });
+    }
+
+    /// @notice Previews parameters related to a mint action
+    /// @param token LeverageToken to preview mint for
+    /// @param equityInCollateralAsset Amount of equity to give or receive, denominated in collateral asset
+    /// @param action Type of the action to preview, can be Mint or Redeem
+    /// @return data Preview data for the action
+    /// @dev If the LeverageToken has zero total supply of shares (so the LeverageToken does not hold any collateral or debt,
+    ///      or holds some leftover dust after all shares are redeemed), then the preview will use the target
+    ///      collateral ratio for determining how much collateral and debt is required instead of the current collateral ratio.
+    /// @dev If action is mint collateral will be rounded down and debt up, if action is redeem collateral will be rounded up and debt down
+    function _previewAction(
+        ILeverageToken token,
+        uint256 equityInCollateralAsset,
+        uint256 collateral,
+        uint256 debt,
+        ExternalAction action
+    ) internal view returns (ActionData memory data) {
         (uint256 equityForShares, uint256 tokenFee) = _computeTokenFee(token, equityInCollateralAsset, action);
         uint256 shares = _convertToShares(token, equityForShares, action);
         uint256 treasuryFee = _computeTreasuryFee(action, shares);
@@ -470,6 +527,59 @@ contract LeverageManager is
         }
 
         return (collateral, debt);
+    }
+
+    function _computeCollateralAndEquityForAction(ILeverageToken token, uint256 debt, ExternalAction action)
+        internal
+        view
+        returns (uint256 collateral, uint256 equityInCollateralAsset)
+    {
+        ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
+        uint256 totalDebt = lendingAdapter.getDebt();
+        uint256 totalShares = _getFeeAdjustedTotalSupply(token);
+        uint256 totalCollateralInDebtAsset = lendingAdapter.getCollateralInDebtAsset();
+        uint256 debtInCollateralAsset = lendingAdapter.convertDebtToCollateralAsset(debt);
+
+        Math.Rounding collateralRounding = (action == ExternalAction.Mint) ? Math.Rounding.Ceil : Math.Rounding.Floor;
+
+        bool shouldFollowInitialRatio = (totalShares == 0) || (action == ExternalAction.Mint && totalDebt == 0);
+        uint256 ratio = shouldFollowInitialRatio
+            ? getLeverageTokenInitialCollateralRatio(token)
+            : totalDebt > 0
+                ? Math.mulDiv(totalCollateralInDebtAsset, BASE_RATIO, totalDebt, Math.Rounding.Floor)
+                : type(uint256).max;
+
+        collateral =
+            lendingAdapter.convertDebtToCollateralAsset(Math.mulDiv(ratio, debt, BASE_RATIO, collateralRounding));
+        equityInCollateralAsset = collateral - debtInCollateralAsset;
+
+        return (collateral, equityInCollateralAsset);
+    }
+
+    function _computeDebtAndEquityForAction(ILeverageToken token, uint256 collateral, ExternalAction action)
+        internal
+        view
+        returns (uint256 debt, uint256 equityInCollateralAsset)
+    {
+        ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
+        uint256 totalDebt = lendingAdapter.getDebt();
+        uint256 totalShares = _getFeeAdjustedTotalSupply(token);
+        uint256 totalCollateralInDebtAsset = lendingAdapter.getCollateralInDebtAsset();
+        uint256 collateralInDebtAsset = lendingAdapter.convertCollateralToDebtAsset(collateral);
+
+        Math.Rounding debtRounding = action == ExternalAction.Mint ? Math.Rounding.Floor : Math.Rounding.Ceil;
+
+        bool shouldFollowInitialRatio = (totalShares == 0) || (action == ExternalAction.Mint && totalDebt == 0);
+        uint256 ratio = shouldFollowInitialRatio
+            ? getLeverageTokenInitialCollateralRatio(token)
+            : totalDebt > 0
+                ? Math.mulDiv(totalCollateralInDebtAsset, BASE_RATIO, totalDebt, Math.Rounding.Floor)
+                : type(uint256).max;
+
+        debt = Math.mulDiv(BASE_RATIO, collateralInDebtAsset, ratio, debtRounding);
+        equityInCollateralAsset = collateral - lendingAdapter.convertDebtToCollateralAsset(debt);
+
+        return (debt, equityInCollateralAsset);
     }
 
     /// @notice Executes actions on the LendingAdapter for a specific LeverageToken
