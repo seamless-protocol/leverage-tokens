@@ -8,6 +8,7 @@ import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 import {ILeverageManager} from "../ILeverageManager.sol";
 import {ILeverageToken} from "../ILeverageToken.sol";
 import {ISwapAdapter} from "./ISwapAdapter.sol";
+import {ActionData} from "../../types/DataTypes.sol";
 
 interface ILeverageRouter {
     /// @notice Error thrown when the cost of a swap exceeds the maximum allowed cost
@@ -25,6 +26,21 @@ interface ILeverageRouter {
     /// @notice The Morpho core protocol contract
     /// @return _morpho The Morpho core protocol contract
     function morpho() external view returns (IMorpho _morpho);
+
+    /// @notice Previews a mint action for a given amount of debt
+    /// @param token LeverageToken to mint for
+    /// @param debt Amount of debt to be borrowed for the mint
+    /// @return previewData Preview data for the mint
+    function previewMintDebt(ILeverageToken token, uint256 debt) external view returns (ActionData memory);
+
+    /// @notice Previews a mint action for a given amount of equity in collateral asset
+    /// @param token LeverageToken to mint for
+    /// @param equityInCollateralAsset Amount of equity in collateral asset
+    /// @return previewData Preview data for the mint
+    function previewMintEquity(ILeverageToken token, uint256 equityInCollateralAsset)
+        external
+        view
+        returns (ActionData memory);
 
     /// @notice The swap adapter contract used to facilitate swaps
     /// @return _swapper The swap adapter contract

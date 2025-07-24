@@ -96,6 +96,7 @@ contract LeverageRouter is ILeverageRouter {
         swapper = _swapper;
     }
 
+    /// @inheritdoc ILeverageRouter
     function previewMintEquity(ILeverageToken token, uint256 equityInCollateralAsset)
         external
         view
@@ -106,7 +107,8 @@ contract LeverageRouter is ILeverageRouter {
         return leverageManager.previewAction(token, equityInCollateralAsset, collateral, debt, ExternalAction.Mint);
     }
 
-    function previewMintDebt(ILeverageToken token, uint256 debt) external view returns (ActionData memory) {
+    /// @inheritdoc ILeverageRouter
+    function previewMintDebt(ILeverageToken token, uint256 debt) public view returns (ActionData memory) {
         (uint256 collateral, uint256 equityInCollateralAsset) =
             _computeCollateralAndEquityForAction(token, debt, ExternalAction.Mint);
         return leverageManager.previewAction(token, equityInCollateralAsset, collateral, debt, ExternalAction.Mint);
