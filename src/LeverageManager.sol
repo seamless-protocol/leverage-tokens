@@ -180,7 +180,8 @@ contract LeverageManager is
         uint256 debt = lendingAdapter.getDebt();
         uint256 equity = lendingAdapter.getEquityInDebtAsset();
 
-        uint256 collateralRatio = _computeCollateralRatio(collateral, debt);
+        uint256 collateralRatio =
+            debt > 0 ? Math.mulDiv(collateral, BASE_RATIO, debt, Math.Rounding.Floor) : type(uint256).max;
 
         return LeverageTokenState({
             collateralInDebtAsset: collateral,
@@ -435,14 +436,6 @@ contract LeverageManager is
 
         Math.Rounding rounding = action == ExternalAction.Mint ? Math.Rounding.Floor : Math.Rounding.Ceil;
         return Math.mulDiv(equityInCollateralAsset, totalSupply, totalEquityInCollateralAsset, rounding);
-    }
-
-    /// @notice Computes collateral ratio from collateral in debt asset and debt
-    /// @param collateralInDebtAsset Collateral in debt asset
-    /// @param debt Debt
-    /// @return collateralRatio Collateral ratio
-    function _computeCollateralRatio(uint256 collateralInDebtAsset, uint256 debt) internal pure returns (uint256) {
-        return debt > 0 ? Math.mulDiv(collateralInDebtAsset, BASE_RATIO, debt, Math.Rounding.Floor) : type(uint256).max;
     }
 
     /// @notice Previews parameters related to a mint action
