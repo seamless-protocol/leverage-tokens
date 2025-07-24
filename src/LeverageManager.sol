@@ -358,6 +358,13 @@ contract LeverageManager is
     }
 
     /// @inheritdoc ILeverageManager
+    function redeemV2(ILeverageToken token, uint256 collateral, uint256 maxShares)
+        external
+        nonReentrant
+        returns (ActionData memory actionData)
+    {}
+
+    /// @inheritdoc ILeverageManager
     function rebalance(
         ILeverageToken leverageToken,
         RebalanceAction[] calldata actions,

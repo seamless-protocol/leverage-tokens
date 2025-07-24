@@ -176,7 +176,6 @@ interface ILeverageManager is IFeeManager {
     ///         - shares Amount of shares that will be minted to the sender
     ///         - tokenFee Amount of shares that will be charged for the mint that are given to the LeverageToken
     ///         - treasuryFee Amount of shares that will be charged for the mint that are given to the treasury
-    /// @dev Sender should approve the LeverageManager to spend collateral amount of collateral asset
     function previewMint(ILeverageToken token, uint256 equityInCollateralAsset)
         external
         view
@@ -192,8 +191,7 @@ interface ILeverageManager is IFeeManager {
     ///         - equity Amount of equity that will be used for minting shares before fees, denominated in collateral asset
     ///         - shares Amount of shares that will be minted to the sender
     ///         - tokenFee Amount of shares that will be charged for the mint that are given to the LeverageToken
-    ///         - treasuryFee Amount of shares that will be charged for the mint that are given to the treasury
-    /// @dev Sender should approve the LeverageManager to spend collateral amount of collateral asset
+    ///         - treasuryFee Amount of shares that will be charged for the mint that are given to the treasur
     function previewMintV2(ILeverageToken token, uint256 collateral)
         external
         view
@@ -209,7 +207,6 @@ interface ILeverageManager is IFeeManager {
     ///         - shares Amount of shares that will be burned from sender
     ///         - tokenFee Amount of shares that will be charged for the redeem that are given to the LeverageToken
     ///         - treasuryFee Amount of shares that will be charged for the redeem that are given to the treasury
-    /// @dev Sender should approve the LeverageManager to spend the required debt amount of debt asset to be repaid
     function previewRedeem(ILeverageToken token, uint256 equityInCollateralAsset)
         external
         view
@@ -225,7 +222,6 @@ interface ILeverageManager is IFeeManager {
     ///         - shares Amount of shares that will be burned from sender
     ///         - tokenFee Amount of shares that will be charged for the redeem that are given to the LeverageToken
     ///         - treasuryFee Amount of shares that will be charged for the redeem that are given to the treasury
-    /// @dev Sender should approve the LeverageManager to spend the required debt amount of debt asset to be repaid
     function previewRedeemV2(ILeverageToken token, uint256 collateral) external view returns (ActionData memory);
 
     /// @notice Adds equity to a LeverageToken and mints shares of it to the sender. The sender also receives the borrowed debt assets.
@@ -239,7 +235,7 @@ interface ILeverageManager is IFeeManager {
     ///         - shares Amount of shares minted to the sender
     ///         - tokenFee Amount of shares that was charged for the mint that are given to the LeverageToken
     ///         - treasuryFee Amount of shares that was charged for the mint that are given to the treasury
-    /// @dev The sender must approve the LeverageManager to spend the collateral required for the amount of equity being added to the LeverageToken.
+    /// @dev The sender must approve the LeverageManager to spend the collateral required for the amount of equity being added to the LeverageToken
     function mint(ILeverageToken token, uint256 equityInCollateralAsset, uint256 minShares)
         external
         returns (ActionData memory actionData);
@@ -256,7 +252,7 @@ interface ILeverageManager is IFeeManager {
     ///         - shares Amount of shares minted to the sender
     ///         - tokenFee Amount of shares that was charged for the mint that are given to the LeverageToken
     ///         - treasuryFee Amount of shares that was charged for the mint that are given to the treasury
-    /// @dev The sender must approve the LeverageManager to spend the collateral amount.
+    /// @dev The sender must approve the LeverageManager to spend the collateral required for the amount of equity being added to the LeverageToken
     function mintV2(ILeverageToken token, uint256 collateral, uint256 minShares)
         external
         returns (ActionData memory actionData);
@@ -272,7 +268,24 @@ interface ILeverageManager is IFeeManager {
     ///         - shares Amount of the sender's shares that were burned for the redeem
     ///         - tokenFee Amount of shares that was charged for the redeem that are given to the LeverageToken
     ///         - treasuryFee Amount of shares that was charged for the redeem that are given to the treasury
+    /// @dev The sender must approve the LeverageManager to spend the required debt amount of debt asset to be repaid
     function redeem(ILeverageToken token, uint256 equityInCollateralAsset, uint256 maxShares)
+        external
+        returns (ActionData memory actionData);
+
+    /// @notice Redeems equity from a LeverageToken and burns shares from sender
+    /// @param token The LeverageToken to redeem from
+    /// @param collateral The amount of collateral to remove from the LeverageToken
+    /// @param maxShares The maximum amount of shares to burn
+    /// @return actionData Data about the redeem
+    ///         - collateral Amount of collateral that was removed from LeverageToken and sent to sender
+    ///         - debt Amount of debt that was repaid to LeverageToken, taken from sender
+    ///         - equity Amount of equity that was received for redeem before fees, denominated in collateral asset
+    ///         - shares Amount of the sender's shares that were burned for the redeem
+    ///         - tokenFee Amount of shares that was charged for the redeem that are given to the LeverageToken
+    ///         - treasuryFee Amount of shares that was charged for the redeem that are given to the treasury
+    /// @dev The sender must approve the LeverageManager to spend the required debt amount of debt asset to be repaid
+    function redeemV2(ILeverageToken token, uint256 collateral, uint256 maxShares)
         external
         returns (ActionData memory actionData);
 

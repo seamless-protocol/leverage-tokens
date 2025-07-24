@@ -115,6 +115,17 @@ contract LeverageRouter is ILeverageRouter {
     }
 
     /// @inheritdoc ILeverageRouter
+    function previewRedeemEquity(ILeverageToken token, uint256 equityInCollateralAsset)
+        external
+        view
+        returns (ActionData memory)
+    {
+        (uint256 collateral, uint256 debt) =
+            _computeCollateralAndDebtForAction(token, equityInCollateralAsset, ExternalAction.Redeem);
+        return leverageManager.previewAction(token, equityInCollateralAsset, collateral, debt, ExternalAction.Redeem);
+    }
+
+    /// @inheritdoc ILeverageRouter
     function mint(
         ILeverageToken token,
         uint256 equityInCollateralAsset,

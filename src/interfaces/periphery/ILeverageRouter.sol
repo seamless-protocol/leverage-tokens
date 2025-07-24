@@ -27,20 +27,52 @@ interface ILeverageRouter {
     /// @return _morpho The Morpho core protocol contract
     function morpho() external view returns (IMorpho _morpho);
 
-    /// @notice Previews a mint action for a given amount of debt
-    /// @param token LeverageToken to mint for
-    /// @param debt Amount of debt to be borrowed for the mint
-    /// @return previewData Preview data for the mint
-    function previewMintDebt(ILeverageToken token, uint256 debt) external view returns (ActionData memory);
+    /// @notice Previews mint function call and returns all required data
+    /// @param token LeverageToken to preview mint for
+    /// @param debt Debt to add to the LeverageToken
+    /// @return previewData Preview data for mint
+    ///         - collateral Amount of collateral that sender needs to approve the LeverageManager to spend,
+    ///           this includes any fees
+    ///         - debt Amount of debt that will be borrowed and sent to sender
+    ///         - equity Amount of equity that will be used for minting shares before fees, denominated in collateral asset
+    ///         - shares Amount of shares that will be minted to the sender
+    ///         - tokenFee Amount of shares that will be charged for the mint that are given to the LeverageToken
+    ///         - treasuryFee Amount of shares that will be charged for the mint that are given to the treasury
+    function previewMintDebt(ILeverageToken token, uint256 debt)
+        external
+        view
+        returns (ActionData memory previewData);
 
-    /// @notice Previews a mint action for a given amount of equity in collateral asset
-    /// @param token LeverageToken to mint for
-    /// @param equityInCollateralAsset Amount of equity in collateral asset
-    /// @return previewData Preview data for the mint
+    /// @notice Previews mint function call and returns all required data
+    /// @param token LeverageToken to preview mint for
+    /// @param equityInCollateralAsset Equity to mint LeverageTokens (shares) for, denominated in the collateral asset
+    /// @return previewData Preview data for mint
+    ///         - collateral Amount of collateral that sender needs to approve the LeverageManager to spend,
+    ///           this includes any fees
+    ///         - debt Amount of debt that will be borrowed and sent to sender
+    ///         - equity Amount of equity that will be used for minting shares before fees, denominated in collateral asset
+    ///         - shares Amount of shares that will be minted to the sender
+    ///         - tokenFee Amount of shares that will be charged for the mint that are given to the LeverageToken
+    ///         - treasuryFee Amount of shares that will be charged for the mint that are given to the treasury
     function previewMintEquity(ILeverageToken token, uint256 equityInCollateralAsset)
         external
         view
-        returns (ActionData memory);
+        returns (ActionData memory previewData);
+
+    /// @notice Previews redeem function call and returns all required data
+    /// @param token LeverageToken to preview redeem for
+    /// @param equityInCollateralAsset Equity to receive by redeem denominated in collateral asset
+    /// @return previewData Preview data for redeem
+    ///         - collateral Amount of collateral that will be removed from the LeverageToken and sent to the sender
+    ///         - debt Amount of debt that will be taken from sender and repaid to the LeverageToken
+    ///         - equity Amount of equity that will be received for the redeem before fees, denominated in collateral asset
+    ///         - shares Amount of shares that will be burned from sender
+    ///         - tokenFee Amount of shares that will be charged for the redeem that are given to the LeverageToken
+    ///         - treasuryFee Amount of shares that will be charged for the redeem that are given to the treasury
+    function previewRedeemEquity(ILeverageToken token, uint256 equityInCollateralAsset)
+        external
+        view
+        returns (ActionData memory previewData);
 
     /// @notice The swap adapter contract used to facilitate swaps
     /// @return _swapper The swap adapter contract
