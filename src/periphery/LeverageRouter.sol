@@ -5,8 +5,10 @@ pragma solidity ^0.8.26;
 import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // Internal imports
+import {ILendingAdapter} from "../interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "../interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "../interfaces/ILeverageToken.sol";
 import {ISwapAdapter} from "../interfaces/periphery/ISwapAdapter.sol";
@@ -73,6 +75,8 @@ contract LeverageRouter is ILeverageRouter {
         bytes data;
     }
 
+    uint256 public constant BASE_RATIO = 1e18;
+
     /// @inheritdoc ILeverageRouter
     ILeverageManager public immutable leverageManager;
 
@@ -90,6 +94,22 @@ contract LeverageRouter is ILeverageRouter {
         leverageManager = _leverageManager;
         morpho = _morpho;
         swapper = _swapper;
+    }
+
+    function previewMintEquity(ILeverageToken token, uint256 equityInCollateralAsset)
+        external
+        view
+        returns (ActionData memory)
+    {
+        (uint256 collateral, uint256 debt) =
+            _computeCollateralAndDebtForAction(token, equityInCollateralAsset, ExternalAction.Mint);
+        return leverageManager.previewAction(token, equityInCollateralAsset, collateral, debt, ExternalAction.Mint);
+    }
+
+    function previewMintDebt(ILeverageToken token, uint256 debt) external view returns (ActionData memory) {
+        (uint256 collateral, uint256 equityInCollateralAsset) =
+            _computeCollateralAndEquityForAction(token, debt, ExternalAction.Mint);
+        return leverageManager.previewAction(token, equityInCollateralAsset, collateral, debt, ExternalAction.Mint);
     }
 
     /// @inheritdoc ILeverageRouter
@@ -167,6 +187,70 @@ contract LeverageRouter is ILeverageRouter {
             RedeemParams memory params = abi.decode(callbackData.data, (RedeemParams));
             _redeemAndRepayMorphoFlashLoan(params, loanAmount);
         }
+    }
+
+    /// @notice Function that computes collateral and debt required by the position held by a LeverageToken for a given action and an amount of equity to add / remove
+    /// @param token LeverageToken to compute collateral and debt for
+    /// @param equityInCollateralAsset Equity amount in collateral asset
+    /// @param action Action to compute collateral and debt for
+    /// @return collateral Collateral to add / remove from the LeverageToken
+    /// @return debt Debt to borrow / repay to the LeverageToken
+    function _computeCollateralAndDebtForAction(
+        ILeverageToken token,
+        uint256 equityInCollateralAsset,
+        ExternalAction action
+    ) internal view returns (uint256 collateral, uint256 debt) {
+        ILendingAdapter lendingAdapter = leverageManager.getLeverageTokenLendingAdapter(token);
+        uint256 totalDebt = lendingAdapter.getDebt();
+        uint256 totalShares = leverageManager.getFeeAdjustedTotalSupply(token);
+
+        Math.Rounding collateralRounding = action == ExternalAction.Mint ? Math.Rounding.Ceil : Math.Rounding.Floor;
+        Math.Rounding debtRounding = action == ExternalAction.Mint ? Math.Rounding.Floor : Math.Rounding.Ceil;
+
+        uint256 shares = leverageManager.convertToShares(token, equityInCollateralAsset, action);
+
+        // If action is mint there might be some dust in collateral but debt can be 0. In that case we should follow target ratio
+        // slither-disable-next-line incorrect-equality,timestamp
+        bool shouldFollowInitialRatio = totalShares == 0 || (action == ExternalAction.Mint && totalDebt == 0);
+
+        if (shouldFollowInitialRatio) {
+            uint256 initialRatio = leverageManager.getLeverageTokenInitialCollateralRatio(token);
+            collateral =
+                Math.mulDiv(equityInCollateralAsset, initialRatio, initialRatio - BASE_RATIO, collateralRounding);
+            debt = lendingAdapter.convertCollateralToDebtAsset(collateral - equityInCollateralAsset);
+        } else {
+            collateral = Math.mulDiv(lendingAdapter.getCollateral(), shares, totalShares, collateralRounding);
+            debt = Math.mulDiv(totalDebt, shares, totalShares, debtRounding);
+        }
+
+        return (collateral, debt);
+    }
+
+    function _computeCollateralAndEquityForAction(ILeverageToken token, uint256 debt, ExternalAction action)
+        internal
+        view
+        returns (uint256 collateral, uint256 equityInCollateralAsset)
+    {
+        ILendingAdapter lendingAdapter = leverageManager.getLeverageTokenLendingAdapter(token);
+        uint256 totalDebt = lendingAdapter.getDebt();
+        uint256 totalShares = leverageManager.getFeeAdjustedTotalSupply(token);
+        uint256 totalCollateralInDebtAsset = lendingAdapter.getCollateralInDebtAsset();
+        uint256 debtInCollateralAsset = lendingAdapter.convertDebtToCollateralAsset(debt);
+
+        Math.Rounding collateralRounding = (action == ExternalAction.Mint) ? Math.Rounding.Ceil : Math.Rounding.Floor;
+
+        bool shouldFollowInitialRatio = (totalShares == 0) || (action == ExternalAction.Mint && totalDebt == 0);
+        uint256 ratio = shouldFollowInitialRatio
+            ? leverageManager.getLeverageTokenInitialCollateralRatio(token)
+            : totalDebt > 0
+                ? Math.mulDiv(totalCollateralInDebtAsset, BASE_RATIO, totalDebt, Math.Rounding.Floor)
+                : type(uint256).max;
+
+        collateral =
+            lendingAdapter.convertDebtToCollateralAsset(Math.mulDiv(ratio, debt, BASE_RATIO, collateralRounding));
+        equityInCollateralAsset = collateral - debtInCollateralAsset;
+
+        return (collateral, equityInCollateralAsset);
     }
 
     /// @notice Executes the mint of a LeverageToken and the swap of debt assets to the collateral asset

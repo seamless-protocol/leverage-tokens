@@ -72,6 +72,10 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
         return _getFeeManagerStorage().defaultManagementFeeAtCreation;
     }
 
+    function getFeeAdjustedTotalSupply(ILeverageToken token) public view returns (uint256) {
+        return _getFeeAdjustedTotalSupply(token);
+    }
+
     /// @inheritdoc IFeeManager
     function getLastManagementFeeAccrualTimestamp(ILeverageToken token) public view returns (uint120) {
         return _getFeeManagerStorage().lastManagementFeeAccrualTimestamp[token];

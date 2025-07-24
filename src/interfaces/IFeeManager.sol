@@ -60,6 +60,11 @@ interface IFeeManager {
         view
         returns (uint120 timestamp);
 
+    /// @notice Returns the fee adjusted total supply of a LeverageToken
+    /// @param token The LeverageToken to get the fee adjusted total supply for
+    /// @return feeAdjustedTotalSupply The fee adjusted total supply of the LeverageToken
+    function getFeeAdjustedTotalSupply(ILeverageToken token) external view returns (uint256 feeAdjustedTotalSupply);
+
     /// @notice Returns the LeverageToken fee for a specific action
     /// @param leverageToken The LeverageToken to get fee for
     /// @param action The action to get fee for

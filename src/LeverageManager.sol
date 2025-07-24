@@ -116,6 +116,15 @@ contract LeverageManager is
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}
 
     /// @inheritdoc ILeverageManager
+    function convertToShares(ILeverageToken token, uint256 equityInCollateralAsset, ExternalAction action)
+        public
+        view
+        returns (uint256 shares)
+    {
+        return _convertToShares(token, equityInCollateralAsset, action);
+    }
+
+    /// @inheritdoc ILeverageManager
     function getLeverageTokenFactory() public view returns (IBeaconProxyFactory factory) {
         return _getLeverageManagerStorage().tokenFactory;
     }
@@ -182,6 +191,17 @@ contract LeverageManager is
     }
 
     /// @inheritdoc ILeverageManager
+    function previewAction(
+        ILeverageToken token,
+        uint256 equityInCollateralAsset,
+        uint256 collateral,
+        uint256 debt,
+        ExternalAction action
+    ) public view returns (ActionData memory) {
+        return _previewAction(token, equityInCollateralAsset, collateral, debt, action);
+    }
+
+    /// @inheritdoc ILeverageManager
     function createNewLeverageToken(LeverageTokenConfig calldata tokenConfig, string memory name, string memory symbol)
         external
         nonReentrant
@@ -223,10 +243,7 @@ contract LeverageManager is
         view
         returns (ActionData memory)
     {
-        (uint256 collateral, uint256 debt) =
-            _computeCollateralAndDebtForAction(token, equityInCollateralAsset, ExternalAction.Mint);
-
-        return _previewAction(token, equityInCollateralAsset, collateral, debt, ExternalAction.Mint);
+        return _previewAction(token, equityInCollateralAsset, ExternalAction.Mint);
     }
 
     /// @inheritdoc ILeverageManager
@@ -234,15 +251,7 @@ contract LeverageManager is
         (uint256 debt, uint256 equityInCollateralAsset) =
             _computeDebtAndEquityForAction(token, collateral, ExternalAction.Mint);
 
-        return _previewAction(token, equityInCollateralAsset, collateral, debt, ExternalAction.Mint);
-    }
-
-    /// @inheritdoc ILeverageManager
-    function previewMintV2Borrow(ILeverageToken token, uint256 debt) external view returns (ActionData memory) {
-        (uint256 collateral, uint256 equityInCollateralAsset) =
-            _computeCollateralAndEquityForAction(token, debt, ExternalAction.Mint);
-
-        return _previewAction(token, equityInCollateralAsset, collateral, debt, ExternalAction.Mint);
+        return previewAction(token, equityInCollateralAsset, collateral, debt, ExternalAction.Mint);
     }
 
     /// @inheritdoc ILeverageManager
@@ -251,10 +260,15 @@ contract LeverageManager is
         view
         returns (ActionData memory)
     {
-        (uint256 collateral, uint256 debt) =
-            _computeCollateralAndDebtForAction(token, equityInCollateralAsset, ExternalAction.Redeem);
+        return _previewAction(token, equityInCollateralAsset, ExternalAction.Redeem);
+    }
 
-        return _previewAction(token, equityInCollateralAsset, collateral, debt, ExternalAction.Redeem);
+    /// @inheritdoc ILeverageManager
+    function previewRedeemV2(ILeverageToken token, uint256 collateral) external view returns (ActionData memory) {
+        (uint256 debt, uint256 equityInCollateralAsset) =
+            _computeDebtAndEquityForAction(token, collateral, ExternalAction.Redeem);
+
+        return previewAction(token, equityInCollateralAsset, collateral, debt, ExternalAction.Redeem);
     }
 
     /// @inheritdoc ILeverageManager
@@ -529,33 +543,6 @@ contract LeverageManager is
         return (collateral, debt);
     }
 
-    function _computeCollateralAndEquityForAction(ILeverageToken token, uint256 debt, ExternalAction action)
-        internal
-        view
-        returns (uint256 collateral, uint256 equityInCollateralAsset)
-    {
-        ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
-        uint256 totalDebt = lendingAdapter.getDebt();
-        uint256 totalShares = _getFeeAdjustedTotalSupply(token);
-        uint256 totalCollateralInDebtAsset = lendingAdapter.getCollateralInDebtAsset();
-        uint256 debtInCollateralAsset = lendingAdapter.convertDebtToCollateralAsset(debt);
-
-        Math.Rounding collateralRounding = (action == ExternalAction.Mint) ? Math.Rounding.Ceil : Math.Rounding.Floor;
-
-        bool shouldFollowInitialRatio = (totalShares == 0) || (action == ExternalAction.Mint && totalDebt == 0);
-        uint256 ratio = shouldFollowInitialRatio
-            ? getLeverageTokenInitialCollateralRatio(token)
-            : totalDebt > 0
-                ? Math.mulDiv(totalCollateralInDebtAsset, BASE_RATIO, totalDebt, Math.Rounding.Floor)
-                : type(uint256).max;
-
-        collateral =
-            lendingAdapter.convertDebtToCollateralAsset(Math.mulDiv(ratio, debt, BASE_RATIO, collateralRounding));
-        equityInCollateralAsset = collateral - debtInCollateralAsset;
-
-        return (collateral, equityInCollateralAsset);
-    }
-
     function _computeDebtAndEquityForAction(ILeverageToken token, uint256 collateral, ExternalAction action)
         internal
         view
@@ -563,7 +550,7 @@ contract LeverageManager is
     {
         ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
         uint256 totalDebt = lendingAdapter.getDebt();
-        uint256 totalShares = _getFeeAdjustedTotalSupply(token);
+        uint256 totalShares = getFeeAdjustedTotalSupply(token);
         uint256 totalCollateralInDebtAsset = lendingAdapter.getCollateralInDebtAsset();
         uint256 collateralInDebtAsset = lendingAdapter.convertCollateralToDebtAsset(collateral);
 
