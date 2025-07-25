@@ -127,8 +127,9 @@ contract LeverageManager is
 
         Math.Rounding collateralRounding = action == ExternalAction.Mint ? Math.Rounding.Ceil : Math.Rounding.Floor;
         Math.Rounding debtRounding = action == ExternalAction.Mint ? Math.Rounding.Floor : Math.Rounding.Ceil;
+        Math.Rounding sharesRounding = action == ExternalAction.Mint ? Math.Rounding.Floor : Math.Rounding.Ceil;
 
-        uint256 shares = convertToShares(token, equityInCollateralAsset, action);
+        uint256 shares = convertToShares(token, equityInCollateralAsset, sharesRounding);
 
         // If action is mint there might be some dust in collateral but debt can be 0. In that case we should follow target ratio
         // slither-disable-next-line incorrect-equality,timestamp
@@ -191,13 +192,11 @@ contract LeverageManager is
     {}
 
     /// @inheritdoc ILeverageManager
-    function convertToShares(ILeverageToken token, uint256 equityInCollateralAsset, ExternalAction action)
+    function convertToShares(ILeverageToken token, uint256 equityInCollateralAsset, Math.Rounding rounding)
         public
         view
         returns (uint256 shares)
-    {
-        return _convertToShares(token, equityInCollateralAsset, action);
-    }
+    {}
 
     /// @inheritdoc ILeverageManager
     function getLeverageTokenFactory() public view returns (IBeaconProxyFactory factory) {

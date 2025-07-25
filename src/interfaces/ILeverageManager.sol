@@ -3,6 +3,7 @@ pragma solidity ^0.8.26;
 
 // Dependency imports
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // Internal imports
 import {IFeeManager} from "./IFeeManager.sol";
@@ -128,9 +129,9 @@ interface ILeverageManager is IFeeManager {
     /// @notice Converts an amount of equity in collateral asset to shares
     /// @param token LeverageToken to convert equity to shares for
     /// @param equityInCollateralAsset Amount of equity in collateral asset
-    /// @param action Action to convert equity to shares for
+    /// @param rounding Rounding direction to use
     /// @return shares Amount of shares
-    function convertToShares(ILeverageToken token, uint256 equityInCollateralAsset, ExternalAction action)
+    function convertToShares(ILeverageToken token, uint256 equityInCollateralAsset, Math.Rounding rounding)
         external
         view
         returns (uint256 shares);
