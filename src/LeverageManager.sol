@@ -116,6 +116,67 @@ contract LeverageManager is
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}
 
     /// @inheritdoc ILeverageManager
+    function convertCollateralToShares(ILeverageToken token, uint256 collateral, Math.Rounding rounding)
+        public
+        view
+        returns (uint256 shares)
+    {
+        ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
+        uint256 totalShares = _getFeeAdjustedTotalSupply(token);
+        uint256 totalCollateral = lendingAdapter.getCollateral();
+
+        return Math.mulDiv(collateral, totalShares, totalCollateral, rounding);
+    }
+
+    /// @inheritdoc ILeverageManager
+    function convertEquityToShares(ILeverageToken token, uint256 equityInCollateralAsset, Math.Rounding rounding)
+        public
+        view
+        returns (uint256 shares)
+    {
+        ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
+        uint256 totalShares = _getFeeAdjustedTotalSupply(token);
+        uint256 totalEquityInCollateralAsset = lendingAdapter.getEquityInCollateralAsset();
+        return _convertEquityToShares(equityInCollateralAsset, totalEquityInCollateralAsset, totalShares, rounding);
+    }
+
+    /// @inheritdoc ILeverageManager
+    function convertSharesToCollateral(ILeverageToken token, uint256 shares, Math.Rounding rounding)
+        public
+        view
+        returns (uint256 collateral)
+    {
+        ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
+        uint256 totalCollateral = lendingAdapter.getCollateral();
+        uint256 totalShares = _getFeeAdjustedTotalSupply(token);
+        return _convertSharesToCollateral(shares, totalCollateral, totalShares, rounding);
+    }
+
+    /// @inheritdoc ILeverageManager
+    function convertSharesToDebt(ILeverageToken token, uint256 shares, Math.Rounding rounding)
+        public
+        view
+        returns (uint256 debt)
+    {
+        ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
+        uint256 totalDebt = lendingAdapter.getDebt();
+        uint256 totalShares = _getFeeAdjustedTotalSupply(token);
+        return _convertSharesToDebt(shares, totalDebt, totalShares, rounding);
+    }
+
+    /// @inheritdoc ILeverageManager
+    function convertSharesToEquity(ILeverageToken token, uint256 shares, Math.Rounding rounding)
+        public
+        view
+        returns (uint256 equityInCollateralAsset)
+    {
+        ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
+        uint256 totalEquityInCollateralAsset = lendingAdapter.getEquityInCollateralAsset();
+        uint256 totalShares = _getFeeAdjustedTotalSupply(token);
+        return _convertSharesToEquity(shares, totalEquityInCollateralAsset, totalShares, rounding);
+    }
+
+    /// @inheritdoc ILeverageManager
     function getLeverageTokenFactory() public view returns (IBeaconProxyFactory factory) {
         return _getLeverageManagerStorage().tokenFactory;
     }
@@ -216,6 +277,56 @@ contract LeverageManager is
             tokenConfig
         );
         return token;
+    }
+
+    /// @inheritdoc ILeverageManager
+    function previewDeposit(ILeverageToken token, uint256 collateral) public view returns (ActionData memory) {
+        uint256 shares = convertCollateralToShares(token, collateral, Math.Rounding.Floor);
+        (uint256 sharesAfterFee, uint256 sharesFee, uint256 treasuryFee) =
+            _computeShareFees(token, shares, ExternalAction.Mint);
+
+        ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
+        uint256 feeAdjustedTotalSupply = _getFeeAdjustedTotalSupply(token);
+        uint256 equityInCollateralAsset = _convertSharesToEquity(
+            sharesAfterFee, lendingAdapter.getEquityInCollateralAsset(), feeAdjustedTotalSupply, Math.Rounding.Ceil
+        );
+        uint256 debt =
+            _convertSharesToDebt(shares, lendingAdapter.getDebt(), feeAdjustedTotalSupply, Math.Rounding.Ceil);
+
+        return ActionData({
+            collateral: collateral,
+            debt: debt,
+            equity: equityInCollateralAsset,
+            shares: sharesAfterFee,
+            tokenFee: sharesFee,
+            treasuryFee: treasuryFee
+        });
+    }
+
+    /// @inheritdoc ILeverageManager
+    function previewMintV2(ILeverageToken token, uint256 shares) public view returns (ActionData memory) {
+        (uint256 sharesAfterFee, uint256 sharesFee, uint256 treasuryFee) =
+            _computeShareFees(token, shares, ExternalAction.Mint);
+
+        ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
+        uint256 feeAdjustedTotalSupply = _getFeeAdjustedTotalSupply(token);
+        uint256 equityInCollateralAsset = _convertSharesToEquity(
+            sharesAfterFee, lendingAdapter.getEquityInCollateralAsset(), feeAdjustedTotalSupply, Math.Rounding.Ceil
+        );
+        uint256 collateral = _convertSharesToCollateral(
+            shares, lendingAdapter.getCollateral(), feeAdjustedTotalSupply, Math.Rounding.Floor
+        );
+        uint256 debt =
+            _convertSharesToDebt(shares, lendingAdapter.getDebt(), feeAdjustedTotalSupply, Math.Rounding.Ceil);
+
+        return ActionData({
+            collateral: collateral,
+            debt: debt,
+            equity: equityInCollateralAsset,
+            shares: sharesAfterFee,
+            tokenFee: sharesFee,
+            treasuryFee: treasuryFee
+        });
     }
 
     /// @inheritdoc ILeverageManager
@@ -348,6 +459,71 @@ contract LeverageManager is
         LeverageTokenState memory stateAfter = getLeverageTokenState(leverageToken);
 
         emit Rebalance(leverageToken, msg.sender, stateBefore, stateAfter, actions);
+    }
+
+    /// @notice Computes the share fees for a given action and share amount
+    /// @param token LeverageToken to compute share fees for
+    /// @param shares Amount of shares to compute share fees for
+    /// @param action Action to compute share fees for
+    /// @return sharesAfterFee Amount of shares after fees
+    /// @return sharesFee Amount of shares that will be charged for the action that are given to the LeverageToken
+    /// @return treasuryFee Amount of shares that will be charged for the action that are given to the treasury
+    function _computeShareFees(ILeverageToken token, uint256 shares, ExternalAction action)
+        internal
+        view
+        returns (uint256 sharesAfterFee, uint256 sharesFee, uint256 treasuryFee)
+    {
+        (sharesAfterFee, sharesFee) = _computeTokenFee(token, shares, action);
+        treasuryFee = _computeTreasuryFee(action, sharesAfterFee);
+
+        // On mints, some of the minted shares are for the treasury fee
+        // On redeems, additional shares are taken from the user to cover the treasury fee
+        uint256 userSharesDelta = action == ExternalAction.Mint ? shares - treasuryFee : shares + treasuryFee;
+
+        return (userSharesDelta, sharesFee, treasuryFee);
+    }
+
+    /// @notice Converts an amount of equity denominated in collateral asset to an amount of shares for a LeverageToken, based on the current
+    /// collateral ratio of the LeverageToken
+    /// @param equityInCollateralAsset Amount of equity to convert to shares, denominated in collateral asset
+    /// @param totalEquityInCollateralAsset Total equity in collateral asset of the LeverageToken
+    /// @param totalShares Total shares of the LeverageToken
+    /// @param rounding Rounding mode to use for the conversion
+    /// @return shares Amount of shares that correspond to the equity in collateral asset
+    function _convertEquityToShares(
+        uint256 equityInCollateralAsset,
+        uint256 totalEquityInCollateralAsset,
+        uint256 totalShares,
+        Math.Rounding rounding
+    ) internal pure returns (uint256 shares) {
+        return Math.mulDiv(equityInCollateralAsset, totalShares, totalEquityInCollateralAsset, rounding);
+    }
+
+    function _convertSharesToCollateral(
+        uint256 shares,
+        uint256 totalCollateral,
+        uint256 totalShares,
+        Math.Rounding rounding
+    ) internal pure returns (uint256 collateral) {
+        return Math.mulDiv(shares, totalCollateral, totalShares, rounding);
+    }
+
+    function _convertSharesToDebt(
+        uint256 shares,
+        uint256 totalDebt,
+        uint256 totalShares,
+        Math.Rounding rounding
+    ) internal pure returns (uint256 debt) {
+        return Math.mulDiv(shares, totalDebt, totalShares, rounding);
+    }
+
+    function _convertSharesToEquity(
+        uint256 shares,
+        uint256 totalEquityInCollateralAsset,
+        uint256 totalShares,
+        Math.Rounding rounding
+    ) internal pure returns (uint256 equityInCollateralAsset) {
+        return Math.mulDiv(shares, totalEquityInCollateralAsset, totalShares, rounding);
     }
 
     /// @notice Function that converts user's equity to shares
