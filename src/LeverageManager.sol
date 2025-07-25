@@ -116,6 +116,81 @@ contract LeverageManager is
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}
 
     /// @inheritdoc ILeverageManager
+    function computeCollateralAndDebtForAction(
+        ILeverageToken token,
+        uint256 equityInCollateralAsset,
+        ExternalAction action
+    ) external view returns (uint256 collateral, uint256 debt) {
+        ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
+        uint256 totalDebt = lendingAdapter.getDebt();
+        uint256 totalShares = getFeeAdjustedTotalSupply(token);
+
+        Math.Rounding collateralRounding = action == ExternalAction.Mint ? Math.Rounding.Ceil : Math.Rounding.Floor;
+        Math.Rounding debtRounding = action == ExternalAction.Mint ? Math.Rounding.Floor : Math.Rounding.Ceil;
+
+        uint256 shares = convertToShares(token, equityInCollateralAsset, action);
+
+        // If action is mint there might be some dust in collateral but debt can be 0. In that case we should follow target ratio
+        // slither-disable-next-line incorrect-equality,timestamp
+        bool shouldFollowInitialRatio = totalShares == 0 || (action == ExternalAction.Mint && totalDebt == 0);
+
+        if (shouldFollowInitialRatio) {
+            uint256 initialRatio = getLeverageTokenInitialCollateralRatio(token);
+            collateral =
+                Math.mulDiv(equityInCollateralAsset, initialRatio, initialRatio - BASE_RATIO, collateralRounding);
+            debt = lendingAdapter.convertCollateralToDebtAsset(collateral - equityInCollateralAsset);
+        } else {
+            collateral = Math.mulDiv(lendingAdapter.getCollateral(), shares, totalShares, collateralRounding);
+            debt = Math.mulDiv(totalDebt, shares, totalShares, debtRounding);
+        }
+
+        return (collateral, debt);
+    }
+
+    /// @inheritdoc ILeverageManager
+    function computeCollateralAndEquityForAction(ILeverageToken token, uint256 debt, ExternalAction action)
+        external
+        view
+        returns (uint256 collateral, uint256 equityInCollateralAsset)
+    {
+        ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
+        uint256 totalDebt = lendingAdapter.getDebt();
+        uint256 totalShares = getFeeAdjustedTotalSupply(token);
+        uint256 totalCollateralInDebtAsset = lendingAdapter.getCollateralInDebtAsset();
+        uint256 debtInCollateralAsset = lendingAdapter.convertDebtToCollateralAsset(debt);
+
+        Math.Rounding collateralRounding = (action == ExternalAction.Mint) ? Math.Rounding.Ceil : Math.Rounding.Floor;
+
+        bool shouldFollowInitialRatio = (totalShares == 0) || (action == ExternalAction.Mint && totalDebt == 0);
+        uint256 ratio = shouldFollowInitialRatio
+            ? getLeverageTokenInitialCollateralRatio(token)
+            : totalDebt > 0
+                ? Math.mulDiv(totalCollateralInDebtAsset, BASE_RATIO, totalDebt, Math.Rounding.Floor)
+                : type(uint256).max;
+
+        collateral =
+            lendingAdapter.convertDebtToCollateralAsset(Math.mulDiv(ratio, debt, BASE_RATIO, collateralRounding));
+        equityInCollateralAsset = collateral - debtInCollateralAsset;
+
+        return (collateral, equityInCollateralAsset);
+    }
+
+    /// @inheritdoc ILeverageManager
+    function computeDebtAndEquityForAction(ILeverageToken token, uint256 collateral, ExternalAction action)
+        external
+        view
+        returns (uint256 debt, uint256 equityInCollateralAsset)
+    {
+        return _computeDebtAndEquityForAction(token, collateral, action);
+    }
+
+    function convertToAssets(ILeverageToken token, uint256 shares, ExternalAction action)
+        external
+        view
+        returns (uint256 assets)
+    {}
+
+    /// @inheritdoc ILeverageManager
     function convertToShares(ILeverageToken token, uint256 equityInCollateralAsset, ExternalAction action)
         public
         view

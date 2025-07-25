@@ -61,6 +61,21 @@ interface ILeverageRouter {
 
     /// @notice Previews redeem function call and returns all required data
     /// @param token LeverageToken to preview redeem for
+    /// @param collateral Collateral to remove from the LeverageToken
+    /// @return previewData Preview data for redeem
+    ///         - collateral Amount of collateral that will be removed from the LeverageToken and sent to the sender
+    ///         - debt Amount of debt that will be taken from sender and repaid to the LeverageToken
+    ///         - equity Amount of equity that will be received for the redeem before fees, denominated in collateral asset
+    ///         - shares Amount of shares that will be burned from sender
+    ///         - tokenFee Amount of shares that will be charged for the redeem that are given to the LeverageToken
+    ///         - treasuryFee Amount of shares that will be charged for the redeem that are given to the treasury
+    function previewRedeemCollateral(ILeverageToken token, uint256 collateral)
+        external
+        view
+        returns (ActionData memory previewData);
+
+    /// @notice Previews redeem function call and returns all required data
+    /// @param token LeverageToken to preview redeem for
     /// @param equityInCollateralAsset Equity to receive by redeem denominated in collateral asset
     /// @return previewData Preview data for redeem
     ///         - collateral Amount of collateral that will be removed from the LeverageToken and sent to the sender

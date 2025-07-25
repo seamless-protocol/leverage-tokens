@@ -81,6 +81,50 @@ interface ILeverageManager is IFeeManager {
     /// @param actionData The action data of the redeem
     event Redeem(ILeverageToken indexed token, address indexed sender, ActionData actionData);
 
+    /// @notice Computes collateral and debt required by the position held by a LeverageToken for a given action and an amount of equity to add / remove
+    /// @param token LeverageToken to compute collateral and debt for
+    /// @param equityInCollateralAsset Equity amount in collateral asset
+    /// @param action Action to compute collateral and debt for
+    /// @return collateral Collateral to add / remove from the LeverageToken
+    /// @return debt Debt to borrow / repay to the LeverageToken
+    function computeCollateralAndDebtForAction(
+        ILeverageToken token,
+        uint256 equityInCollateralAsset,
+        ExternalAction action
+    ) external view returns (uint256 collateral, uint256 debt);
+
+    /// @notice Computes collateral and equity required by the position held by a LeverageToken for a given action and an amount of debt to add / remove
+    /// @param token LeverageToken to compute collateral and equity for
+    /// @param debt Debt amount
+    /// @param action Action to compute collateral and equity for
+    /// @return collateral Collateral to add / remove from the LeverageToken
+    /// @return equityInCollateralAsset Equity amount in collateral asset
+    function computeCollateralAndEquityForAction(ILeverageToken token, uint256 debt, ExternalAction action)
+        external
+        view
+        returns (uint256 collateral, uint256 equityInCollateralAsset);
+
+    /// @notice Computes debt and equity required by the position held by a LeverageToken for a given action and an amount of collateral to add / remove
+    /// @param token LeverageToken to compute debt and equity for
+    /// @param collateral Collateral amount
+    /// @param action Action to compute debt and equity for
+    /// @return debt Debt to borrow / repay to the LeverageToken
+    /// @return equityInCollateralAsset Equity amount in collateral asset
+    function computeDebtAndEquityForAction(ILeverageToken token, uint256 collateral, ExternalAction action)
+        external
+        view
+        returns (uint256 debt, uint256 equityInCollateralAsset);
+
+    /// @notice Converts an amount of LeverageToken shares to assets
+    /// @param token LeverageToken to convert shares to assets for
+    /// @param shares Amount of shares to convert
+    /// @param action Action to convert shares to assets for
+    /// @return assets Amount of assets
+    function convertToAssets(ILeverageToken token, uint256 shares, ExternalAction action)
+        external
+        view
+        returns (uint256 assets);
+
     /// @notice Converts an amount of equity in collateral asset to shares
     /// @param token LeverageToken to convert equity to shares for
     /// @param equityInCollateralAsset Amount of equity in collateral asset
