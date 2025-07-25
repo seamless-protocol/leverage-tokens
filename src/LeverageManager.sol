@@ -185,7 +185,8 @@ contract LeverageManager is
         return _computeDebtAndEquityForAction(token, collateral, action);
     }
 
-    function convertToAssets(ILeverageToken token, uint256 shares, ExternalAction action)
+    /// @inheritdoc ILeverageManager
+    function convertToAssets(ILeverageToken token, uint256 shares, Math.Rounding rounding)
         external
         view
         returns (uint256 assets)

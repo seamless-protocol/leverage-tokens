@@ -119,9 +119,9 @@ interface ILeverageManager is IFeeManager {
     /// @notice Converts an amount of LeverageToken shares to assets
     /// @param token LeverageToken to convert shares to assets for
     /// @param shares Amount of shares to convert
-    /// @param action Action to convert shares to assets for
+    /// @param rounding Rounding direction to use
     /// @return assets Amount of assets
-    function convertToAssets(ILeverageToken token, uint256 shares, ExternalAction action)
+    function convertToAssets(ILeverageToken token, uint256 shares, Math.Rounding rounding)
         external
         view
         returns (uint256 assets);
