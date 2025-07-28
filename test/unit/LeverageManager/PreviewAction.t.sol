@@ -21,7 +21,7 @@ contract PreviewActionTest is LeverageManagerTest {
             2e18,
             LeverageTokenConfig({
                 lendingAdapter: ILendingAdapter(address(lendingAdapter)),
-                rebalanceAdapter: IRebalanceAdapter(address(0)),
+                rebalanceAdapter: IRebalanceAdapter(address(rebalanceAdapter)),
                 mintTokenFee: 0,
                 redeemTokenFee: 0
             }),

@@ -23,6 +23,7 @@ import {MockLendingAdapter} from "test/unit/mock/MockLendingAdapter.sol";
 import {ExternalAction, LeverageTokenConfig} from "src/types/DataTypes.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
+import {MockRebalanceAdapter} from "test/unit/mock/MockRebalanceAdapter.sol";
 
 contract LeverageManagerTest is FeeManagerTest {
     address public defaultAdmin = makeAddr("defaultAdmin");
@@ -32,7 +33,7 @@ contract LeverageManagerTest is FeeManagerTest {
     MockERC20 public debtToken = new MockERC20();
 
     MockLendingAdapter public lendingAdapter;
-
+    MockRebalanceAdapter public rebalanceAdapter;
     address public leverageTokenImplementation;
     BeaconProxyFactory public leverageTokenFactory;
     LeverageManagerHarness public leverageManager;
@@ -41,6 +42,7 @@ contract LeverageManagerTest is FeeManagerTest {
         leverageTokenImplementation = address(new LeverageToken());
         leverageTokenFactory = new BeaconProxyFactory(leverageTokenImplementation, address(this));
         lendingAdapter = new MockLendingAdapter(address(collateralToken), address(debtToken), address(this));
+        rebalanceAdapter = new MockRebalanceAdapter();
         address leverageManagerImplementation = address(new LeverageManagerHarness());
 
         vm.expectEmit(true, true, true, true);
@@ -93,7 +95,7 @@ contract LeverageManagerTest is FeeManagerTest {
                 1e18,
                 LeverageTokenConfig({
                     lendingAdapter: ILendingAdapter(address(lendingAdapter)),
-                    rebalanceAdapter: IRebalanceAdapter(address(0)),
+                    rebalanceAdapter: IRebalanceAdapter(address(rebalanceAdapter)),
                     mintTokenFee: 0,
                     redeemTokenFee: 0
                 }),

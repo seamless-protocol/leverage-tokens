@@ -23,8 +23,6 @@ contract NonReentrantTest is LeverageManagerTest {
 
         lendingAdapter = new MockLendingAdapter(address(reentrancyToken), address(debtToken), address(this));
 
-        MockRebalanceAdapter rebalanceAdapter = new MockRebalanceAdapter();
-
         leverageToken = _createNewLeverageToken(
             manager,
             2e18,
