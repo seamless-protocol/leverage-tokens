@@ -21,9 +21,7 @@ contract ConvertCollateralToSharesTest is LeverageManagerTest {
         uint256 totalSupply = 50;
 
         lendingAdapter.mockCollateral(totalCollateral);
-
-        vm.prank(address(leverageManager));
-        leverageToken.mint(address(this), totalSupply);
+        _mintShares(address(1), totalSupply);
 
         uint256 shares = leverageManager.convertCollateralToShares(leverageToken, collateral, Math.Rounding.Floor);
         assertEq(shares, 2);
@@ -41,9 +39,7 @@ contract ConvertCollateralToSharesTest is LeverageManagerTest {
         uint256 initialCollateralRatio = 2 * _BASE_RATIO();
 
         lendingAdapter.mockCollateral(totalCollateral);
-
-        vm.prank(address(leverageManager));
-        leverageToken.mint(address(this), totalSupply);
+        _mintShares(address(1), totalSupply);
 
         vm.mockCall(
             address(rebalanceAdapter),
@@ -69,9 +65,7 @@ contract ConvertCollateralToSharesTest is LeverageManagerTest {
         uint256 initialCollateralRatio = 3 * _BASE_RATIO();
 
         lendingAdapter.mockCollateral(totalCollateral);
-
-        vm.prank(address(leverageManager));
-        leverageToken.mint(address(this), totalSupply);
+        _mintShares(address(1), totalSupply);
 
         collateralToken.mockSetDecimals(24);
 
@@ -95,9 +89,7 @@ contract ConvertCollateralToSharesTest is LeverageManagerTest {
         uint256 initialCollateralRatio = 2 * _BASE_RATIO();
 
         lendingAdapter.mockCollateral(totalCollateral);
-
-        vm.prank(address(leverageManager));
-        leverageToken.mint(address(this), totalSupply);
+        _mintShares(address(1), totalSupply);
 
         vm.mockCall(
             address(rebalanceAdapter),
@@ -121,10 +113,9 @@ contract ConvertCollateralToSharesTest is LeverageManagerTest {
         uint256 totalCollateral = 0;
         uint256 totalSupply = 50;
         uint256 initialCollateralRatio = 3 * _BASE_RATIO();
-        lendingAdapter.mockCollateral(totalCollateral);
 
-        vm.prank(address(leverageManager));
-        leverageToken.mint(address(this), totalSupply);
+        lendingAdapter.mockCollateral(totalCollateral);
+        _mintShares(address(1), totalSupply);
 
         collateralToken.mockSetDecimals(24);
 
@@ -154,9 +145,7 @@ contract ConvertCollateralToSharesTest is LeverageManagerTest {
         initialCollateralRatio = bound(initialCollateralRatio, _BASE_RATIO(), type(uint256).max);
 
         lendingAdapter.mockCollateral(totalCollateral);
-
-        vm.prank(address(leverageManager));
-        leverageToken.mint(address(this), totalSupply);
+        _mintShares(address(1), totalSupply);
 
         vm.mockCall(
             address(rebalanceAdapter),

@@ -6,7 +6,6 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 // Internal imports
-import {ExternalAction} from "src/types/DataTypes.sol";
 import {LeverageManagerTest} from "test/unit/LeverageManager/LeverageManager.t.sol";
 
 contract ConvertEquityToSharesTest is LeverageManagerTest {
@@ -49,9 +48,10 @@ contract ConvertEquityToSharesTest is LeverageManagerTest {
         assertEq(shares, expectedShares);
     }
 
-    function testFuzz_convertEquityToShares_EmptyLeverageToken_18Decimals(uint128 equity, uint128 nonZeroValue)
-        public
-    {
+    function testFuzz_convertEquityToShares_EmptyLeverageToken_CollateralAsset18Decimals(
+        uint128 equity,
+        uint128 nonZeroValue
+    ) public {
         uint256 totalEquity = 0;
         uint256 sharesTotalSupply = nonZeroValue;
 
@@ -78,7 +78,9 @@ contract ConvertEquityToSharesTest is LeverageManagerTest {
         assertEq(shares, equity);
     }
 
-    function testFuzz_convertEquityToShares_EmptyLeverageToken_LessThan18Decimals(uint128 equity) public {
+    function testFuzz_convertEquityToShares_EmptyLeverageToken_CollateralAssetLessThan18Decimals(uint128 equity)
+        public
+    {
         uint256 totalEquity = 0;
         uint256 sharesTotalSupply = 0;
 
@@ -97,7 +99,9 @@ contract ConvertEquityToSharesTest is LeverageManagerTest {
         assertEq(shares, expectedShares);
     }
 
-    function testFuzz_convertEquityToShares_EmptyLeverageToken_MoreThan18Decimals(uint256 equity) public {
+    function testFuzz_convertEquityToShares_EmptyLeverageToken_CollateralAssetMoreThan18Decimals(uint256 equity)
+        public
+    {
         uint256 totalEquity = 0;
         uint256 sharesTotalSupply = 100;
 
