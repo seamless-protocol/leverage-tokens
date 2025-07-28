@@ -76,6 +76,17 @@ interface ILeverageManager is IFeeManager {
     /// @param actionData The action data of the redeem
     event Redeem(ILeverageToken indexed token, address indexed sender, ActionData actionData);
 
+    /// @notice Converts an amount of debt to an amount of collateral for a LeverageToken, based on the current
+    /// collateral ratio of the LeverageToken
+    /// @param token LeverageToken to convert debt to collateral for
+    /// @param debt Amount of debt to convert to collateral
+    /// @param rounding Rounding mode to use for the conversion
+    /// @return collateral Amount of collateral that correspond to the debt amount
+    function convertDebtToCollateral(ILeverageToken token, uint256 debt, Math.Rounding rounding)
+        external
+        view
+        returns (uint256 collateral);
+
     /// @notice Converts an amount of collateral to an amount of shares for a LeverageToken, based on the current
     /// collateral ratio of the LeverageToken
     /// @param token LeverageToken to convert collateral to shares for

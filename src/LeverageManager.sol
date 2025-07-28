@@ -116,6 +116,19 @@ contract LeverageManager is
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}
 
     /// @inheritdoc ILeverageManager
+    function convertDebtToCollateral(ILeverageToken token, uint256 debt, Math.Rounding rounding)
+        public
+        view
+        returns (uint256 collateral)
+    {
+        ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
+        uint256 totalCollateral = lendingAdapter.getCollateral();
+        uint256 totalDebt = lendingAdapter.getDebt();
+
+        return Math.mulDiv(debt, totalCollateral, totalDebt, rounding);
+    }
+
+    /// @inheritdoc ILeverageManager
     function convertCollateralToShares(ILeverageToken token, uint256 collateral, Math.Rounding rounding)
         public
         view
