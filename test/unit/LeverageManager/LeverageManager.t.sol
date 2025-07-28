@@ -99,8 +99,8 @@ contract LeverageManagerTest is FeeManagerTest {
                     mintTokenFee: 0,
                     redeemTokenFee: 0
                 }),
-                address(0),
-                address(0),
+                address(collateralToken),
+                address(debtToken),
                 "dummy name",
                 "dummy symbol"
             )

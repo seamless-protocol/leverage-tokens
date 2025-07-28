@@ -147,10 +147,21 @@ contract LeverageManager is
 
         if (totalSupply == 0 || totalCollateral == 0) {
             uint256 initialCollateralRatio = getLeverageTokenInitialCollateralRatio(token);
-            uint256 debtInCollateralAsset = Math.mulDiv(collateral, BASE_RATIO, initialCollateralRatio, rounding);
+
+            // Debt rounding is the inverse of the passed rounding parameter, as rounding debt up may result in less
+            // shares and rounding debt down may result in more shares
+            Math.Rounding debtRounding = rounding == Math.Rounding.Floor ? Math.Rounding.Ceil : Math.Rounding.Floor;
+            uint256 debtInCollateralAsset = Math.mulDiv(collateral, BASE_RATIO, initialCollateralRatio, debtRounding);
+
             uint256 equityInCollateralAsset = collateral - debtInCollateralAsset;
+
             return _convertEquityToShares(
-                token, equityInCollateralAsset, totalSupply, totalCollateral, lendingAdapter, rounding
+                token,
+                equityInCollateralAsset,
+                totalSupply,
+                lendingAdapter.getEquityInCollateralAsset(),
+                lendingAdapter,
+                rounding
             );
         }
 
