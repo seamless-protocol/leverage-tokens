@@ -75,6 +75,11 @@ contract LeverageManagerTest is FeeManagerTest {
         return leverageManager.BASE_RATIO();
     }
 
+    function _burnShares(address recipient, uint256 amount) internal {
+        vm.prank(address(leverageManager));
+        leverageToken.burn(recipient, amount);
+    }
+
     function _convertToAssets(uint256 shares, ExternalAction action) internal view returns (uint256) {
         return Math.mulDiv(
             shares,

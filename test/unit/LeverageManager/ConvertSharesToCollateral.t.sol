@@ -54,8 +54,8 @@ contract ConvertSharesToCollateralTest is LeverageManagerTest {
         uint256 initialCollateralRatio = 2 * _BASE_RATIO();
         shares = uint128(bound(shares, 0, type(uint128).max / initialCollateralRatio));
 
-        uint256 totalSupply = 0;
-        uint256 totalCollateral = nonZeroValue;
+        uint256 totalSupply = nonZeroValue;
+        uint256 totalCollateral = 0;
 
         lendingAdapter.mockCollateral(totalCollateral);
         _mintShares(address(1), totalSupply);
@@ -72,29 +72,39 @@ contract ConvertSharesToCollateralTest is LeverageManagerTest {
             abi.encode(initialCollateralRatio)
         );
 
+        uint256 expectedCollateralFloored =
+            Math.mulDiv(shares, initialCollateralRatio, initialCollateralRatio - _BASE_RATIO(), Math.Rounding.Floor);
+        uint256 expectedCollateralCeiled =
+            Math.mulDiv(shares, initialCollateralRatio, initialCollateralRatio - _BASE_RATIO(), Math.Rounding.Ceil);
+
         uint256 collateral = leverageManager.convertSharesToCollateral(leverageToken, shares, Math.Rounding.Floor);
-        assertEq(
-            collateral,
-            Math.mulDiv(shares, initialCollateralRatio, initialCollateralRatio - _BASE_RATIO(), Math.Rounding.Floor)
-        );
+        assertEq(collateral, expectedCollateralFloored);
 
         collateral = leverageManager.convertSharesToCollateral(leverageToken, shares, Math.Rounding.Ceil);
-        assertEq(
-            collateral,
-            Math.mulDiv(shares, initialCollateralRatio, initialCollateralRatio - _BASE_RATIO(), Math.Rounding.Ceil)
-        );
+        assertEq(collateral, expectedCollateralCeiled);
+
+        totalCollateral = nonZeroValue;
+        lendingAdapter.mockCollateral(totalCollateral);
+        _burnShares(address(1), totalSupply); // Burn all shares
+
+        collateral = leverageManager.convertSharesToCollateral(leverageToken, shares, Math.Rounding.Floor);
+        assertEq(collateral, expectedCollateralFloored);
+
+        collateral = leverageManager.convertSharesToCollateral(leverageToken, shares, Math.Rounding.Ceil);
+        assertEq(collateral, expectedCollateralCeiled);
     }
 
-    function testFuzz_convertSharesToCollateral_EmptyLeverageToken_CollateralAssetLessThan18Decimals(uint128 shares)
-        public
-    {
+    function testFuzz_convertSharesToCollateral_EmptyLeverageToken_CollateralAssetLessThan18Decimals(
+        uint128 shares,
+        uint128 nonZeroValue
+    ) public {
         uint256 initialCollateralRatio = 2 * _BASE_RATIO();
         shares = uint128(bound(shares, 0, type(uint128).max / initialCollateralRatio));
 
         uint256 collateralDecimals = 6;
 
-        uint256 totalSupply = 0;
-        uint256 totalCollateral = 100;
+        uint256 totalSupply = nonZeroValue;
+        uint256 totalCollateral = 0;
 
         lendingAdapter.mockCollateral(totalCollateral);
         _mintShares(address(1), totalSupply);
@@ -112,40 +122,44 @@ contract ConvertSharesToCollateralTest is LeverageManagerTest {
         );
 
         uint256 scalingFactor = 10 ** (18 - collateralDecimals);
+        uint256 expectedCollateralFloored = Math.mulDiv(
+            shares,
+            initialCollateralRatio,
+            (initialCollateralRatio - _BASE_RATIO()) * scalingFactor,
+            Math.Rounding.Floor
+        );
+        uint256 expectedCollateralCeiled = Math.mulDiv(
+            shares, initialCollateralRatio, (initialCollateralRatio - _BASE_RATIO()) * scalingFactor, Math.Rounding.Ceil
+        );
 
         uint256 collateral = leverageManager.convertSharesToCollateral(leverageToken, shares, Math.Rounding.Floor);
-        assertEq(
-            collateral,
-            Math.mulDiv(
-                shares,
-                initialCollateralRatio,
-                (initialCollateralRatio - _BASE_RATIO()) * scalingFactor,
-                Math.Rounding.Floor
-            )
-        );
+        assertEq(collateral, expectedCollateralFloored);
 
         collateral = leverageManager.convertSharesToCollateral(leverageToken, shares, Math.Rounding.Ceil);
-        assertEq(
-            collateral,
-            Math.mulDiv(
-                shares,
-                initialCollateralRatio,
-                (initialCollateralRatio - _BASE_RATIO()) * scalingFactor,
-                Math.Rounding.Ceil
-            )
-        );
+        assertEq(collateral, expectedCollateralCeiled);
+
+        totalCollateral = nonZeroValue;
+        lendingAdapter.mockCollateral(totalCollateral);
+        _burnShares(address(1), totalSupply); // Burn all shares
+
+        collateral = leverageManager.convertSharesToCollateral(leverageToken, shares, Math.Rounding.Floor);
+        assertEq(collateral, expectedCollateralFloored);
+
+        collateral = leverageManager.convertSharesToCollateral(leverageToken, shares, Math.Rounding.Ceil);
+        assertEq(collateral, expectedCollateralCeiled);
     }
 
-    function testFuzz_convertSharesToCollateral_EmptyLeverageToken_CollateralAssetMoreThan18Decimals(uint128 shares)
-        public
-    {
+    function testFuzz_convertSharesToCollateral_EmptyLeverageToken_CollateralAssetMoreThan18Decimals(
+        uint128 shares,
+        uint128 nonZeroValue
+    ) public {
         uint256 initialCollateralRatio = 2 * _BASE_RATIO();
         shares = uint128(bound(shares, 0, type(uint128).max / initialCollateralRatio));
 
         uint256 collateralDecimals = 27;
 
-        uint256 totalSupply = 0;
-        uint256 totalCollateral = 100;
+        uint256 totalSupply = nonZeroValue;
+        uint256 totalCollateral = 0;
 
         lendingAdapter.mockCollateral(totalCollateral);
         _mintShares(address(1), totalSupply);
@@ -163,28 +177,31 @@ contract ConvertSharesToCollateralTest is LeverageManagerTest {
         );
 
         uint256 scalingFactor = 10 ** (collateralDecimals - 18);
+        uint256 expectedCollateralFloored = Math.mulDiv(
+            shares * scalingFactor,
+            initialCollateralRatio,
+            (initialCollateralRatio - _BASE_RATIO()),
+            Math.Rounding.Floor
+        );
+        uint256 expectedCollateralCeiled = Math.mulDiv(
+            shares * scalingFactor, initialCollateralRatio, (initialCollateralRatio - _BASE_RATIO()), Math.Rounding.Ceil
+        );
 
         uint256 collateral = leverageManager.convertSharesToCollateral(leverageToken, shares, Math.Rounding.Floor);
-        assertEq(
-            collateral,
-            Math.mulDiv(
-                shares * scalingFactor,
-                initialCollateralRatio,
-                (initialCollateralRatio - _BASE_RATIO()),
-                Math.Rounding.Floor
-            )
-        );
+        assertEq(collateral, expectedCollateralFloored);
 
         collateral = leverageManager.convertSharesToCollateral(leverageToken, shares, Math.Rounding.Ceil);
-        assertEq(
-            collateral,
-            Math.mulDiv(
-                shares * scalingFactor,
-                initialCollateralRatio,
-                (initialCollateralRatio - _BASE_RATIO()),
-                Math.Rounding.Ceil
-            )
-        );
+        assertEq(collateral, expectedCollateralCeiled);
+
+        totalCollateral = nonZeroValue;
+        lendingAdapter.mockCollateral(totalCollateral);
+        _burnShares(address(1), totalSupply); // Burn all shares
+
+        collateral = leverageManager.convertSharesToCollateral(leverageToken, shares, Math.Rounding.Floor);
+        assertEq(collateral, expectedCollateralFloored);
+
+        collateral = leverageManager.convertSharesToCollateral(leverageToken, shares, Math.Rounding.Ceil);
+        assertEq(collateral, expectedCollateralCeiled);
     }
 
     function test_convertSharesToCollateral_WithManagementFee() public {
