@@ -375,31 +375,36 @@ contract LeverageManager is
 
     /// @inheritdoc ILeverageManager
     function previewMintV2(ILeverageToken token, uint256 shares) public view returns (ActionData memory) {
-        (uint256 sharesAfterFee, uint256 sharesFee, uint256 treasuryFee) =
-            _computeShareFees(token, shares, ExternalAction.Mint);
+        (uint256 grossShares, uint256 sharesFee, uint256 treasuryFee) =
+            _computeTokenFeeForExactShares(token, shares, ExternalAction.Mint);
 
         ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
         uint256 feeAdjustedTotalSupply = _getFeeAdjustedTotalSupply(token);
         uint256 equityInCollateralAsset = _convertSharesToEquity(
             token,
             lendingAdapter,
-            sharesAfterFee,
+            grossShares,
             lendingAdapter.getEquityInCollateralAsset(),
             feeAdjustedTotalSupply,
             Math.Rounding.Ceil
         );
         uint256 collateral = _convertSharesToCollateral(
-            token, lendingAdapter, shares, lendingAdapter.getCollateral(), feeAdjustedTotalSupply, Math.Rounding.Floor
+            token,
+            lendingAdapter,
+            grossShares,
+            lendingAdapter.getCollateral(),
+            feeAdjustedTotalSupply,
+            Math.Rounding.Ceil
         );
         uint256 debt = _convertSharesToDebt(
-            token, lendingAdapter, shares, lendingAdapter.getDebt(), feeAdjustedTotalSupply, Math.Rounding.Floor
+            token, lendingAdapter, grossShares, lendingAdapter.getDebt(), feeAdjustedTotalSupply, Math.Rounding.Floor
         );
 
         return ActionData({
             collateral: collateral,
             debt: debt,
             equity: equityInCollateralAsset,
-            shares: sharesAfterFee,
+            shares: shares,
             tokenFee: sharesFee,
             treasuryFee: treasuryFee
         });

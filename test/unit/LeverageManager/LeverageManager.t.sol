@@ -26,6 +26,12 @@ import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 import {MockRebalanceAdapter} from "test/unit/mock/MockRebalanceAdapter.sol";
 
 contract LeverageManagerTest is FeeManagerTest {
+    struct MockLeverageManagerStateForAction {
+        uint256 collateral;
+        uint256 debt;
+        uint256 sharesTotalSupply;
+    }
+
     address public defaultAdmin = makeAddr("defaultAdmin");
     address public manager = makeAddr("manager");
 
@@ -207,6 +213,54 @@ contract LeverageManagerTest is FeeManagerTest {
         return newCollateralRatio;
     }
 
+    /// @dev The allowed slippage in collateral ratio of the strategy after a mint should scale with the size of the
+    /// min(initial debt in the strategy, initial collateral in the strategy, initial shares total supply), as smaller
+    /// strategies may incur a higher collateral ratio delta after the mint due to precision loss during calculations.
+    ///
+    /// For example, if the initial collateral is 3 and the initial debt is 1 (with collateral and debt normalized) then the
+    /// collateral ratio is 300000000, with 2 shares total supply. If a mint of 1 equity is made, then the required collateral
+    /// is 2 and the required debt is 0, so the resulting collateral is 5 and the debt is 1:
+    ///
+    ///    sharesMinted = convertToShares(1) = equityToAdd * (existingSharesTotalSupply) / (existingEquity) = 1 * 2 / 2 = 1
+    ///    collateralToAdd = existingCollateral * sharesMinted / sharesTotalSupply = 3 * 1 / 2 = 2 (1.5 rounded up)
+    ///    debtToBorrow = existingDebt * sharesMinted / sharesTotalSupply = 1 * 1 / 2 = 0 (0.5 rounded down)
+    ///
+    /// The resulting collateral ratio is 500000000, which is a ~+66.67% change from the initial collateral ratio.
+    ///
+    /// As the intial debt scales up in size, the allowed slippage should scale down as more precision can be achieved
+    /// for the collateral ratio which is on 18 decimals:
+    ///    initialDebt < 100: 1e18 (100% slippage)
+    ///    initialDebt < 1000: 0.1e18 (10% slippage)
+    ///    initialDebt < 10000: 0.01e18 (1% slippage)
+    ///    initialDebt < 100000: 0.001e18 (0.1% slippage)
+    ///    initialDebt < 1000000: 0.0001e18 (0.01% slippage)
+    ///    initialDebt < 10000000: 0.00001e18 (0.001% slippage)
+    ///    ...
+    ///    initialDebt < 10000000000000000000: 0.00000000000000001e18 (0.000000000000001% slippage)
+    ///    initialDebt >= 100000000000000000000: 0.000000000000000001e18 (0.0000000000000001% slippage)
+    ///
+    /// Note: We can at minimum support up to 0.000000000000000001e18 (0.0000000000000001% slippage) due to the base collateral ratio
+    ///       being 1e18
+    function _getAllowedCollateralRatioSlippage(uint256 amount)
+        internal
+        pure
+        returns (uint256 allowedSlippagePercentage)
+    {
+        if (amount == 0) {
+            return 1e18;
+        }
+
+        uint256 i = Math.log10(amount);
+
+        // This is the minimum slippage that we can support due to the precision of the collateral ratio being
+        // 1e18 (1e18 / 1e18 = 1 (0.000000000000000001e18))
+        if (i > 18) return 0.000000000000000001e18;
+
+        // If i <= 1, that means amount < 100, thus slippage = 1e18
+        // Otherwise slippage = 1e18 / (10^(i - 1))
+        return (i <= 1) ? 1e18 : (1e18 / (10 ** (i - 1)));
+    }
+
     function _setTreasuryActionFee(ExternalAction action, uint256 fee) internal {
         vm.prank(feeManagerRole);
         leverageManager.setTreasuryActionFee(action, fee);
@@ -225,6 +279,19 @@ contract LeverageManagerTest is FeeManagerTest {
             address(leverageManager.getLeverageTokenLendingAdapter(leverageToken)),
             abi.encodeWithSelector(ILendingAdapter.getCollateralInDebtAsset.selector),
             abi.encode(collateral)
+        );
+    }
+
+    function _prepareLeverageManagerStateForAction(MockLeverageManagerStateForAction memory state) internal {
+        lendingAdapter.mockDebt(state.debt);
+        lendingAdapter.mockCollateral(state.collateral);
+
+        uint256 debtInCollateralAsset = lendingAdapter.convertDebtToCollateralAsset(state.debt);
+        _mockState_ConvertToShares(
+            ConvertToSharesState({
+                totalEquity: state.collateral > debtInCollateralAsset ? state.collateral - debtInCollateralAsset : 0,
+                sharesTotalSupply: state.sharesTotalSupply
+            })
         );
     }
 }
