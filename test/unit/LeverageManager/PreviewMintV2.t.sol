@@ -133,12 +133,12 @@ contract PreviewMintV2Test is LeverageManagerTest {
     }
 
     function testFuzz_PreviewMintV2(FuzzPreviewDepositParams memory params) public {
-        // 0% to 100% token action fee
-        params.fee = uint16(bound(params.fee, 0, MAX_FEE));
+        // 0% to 99.99% token action fee
+        params.fee = uint16(bound(params.fee, 0, MAX_ACTION_FEE));
         leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Mint, params.fee);
 
         // 0% to 100% management fee
-        params.managementFee = uint16(bound(params.managementFee, 0, MAX_FEE));
+        params.managementFee = uint16(bound(params.managementFee, 0, MAX_MANAGEMENT_FEE));
         _setManagementFee(feeManagerRole, leverageToken, params.managementFee);
 
         // Bound initial debt in collateral asset to be less than or equal to initial collateral (1:1 exchange rate)

@@ -60,7 +60,7 @@ contract FeeManagerHarness is FeeManager {
         return _getFeeAdjustedTotalSupply(token);
     }
 
-    function exposed_validateFee(uint256 fee) external pure {
-        _validateFee(fee);
+    function exposed_validateActionFee(uint256 fee) external pure {
+        _validateActionFee(fee);
     }
 }

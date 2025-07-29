@@ -213,10 +213,10 @@ contract PreviewActionTest is LeverageManagerTest {
         uint8 actionNum
     ) public {
         ExternalAction action = ExternalAction(actionNum % 2);
-        fee = uint16(bound(fee, 0, MAX_FEE)); // 0% to 100% fee
+        fee = uint16(bound(fee, 0, MAX_ACTION_FEE)); // 0% to 99.99% fee
         leverageManager.exposed_setLeverageTokenActionFee(leverageToken, action, fee);
 
-        managementFee = uint16(bound(managementFee, 0, MAX_FEE)); // 0% to 100% management fee
+        managementFee = uint16(bound(managementFee, 0, MAX_MANAGEMENT_FEE)); // 0% to 100% management fee
         _setManagementFee(feeManagerRole, leverageToken, managementFee);
 
         initialDebtInCollateralAsset = uint128(bound(initialDebtInCollateralAsset, 0, initialCollateral));

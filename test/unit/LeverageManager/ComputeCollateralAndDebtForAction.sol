@@ -22,7 +22,7 @@ contract ComputeCollateralAndDebtForActionTest is PreviewActionTest {
     }
 
     function testFuzz_computeCollateralAndDebtForAction_Mint_WithManagementFee(uint256 managementFee) public {
-        managementFee = bound(managementFee, 0, MAX_FEE);
+        managementFee = bound(managementFee, 0, MAX_MANAGEMENT_FEE);
 
         _setManagementFee(feeManagerRole, leverageToken, managementFee);
 
@@ -60,7 +60,7 @@ contract ComputeCollateralAndDebtForActionTest is PreviewActionTest {
     }
 
     function testFuzz_computeCollateralAndDebtForAction_Redeem_WithManagementFee(uint256 managementFee) public {
-        managementFee = bound(managementFee, 0, MAX_FEE);
+        managementFee = bound(managementFee, 0, MAX_MANAGEMENT_FEE);
 
         _setManagementFee(feeManagerRole, leverageToken, managementFee);
 

@@ -28,9 +28,13 @@ import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
     bytes32 public constant FEE_MANAGER_ROLE = keccak256("FEE_MANAGER_ROLE");
 
-    uint256 internal constant MAX_FEE = 100_00;
+    uint256 internal constant BASE_FEE = 100_00;
 
-    uint256 internal constant MAX_FEE_SQUARED = MAX_FEE * MAX_FEE;
+    uint256 internal constant BASE_FEE_SQUARED = BASE_FEE * BASE_FEE;
+
+    uint256 internal constant MAX_ACTION_FEE = 100_00 - 1;
+
+    uint256 internal constant MAX_MANAGEMENT_FEE = 100_00;
 
     uint256 internal constant SECS_PER_YEAR = 31536000;
 
@@ -101,7 +105,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
 
     /// @inheritdoc IFeeManager
     function setDefaultManagementFeeAtCreation(uint256 fee) external onlyRole(FEE_MANAGER_ROLE) {
-        _validateFee(fee);
+        _validateManagementFee(fee);
 
         _getFeeManagerStorage().defaultManagementFeeAtCreation = fee;
         emit DefaultManagementFeeAtCreationSet(fee);
@@ -112,7 +116,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
         // Charge any accrued management fees before setting the new management fee
         chargeManagementFee(token);
 
-        _validateFee(fee);
+        _validateManagementFee(fee);
 
         _getFeeManagerStorage().managementFee[token] = fee;
         emit ManagementFeeSet(token, fee);
@@ -125,7 +129,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
 
     /// @inheritdoc IFeeManager
     function setTreasuryActionFee(ExternalAction action, uint256 fee) external onlyRole(FEE_MANAGER_ROLE) {
-        _validateFee(fee);
+        _validateActionFee(fee);
         _getFeeManagerStorage().treasuryActionFee[action] = fee;
 
         emit TreasuryActionFeeSet(action, fee);
@@ -152,26 +156,24 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
 
     /// @notice Computes the token action fee for a given action
     /// @param token LeverageToken to compute token action fee for
-    /// @param equity Amount of equity to compute token action fee for, denominated in collateral asset
+    /// @param shares Amount of shares to compute token action fee for
     /// @param action Action to compute token action fee for, Mint or Redeem
-    /// @return equityForShares Equity to mint / burn shares for the LeverageToken after token action fees, denominated in
-    /// collateral asset of the LeverageToken
-    /// @return tokenFee LeverageToken token action fee amount in equity, denominated in the collateral asset of the
-    /// LeverageToken
+    /// @return sharesAfterFee Shares to mint / burn shares for the LeverageToken after token action fees
+    /// @return tokenFee LeverageToken token action fee amount in shares
     /// @dev Fees are always rounded up.
-    function _computeTokenFee(ILeverageToken token, uint256 equity, ExternalAction action)
+    function _computeTokenFee(ILeverageToken token, uint256 shares, ExternalAction action)
         internal
         view
         returns (uint256, uint256)
     {
-        uint256 tokenFee = Math.mulDiv(equity, getLeverageTokenActionFee(token, action), MAX_FEE, Math.Rounding.Ceil);
+        uint256 tokenFee = Math.mulDiv(shares, getLeverageTokenActionFee(token, action), BASE_FEE, Math.Rounding.Ceil);
 
         // To increase share value for existing users, less shares are minted on mints and more shares are burned on
         // redeems by subtracting the token fee from the equity on mints and adding the token fee to the equity on
         // redeems.
-        uint256 equityForShares = action == ExternalAction.Mint ? equity - tokenFee : equity + tokenFee;
+        uint256 sharesAfterFee = action == ExternalAction.Mint ? shares - tokenFee : shares + tokenFee;
 
-        return (equityForShares, tokenFee);
+        return (sharesAfterFee, tokenFee);
     }
 
     /// @notice Based on an amount of net shares, compute the gross shares, token fee, and treasury fee
@@ -191,12 +193,13 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
 
         grossShares = Math.mulDiv(
             netShares,
-            MAX_FEE_SQUARED,
-            (MAX_FEE - tokenActionFeeRate) * (MAX_FEE - treasuryActionFeeRate),
+            BASE_FEE_SQUARED,
+            (BASE_FEE - tokenActionFeeRate) * (BASE_FEE - treasuryActionFeeRate),
             Math.Rounding.Ceil
         );
-        tokenFee =
-            Math.min(Math.mulDiv(grossShares, tokenActionFeeRate, MAX_FEE, Math.Rounding.Ceil), grossShares - netShares);
+        tokenFee = Math.min(
+            Math.mulDiv(grossShares, tokenActionFeeRate, BASE_FEE, Math.Rounding.Ceil), grossShares - netShares
+        );
         treasuryFee = grossShares - tokenFee - netShares;
 
         return (grossShares, tokenFee, treasuryFee);
@@ -207,7 +210,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     /// @param shares Shares to compute treasury action fee for
     /// @return treasuryFee Treasury action fee amount in shares
     function _computeTreasuryFee(ExternalAction action, uint256 shares) internal view returns (uint256) {
-        return Math.mulDiv(shares, getTreasuryActionFee(action), MAX_FEE, Math.Rounding.Ceil);
+        return Math.mulDiv(shares, getTreasuryActionFee(action), BASE_FEE, Math.Rounding.Ceil);
     }
 
     /// @notice Function that returns the total supply of the LeverageToken adjusted for any accrued management fees
@@ -230,7 +233,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
         uint256 duration = block.timestamp - lastManagementFeeAccrualTimestamp;
 
         uint256 sharesFee =
-            Math.mulDiv(managementFee * totalSupply, duration, MAX_FEE * SECS_PER_YEAR, Math.Rounding.Ceil);
+            Math.mulDiv(managementFee * totalSupply, duration, BASE_FEE * SECS_PER_YEAR, Math.Rounding.Ceil);
         return sharesFee;
     }
 
@@ -240,7 +243,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     /// @param fee Fee for action, 100_00 is 100%
     /// @dev If caller tries to set fee above 100% it reverts with FeeTooHigh error
     function _setLeverageTokenActionFee(ILeverageToken token, ExternalAction action, uint256 fee) internal {
-        _validateFee(fee);
+        _validateActionFee(fee);
 
         _getFeeManagerStorage().tokenActionFee[token][action] = fee;
         emit LeverageTokenActionFeeSet(token, action, fee);
@@ -271,9 +274,17 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
 
     /// @notice Validates that the fee is not higher than 100%
     /// @param fee Fee to validate
-    function _validateFee(uint256 fee) internal pure {
-        if (fee > MAX_FEE) {
-            revert FeeTooHigh(fee, MAX_FEE);
+    function _validateActionFee(uint256 fee) internal pure {
+        if (fee > MAX_ACTION_FEE) {
+            revert FeeTooHigh(fee, MAX_ACTION_FEE);
+        }
+    }
+
+    /// @notice Validates that the fee is not higher than 100%
+    /// @param fee Fee to validate
+    function _validateManagementFee(uint256 fee) internal pure {
+        if (fee > MAX_MANAGEMENT_FEE) {
+            revert FeeTooHigh(fee, MAX_MANAGEMENT_FEE);
         }
     }
 }
