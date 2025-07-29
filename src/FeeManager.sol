@@ -176,6 +176,29 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
         return (sharesAfterFee, tokenFee);
     }
 
+    /// @notice Computes the share fees for a given action and share amount
+    /// @param token LeverageToken to compute share fees for
+    /// @param grossShares Amount of shares to compute share fees for
+    /// @param action Action to compute share fees for
+    /// @return netShares Amount of shares after fees
+    /// @return sharesFee Amount of shares that will be charged for the action that are given to the LeverageToken
+    /// @return treasuryFee Amount of shares that will be charged for the action that are given to the treasury
+    function _computeFeesForGrossShares(ILeverageToken token, uint256 grossShares, ExternalAction action)
+        internal
+        view
+        returns (uint256 netShares, uint256 sharesFee, uint256 treasuryFee)
+    {
+        (uint256 sharesAfterTokenFee, uint256 sharesTokenFee) = _computeTokenFee(token, grossShares, action);
+        treasuryFee = _computeTreasuryFee(action, sharesAfterTokenFee);
+
+        // On mints, some of the minted shares are for the treasury fee
+        // On redeems, additional shares are taken from the user to cover the treasury fee
+        uint256 userSharesDelta =
+            action == ExternalAction.Mint ? sharesAfterTokenFee - treasuryFee : sharesAfterTokenFee + treasuryFee;
+
+        return (userSharesDelta, sharesTokenFee, treasuryFee);
+    }
+
     /// @notice Based on an amount of net shares, compute the gross shares, token fee, and treasury fee
     /// @param token LeverageToken to compute token fee for
     /// @param netShares Net shares to compute token fee for
@@ -183,7 +206,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     /// @return grossShares Gross shares after token fee and treasury fee
     /// @return tokenFee Token fee amount in shares
     /// @return treasuryFee Treasury fee amount in shares
-    function _computeTokenFeeForExactShares(ILeverageToken token, uint256 netShares, ExternalAction action)
+    function _computeFeesForNetShares(ILeverageToken token, uint256 netShares, ExternalAction action)
         internal
         view
         returns (uint256 grossShares, uint256 tokenFee, uint256 treasuryFee)

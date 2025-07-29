@@ -22,7 +22,7 @@ contract ComputeTokenFeeForExactSharesTest is FeeManagerTest {
         _setTreasuryActionFee(feeManagerRole, ExternalAction.Redeem, redeemTreasuryFee);
 
         (uint256 grossShares, uint256 tokenFee, uint256 treasuryFee) =
-            feeManager.exposed_computeTokenFeeForExactShares(leverageToken, shares, ExternalAction.Mint);
+            feeManager.exposed_computeFeesForNetShares(leverageToken, shares, ExternalAction.Mint);
 
         uint256 expectedGrossShares = Math.mulDiv(
             shares, BASE_FEE_SQUARED, (BASE_FEE - mintTokenFee) * (BASE_FEE - mintTreasuryFee), Math.Rounding.Ceil
@@ -39,7 +39,7 @@ contract ComputeTokenFeeForExactSharesTest is FeeManagerTest {
         assertEq(treasuryFee, 0.041666666666666666 ether); // 1062925170068027211 - 21258503401360545 - 1 ether
 
         (grossShares, tokenFee, treasuryFee) =
-            feeManager.exposed_computeTokenFeeForExactShares(leverageToken, shares, ExternalAction.Redeem);
+            feeManager.exposed_computeFeesForNetShares(leverageToken, shares, ExternalAction.Redeem);
 
         expectedGrossShares = Math.mulDiv(
             shares, BASE_FEE_SQUARED, (BASE_FEE - redeemTokenFee) * (BASE_FEE - redeemTreasuryFee), Math.Rounding.Ceil
@@ -73,7 +73,7 @@ contract ComputeTokenFeeForExactSharesTest is FeeManagerTest {
         _setTreasuryActionFee(feeManagerRole, ExternalAction.Redeem, redeemTreasuryFee);
 
         (uint256 grossShares, uint256 tokenFee, uint256 treasuryFee) =
-            feeManager.exposed_computeTokenFeeForExactShares(leverageToken, shares, ExternalAction.Mint);
+            feeManager.exposed_computeFeesForNetShares(leverageToken, shares, ExternalAction.Mint);
 
         uint256 expectedGrossShares = Math.mulDiv(
             shares, BASE_FEE_SQUARED, (BASE_FEE - mintTokenFee) * (BASE_FEE - mintTreasuryFee), Math.Rounding.Ceil
@@ -88,7 +88,7 @@ contract ComputeTokenFeeForExactSharesTest is FeeManagerTest {
         assertEq(treasuryFee, expectedTreasuryFee);
 
         (grossShares, tokenFee, treasuryFee) =
-            feeManager.exposed_computeTokenFeeForExactShares(leverageToken, shares, ExternalAction.Redeem);
+            feeManager.exposed_computeFeesForNetShares(leverageToken, shares, ExternalAction.Redeem);
 
         expectedGrossShares = Math.mulDiv(
             shares, BASE_FEE_SQUARED, (BASE_FEE - redeemTokenFee) * (BASE_FEE - redeemTreasuryFee), Math.Rounding.Ceil

@@ -58,15 +58,27 @@ contract PreviewMintV2Test is LeverageManagerTest {
 
         _prepareLeverageManagerStateForAction(beforeState);
 
-        uint256 shares = 85.5 ether;
+        uint256 shares = 17.1 ether;
         ActionData memory previewData = leverageManager.previewMintV2(leverageToken, shares);
 
-        assertEq(previewData.collateral, 100 ether);
-        assertEq(previewData.debt, 100 ether); // 1:2 exchange rate, 2x CR
-        assertEq(previewData.equity, 50 ether);
-        assertEq(previewData.tokenFee, 5 ether); // 5% fee applied on gross shares minted (100 ether * 0.05)
-        assertEq(previewData.treasuryFee, 9.5 ether); // 10% fee applied on shares after token fee (95 ether * 0.1)
-        assertEq(previewData.shares, 85.5 ether); // 100 ether - 5 ether token fee - 9.5 ether treasury fee
+        assertEq(previewData.collateral, 20 ether);
+        assertEq(previewData.debt, 20 ether); // 1:2 exchange rate, 2x CR
+        assertEq(previewData.equity, 10 ether);
+        assertEq(previewData.tokenFee, 1 ether); // 5% fee applied on gross shares minted (100 ether * 0.05)
+        assertEq(previewData.treasuryFee, 1.9 ether); // 10% fee applied on shares after token fee (95 ether * 0.1)
+        assertEq(previewData.shares, 17.1 ether); // 100 ether - 5 ether token fee - 9.5 ether treasury fee
+
+        skip(SECONDS_ONE_YEAR);
+
+        previewData = leverageManager.previewMintV2(leverageToken, shares);
+
+        // Collateral, debt, and equity amounts are reduced by ~10% due to management fee diluting share value
+        assertEq(previewData.collateral, 18.181818181818181819 ether);
+        assertEq(previewData.debt, 18.181818181818181818 ether);
+        assertEq(previewData.equity, 9.09090909090909091 ether);
+        assertEq(previewData.tokenFee, 1 ether);
+        assertEq(previewData.treasuryFee, 1.9 ether);
+        assertEq(previewData.shares, 17.1 ether);
     }
 
     function test_previewMintV2_WithoutFee() public {
@@ -182,7 +194,7 @@ contract PreviewMintV2Test is LeverageManagerTest {
 
         {
             (uint256 grossShares, uint256 tokenFee, uint256 treasuryFee) =
-                leverageManager.exposed_computeTokenFeeForExactShares(leverageToken, params.shares, ExternalAction.Mint);
+                leverageManager.exposed_computeFeesForNetShares(leverageToken, params.shares, ExternalAction.Mint);
             uint256 equityInCollateralAsset =
                 leverageManager.convertSharesToEquity(leverageToken, grossShares, Math.Rounding.Ceil);
             uint256 collateral =

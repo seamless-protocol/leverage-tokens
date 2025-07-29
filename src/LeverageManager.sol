@@ -347,7 +347,7 @@ contract LeverageManager is
     function previewDeposit(ILeverageToken token, uint256 collateral) public view returns (ActionData memory) {
         uint256 shares = convertCollateralToShares(token, collateral, Math.Rounding.Floor);
         (uint256 sharesAfterFee, uint256 sharesFee, uint256 treasuryFee) =
-            _computeShareFees(token, shares, ExternalAction.Mint);
+            _computeFeesForGrossShares(token, shares, ExternalAction.Mint);
 
         ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
         uint256 feeAdjustedTotalSupply = _getFeeAdjustedTotalSupply(token);
@@ -376,7 +376,7 @@ contract LeverageManager is
     /// @inheritdoc ILeverageManager
     function previewMintV2(ILeverageToken token, uint256 shares) public view returns (ActionData memory) {
         (uint256 grossShares, uint256 sharesFee, uint256 treasuryFee) =
-            _computeTokenFeeForExactShares(token, shares, ExternalAction.Mint);
+            _computeFeesForNetShares(token, shares, ExternalAction.Mint);
 
         ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
         uint256 feeAdjustedTotalSupply = _getFeeAdjustedTotalSupply(token);
@@ -540,29 +540,6 @@ contract LeverageManager is
         LeverageTokenState memory stateAfter = getLeverageTokenState(leverageToken);
 
         emit Rebalance(leverageToken, msg.sender, stateBefore, stateAfter, actions);
-    }
-
-    /// @notice Computes the share fees for a given action and share amount
-    /// @param token LeverageToken to compute share fees for
-    /// @param shares Amount of shares to compute share fees for
-    /// @param action Action to compute share fees for
-    /// @return sharesAfterFee Amount of shares after fees
-    /// @return sharesFee Amount of shares that will be charged for the action that are given to the LeverageToken
-    /// @return treasuryFee Amount of shares that will be charged for the action that are given to the treasury
-    function _computeShareFees(ILeverageToken token, uint256 shares, ExternalAction action)
-        internal
-        view
-        returns (uint256 sharesAfterFee, uint256 sharesFee, uint256 treasuryFee)
-    {
-        (uint256 sharesAfterTokenFee, uint256 sharesTokenFee) = _computeTokenFee(token, shares, action);
-        treasuryFee = _computeTreasuryFee(action, sharesAfterTokenFee);
-
-        // On mints, some of the minted shares are for the treasury fee
-        // On redeems, additional shares are taken from the user to cover the treasury fee
-        uint256 userSharesDelta =
-            action == ExternalAction.Mint ? sharesAfterTokenFee - treasuryFee : sharesAfterTokenFee + treasuryFee;
-
-        return (userSharesDelta, sharesTokenFee, treasuryFee);
     }
 
     /// @notice Converts equity in collateral asset to shares given the state of the LeverageToken
