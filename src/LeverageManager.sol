@@ -143,29 +143,7 @@ contract LeverageManager is
     {
         ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
         uint256 totalSupply = _getFeeAdjustedTotalSupply(token);
-        uint256 totalCollateral = lendingAdapter.getCollateral();
-
-        if (totalSupply == 0 || totalCollateral == 0) {
-            uint256 initialCollateralRatio = getLeverageTokenInitialCollateralRatio(token);
-
-            // Debt rounding is the inverse of the passed rounding parameter, as rounding debt up may result in less
-            // shares and rounding debt down may result in more shares
-            Math.Rounding debtRounding = rounding == Math.Rounding.Floor ? Math.Rounding.Ceil : Math.Rounding.Floor;
-            uint256 debtInCollateralAsset = Math.mulDiv(collateral, BASE_RATIO, initialCollateralRatio, debtRounding);
-
-            uint256 equityInCollateralAsset = collateral - debtInCollateralAsset;
-
-            return _convertEquityToShares(
-                token,
-                lendingAdapter,
-                equityInCollateralAsset,
-                totalSupply,
-                lendingAdapter.getEquityInCollateralAsset(),
-                rounding
-            );
-        }
-
-        return Math.mulDiv(collateral, totalSupply, totalCollateral, rounding);
+        return _convertCollateralToShares(token, lendingAdapter, collateral, totalSupply, rounding);
     }
 
     /// @inheritdoc ILeverageManager
@@ -345,12 +323,14 @@ contract LeverageManager is
 
     /// @inheritdoc ILeverageManager
     function previewDeposit(ILeverageToken token, uint256 collateral) public view returns (ActionData memory) {
-        uint256 shares = convertCollateralToShares(token, collateral, Math.Rounding.Floor);
+        ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
+        uint256 feeAdjustedTotalSupply = _getFeeAdjustedTotalSupply(token);
+
+        uint256 shares =
+            _convertCollateralToShares(token, lendingAdapter, collateral, feeAdjustedTotalSupply, Math.Rounding.Floor);
         (uint256 sharesAfterFee, uint256 sharesFee, uint256 treasuryFee) =
             _computeFeesForGrossShares(token, shares, ExternalAction.Mint);
 
-        ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
-        uint256 feeAdjustedTotalSupply = _getFeeAdjustedTotalSupply(token);
         uint256 equityInCollateralAsset = _convertSharesToEquity(
             token,
             lendingAdapter,
@@ -540,6 +520,38 @@ contract LeverageManager is
         LeverageTokenState memory stateAfter = getLeverageTokenState(leverageToken);
 
         emit Rebalance(leverageToken, msg.sender, stateBefore, stateAfter, actions);
+    }
+
+    function _convertCollateralToShares(
+        ILeverageToken token,
+        ILendingAdapter lendingAdapter,
+        uint256 collateral,
+        uint256 totalSupply,
+        Math.Rounding rounding
+    ) internal view returns (uint256 shares) {
+        uint256 totalCollateral = lendingAdapter.getCollateral();
+
+        if (totalSupply == 0 || totalCollateral == 0) {
+            uint256 initialCollateralRatio = getLeverageTokenInitialCollateralRatio(token);
+
+            // Debt rounding is the inverse of the passed rounding parameter, as rounding debt up may result in less
+            // shares and rounding debt down may result in more shares
+            Math.Rounding debtRounding = rounding == Math.Rounding.Floor ? Math.Rounding.Ceil : Math.Rounding.Floor;
+            uint256 debtInCollateralAsset = Math.mulDiv(collateral, BASE_RATIO, initialCollateralRatio, debtRounding);
+
+            uint256 equityInCollateralAsset = collateral - debtInCollateralAsset;
+
+            return _convertEquityToShares(
+                token,
+                lendingAdapter,
+                equityInCollateralAsset,
+                totalSupply,
+                lendingAdapter.getEquityInCollateralAsset(),
+                rounding
+            );
+        }
+
+        return Math.mulDiv(collateral, totalSupply, totalCollateral, rounding);
     }
 
     /// @notice Converts equity in collateral asset to shares given the state of the LeverageToken
