@@ -531,6 +531,7 @@ contract LeverageManager is
     ) internal view returns (uint256 shares) {
         uint256 totalCollateral = lendingAdapter.getCollateral();
 
+        // slither-disable-next-line incorrect-equality,timestamp
         if (totalSupply == 0 || totalCollateral == 0) {
             uint256 initialCollateralRatio = getLeverageTokenInitialCollateralRatio(token);
 
@@ -605,6 +606,7 @@ contract LeverageManager is
         uint256 totalSupply,
         Math.Rounding rounding
     ) internal view returns (uint256 collateral) {
+        // slither-disable-next-line incorrect-equality,timestamp
         if (totalSupply == 0 || totalCollateral == 0) {
             uint256 leverageTokenDecimals = IERC20Metadata(address(token)).decimals();
             uint256 collateralDecimals = IERC20Metadata(address(lendingAdapter.getCollateralAsset())).decimals();
@@ -644,6 +646,7 @@ contract LeverageManager is
         uint256 totalSupply,
         Math.Rounding rounding
     ) internal view returns (uint256 debt) {
+        // slither-disable-next-line incorrect-equality,timestamp
         if (totalSupply == 0 || totalDebt == 0) {
             uint256 leverageTokenDecimals = IERC20Metadata(address(token)).decimals();
             uint256 collateralDecimals = IERC20Metadata(address(lendingAdapter.getCollateralAsset())).decimals();
@@ -682,6 +685,7 @@ contract LeverageManager is
         uint256 totalSupply,
         Math.Rounding rounding
     ) internal view returns (uint256 equityInCollateralAsset) {
+        // slither-disable-next-line incorrect-equality,timestamp
         if (totalSupply == 0 || totalEquityInCollateralAsset == 0) {
             uint256 leverageTokenDecimals = IERC20Metadata(address(token)).decimals();
             uint256 collateralDecimals = IERC20Metadata(address(lendingAdapter.getCollateralAsset())).decimals();
