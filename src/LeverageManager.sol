@@ -157,10 +157,10 @@ contract LeverageManager is
 
             return _convertEquityToShares(
                 token,
+                lendingAdapter,
                 equityInCollateralAsset,
                 totalSupply,
                 lendingAdapter.getEquityInCollateralAsset(),
-                lendingAdapter,
                 rounding
             );
         }
@@ -199,7 +199,7 @@ contract LeverageManager is
         uint256 totalEquityInCollateralAsset = lendingAdapter.getEquityInCollateralAsset();
 
         return _convertEquityToShares(
-            token, equityInCollateralAsset, totalSupply, totalEquityInCollateralAsset, lendingAdapter, rounding
+            token, lendingAdapter, equityInCollateralAsset, totalSupply, totalEquityInCollateralAsset, rounding
         );
     }
 
@@ -560,12 +560,20 @@ contract LeverageManager is
         return (userSharesDelta, sharesTokenFee, treasuryFee);
     }
 
+    /// @notice Converts equity in collateral asset to shares given the state of the LeverageToken
+    /// @param token LeverageToken to convert equity for
+    /// @param lendingAdapter Lending adapter of the LeverageToken
+    /// @param equityInCollateralAsset Equity to convert to shares, denominated in collateral asset
+    /// @param totalSupply Total supply of shares of the LeverageToken
+    /// @param totalEquityInCollateralAsset Total equity in collateral asset of the LeverageToken
+    /// @param rounding Rounding mode
+    /// @return shares Shares
     function _convertEquityToShares(
         ILeverageToken token,
+        ILendingAdapter lendingAdapter,
         uint256 equityInCollateralAsset,
         uint256 totalSupply,
         uint256 totalEquityInCollateralAsset,
-        ILendingAdapter lendingAdapter,
         Math.Rounding rounding
     ) internal view returns (uint256 shares) {
         // If leverage token is empty we mint it in 1:1 ratio with collateral asset but we align it on 18 decimals always
@@ -588,6 +596,13 @@ contract LeverageManager is
         return Math.mulDiv(equityInCollateralAsset, totalSupply, totalEquityInCollateralAsset, rounding);
     }
 
+    /// @notice Converts shares to collateral given the state of the LeverageToken
+    /// @param token LeverageToken to convert shares for
+    /// @param lendingAdapter Lending adapter of the LeverageToken
+    /// @param shares Shares to convert to collateral
+    /// @param totalCollateral Total collateral of the LeverageToken
+    /// @param totalSupply Total supply of shares of the LeverageToken
+    /// @param rounding Rounding mode
     function _convertSharesToCollateral(
         ILeverageToken token,
         ILendingAdapter lendingAdapter,
@@ -620,6 +635,13 @@ contract LeverageManager is
         return Math.mulDiv(shares, totalCollateral, totalSupply, rounding);
     }
 
+    /// @notice Converts shares to debt given the state of the LeverageToken
+    /// @param token LeverageToken to convert shares for
+    /// @param lendingAdapter Lending adapter of the LeverageToken
+    /// @param shares Shares to convert to debt
+    /// @param totalDebt Total debt of the LeverageToken
+    /// @param totalSupply Total supply of shares of the LeverageToken
+    /// @param rounding Rounding mode
     function _convertSharesToDebt(
         ILeverageToken token,
         ILendingAdapter lendingAdapter,
@@ -651,6 +673,13 @@ contract LeverageManager is
         return Math.mulDiv(shares, totalDebt, totalSupply, rounding);
     }
 
+    /// @notice Converts shares to equity in collateral asset given the state of the LeverageToken
+    /// @param token LeverageToken to convert shares for
+    /// @param lendingAdapter Lending adapter of the LeverageToken
+    /// @param shares Shares to convert to equity
+    /// @param totalEquityInCollateralAsset Total equity in collateral asset of the LeverageToken
+    /// @param totalSupply Total supply of shares of the LeverageToken
+    /// @param rounding Rounding mode
     function _convertSharesToEquity(
         ILeverageToken token,
         ILendingAdapter lendingAdapter,

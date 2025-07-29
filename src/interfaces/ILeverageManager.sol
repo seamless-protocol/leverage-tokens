@@ -82,6 +82,7 @@ interface ILeverageManager is IFeeManager {
     /// @param collateral Amount of collateral to convert to debt
     /// @param rounding Rounding mode to use for the conversion
     /// @return debt Amount of debt that correspond to the collateral
+    /// @dev For deposits/mints, Math.Rounding.Floor should be used. For withdraws/redeems, Math.Rounding.Ceil should be used.
     function convertCollateralToDebt(ILeverageToken token, uint256 collateral, Math.Rounding rounding)
         external
         view
@@ -93,6 +94,7 @@ interface ILeverageManager is IFeeManager {
     /// @param collateral Amount of collateral to convert to shares
     /// @param rounding Rounding mode to use for the conversion
     /// @return shares Amount of shares that correspond to the collateral
+    /// @dev For deposits/mints, Math.Rounding.Floor should be used. For withdraws/redeems, Math.Rounding.Ceil should be used.
     function convertCollateralToShares(ILeverageToken token, uint256 collateral, Math.Rounding rounding)
         external
         view
@@ -104,6 +106,7 @@ interface ILeverageManager is IFeeManager {
     /// @param debt Amount of debt to convert to collateral
     /// @param rounding Rounding mode to use for the conversion
     /// @return collateral Amount of collateral that correspond to the debt amount
+    /// @dev For deposits/mints, Math.Rounding.Ceil should be used. For withdraws/redeems, Math.Rounding.Floor should be used.
     function convertDebtToCollateral(ILeverageToken token, uint256 debt, Math.Rounding rounding)
         external
         view
@@ -115,6 +118,7 @@ interface ILeverageManager is IFeeManager {
     /// @param equityInCollateralAsset Amount of equity to convert to shares
     /// @param rounding Rounding mode to use for the conversion
     /// @return shares Amount of shares that correspond to the equity
+    /// @dev For deposits/mints, Math.Rounding.Floor should be used. For withdraws/redeems, Math.Rounding.Ceil should be used.
     function convertEquityToShares(ILeverageToken token, uint256 equityInCollateralAsset, Math.Rounding rounding)
         external
         view
@@ -126,6 +130,7 @@ interface ILeverageManager is IFeeManager {
     /// @param shares Amount of shares to convert to collateral
     /// @param rounding Rounding mode to use for the conversion
     /// @return collateral Amount of collateral that correspond to the shares
+    /// @dev For deposits/mints, Math.Rounding.Ceil should be used. For withdraws/redeems, Math.Rounding.Floor should be used.
     function convertSharesToCollateral(ILeverageToken token, uint256 shares, Math.Rounding rounding)
         external
         view
@@ -137,6 +142,7 @@ interface ILeverageManager is IFeeManager {
     /// @param shares Amount of shares to convert to debt
     /// @param rounding Rounding mode to use for the conversion
     /// @return debt Amount of debt that correspond to the shares
+    /// @dev For deposits/mints, Math.Rounding.Floor should be used. For withdraws/redeems, Math.Rounding.Ceil should be used.
     function convertSharesToDebt(ILeverageToken token, uint256 shares, Math.Rounding rounding)
         external
         view
@@ -148,6 +154,7 @@ interface ILeverageManager is IFeeManager {
     /// @param shares Amount of shares to convert to equity
     /// @param rounding Rounding mode to use for the conversion
     /// @return equity Amount of equity in collateral asset that correspond to the shares
+    /// @dev For deposits/mints, Math.Rounding.Ceil should be used. For withdraws/redeems, Math.Rounding.Floor should be used.
     function convertSharesToEquity(ILeverageToken token, uint256 shares, Math.Rounding rounding)
         external
         view
