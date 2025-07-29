@@ -63,4 +63,8 @@ contract FeeManagerHarness is FeeManager {
     function exposed_validateActionFee(uint256 fee) external pure {
         _validateActionFee(fee);
     }
+
+    function exposed_validateManagementFee(uint256 fee) external pure {
+        _validateManagementFee(fee);
+    }
 }
