@@ -66,6 +66,8 @@ contract ConvertEquityToSharesTest is LeverageManagerTest {
 
         uint256 shares = leverageManager.convertEquityToShares(leverageToken, equity, Math.Rounding.Floor);
         assertEq(shares, equity);
+        shares = leverageManager.convertEquityToShares(leverageToken, equity, Math.Rounding.Ceil);
+        assertEq(shares, equity);
 
         totalEquity = nonZeroValue;
         sharesTotalSupply = 0;
@@ -76,17 +78,18 @@ contract ConvertEquityToSharesTest is LeverageManagerTest {
 
         shares = leverageManager.convertEquityToShares(leverageToken, equity, Math.Rounding.Ceil);
         assertEq(shares, equity);
+        shares = leverageManager.convertEquityToShares(leverageToken, equity, Math.Rounding.Floor);
+        assertEq(shares, equity);
     }
 
-    function testFuzz_convertEquityToShares_EmptyLeverageToken_CollateralAssetLessThan18Decimals(uint128 equity)
-        public
-    {
+    function testFuzz_convertEquityToShares_EmptyLeverageToken_CollateralAssetLessThan18Decimals(
+        uint128 equity,
+        uint256 nonZeroValue
+    ) public {
         uint256 totalEquity = 0;
-        uint256 sharesTotalSupply = 0;
+        uint256 totalSupply = nonZeroValue;
 
-        _mockState_ConvertToShares(
-            ConvertToSharesState({totalEquity: totalEquity, sharesTotalSupply: sharesTotalSupply})
-        );
+        _mockState_ConvertToShares(ConvertToSharesState({totalEquity: totalEquity, sharesTotalSupply: totalSupply}));
 
         vm.mockCall(
             address(lendingAdapter.getCollateralAsset()),
@@ -94,20 +97,34 @@ contract ConvertEquityToSharesTest is LeverageManagerTest {
             abi.encode(6)
         );
 
+        uint256 scalingFactor = 10 ** (18 - 6);
+        uint256 expectedShares = uint256(equity) * scalingFactor;
+
         uint256 shares = leverageManager.convertEquityToShares(leverageToken, equity, Math.Rounding.Floor);
-        uint256 expectedShares = uint256(equity) * 1e12;
+        assertEq(shares, expectedShares);
+
+        shares = leverageManager.convertEquityToShares(leverageToken, equity, Math.Rounding.Ceil);
+        assertEq(shares, expectedShares);
+
+        totalEquity = nonZeroValue;
+        _mockLeverageTokenTotalEquityInCollateralAsset(totalEquity);
+        _burnShares(address(1), totalSupply); // Burn all shares
+
+        shares = leverageManager.convertEquityToShares(leverageToken, equity, Math.Rounding.Floor);
+        assertEq(shares, expectedShares);
+
+        shares = leverageManager.convertEquityToShares(leverageToken, equity, Math.Rounding.Ceil);
         assertEq(shares, expectedShares);
     }
 
-    function testFuzz_convertEquityToShares_EmptyLeverageToken_CollateralAssetMoreThan18Decimals(uint256 equity)
-        public
-    {
+    function testFuzz_convertEquityToShares_EmptyLeverageToken_CollateralAssetMoreThan18Decimals(
+        uint256 equity,
+        uint256 nonZeroValue
+    ) public {
         uint256 totalEquity = 0;
-        uint256 sharesTotalSupply = 100;
+        uint256 totalSupply = nonZeroValue;
 
-        _mockState_ConvertToShares(
-            ConvertToSharesState({totalEquity: totalEquity, sharesTotalSupply: sharesTotalSupply})
-        );
+        _mockState_ConvertToShares(ConvertToSharesState({totalEquity: totalEquity, sharesTotalSupply: totalSupply}));
 
         vm.mockCall(
             address(lendingAdapter.getCollateralAsset()),
@@ -115,8 +132,24 @@ contract ConvertEquityToSharesTest is LeverageManagerTest {
             abi.encode(27)
         );
 
+        uint256 scalingFactor = 10 ** (27 - 18);
+        uint256 expectedShares = uint256(equity) / scalingFactor;
+
         uint256 shares = leverageManager.convertEquityToShares(leverageToken, equity, Math.Rounding.Floor);
-        assertEq(shares, equity / 1e9);
+        assertEq(shares, expectedShares);
+
+        shares = leverageManager.convertEquityToShares(leverageToken, equity, Math.Rounding.Ceil);
+        assertEq(shares, expectedShares);
+
+        totalEquity = nonZeroValue;
+        _mockLeverageTokenTotalEquityInCollateralAsset(totalEquity);
+        _burnShares(address(1), totalSupply); // Burn all shares
+
+        shares = leverageManager.convertEquityToShares(leverageToken, equity, Math.Rounding.Floor);
+        assertEq(shares, expectedShares);
+
+        shares = leverageManager.convertEquityToShares(leverageToken, equity, Math.Rounding.Ceil);
+        assertEq(shares, expectedShares);
     }
 
     function test_convertEquityToShares_WithManagementFee() public {
