@@ -14,15 +14,11 @@ ast = true
 build_info = true
 extra_output = ["storageLayout"]
 
+[profile.lite]
 additional_compiler_profiles = [ { name = "no-opt", via_ir = false, optimizer = false } ]
-
 compilation_restrictions = [
   { paths = "test/**", optimizer = false, via_ir = false }
 ]
-
-[profile.lite]
-optimizer=false
-via_ir=false
 
 [rpc_endpoints]
 tenderly = "${TENDERLY_RPC_URL}"
