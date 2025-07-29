@@ -354,13 +354,13 @@ contract LeverageManager is
         uint256 equityInCollateralAsset = _convertSharesToEquity(
             token,
             lendingAdapter,
-            sharesAfterFee,
+            shares,
             lendingAdapter.getEquityInCollateralAsset(),
             feeAdjustedTotalSupply,
             Math.Rounding.Ceil
         );
         uint256 debt = _convertSharesToDebt(
-            token, lendingAdapter, shares, lendingAdapter.getDebt(), feeAdjustedTotalSupply, Math.Rounding.Ceil
+            token, lendingAdapter, shares, lendingAdapter.getDebt(), feeAdjustedTotalSupply, Math.Rounding.Floor
         );
 
         return ActionData({
@@ -392,7 +392,7 @@ contract LeverageManager is
             token, lendingAdapter, shares, lendingAdapter.getCollateral(), feeAdjustedTotalSupply, Math.Rounding.Floor
         );
         uint256 debt = _convertSharesToDebt(
-            token, lendingAdapter, shares, lendingAdapter.getDebt(), feeAdjustedTotalSupply, Math.Rounding.Ceil
+            token, lendingAdapter, shares, lendingAdapter.getDebt(), feeAdjustedTotalSupply, Math.Rounding.Floor
         );
 
         return ActionData({
@@ -549,14 +549,15 @@ contract LeverageManager is
         view
         returns (uint256 sharesAfterFee, uint256 sharesFee, uint256 treasuryFee)
     {
-        (sharesAfterFee, sharesFee) = _computeTokenFee(token, shares, action);
-        treasuryFee = _computeTreasuryFee(action, sharesAfterFee);
+        (uint256 sharesAfterTokenFee, uint256 sharesTokenFee) = _computeTokenFee(token, shares, action);
+        treasuryFee = _computeTreasuryFee(action, sharesAfterTokenFee);
 
         // On mints, some of the minted shares are for the treasury fee
         // On redeems, additional shares are taken from the user to cover the treasury fee
-        uint256 userSharesDelta = action == ExternalAction.Mint ? shares - treasuryFee : shares + treasuryFee;
+        uint256 userSharesDelta =
+            action == ExternalAction.Mint ? sharesAfterTokenFee - treasuryFee : sharesAfterTokenFee + treasuryFee;
 
-        return (userSharesDelta, sharesFee, treasuryFee);
+        return (userSharesDelta, sharesTokenFee, treasuryFee);
     }
 
     function _convertEquityToShares(

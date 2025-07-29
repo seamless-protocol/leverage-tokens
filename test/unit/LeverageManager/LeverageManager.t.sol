@@ -185,6 +185,28 @@ contract LeverageManagerTest is FeeManagerTest {
         );
     }
 
+    function _computeLeverageTokenCRAfterAction(
+        uint256 initialCollateral,
+        uint256 initialDebtInCollateralAsset,
+        uint256 collateralChange,
+        uint256 debtChange,
+        ExternalAction action
+    ) internal view returns (uint256 newCollateralRatio) {
+        debtChange = lendingAdapter.convertDebtToCollateralAsset(debtChange);
+
+        uint256 newCollateral =
+            action == ExternalAction.Mint ? initialCollateral + collateralChange : initialCollateral - collateralChange;
+
+        uint256 newDebt = action == ExternalAction.Mint
+            ? initialDebtInCollateralAsset + debtChange
+            : initialDebtInCollateralAsset - debtChange;
+
+        newCollateralRatio =
+            newDebt != 0 ? Math.mulDiv(newCollateral, _BASE_RATIO(), newDebt, Math.Rounding.Floor) : type(uint256).max;
+
+        return newCollateralRatio;
+    }
+
     function _setTreasuryActionFee(ExternalAction action, uint256 fee) internal {
         vm.prank(feeManagerRole);
         leverageManager.setTreasuryActionFee(action, fee);
