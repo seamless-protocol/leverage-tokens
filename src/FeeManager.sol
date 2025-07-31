@@ -206,7 +206,6 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     /// @return grossShares Gross shares after token fee and treasury fee
     /// @return tokenFee Token fee amount in shares
     /// @return treasuryFee Treasury fee amount in shares
-
     function _computeFeesForNetShares(ILeverageToken token, uint256 netShares, ExternalAction action)
         internal
         view
