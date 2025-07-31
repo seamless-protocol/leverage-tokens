@@ -184,6 +184,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     /// @return netShares Amount of shares after fees
     /// @return sharesTokenFee Amount of shares that will be charged for the action that are given to the LeverageToken
     /// @return treasuryFee Amount of shares that will be charged for the action that are given to the treasury
+    /// @dev Token action fee is applied first, then treasury action fee is applied on the remaining shares
     function _computeFeesForGrossShares(ILeverageToken token, uint256 grossShares, ExternalAction action)
         internal
         view
@@ -206,6 +207,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     /// @return grossShares Gross shares after token fee and treasury fee
     /// @return sharesTokenFee Token fee amount in shares
     /// @return treasuryFee Treasury fee amount in shares
+    /// @dev Token action fee is applied first, then treasury action fee is applied on the remaining shares
     function _computeFeesForNetShares(ILeverageToken token, uint256 netShares, ExternalAction action)
         internal
         view
