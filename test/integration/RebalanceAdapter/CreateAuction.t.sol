@@ -50,7 +50,7 @@ contract CreateAuctionTest is DutchAuctionTest {
 
         assertEq(auction.isOverCollateralized, true);
         assertEq(auction.startTimestamp, block.timestamp);
-        assertEq(auction.endTimestamp, auction.startTimestamp + 7 minutes);
+        assertEq(auction.endTimestamp, vm.getBlockTimestamp() + 7 minutes);
     }
 
     function test_Fork_createAuction_DeletesPreviousInvalidAuctionIf_CollateralRatioDirectionChanged() public {
