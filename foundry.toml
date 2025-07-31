@@ -14,22 +14,9 @@ ast = true
 build_info = true
 extra_output = ["storageLayout"]
 
-additional_compiler_profiles = [ { name = "no-opt", via_ir = false, optimizer = false }, { name = "opt", via_ir = true, optimizer = true} ]
-compilation_restrictions = [
-  { paths = "test/**", optimizer = false, via_ir = false }
-]
-
-[profile.ci]
-# If test files are not optimized, their imports are also not optimized.
-# This would result in ci failing when checking bytecode margin.
-compilation_restrictions = [
-  { paths = "test/**", optimizer = true, via_ir = true }
-]
-
 [profile.lite]
-compilation_restrictions = [
-  { paths = "**", optimizer = false, via_ir = false }
-]
+optimizer=false
+via_ir=false
 
 [rpc_endpoints]
 tenderly = "${TENDERLY_RPC_URL}"
