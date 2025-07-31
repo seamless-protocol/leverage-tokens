@@ -166,14 +166,15 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
         view
         returns (uint256, uint256)
     {
-        uint256 tokenFee = Math.mulDiv(shares, getLeverageTokenActionFee(token, action), BASE_FEE, Math.Rounding.Ceil);
+        uint256 sharesTokenFee =
+            Math.mulDiv(shares, getLeverageTokenActionFee(token, action), BASE_FEE, Math.Rounding.Ceil);
 
         // To increase share value for existing users, less shares are minted on mints and more shares are burned on
         // redeems by subtracting the token fee from the equity on mints and adding the token fee to the equity on
         // redeems.
-        uint256 sharesAfterFee = action == ExternalAction.Mint ? shares - tokenFee : shares + tokenFee;
+        uint256 sharesAfterFee = action == ExternalAction.Mint ? shares - sharesTokenFee : shares + sharesTokenFee;
 
-        return (sharesAfterFee, tokenFee);
+        return (sharesAfterFee, sharesTokenFee);
     }
 
     /// @notice Computes the share fees for a given action and share amount
@@ -295,7 +296,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
         emit TreasurySet(treasury);
     }
 
-    /// @notice Validates that the fee is not higher than 100%
+    /// @notice Validates that the fee is not higher than 99.99%
     /// @param fee Fee to validate
     function _validateActionFee(uint256 fee) internal pure {
         if (fee > MAX_ACTION_FEE) {
