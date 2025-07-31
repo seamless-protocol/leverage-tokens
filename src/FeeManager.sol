@@ -204,28 +204,48 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     /// @param netShares Net shares to compute token fee for
     /// @param action Action to compute token fee for
     /// @return grossShares Gross shares after token fee and treasury fee
-    /// @return tokenFee Token fee amount in shares
+    /// @return sharesTokenFee Token fee amount in shares
     /// @return treasuryFee Treasury fee amount in shares
     function _computeFeesForNetShares(ILeverageToken token, uint256 netShares, ExternalAction action)
         internal
         view
-        returns (uint256 grossShares, uint256 tokenFee, uint256 treasuryFee)
+        returns (uint256 grossShares, uint256 sharesTokenFee, uint256 treasuryFee)
     {
         uint256 tokenActionFeeRate = getLeverageTokenActionFee(token, action);
         uint256 treasuryActionFeeRate = getTreasuryActionFee(action);
 
+        // Mathematical derivation for computing gross shares from net shares:
+        //
+        // Starting relationship for a single fee:
+        //   net = gross * (baseFee - feeRate) / baseFee
+        //   where feeRate is the fee percentage and baseFee is the base (100_00 for 100%)
+        //
+        // Rearranging to solve for gross:
+        //   gross = net * baseFee / (baseFee - feeRate)
+        //
+        // For two sequential fees (token action fee and treasury action fee), we apply this transformation twice:
+        //   1) First, apply token action fee: afterTokenFee = gross * (baseFee - tokenActionFeeRate) / baseFee
+        //   2) Then, apply treasury action fee: net = afterTokenFee * (baseFee - treasuryActionFeeRate) / baseFee
+        //
+        // Substituting step 1 into step 2:
+        //   net = gross * (baseFee - tokenActionFeeRate) / baseFee * (baseFee - treasuryActionFeeRate) / baseFee
+        //   net = gross * (baseFee - tokenActionFeeRate) * (baseFee - treasuryActionFeeRate) / (baseFee * baseFee)
+        //   net = gross * (baseFee - tokenActionFeeRate) * (baseFee - treasuryActionFeeRate) / baseFeeSquared
+        //
+        // Solving for gross:
+        //   gross = net * baseFeeSquared / ((baseFee - tokenActionFeeRate) * (baseFee - treasuryActionFeeRate))
         grossShares = Math.mulDiv(
             netShares,
             BASE_FEE_SQUARED,
             (BASE_FEE - tokenActionFeeRate) * (BASE_FEE - treasuryActionFeeRate),
             Math.Rounding.Ceil
         );
-        tokenFee = Math.min(
+        sharesTokenFee = Math.min(
             Math.mulDiv(grossShares, tokenActionFeeRate, BASE_FEE, Math.Rounding.Ceil), grossShares - netShares
         );
-        treasuryFee = grossShares - tokenFee - netShares;
+        treasuryFee = grossShares - sharesTokenFee - netShares;
 
-        return (grossShares, tokenFee, treasuryFee);
+        return (grossShares, sharesTokenFee, treasuryFee);
     }
 
     /// @notice Computes the treasury action fee for a given action
