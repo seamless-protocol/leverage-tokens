@@ -11,7 +11,9 @@ import {IRebalanceAdapterBase} from "./IRebalanceAdapterBase.sol";
 import {ILeverageToken} from "./ILeverageToken.sol";
 import {IBeaconProxyFactory} from "./IBeaconProxyFactory.sol";
 import {ILendingAdapter} from "./ILendingAdapter.sol";
-import {ActionData, LeverageTokenState, RebalanceAction, LeverageTokenConfig} from "src/types/DataTypes.sol";
+import {
+    ActionData, ActionDataV2, LeverageTokenState, RebalanceAction, LeverageTokenConfig
+} from "src/types/DataTypes.sol";
 
 interface ILeverageManager is IFeeManager {
     /// @notice Error thrown when someone tries to set zero address for collateral or debt asset when creating a LeverageToken
@@ -112,18 +114,6 @@ interface ILeverageManager is IFeeManager {
         view
         returns (uint256 collateral);
 
-    /// @notice Converts an amount of equity denominated in collateral asset to an amount of shares for a LeverageToken, based on the current
-    /// collateral ratio of the LeverageToken
-    /// @param token LeverageToken to convert equity to shares for
-    /// @param equityInCollateralAsset Amount of equity to convert to shares
-    /// @param rounding Rounding mode to use for the conversion
-    /// @return shares Amount of shares that correspond to the equity
-    /// @dev For deposits/mints, Math.Rounding.Floor should be used. For withdraws/redeems, Math.Rounding.Ceil should be used.
-    function convertEquityToShares(ILeverageToken token, uint256 equityInCollateralAsset, Math.Rounding rounding)
-        external
-        view
-        returns (uint256 shares);
-
     /// @notice Converts an amount of shares to an amount of collateral for a LeverageToken, based on the current
     /// collateral ratio of the LeverageToken
     /// @param token LeverageToken to convert shares to collateral for
@@ -147,18 +137,6 @@ interface ILeverageManager is IFeeManager {
         external
         view
         returns (uint256 debt);
-
-    /// @notice Converts an amount of shares to an amount of equity denominated in collateral asset for a LeverageToken,
-    /// based on the current collateral ratio of the LeverageToken
-    /// @param token LeverageToken to convert shares to equity for
-    /// @param shares Amount of shares to convert to equity
-    /// @param rounding Rounding mode to use for the conversion
-    /// @return equity Amount of equity in collateral asset that correspond to the shares
-    /// @dev For deposits/mints, Math.Rounding.Ceil should be used. For withdraws/redeems, Math.Rounding.Floor should be used.
-    function convertSharesToEquity(ILeverageToken token, uint256 shares, Math.Rounding rounding)
-        external
-        view
-        returns (uint256 equity);
 
     /// @notice Returns the factory for creating new LeverageTokens
     /// @return factory Factory for creating new LeverageTokens
@@ -221,12 +199,11 @@ interface ILeverageManager is IFeeManager {
     /// @return previewData Preview data for deposit
     ///         - collateral Amount of collateral that will be added to the LeverageToken and sent to the receiver
     ///         - debt Amount of debt that will be borrowed and sent to the receiver
-    ///         - equity Amount of equity that will be used for minting shares before fees, denominated in collateral asset
     ///         - shares Amount of shares that will be minted to the receiver
     ///         - tokenFee Amount of shares that will be charged for the deposit that are given to the LeverageToken
     ///         - treasuryFee Amount of shares that will be charged for the deposit that are given to the treasury
     /// @dev Sender should approve leverage manager to spend collateral amount of collateral asset
-    function previewDeposit(ILeverageToken token, uint256 collateral) external view returns (ActionData memory);
+    function previewDeposit(ILeverageToken token, uint256 collateral) external view returns (ActionDataV2 memory);
 
     /// @notice Previews mint function call and returns all required data
     /// @param token LeverageToken to preview mint for
@@ -234,12 +211,11 @@ interface ILeverageManager is IFeeManager {
     /// @return previewData Preview data for mint
     ///         - collateral Amount of collateral that will be added to the LeverageToken and sent to the receiver
     ///         - debt Amount of debt that will be borrowed and sent to the receiver
-    ///         - equity Amount of equity that will be used for minting shares before fees, denominated in collateral asset
     ///         - shares Amount of shares that will be minted to the receiver
     ///         - tokenFee Amount of shares that will be charged for the mint that are given to the LeverageToken
     ///         - treasuryFee Amount of shares that will be charged for the mint that are given to the treasury
     /// @dev Sender should approve leverage manager to spend collateral amount of collateral asset
-    function previewMintV2(ILeverageToken token, uint256 shares) external view returns (ActionData memory);
+    function previewMintV2(ILeverageToken token, uint256 shares) external view returns (ActionDataV2 memory);
 
     /// @notice Previews mint function call and returns all required data
     /// @param token LeverageToken to preview mint for

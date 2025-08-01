@@ -7,7 +7,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
-import {ActionData, ExternalAction, LeverageTokenConfig, LeverageTokenState} from "src/types/DataTypes.sol";
+import {ActionDataV2, ExternalAction, LeverageTokenConfig, LeverageTokenState} from "src/types/DataTypes.sol";
 import {LeverageManagerTest} from "../LeverageManager/LeverageManager.t.sol";
 
 contract PreviewMintV2Test is LeverageManagerTest {
@@ -59,11 +59,10 @@ contract PreviewMintV2Test is LeverageManagerTest {
         _prepareLeverageManagerStateForAction(beforeState);
 
         uint256 shares = 17.1 ether;
-        ActionData memory previewData = leverageManager.previewMintV2(leverageToken, shares);
+        ActionDataV2 memory previewData = leverageManager.previewMintV2(leverageToken, shares);
 
         assertEq(previewData.collateral, 20 ether);
         assertEq(previewData.debt, 20 ether); // 1:2 exchange rate, 2x CR
-        assertEq(previewData.equity, 10 ether);
         assertEq(previewData.tokenFee, 1 ether); // 5% fee applied on gross shares minted (100 ether * 0.05)
         assertEq(previewData.treasuryFee, 1.9 ether); // 10% fee applied on shares after token fee (95 ether * 0.1)
         assertEq(previewData.shares, 17.1 ether); // 100 ether - 5 ether token fee - 9.5 ether treasury fee
@@ -75,7 +74,6 @@ contract PreviewMintV2Test is LeverageManagerTest {
         // Collateral, debt, and equity amounts are reduced by ~10% due to management fee diluting share value
         assertEq(previewData.collateral, 18.181818181818181819 ether);
         assertEq(previewData.debt, 18.181818181818181818 ether);
-        assertEq(previewData.equity, 9.09090909090909091 ether);
         assertEq(previewData.tokenFee, 1 ether);
         assertEq(previewData.treasuryFee, 1.9 ether);
         assertEq(previewData.shares, 17.1 ether);
@@ -88,11 +86,10 @@ contract PreviewMintV2Test is LeverageManagerTest {
         _prepareLeverageManagerStateForAction(beforeState);
 
         uint256 shares = 100 ether;
-        ActionData memory previewData = leverageManager.previewMintV2(leverageToken, shares);
+        ActionDataV2 memory previewData = leverageManager.previewMintV2(leverageToken, shares);
 
         assertEq(previewData.collateral, 100 ether);
         assertEq(previewData.debt, 50 ether);
-        assertEq(previewData.equity, 50 ether);
         assertEq(previewData.shares, 100 ether);
         assertEq(previewData.tokenFee, 0);
         assertEq(previewData.treasuryFee, 0);
@@ -112,11 +109,10 @@ contract PreviewMintV2Test is LeverageManagerTest {
         _prepareLeverageManagerStateForAction(beforeState);
 
         uint256 shares = 0;
-        ActionData memory previewData = leverageManager.previewMintV2(leverageToken, shares);
+        ActionDataV2 memory previewData = leverageManager.previewMintV2(leverageToken, shares);
 
         assertEq(previewData.collateral, 0);
         assertEq(previewData.debt, 0);
-        assertEq(previewData.equity, 0);
         assertEq(previewData.shares, 0);
         assertEq(previewData.tokenFee, 0);
         assertEq(previewData.treasuryFee, 0);
@@ -134,11 +130,10 @@ contract PreviewMintV2Test is LeverageManagerTest {
         _prepareLeverageManagerStateForAction(beforeState);
 
         uint256 shares = 100 ether;
-        ActionData memory previewData = leverageManager.previewMintV2(leverageToken, shares);
+        ActionDataV2 memory previewData = leverageManager.previewMintV2(leverageToken, shares);
 
         assertEq(previewData.collateral, 200 ether);
         assertEq(previewData.debt, 100 ether);
-        assertEq(previewData.equity, 100 ether);
         assertEq(previewData.shares, 100 ether);
         assertEq(previewData.tokenFee, 0);
         assertEq(previewData.treasuryFee, 0);
@@ -181,7 +176,7 @@ contract PreviewMintV2Test is LeverageManagerTest {
 
         LeverageTokenState memory prevState = leverageManager.getLeverageTokenState(leverageToken);
 
-        ActionData memory previewData = leverageManager.previewMintV2(leverageToken, params.shares);
+        ActionDataV2 memory previewData = leverageManager.previewMintV2(leverageToken, params.shares);
 
         // Calculate state after action
         uint256 newCollateralRatio = _computeLeverageTokenCRAfterAction(
@@ -195,15 +190,12 @@ contract PreviewMintV2Test is LeverageManagerTest {
         {
             (uint256 grossShares, uint256 tokenFee, uint256 treasuryFee) =
                 leverageManager.exposed_computeFeesForNetShares(leverageToken, params.shares, ExternalAction.Mint);
-            uint256 equityInCollateralAsset =
-                leverageManager.convertSharesToEquity(leverageToken, grossShares, Math.Rounding.Ceil);
             uint256 collateral =
                 leverageManager.convertSharesToCollateral(leverageToken, grossShares, Math.Rounding.Ceil);
             uint256 debt = leverageManager.convertSharesToDebt(leverageToken, grossShares, Math.Rounding.Floor);
 
             // Validate if shares, collateral, debt, and fees are properly calculated and returned
             assertEq(previewData.shares, params.shares, "Preview shares incorrect");
-            assertEq(previewData.equity, equityInCollateralAsset, "Preview equity incorrect");
             assertEq(previewData.collateral, collateral, "Preview collateral incorrect");
             assertEq(previewData.debt, debt, "Preview debt incorrect");
             assertEq(previewData.tokenFee, tokenFee, "Preview token fee incorrect");
