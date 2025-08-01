@@ -40,7 +40,7 @@ contract GetAccruedManagementFeeTest is FeeManagerTest {
 
         uint256 sharesFee = feeManager.exposed_getAccruedManagementFee(leverageToken);
 
-        assertEq(sharesFee, Math.mulDiv(totalSupply, managementFee, BASE_FEE, Math.Rounding.Ceil));
+        assertEq(sharesFee, Math.mulDiv(totalSupply, managementFee, MAX_BPS, Math.Rounding.Ceil));
     }
 
     /// forge-config: default.fuzz.runs = 1
