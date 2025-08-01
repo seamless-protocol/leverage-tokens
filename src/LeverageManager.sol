@@ -409,6 +409,48 @@ contract LeverageManager is
     }
 
     /// @inheritdoc ILeverageManager
+    function deposit(ILeverageToken token, uint256 collateral, uint256 minShares)
+        external
+        nonReentrant
+        returns (ActionData memory actionData)
+    {
+        // Management fee is calculated from the total supply of the LeverageToken, so we need to charge it first
+        // before total supply is updated due to the mint
+        chargeManagementFee(token);
+
+        ActionData memory depositData = previewDeposit(token, collateral);
+
+        if (depositData.shares < minShares) {
+            revert SlippageTooHigh(depositData.shares, minShares); // TODO: check if this is correct
+        }
+
+        _mint(token, depositData);
+
+        return depositData;
+    }
+
+    /// @inheritdoc ILeverageManager
+    function mintV2(ILeverageToken token, uint256 shares, uint256 maxCollateral)
+        external
+        nonReentrant
+        returns (ActionData memory actionData)
+    {
+        // Management fee is calculated from the total supply of the LeverageToken, so we need to charge it first
+        // before total supply is updated due to the mint
+        chargeManagementFee(token);
+
+        ActionData memory mintData = previewMintV2(token, shares);
+
+        if (mintData.collateral > maxCollateral) {
+            revert SlippageTooHigh(mintData.collateral, maxCollateral);
+        }
+
+        _mint(token, mintData);
+
+        return mintData;
+    }
+
+    /// @inheritdoc ILeverageManager
     function mint(ILeverageToken token, uint256 equityInCollateralAsset, uint256 minShares)
         external
         nonReentrant
@@ -838,6 +880,32 @@ contract LeverageManager is
             // slither-disable-next-line reentrancy-events
             lendingAdapter.repay(amount);
         }
+    }
+
+    /// @notice Helper function for executing a mint action on a LeverageToken
+    /// @param token LeverageToken to mint shares for
+    /// @param mintData Action data for the mint
+    function _mint(ILeverageToken token, ActionData memory mintData) internal {
+        // Take collateral asset from sender
+        IERC20 collateralAsset = getLeverageTokenCollateralAsset(token);
+        SafeERC20.safeTransferFrom(collateralAsset, msg.sender, address(this), mintData.collateral);
+
+        // Add collateral to LeverageToken
+        _executeLendingAdapterAction(token, ActionType.AddCollateral, mintData.collateral);
+
+        // Borrow and send debt assets to caller
+        _executeLendingAdapterAction(token, ActionType.Borrow, mintData.debt);
+        SafeERC20.safeTransfer(getLeverageTokenDebtAsset(token), msg.sender, mintData.debt);
+
+        // Charge treasury fee
+        _chargeTreasuryFee(token, mintData.treasuryFee);
+
+        // Mint shares to user
+        // slither-disable-next-line reentrancy-events
+        token.mint(msg.sender, mintData.shares);
+
+        // Emit event and explicit return statement
+        emit Mint(token, msg.sender, mintData);
     }
 
     /// @notice Helper function for transferring tokens, or no-op if token is 0 address

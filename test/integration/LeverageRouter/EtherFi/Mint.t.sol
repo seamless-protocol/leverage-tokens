@@ -124,7 +124,7 @@ contract LeverageRouterMintEtherFiTest is LeverageRouterTest {
     }
 
     function testFuzzFork_Mint(uint256 equityInCollateralAsset) public {
-        vm.assume(equityInCollateralAsset > 1 ether && equityInCollateralAsset < 500 ether);
+        equityInCollateralAsset = bound(equityInCollateralAsset, 1 ether, 500 ether);
 
         ActionData memory actionData = leverageManager.previewMint(leverageToken, equityInCollateralAsset);
 

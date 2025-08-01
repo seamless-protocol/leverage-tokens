@@ -160,6 +160,37 @@ interface ILeverageManager is IFeeManager {
         view
         returns (uint256 equity);
 
+    /// @notice Deposits collateral into a LeverageToken and mints shares to the sender
+    /// @param token LeverageToken to deposit into
+    /// @param collateral Amount of collateral to deposit
+    /// @param minShares Minimum number of shares to mint
+    /// @return depositData Action data for the deposit
+    ///         - collateral Amount of collateral that was added, including any fees
+    ///         - debt Amount of debt that was added
+    ///         - equity Amount of equity that was added before fees, denominated in collateral asset
+    ///         - shares Amount of shares minted to the sender
+    ///         - tokenFee Amount of shares that was charged for the deposit that are given to the LeverageToken
+    ///         - treasuryFee Amount of shares that was charged for the deposit that are given to the treasury
+    /// @dev Sender should approve leverage manager to spend collateral amount of collateral asset
+    function deposit(ILeverageToken token, uint256 collateral, uint256 minShares)
+        external
+        returns (ActionData memory);
+
+    /// @notice Mints shares of a LeverageToken to the sender
+    /// @param token LeverageToken to mint shares for
+    /// @param shares Amount of shares to mint
+    /// @param maxCollateral Maximum amount of collateral to use for minting
+    /// @return mintData Action data for the mint
+    ///         - collateral Amount of collateral that was added, including any fees
+    ///         - debt Amount of debt that was added
+    ///         - equity Amount of equity that was added before fees, denominated in collateral asset
+    ///         - shares Amount of shares minted to the sender
+    ///         - tokenFee Amount of shares that was charged for the mint that are given to the LeverageToken
+    ///         - treasuryFee Amount of shares that was charged for the mint that are given to the treasury
+    /// @dev Sender should approve leverage manager to spend collateral amount of collateral asset, which can be
+    ///      previewed with previewMint
+    function mintV2(ILeverageToken token, uint256 shares, uint256 maxCollateral) external returns (ActionData memory);
+
     /// @notice Returns the factory for creating new LeverageTokens
     /// @return factory Factory for creating new LeverageTokens
     function getLeverageTokenFactory() external view returns (IBeaconProxyFactory factory);
