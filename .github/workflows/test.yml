@@ -45,7 +45,7 @@ jobs:
         env:
           BASE_RPC_URL: ${{ secrets.BASE_RPC_URL }}
         run: |
-          FOUNDRY_PROFILE=default forge coverage --no-match-coverage script --report lcov
+          forge coverage --no-match-coverage script --report lcov
         id: test
 
       - name: Check Forge test coverage
