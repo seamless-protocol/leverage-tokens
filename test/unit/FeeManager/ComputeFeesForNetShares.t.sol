@@ -57,12 +57,13 @@ contract ComputeTokenFeeForExactSharesTest is FeeManagerTest {
     }
 
     function testFuzz_computeTokenFeeForExactShares(
-        uint240 shares,
+        uint256 shares,
         uint256 mintTokenFee,
         uint256 mintTreasuryFee,
         uint256 redeemTokenFee,
         uint256 redeemTreasuryFee
     ) public {
+        shares = bound(shares, 0, type(uint256).max / BASE_FEE_SQUARED);
         mintTokenFee = bound(mintTokenFee, 0, MAX_ACTION_FEE);
         mintTreasuryFee = bound(mintTreasuryFee, 0, MAX_ACTION_FEE);
         redeemTokenFee = bound(redeemTokenFee, 0, MAX_ACTION_FEE);
