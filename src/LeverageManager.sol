@@ -22,6 +22,7 @@ import {LeverageTokenState} from "src/types/DataTypes.sol";
 import {LeverageToken} from "src/LeverageToken.sol";
 import {
     ActionData,
+    ActionDataV2,
     ActionType,
     ExternalAction,
     LeverageTokenConfig,
@@ -167,21 +168,6 @@ contract LeverageManager is
     }
 
     /// @inheritdoc ILeverageManager
-    function convertEquityToShares(ILeverageToken token, uint256 equityInCollateralAsset, Math.Rounding rounding)
-        external
-        view
-        returns (uint256 shares)
-    {
-        ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
-        uint256 totalSupply = _getFeeAdjustedTotalSupply(token);
-        uint256 totalEquityInCollateralAsset = lendingAdapter.getEquityInCollateralAsset();
-
-        return _convertEquityToShares(
-            token, lendingAdapter, equityInCollateralAsset, totalSupply, totalEquityInCollateralAsset, rounding
-        );
-    }
-
-    /// @inheritdoc ILeverageManager
     function convertSharesToCollateral(ILeverageToken token, uint256 shares, Math.Rounding rounding)
         external
         view
@@ -203,19 +189,6 @@ contract LeverageManager is
         uint256 totalDebt = lendingAdapter.getDebt();
         uint256 totalSupply = _getFeeAdjustedTotalSupply(token);
         return _convertSharesToDebt(token, lendingAdapter, shares, totalDebt, totalSupply, rounding);
-    }
-
-    /// @inheritdoc ILeverageManager
-    function convertSharesToEquity(ILeverageToken token, uint256 shares, Math.Rounding rounding)
-        external
-        view
-        returns (uint256 equityInCollateralAsset)
-    {
-        ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
-        uint256 totalEquityInCollateralAsset = lendingAdapter.getEquityInCollateralAsset();
-        uint256 totalSupply = _getFeeAdjustedTotalSupply(token);
-        return
-            _convertSharesToEquity(token, lendingAdapter, shares, totalEquityInCollateralAsset, totalSupply, rounding);
     }
 
     /// @inheritdoc ILeverageManager
@@ -322,7 +295,7 @@ contract LeverageManager is
     }
 
     /// @inheritdoc ILeverageManager
-    function previewDeposit(ILeverageToken token, uint256 collateral) public view returns (ActionData memory) {
+    function previewDeposit(ILeverageToken token, uint256 collateral) public view returns (ActionDataV2 memory) {
         ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
         uint256 feeAdjustedTotalSupply = _getFeeAdjustedTotalSupply(token);
 
@@ -331,22 +304,13 @@ contract LeverageManager is
         (uint256 sharesAfterFee, uint256 sharesFee, uint256 treasuryFee) =
             _computeFeesForGrossShares(token, shares, ExternalAction.Mint);
 
-        uint256 equityInCollateralAsset = _convertSharesToEquity(
-            token,
-            lendingAdapter,
-            shares,
-            lendingAdapter.getEquityInCollateralAsset(),
-            feeAdjustedTotalSupply,
-            Math.Rounding.Ceil
-        );
         uint256 debt = _convertSharesToDebt(
             token, lendingAdapter, shares, lendingAdapter.getDebt(), feeAdjustedTotalSupply, Math.Rounding.Floor
         );
 
-        return ActionData({
+        return ActionDataV2({
             collateral: collateral,
             debt: debt,
-            equity: equityInCollateralAsset,
             shares: sharesAfterFee,
             tokenFee: sharesFee,
             treasuryFee: treasuryFee
@@ -354,20 +318,12 @@ contract LeverageManager is
     }
 
     /// @inheritdoc ILeverageManager
-    function previewMintV2(ILeverageToken token, uint256 shares) public view returns (ActionData memory) {
+    function previewMintV2(ILeverageToken token, uint256 shares) public view returns (ActionDataV2 memory) {
         (uint256 grossShares, uint256 sharesFee, uint256 treasuryFee) =
             _computeFeesForNetShares(token, shares, ExternalAction.Mint);
 
         ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
         uint256 feeAdjustedTotalSupply = _getFeeAdjustedTotalSupply(token);
-        uint256 equityInCollateralAsset = _convertSharesToEquity(
-            token,
-            lendingAdapter,
-            grossShares,
-            lendingAdapter.getEquityInCollateralAsset(),
-            feeAdjustedTotalSupply,
-            Math.Rounding.Ceil
-        );
         uint256 collateral = _convertSharesToCollateral(
             token,
             lendingAdapter,
@@ -380,10 +336,9 @@ contract LeverageManager is
             token, lendingAdapter, grossShares, lendingAdapter.getDebt(), feeAdjustedTotalSupply, Math.Rounding.Floor
         );
 
-        return ActionData({
+        return ActionDataV2({
             collateral: collateral,
             debt: debt,
-            equity: equityInCollateralAsset,
             shares: shares,
             tokenFee: sharesFee,
             treasuryFee: treasuryFee
@@ -412,13 +367,13 @@ contract LeverageManager is
     function deposit(ILeverageToken token, uint256 collateral, uint256 minShares)
         external
         nonReentrant
-        returns (ActionData memory actionData)
+        returns (ActionDataV2 memory actionData)
     {
         // Management fee is calculated from the total supply of the LeverageToken, so we need to charge it first
         // before total supply is updated due to the mint
         chargeManagementFee(token);
 
-        ActionData memory depositData = previewDeposit(token, collateral);
+        ActionDataV2 memory depositData = previewDeposit(token, collateral);
 
         if (depositData.shares < minShares) {
             revert SlippageTooHigh(depositData.shares, minShares); // TODO: check if this is correct
@@ -433,13 +388,13 @@ contract LeverageManager is
     function mintV2(ILeverageToken token, uint256 shares, uint256 maxCollateral)
         external
         nonReentrant
-        returns (ActionData memory actionData)
+        returns (ActionDataV2 memory actionData)
     {
         // Management fee is calculated from the total supply of the LeverageToken, so we need to charge it first
         // before total supply is updated due to the mint
         chargeManagementFee(token);
 
-        ActionData memory mintData = previewMintV2(token, shares);
+        ActionDataV2 memory mintData = previewMintV2(token, shares);
 
         if (mintData.collateral > maxCollateral) {
             revert SlippageTooHigh(mintData.collateral, maxCollateral);
@@ -577,45 +532,9 @@ contract LeverageManager is
         if (totalSupply == 0 || totalCollateral == 0) {
             uint256 initialCollateralRatio = getLeverageTokenInitialCollateralRatio(token);
 
-            // Debt rounding is the inverse of the passed rounding parameter, as rounding debt up may result in less
-            // shares and rounding debt down may result in more shares
-            Math.Rounding debtRounding = rounding == Math.Rounding.Floor ? Math.Rounding.Ceil : Math.Rounding.Floor;
-            uint256 debtInCollateralAsset = Math.mulDiv(collateral, BASE_RATIO, initialCollateralRatio, debtRounding);
+            uint256 equityInCollateralAsset =
+                Math.mulDiv(collateral, initialCollateralRatio - BASE_RATIO, initialCollateralRatio, rounding);
 
-            uint256 equityInCollateralAsset = collateral - debtInCollateralAsset;
-
-            return _convertEquityToShares(
-                token,
-                lendingAdapter,
-                equityInCollateralAsset,
-                totalSupply,
-                lendingAdapter.getEquityInCollateralAsset(),
-                rounding
-            );
-        }
-
-        return Math.mulDiv(collateral, totalSupply, totalCollateral, rounding);
-    }
-
-    /// @notice Converts equity in collateral asset to shares given the state of the LeverageToken
-    /// @param token LeverageToken to convert equity for
-    /// @param lendingAdapter Lending adapter of the LeverageToken
-    /// @param equityInCollateralAsset Equity to convert to shares, denominated in collateral asset
-    /// @param totalSupply Total supply of shares of the LeverageToken
-    /// @param totalEquityInCollateralAsset Total equity in collateral asset of the LeverageToken
-    /// @param rounding Rounding mode
-    /// @return shares Shares
-    function _convertEquityToShares(
-        ILeverageToken token,
-        ILendingAdapter lendingAdapter,
-        uint256 equityInCollateralAsset,
-        uint256 totalSupply,
-        uint256 totalEquityInCollateralAsset,
-        Math.Rounding rounding
-    ) internal view returns (uint256 shares) {
-        // If leverage token is empty we mint it in 1:1 ratio with collateral asset but we align it on 18 decimals always
-        // slither-disable-next-line incorrect-equality,timestamp
-        if (totalSupply == 0 || totalEquityInCollateralAsset == 0) {
             uint256 leverageTokenDecimals = IERC20Metadata(address(token)).decimals();
             uint256 collateralDecimals = IERC20Metadata(address(lendingAdapter.getCollateralAsset())).decimals();
 
@@ -630,7 +549,7 @@ contract LeverageManager is
             }
         }
 
-        return Math.mulDiv(equityInCollateralAsset, totalSupply, totalEquityInCollateralAsset, rounding);
+        return Math.mulDiv(collateral, totalSupply, totalCollateral, rounding);
     }
 
     /// @notice Converts shares to collateral given the state of the LeverageToken
@@ -710,39 +629,6 @@ contract LeverageManager is
             }
         }
         return Math.mulDiv(shares, totalDebt, totalSupply, rounding);
-    }
-
-    /// @notice Converts shares to equity in collateral asset given the state of the LeverageToken
-    /// @param token LeverageToken to convert shares for
-    /// @param lendingAdapter Lending adapter of the LeverageToken
-    /// @param shares Shares to convert to equity
-    /// @param totalEquityInCollateralAsset Total equity in collateral asset of the LeverageToken
-    /// @param totalSupply Total supply of shares of the LeverageToken
-    /// @param rounding Rounding mode
-    function _convertSharesToEquity(
-        ILeverageToken token,
-        ILendingAdapter lendingAdapter,
-        uint256 shares,
-        uint256 totalEquityInCollateralAsset,
-        uint256 totalSupply,
-        Math.Rounding rounding
-    ) internal view returns (uint256 equityInCollateralAsset) {
-        // slither-disable-next-line incorrect-equality,timestamp
-        if (totalSupply == 0 || totalEquityInCollateralAsset == 0) {
-            uint256 leverageTokenDecimals = IERC20Metadata(address(token)).decimals();
-            uint256 collateralDecimals = IERC20Metadata(address(lendingAdapter.getCollateralAsset())).decimals();
-
-            // If collateral asset has more decimals than leverage token, we scale down the equity in collateral asset
-            // Otherwise we scale up the equity in collateral asset
-            if (collateralDecimals > leverageTokenDecimals) {
-                uint256 scalingFactor = 10 ** (collateralDecimals - leverageTokenDecimals);
-                return shares * scalingFactor;
-            } else {
-                uint256 scalingFactor = 10 ** (leverageTokenDecimals - collateralDecimals);
-                return shares / scalingFactor;
-            }
-        }
-        return Math.mulDiv(shares, totalEquityInCollateralAsset, totalSupply, rounding);
     }
 
     /// @notice Function that converts user's equity to shares
@@ -885,7 +771,7 @@ contract LeverageManager is
     /// @notice Helper function for executing a mint action on a LeverageToken
     /// @param token LeverageToken to mint shares for
     /// @param mintData Action data for the mint
-    function _mint(ILeverageToken token, ActionData memory mintData) internal {
+    function _mint(ILeverageToken token, ActionDataV2 memory mintData) internal {
         // Take collateral asset from sender
         IERC20 collateralAsset = getLeverageTokenCollateralAsset(token);
         SafeERC20.safeTransferFrom(collateralAsset, msg.sender, address(this), mintData.collateral);
@@ -905,7 +791,7 @@ contract LeverageManager is
         token.mint(msg.sender, mintData.shares);
 
         // Emit event and explicit return statement
-        emit Mint(token, msg.sender, mintData);
+        emit MintV2(token, msg.sender, mintData);
     }
 
     /// @notice Helper function for transferring tokens, or no-op if token is 0 address

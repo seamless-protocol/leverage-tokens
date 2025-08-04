@@ -19,8 +19,8 @@ import {MockERC20} from "test/unit/mock/MockERC20.sol";
 contract FeeManagerTest is Test {
     uint256 public constant MAX_ACTION_FEE = 100_00 - 1;
     uint256 public constant MAX_MANAGEMENT_FEE = 100_00;
-    uint256 public constant BASE_FEE = 100_00;
-    uint256 public constant BASE_FEE_SQUARED = BASE_FEE * BASE_FEE;
+    uint256 public constant MAX_BPS = 100_00;
+    uint256 public constant MAX_BPS_SQUARED = MAX_BPS * MAX_BPS;
     uint256 public constant SECONDS_ONE_YEAR = 31536000;
 
     address public feeManagerRole = makeAddr("feeManagerRole");

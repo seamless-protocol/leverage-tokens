@@ -14,7 +14,7 @@ import {MorphoLendingAdapterTest} from "../MorphoLendingAdapter.t.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IntegrationTestBase} from "../IntegrationTestBase.t.sol";
-import {LeverageTokenState, ActionData} from "src/types/DataTypes.sol";
+import {LeverageTokenState, ActionData, ActionDataV2} from "src/types/DataTypes.sol";
 
 contract LeverageManagerTest is IntegrationTestBase {
     function testFork_setUp() public view virtual override {
@@ -24,12 +24,12 @@ contract LeverageManagerTest is IntegrationTestBase {
 
     function _deposit(address caller, uint256 collateralToDeposit, uint256 minShares)
         internal
-        returns (ActionData memory)
+        returns (ActionDataV2 memory)
     {
         deal(address(WETH), caller, collateralToDeposit);
         vm.startPrank(caller);
         WETH.approve(address(leverageManager), collateralToDeposit);
-        ActionData memory depositData = leverageManager.deposit(leverageToken, collateralToDeposit, minShares);
+        ActionDataV2 memory depositData = leverageManager.deposit(leverageToken, collateralToDeposit, minShares);
         vm.stopPrank();
 
         return depositData;
@@ -50,12 +50,12 @@ contract LeverageManagerTest is IntegrationTestBase {
 
     function _mintV2(address caller, uint256 sharesToMint, uint256 maxCollateral)
         internal
-        returns (ActionData memory)
+        returns (ActionDataV2 memory)
     {
         deal(address(WETH), caller, maxCollateral);
         vm.startPrank(caller);
         WETH.approve(address(leverageManager), maxCollateral);
-        ActionData memory mintData = leverageManager.mintV2(leverageToken, sharesToMint, maxCollateral);
+        ActionDataV2 memory mintData = leverageManager.mintV2(leverageToken, sharesToMint, maxCollateral);
         vm.stopPrank();
 
         return mintData;

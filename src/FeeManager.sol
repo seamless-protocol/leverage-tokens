@@ -28,13 +28,13 @@ import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
     bytes32 public constant FEE_MANAGER_ROLE = keccak256("FEE_MANAGER_ROLE");
 
-    uint256 internal constant BASE_FEE = 100_00;
+    uint256 internal constant MAX_BPS = 100_00;
 
-    uint256 internal constant BASE_FEE_SQUARED = BASE_FEE * BASE_FEE;
+    uint256 internal constant MAX_BPS_SQUARED = MAX_BPS * MAX_BPS;
 
-    uint256 internal constant MAX_ACTION_FEE = 100_00 - 1;
+    uint256 internal constant MAX_ACTION_FEE = MAX_BPS - 1;
 
-    uint256 internal constant MAX_MANAGEMENT_FEE = 100_00;
+    uint256 internal constant MAX_MANAGEMENT_FEE = MAX_BPS;
 
     uint256 internal constant SECS_PER_YEAR = 31536000;
 
@@ -167,7 +167,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
         returns (uint256, uint256)
     {
         uint256 sharesTokenFee =
-            Math.mulDiv(shares, getLeverageTokenActionFee(token, action), BASE_FEE, Math.Rounding.Ceil);
+            Math.mulDiv(shares, getLeverageTokenActionFee(token, action), MAX_BPS, Math.Rounding.Ceil);
 
         // To increase share value for existing users, less shares are minted on mints and more shares are burned on
         // redeems by subtracting the token fee from the equity on mints and adding the token fee to the equity on
@@ -238,13 +238,12 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
         //   gross = net * baseFeeSquared / ((baseFee - tokenActionFeeRate) * (baseFee - treasuryActionFeeRate))
         grossShares = Math.mulDiv(
             netShares,
-            BASE_FEE_SQUARED,
-            (BASE_FEE - tokenActionFeeRate) * (BASE_FEE - treasuryActionFeeRate),
+            MAX_BPS_SQUARED,
+            (MAX_BPS - tokenActionFeeRate) * (MAX_BPS - treasuryActionFeeRate),
             Math.Rounding.Ceil
         );
-        sharesTokenFee = Math.min(
-            Math.mulDiv(grossShares, tokenActionFeeRate, BASE_FEE, Math.Rounding.Ceil), grossShares - netShares
-        );
+        sharesTokenFee =
+            Math.min(Math.mulDiv(grossShares, tokenActionFeeRate, MAX_BPS, Math.Rounding.Ceil), grossShares - netShares);
         treasuryFee = grossShares - sharesTokenFee - netShares;
 
         return (grossShares, sharesTokenFee, treasuryFee);
@@ -255,7 +254,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     /// @param shares Shares to compute treasury action fee for
     /// @return treasuryFee Treasury action fee amount in shares
     function _computeTreasuryFee(ExternalAction action, uint256 shares) internal view returns (uint256) {
-        return Math.mulDiv(shares, getTreasuryActionFee(action), BASE_FEE, Math.Rounding.Ceil);
+        return Math.mulDiv(shares, getTreasuryActionFee(action), MAX_BPS, Math.Rounding.Ceil);
     }
 
     /// @notice Function that returns the total supply of the LeverageToken adjusted for any accrued management fees
@@ -278,7 +277,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
         uint256 duration = block.timestamp - lastManagementFeeAccrualTimestamp;
 
         uint256 sharesFee =
-            Math.mulDiv(managementFee * totalSupply, duration, BASE_FEE * SECS_PER_YEAR, Math.Rounding.Ceil);
+            Math.mulDiv(managementFee * totalSupply, duration, MAX_BPS * SECS_PER_YEAR, Math.Rounding.Ceil);
         return sharesFee;
     }
 

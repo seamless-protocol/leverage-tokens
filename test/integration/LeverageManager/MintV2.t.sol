@@ -4,9 +4,7 @@ pragma solidity ^0.8.26;
 // Internal imports
 import {MorphoLendingAdapter} from "src/lending/MorphoLendingAdapter.sol";
 import {LeverageManagerTest} from "./LeverageManager.t.sol";
-import {ActionData, LeverageTokenState, ExternalAction} from "src/types/DataTypes.sol";
-
-import {console2} from "forge-std/console2.sol";
+import {ActionDataV2, LeverageTokenState, ExternalAction} from "src/types/DataTypes.sol";
 
 contract LeverageManagerMintTest is LeverageManagerTest {
     /// @dev In this block price on oracle 3392.292471591441746049801068
@@ -62,7 +60,7 @@ contract LeverageManagerMintTest is LeverageManagerTest {
         collateralRatio = leverageManager.getLeverageTokenState(leverageToken).collateralRatio;
         assertEq(collateralRatio, 1.974502635802161566e18);
 
-        ActionData memory previewData = leverageManager.previewMintV2(leverageToken, sharesToMint);
+        ActionDataV2 memory previewData = leverageManager.previewMintV2(leverageToken, sharesToMint);
 
         assertEq(previewData.shares, sharesToMint);
         // collateralToAdd is higher than before due to higher leverage from CR going down
@@ -100,14 +98,13 @@ contract LeverageManagerMintTest is LeverageManagerTest {
         sharesToMintC = bound(sharesToMintC, 1e9, 100 ether);
         deltaTime = uint64(bound(deltaTime, 0, 365 days));
 
-        ActionData memory previewData = leverageManager.previewMintV2(leverageToken, sharesToMintA);
+        ActionDataV2 memory previewData = leverageManager.previewMintV2(leverageToken, sharesToMintA);
 
-        ActionData memory mintDataA = _mintV2(user, sharesToMintA, previewData.collateral);
+        ActionDataV2 memory mintDataA = _mintV2(user, sharesToMintA, previewData.collateral);
 
         assertEq(mintDataA.shares, sharesToMintA);
         assertEq(mintDataA.collateral, previewData.collateral);
         assertEq(mintDataA.debt, previewData.debt);
-        assertEq(mintDataA.equity, previewData.equity);
         assertEq(mintDataA.tokenFee, previewData.tokenFee);
         assertEq(mintDataA.treasuryFee, previewData.treasuryFee);
 
@@ -115,12 +112,11 @@ contract LeverageManagerMintTest is LeverageManagerTest {
 
         previewData = leverageManager.previewMintV2(leverageToken, sharesToMintB);
 
-        ActionData memory mintDataB = _mintV2(user, sharesToMintB, previewData.collateral);
+        ActionDataV2 memory mintDataB = _mintV2(user, sharesToMintB, previewData.collateral);
 
         assertEq(mintDataB.shares, sharesToMintB);
         assertEq(mintDataB.collateral, previewData.collateral);
         assertEq(mintDataB.debt, previewData.debt);
-        assertEq(mintDataB.equity, previewData.equity);
         assertEq(mintDataB.tokenFee, previewData.tokenFee);
         assertEq(mintDataB.treasuryFee, previewData.treasuryFee);
 
@@ -128,12 +124,11 @@ contract LeverageManagerMintTest is LeverageManagerTest {
 
         previewData = leverageManager.previewMintV2(leverageToken, sharesToMintC);
 
-        ActionData memory mintDataC = _mintV2(user, sharesToMintC, previewData.collateral);
+        ActionDataV2 memory mintDataC = _mintV2(user, sharesToMintC, previewData.collateral);
 
         assertEq(mintDataC.shares, sharesToMintC);
         assertEq(mintDataC.collateral, previewData.collateral);
         assertEq(mintDataC.debt, previewData.debt);
-        assertEq(mintDataC.equity, previewData.equity);
         assertEq(mintDataC.tokenFee, previewData.tokenFee);
         assertEq(mintDataC.treasuryFee, previewData.treasuryFee);
 

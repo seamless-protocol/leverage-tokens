@@ -19,7 +19,7 @@ contract ComputeTokenFeeTest is FeeManagerTest {
 
         (uint256 sharesAfterFee, uint256 tokenFee) = feeManager.exposed_computeTokenFee(leverageToken, shares, action);
 
-        uint256 expectedTokenFee = Math.mulDiv(shares, mintTokenFee, BASE_FEE, Math.Rounding.Ceil);
+        uint256 expectedTokenFee = Math.mulDiv(shares, mintTokenFee, MAX_BPS, Math.Rounding.Ceil);
         assertEq(tokenFee, expectedTokenFee);
 
         assertEq(sharesAfterFee, shares - expectedTokenFee);
@@ -34,7 +34,7 @@ contract ComputeTokenFeeTest is FeeManagerTest {
 
         (uint256 sharesAfterFee, uint256 tokenFee) = feeManager.exposed_computeTokenFee(leverageToken, shares, action);
 
-        uint256 expectedTokenFee = Math.mulDiv(shares, redeemTokenFee, BASE_FEE, Math.Rounding.Ceil);
+        uint256 expectedTokenFee = Math.mulDiv(shares, redeemTokenFee, MAX_BPS, Math.Rounding.Ceil);
         assertEq(tokenFee, expectedTokenFee);
 
         assertEq(sharesAfterFee, shares + expectedTokenFee);
@@ -49,7 +49,7 @@ contract ComputeTokenFeeTest is FeeManagerTest {
         (uint256 sharesAfterFee, uint256 tokenFee) = feeManager.exposed_computeTokenFee(leverageToken, shares, action);
 
         uint256 expectedTokenFee = Math.mulDiv(
-            shares, action == ExternalAction.Mint ? mintTokenFee : redeemTokenFee, BASE_FEE, Math.Rounding.Ceil
+            shares, action == ExternalAction.Mint ? mintTokenFee : redeemTokenFee, MAX_BPS, Math.Rounding.Ceil
         );
         assertEq(tokenFee, expectedTokenFee);
 

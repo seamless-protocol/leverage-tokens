@@ -8,7 +8,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
-import {ActionData, ExternalAction, LeverageTokenConfig, LeverageTokenState} from "src/types/DataTypes.sol";
+import {ActionDataV2, ExternalAction, LeverageTokenConfig, LeverageTokenState} from "src/types/DataTypes.sol";
 import {LeverageManagerTest} from "../LeverageManager/LeverageManager.t.sol";
 
 contract MintTest is LeverageManagerTest {
@@ -71,14 +71,13 @@ contract MintTest is LeverageManagerTest {
         );
 
         uint256 sharesToMint = 0;
-        ActionData memory previewData = leverageManager.previewMintV2(leverageToken, sharesToMint);
+        ActionDataV2 memory previewData = leverageManager.previewMintV2(leverageToken, sharesToMint);
 
         assertEq(previewData.collateral, 0);
         assertEq(previewData.debt, 0);
         assertEq(previewData.shares, 0);
         assertEq(previewData.tokenFee, 0);
         assertEq(previewData.treasuryFee, 0);
-        assertEq(previewData.equity, 0);
 
         _testMint(sharesToMint, 0, 0);
     }
@@ -113,17 +112,15 @@ contract MintTest is LeverageManagerTest {
         uint256 sharesToMint = 1 ether;
         uint256 expectedCollateralToAdd = 2 ether; // 2x target CR
         uint256 expectedDebtToBorrow = 1 ether;
-        uint256 expectedEquity = 1 ether;
         uint256 expectedShares = sharesToMint;
 
         deal(address(collateralToken), address(this), expectedCollateralToAdd);
         collateralToken.approve(address(leverageManager), expectedCollateralToAdd);
 
-        ActionData memory mintData = leverageManager.mintV2(leverageToken, sharesToMint, expectedCollateralToAdd);
+        ActionDataV2 memory mintData = leverageManager.mintV2(leverageToken, sharesToMint, expectedCollateralToAdd);
 
         assertEq(mintData.collateral, expectedCollateralToAdd);
         assertEq(mintData.debt, expectedDebtToBorrow);
-        assertEq(mintData.equity, expectedEquity);
         assertEq(mintData.shares, expectedShares);
         assertEq(mintData.tokenFee, 0);
         assertEq(mintData.treasuryFee, 0);
@@ -153,7 +150,7 @@ contract MintTest is LeverageManagerTest {
         // 10 ether shares will require 20 ether collateral
         collateralSlippage = uint128(bound(collateralSlippage, 1, 20 ether));
 
-        ActionData memory previewData = leverageManager.previewMintV2(leverageToken, sharesToMint);
+        ActionDataV2 memory previewData = leverageManager.previewMintV2(leverageToken, sharesToMint);
 
         deal(address(collateralToken), address(this), previewData.collateral);
         collateralToken.approve(address(leverageManager), previewData.collateral);
@@ -206,13 +203,12 @@ contract MintTest is LeverageManagerTest {
         // will not respect the current collateral ratio of the leverage token, it just uses the target collateral ratio
         require(beforeSharesTotalSupply != 0, "Shares total supply must be non-zero to use _testMint helper function");
 
-        ActionData memory previewData = leverageManager.previewMintV2(leverageToken, shares);
+        ActionDataV2 memory previewData = leverageManager.previewMintV2(leverageToken, shares);
 
         deal(address(collateralToken), address(this), previewData.collateral);
         collateralToken.approve(address(leverageManager), previewData.collateral);
 
-        ActionData memory expectedMintData = ActionData({
-            equity: previewData.equity,
+        ActionDataV2 memory expectedMintData = ActionDataV2({
             collateral: previewData.collateral,
             debt: previewData.debt,
             shares: previewData.shares,
@@ -221,8 +217,8 @@ contract MintTest is LeverageManagerTest {
         });
 
         vm.expectEmit(true, true, true, true);
-        emit ILeverageManager.Mint(leverageToken, address(this), expectedMintData);
-        ActionData memory actualMintData = leverageManager.mintV2(leverageToken, shares, previewData.collateral);
+        emit ILeverageManager.MintV2(leverageToken, address(this), expectedMintData);
+        ActionDataV2 memory actualMintData = leverageManager.mintV2(leverageToken, shares, previewData.collateral);
 
         assertEq(actualMintData.shares, expectedMintData.shares, "Shares received mismatch with preview");
         assertEq(

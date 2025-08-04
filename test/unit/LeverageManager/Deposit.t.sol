@@ -8,7 +8,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
-import {ActionData, ExternalAction, LeverageTokenConfig, LeverageTokenState} from "src/types/DataTypes.sol";
+import {ActionDataV2, ExternalAction, LeverageTokenConfig, LeverageTokenState} from "src/types/DataTypes.sol";
 import {LeverageManagerTest} from "../LeverageManager/LeverageManager.t.sol";
 
 contract DepositTest is LeverageManagerTest {
@@ -71,14 +71,13 @@ contract DepositTest is LeverageManagerTest {
         );
 
         uint256 collateralToDeposit = 0;
-        ActionData memory previewData = leverageManager.previewDeposit(leverageToken, collateralToDeposit);
+        ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, collateralToDeposit);
 
         assertEq(previewData.collateral, 0);
         assertEq(previewData.debt, 0);
         assertEq(previewData.shares, 0);
         assertEq(previewData.tokenFee, 0);
         assertEq(previewData.treasuryFee, 0);
-        assertEq(previewData.equity, 0);
 
         _testDeposit(collateralToDeposit, 0, 0);
     }
@@ -111,17 +110,15 @@ contract DepositTest is LeverageManagerTest {
 
         uint256 collateralToDeposit = 2 ether; // 2x target CR
         uint256 expectedDebtToBorrow = 1 ether;
-        uint256 expectedEquity = 1 ether;
         uint256 expectedShares = 1 ether;
 
         deal(address(collateralToken), address(this), collateralToDeposit);
         collateralToken.approve(address(leverageManager), collateralToDeposit);
 
-        ActionData memory depositData = leverageManager.deposit(leverageToken, collateralToDeposit, expectedShares);
+        ActionDataV2 memory depositData = leverageManager.deposit(leverageToken, collateralToDeposit, expectedShares);
 
         assertEq(depositData.collateral, collateralToDeposit);
         assertEq(depositData.debt, expectedDebtToBorrow);
-        assertEq(depositData.equity, expectedEquity);
         assertEq(depositData.shares, expectedShares);
         assertEq(depositData.tokenFee, 0);
         assertEq(depositData.treasuryFee, 0);
@@ -148,7 +145,7 @@ contract DepositTest is LeverageManagerTest {
             MockLeverageManagerStateForAction({collateral: 100 ether, debt: 50 ether, sharesTotalSupply: 10 ether})
         );
 
-        ActionData memory previewData = leverageManager.previewDeposit(leverageToken, collateralToDeposit);
+        ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, collateralToDeposit);
 
         deal(address(collateralToken), address(this), previewData.collateral);
         collateralToken.approve(address(leverageManager), previewData.collateral);
@@ -206,13 +203,12 @@ contract DepositTest is LeverageManagerTest {
             beforeSharesTotalSupply != 0, "Shares total supply must be non-zero to use _testDeposit helper function"
         );
 
-        ActionData memory previewData = leverageManager.previewDeposit(leverageToken, collateral);
+        ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, collateral);
 
         deal(address(collateralToken), address(this), previewData.collateral);
         collateralToken.approve(address(leverageManager), previewData.collateral);
 
-        ActionData memory expectedDepositData = ActionData({
-            equity: previewData.equity,
+        ActionDataV2 memory expectedDepositData = ActionDataV2({
             collateral: previewData.collateral,
             debt: previewData.debt,
             shares: previewData.shares,
@@ -221,8 +217,8 @@ contract DepositTest is LeverageManagerTest {
         });
 
         vm.expectEmit(true, true, true, true);
-        emit ILeverageManager.Mint(leverageToken, address(this), expectedDepositData);
-        ActionData memory actualDepositData = leverageManager.deposit(leverageToken, collateral, previewData.shares);
+        emit ILeverageManager.MintV2(leverageToken, address(this), expectedDepositData);
+        ActionDataV2 memory actualDepositData = leverageManager.deposit(leverageToken, collateral, previewData.shares);
 
         assertEq(actualDepositData.shares, expectedDepositData.shares, "Shares received mismatch with preview");
         assertEq(
