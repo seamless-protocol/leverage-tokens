@@ -53,6 +53,7 @@ contract ConvertSharesToCollateralTest is LeverageManagerTest {
     ) public {
         uint256 initialCollateralRatio = 2 * _BASE_RATIO();
         shares = uint128(bound(shares, 0, type(uint128).max / initialCollateralRatio));
+        nonZeroValue = uint128(bound(nonZeroValue, 1, type(uint128).max));
 
         uint256 totalSupply = nonZeroValue;
         uint256 totalCollateral = 0;
@@ -100,6 +101,7 @@ contract ConvertSharesToCollateralTest is LeverageManagerTest {
     ) public {
         uint256 initialCollateralRatio = 2 * _BASE_RATIO();
         shares = uint128(bound(shares, 0, type(uint128).max / initialCollateralRatio));
+        nonZeroValue = uint128(bound(nonZeroValue, 1, type(uint128).max));
 
         uint256 collateralDecimals = 6;
 
@@ -155,6 +157,7 @@ contract ConvertSharesToCollateralTest is LeverageManagerTest {
     ) public {
         uint256 initialCollateralRatio = 2 * _BASE_RATIO();
         shares = uint128(bound(shares, 0, type(uint128).max / initialCollateralRatio));
+        nonZeroValue = uint128(bound(nonZeroValue, 1, type(uint128).max));
 
         uint256 collateralDecimals = 27;
 
