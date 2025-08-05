@@ -287,6 +287,30 @@ interface ILeverageManager is IFeeManager {
         view
         returns (ActionData memory previewData);
 
+    /// @notice Previews redeem function call and returns all required data
+    /// @param token LeverageToken to preview redeem for
+    /// @param shares Amount of shares to redeem
+    /// @return previewData Preview data for redeem
+    ///         - collateral Amount of collateral that will be removed from the LeverageToken and sent to the sender
+    ///         - debt Amount of debt that will be taken from sender and repaid to the LeverageToken
+    ///         - shares Amount of shares that will be burned from sender
+    ///         - tokenFee Amount of shares that will be charged for the redeem that are given to the LeverageToken
+    ///         - treasuryFee Amount of shares that will be charged for the redeem that are given to the treasury
+    /// @dev Sender should approve LeverageManager to spend debt amount of debt asset
+    function previewRedeemV2(ILeverageToken token, uint256 shares) external view returns (ActionDataV2 memory);
+
+    /// @notice Previews withdraw function call and returns all required data
+    /// @param token LeverageToken to preview withdraw for
+    /// @param collateral Amount of collateral to withdraw
+    /// @return previewData Preview data for withdraw
+    ///         - collateral Amount of collateral that will be removed from the LeverageToken and sent to the sender
+    ///         - debt Amount of debt that will be taken from sender and repaid to the LeverageToken
+    ///         - shares Amount of shares that will be burned from sender
+    ///         - tokenFee Amount of shares that will be charged for the redeem that are given to the LeverageToken
+    ///         - treasuryFee Amount of shares that will be charged for the redeem that are given to the treasury
+    /// @dev Sender should approve LeverageManager to spend debt amount of debt asset
+    function previewWithdraw(ILeverageToken token, uint256 collateral) external view returns (ActionDataV2 memory);
+
     /// @notice Adds equity to a LeverageToken and mints shares of it to the sender
     /// @param token The LeverageToken to mint shares of
     /// @param equityInCollateralAsset The amount of equity to mint shares for, denominated in the collateral asset of the LeverageToken

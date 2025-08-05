@@ -346,6 +346,50 @@ contract LeverageManager is
     }
 
     /// @inheritdoc ILeverageManager
+    function previewRedeemV2(ILeverageToken token, uint256 shares) public view returns (ActionDataV2 memory) {
+        (, uint256 sharesFee, uint256 treasuryFee) = _computeFeesForGrossShares(token, shares, ExternalAction.Redeem);
+
+        ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
+        uint256 feeAdjustedTotalSupply = _getFeeAdjustedTotalSupply(token);
+        uint256 collateral = _convertSharesToCollateral(
+            token, lendingAdapter, shares, lendingAdapter.getCollateral(), feeAdjustedTotalSupply, Math.Rounding.Floor
+        );
+        uint256 debt = _convertSharesToDebt(
+            token, lendingAdapter, shares, lendingAdapter.getDebt(), feeAdjustedTotalSupply, Math.Rounding.Ceil
+        );
+
+        return ActionDataV2({
+            collateral: collateral,
+            debt: debt,
+            shares: shares,
+            tokenFee: sharesFee,
+            treasuryFee: treasuryFee
+        });
+    }
+
+    /// @inheritdoc ILeverageManager
+    function previewWithdraw(ILeverageToken token, uint256 collateral) public view returns (ActionDataV2 memory) {
+        ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
+        uint256 feeAdjustedTotalSupply = _getFeeAdjustedTotalSupply(token);
+
+        uint256 shares =
+            _convertCollateralToShares(token, lendingAdapter, collateral, feeAdjustedTotalSupply, Math.Rounding.Ceil);
+        (, uint256 sharesFee, uint256 treasuryFee) = _computeFeesForGrossShares(token, shares, ExternalAction.Redeem);
+
+        uint256 debt = _convertSharesToDebt(
+            token, lendingAdapter, shares, lendingAdapter.getDebt(), feeAdjustedTotalSupply, Math.Rounding.Ceil
+        );
+
+        return ActionDataV2({
+            collateral: collateral,
+            debt: debt,
+            shares: shares,
+            tokenFee: sharesFee,
+            treasuryFee: treasuryFee
+        });
+    }
+
+    /// @inheritdoc ILeverageManager
     function previewMint(ILeverageToken token, uint256 equityInCollateralAsset)
         public
         view
@@ -568,7 +612,7 @@ contract LeverageManager is
         Math.Rounding rounding
     ) internal view returns (uint256 collateral) {
         // slither-disable-next-line incorrect-equality,timestamp
-        if (totalSupply == 0 || totalCollateral == 0) {
+        if (totalSupply == 0) {
             uint256 leverageTokenDecimals = IERC20Metadata(address(token)).decimals();
             uint256 collateralDecimals = IERC20Metadata(address(lendingAdapter.getCollateralAsset())).decimals();
 
@@ -608,7 +652,7 @@ contract LeverageManager is
         Math.Rounding rounding
     ) internal view returns (uint256 debt) {
         // slither-disable-next-line incorrect-equality,timestamp
-        if (totalSupply == 0 || totalDebt == 0) {
+        if (totalSupply == 0) {
             uint256 leverageTokenDecimals = IERC20Metadata(address(token)).decimals();
             uint256 collateralDecimals = IERC20Metadata(address(lendingAdapter.getCollateralAsset())).decimals();
 
@@ -628,6 +672,7 @@ contract LeverageManager is
                 );
             }
         }
+
         return Math.mulDiv(shares, totalDebt, totalSupply, rounding);
     }
 

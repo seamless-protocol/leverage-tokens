@@ -39,17 +39,17 @@ contract ComputeFeesForGrossSharesTest is FeeManagerTest {
         (netShares, tokenFee, treasuryFee) =
             feeManager.exposed_computeFeesForGrossShares(leverageToken, shares, ExternalAction.Redeem);
 
-        expectedNetShares = shares * (MAX_BPS + redeemTokenFee) * (MAX_BPS + redeemTreasuryFee) / MAX_BPS_SQUARED;
+        expectedNetShares = shares * (MAX_BPS - redeemTokenFee) * (MAX_BPS - redeemTreasuryFee) / MAX_BPS_SQUARED;
         assertEq(netShares, expectedNetShares);
-        assertEq(netShares, 1.1448 ether); // 1 ether * 1.02 * 1.04
+        assertEq(netShares, 0.8648 ether); // 1 ether * 0.94 * 0.92
 
         expectedTokenFee = Math.mulDiv(shares, redeemTokenFee, MAX_BPS, Math.Rounding.Ceil);
         assertEq(tokenFee, expectedTokenFee);
         assertEq(tokenFee, 0.06 ether); // 1 ether * 0.06
 
-        expectedTreasuryFee = Math.mulDiv(shares + tokenFee, redeemTreasuryFee, MAX_BPS, Math.Rounding.Ceil);
+        expectedTreasuryFee = Math.mulDiv(shares - tokenFee, redeemTreasuryFee, MAX_BPS, Math.Rounding.Ceil);
         assertEq(treasuryFee, expectedTreasuryFee);
-        assertEq(treasuryFee, 0.0848 ether); // 1 ether * 1.06 * 0.08
+        assertEq(treasuryFee, 0.0752 ether); // 1 ether * 0.94 * 0.08
     }
 
     function testFuzz_computeFeesForGrossShares(
@@ -87,10 +87,10 @@ contract ComputeFeesForGrossSharesTest is FeeManagerTest {
         expectedTokenFee = Math.mulDiv(shares, redeemTokenFee, MAX_BPS, Math.Rounding.Ceil);
         assertEq(tokenFee, expectedTokenFee);
 
-        expectedTreasuryFee = Math.mulDiv(shares + tokenFee, redeemTreasuryFee, MAX_BPS, Math.Rounding.Ceil);
+        expectedTreasuryFee = Math.mulDiv(shares - tokenFee, redeemTreasuryFee, MAX_BPS, Math.Rounding.Ceil);
         assertEq(treasuryFee, expectedTreasuryFee);
 
-        expectedNetShares = shares + tokenFee + treasuryFee;
+        expectedNetShares = shares - tokenFee - treasuryFee;
         assertEq(netShares, expectedNetShares);
     }
 }
