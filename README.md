@@ -16,6 +16,22 @@ Build: `forge build`
 
 The protocol is composed of modular contracts that abstract away the complexities of managing leveraged positions. These components are designed to be flexible, composable, and upgradeable, making it easy to integrate new lending markets, rebalancing strategies, or token configurations.
 
+## Permissionless Creation
+Leverage Tokens within the Seamless Protocol are designed to be fully permissionless. This means:
+
+- **Anyone can create a new Leverage Token:** There are no restrictions or allowlists for token creation. Users, developers, or even external parties can deploy new Leverage Tokens at any time.
+
+- **Potential for Malicious Tokens:** Because creation is open, it is possible for malicious actors to deploy Leverage Tokens with configurations or parameters intended to deceive users or exploit vulnerabilities. Participants should exercise caution and verify the legitimacy and configuration of any Leverage Token before interacting with it.
+
+## Inherited Risks from Underlying Platforms
+Leverage Tokens are built to interact with various DeFi protocols through adapters. As a result:
+
+- **Exposure to Adapter Risks:** Each Leverage Token inherits the technical and economic risks of any underlying lending or DeFi platform it integrates with via adapters. If an adapter connects to a platform with vulnerabilities, those risks are passed through to the Leverage Token and its users.
+
+- **No Isolation from Platform Failures:** Issues such as smart contract bugs, oracle failures, insolvency, or governance attacks on underlying platforms can directly impact the safety and value of the Leverage Token.
+
+- **Dynamic Risk Profile:** The risk profile of each Leverage Token may change over time as underlying protocols are upgraded, attacked, or experience market volatility.
+
 ### LeverageManager
 
 The LeverageManager is the core singleton contract used for creating and maintaining leverage positions involving two assets: one serving as collateral and the other as debt. It does not handle any swapping or other asset-trading logic; instead, it only relies on price data (i.e., the relative price of the two assets) to validate and oversee the leverage position.
