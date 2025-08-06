@@ -529,7 +529,7 @@ contract LeverageManager is
         uint256 totalCollateral = lendingAdapter.getCollateral();
 
         // slither-disable-next-line incorrect-equality,timestamp
-        if (totalSupply == 0 || totalCollateral == 0) {
+        if (totalSupply == 0) {
             uint256 initialCollateralRatio = getLeverageTokenInitialCollateralRatio(token);
 
             uint256 equityInCollateralAsset =
@@ -547,6 +547,13 @@ contract LeverageManager is
                 uint256 scalingFactor = 10 ** (leverageTokenDecimals - collateralDecimals);
                 return equityInCollateralAsset * scalingFactor;
             }
+        }
+
+        // If total supply != 0 and total collateral is zero, the LeverageToken was fully liquidated. In this case,
+        // no amount of collateral can be converted to shares. An implication of this is that new mints of shares
+        // will not be possible for the LeverageToken.
+        if (totalCollateral == 0) {
+            return 0;
         }
 
         return Math.mulDiv(collateral, totalSupply, totalCollateral, rounding);
@@ -568,7 +575,7 @@ contract LeverageManager is
         Math.Rounding rounding
     ) internal view returns (uint256 collateral) {
         // slither-disable-next-line incorrect-equality,timestamp
-        if (totalSupply == 0 || totalCollateral == 0) {
+        if (totalSupply == 0) {
             uint256 leverageTokenDecimals = IERC20Metadata(address(token)).decimals();
             uint256 collateralDecimals = IERC20Metadata(address(lendingAdapter.getCollateralAsset())).decimals();
 
@@ -608,7 +615,7 @@ contract LeverageManager is
         Math.Rounding rounding
     ) internal view returns (uint256 debt) {
         // slither-disable-next-line incorrect-equality,timestamp
-        if (totalSupply == 0 || totalDebt == 0) {
+        if (totalSupply == 0) {
             uint256 leverageTokenDecimals = IERC20Metadata(address(token)).decimals();
             uint256 collateralDecimals = IERC20Metadata(address(lendingAdapter.getCollateralAsset())).decimals();
 

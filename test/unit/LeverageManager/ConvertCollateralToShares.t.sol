@@ -100,12 +100,10 @@ contract ConvertCollateralToSharesTest is LeverageManagerTest {
         collateralToken.mockSetDecimals(12);
 
         uint256 shares = leverageManager.convertCollateralToShares(leverageToken, collateral, Math.Rounding.Ceil);
-        assertEq(shares, 3e6);
-        assertEq(shares, 3 * 1e6); // Delta in decimals is 18 - 12 = 6, shares = 3 equity * 1e6 scaling factor
+        assertEq(shares, 0);
 
         shares = leverageManager.convertCollateralToShares(leverageToken, collateral, Math.Rounding.Floor);
-        assertEq(shares, 2e6);
-        assertEq(shares, 2 * 1e6); // Delta in decimals is 18 - 12 = 6, shares = 2 equity * 1e6 scaling factor
+        assertEq(shares, 0);
     }
 
     function test_convertCollateralToShares_ZeroTotalCollateral_CollateralDecimalsGtLeverageTokenDecimals() public {
@@ -126,10 +124,10 @@ contract ConvertCollateralToSharesTest is LeverageManagerTest {
         );
 
         uint256 shares = leverageManager.convertCollateralToShares(leverageToken, collateral, Math.Rounding.Ceil);
-        assertEq(shares, 3); // Delta in decimals is 24 - 18 = 6, shares = 3,333,333 equity / 1e6 scaling factor, rounded down
+        assertEq(shares, 0);
 
         shares = leverageManager.convertCollateralToShares(leverageToken, collateral, Math.Rounding.Floor);
-        assertEq(shares, 3); // Delta in decimals is 24 - 18 = 6, shares = 3,333,334 equity / 1e6 scaling factor, rounded down
+        assertEq(shares, 0);
     }
 
     function testFuzz_convertCollateralToShares(
