@@ -375,6 +375,7 @@ contract LeverageManager is
 
         ActionDataV2 memory depositData = previewDeposit(token, collateral);
 
+        // slither-disable-next-line timestamp
         if (depositData.shares < minShares) {
             revert SlippageTooHigh(depositData.shares, minShares); // TODO: check if this is correct
         }
@@ -396,6 +397,7 @@ contract LeverageManager is
 
         ActionDataV2 memory mintData = previewMintV2(token, shares);
 
+        // slither-disable-next-line timestamp
         if (mintData.collateral > maxCollateral) {
             revert SlippageTooHigh(mintData.collateral, maxCollateral);
         }
