@@ -8,6 +8,7 @@ library DeployConstants {
     address public constant ETHERFI_L2_MODE_SYNC_POOL = 0xc38e046dFDAdf15f7F56853674242888301208a5;
     address public constant ETHERFI_ETH_IDENTIFIER = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
+    address public constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
     address public constant WETH = 0x4200000000000000000000000000000000000006;
     address public constant WEETH = 0x04C0599Ae5A44757c0af6F9eC3b93da8976c150A;
 

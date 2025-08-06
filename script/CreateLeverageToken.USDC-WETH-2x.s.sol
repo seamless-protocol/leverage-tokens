@@ -64,19 +64,19 @@ contract CreateLeverageToken is Script {
     uint256 public REDEEM_TOKEN_FEE = 10;
 
     /// @dev Name of the LT
-    string public LT_NAME = "weETH / WETH 17x Leverage Token";
+    string public LT_NAME = "USDC / WETH 2x Leverage Token";
     /// @dev Symbol of the LT
-    string public LT_SYMBOL = "WEETH-WETH-17x";
+    string public LT_SYMBOL = "USDC-WETH-2x";
 
     /// @dev Initial equity deposit for the LT
     uint256 public INITIAL_EQUITY_DEPOSIT = 0.0001 * 1e18;
     /// @dev Initial equity deposit max swap cost
     uint256 public INITIAL_EQUITY_DEPOSIT_MAX_SWAP_COST = 1;
 
-    address public COLLATERAL_TOKEN_ADDRESS = DeployConstants.WEETH;
+    address public COLLATERAL_TOKEN_ADDRESS = DeployConstants.USDC;
     address public DEBT_TOKEN_ADDRESS = DeployConstants.WETH;
-    string public COLLATERAL_TOKEN_NAME = "Wrapped eETH";
-    string public COLLATERAL_TOKEN_SYMBOL = "weETH";
+    string public COLLATERAL_TOKEN_NAME = "USDC";
+    string public COLLATERAL_TOKEN_SYMBOL = "USDC";
     string public DEBT_TOKEN_NAME = "Wrapped Ether";
     string public DEBT_TOKEN_SYMBOL = "WETH";
 
