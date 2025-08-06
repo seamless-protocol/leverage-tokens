@@ -28,18 +28,13 @@ import {DeployConstants} from "./DeployConstants.sol";
 contract CreateLeverageToken is Script {
     uint256 public constant WAD = 1e18;
 
-    ILeverageManager public leverageManager =
-        ILeverageManager(DeployConstants.LEVERAGE_MANAGER);
+    ILeverageManager public leverageManager = ILeverageManager(DeployConstants.LEVERAGE_MANAGER);
     IMorphoLendingAdapterFactory public lendingAdapterFactory =
         IMorphoLendingAdapterFactory(DeployConstants.LENDING_ADAPTER_FACTORY);
-    ILeverageRouter public leverageRouter =
-        ILeverageRouter(DeployConstants.LEVERAGE_ROUTER);
+    ILeverageRouter public leverageRouter = ILeverageRouter(DeployConstants.LEVERAGE_ROUTER);
 
     /// @dev Market ID for Morpho market that LT will be created on top of
-    Id public MORPHO_MARKET_ID =
-        Id.wrap(
-            0xfd0895ba253889c243bf59bc4b96fd1e06d68631241383947b04d1c293a0cfea
-        );
+    Id public MORPHO_MARKET_ID = Id.wrap(0xfd0895ba253889c243bf59bc4b96fd1e06d68631241383947b04d1c293a0cfea);
     /// @dev Salt that will be used to deploy the lending adapter. Should be unique for deployer. Update after each deployment.
     bytes32 public BASE_SALT = bytes32(uint256(1));
 
@@ -118,21 +113,16 @@ contract CreateLeverageToken is Script {
             )
         );
 
-        console.log(
-            "RebalanceAdapter proxy deployed at: ",
-            address(rebalanceAdapterProxy)
-        );
+        console.log("RebalanceAdapter proxy deployed at: ", address(rebalanceAdapterProxy));
 
-        IMorphoLendingAdapter lendingAdapter = lendingAdapterFactory
-            .deployAdapter(MORPHO_MARKET_ID, deployerAddress, BASE_SALT);
+        IMorphoLendingAdapter lendingAdapter =
+            lendingAdapterFactory.deployAdapter(MORPHO_MARKET_ID, deployerAddress, BASE_SALT);
         console.log("LendingAdapter deployed at: ", address(lendingAdapter));
 
         ILeverageToken leverageToken = leverageManager.createNewLeverageToken(
             LeverageTokenConfig({
                 lendingAdapter: ILendingAdapter(address(lendingAdapter)),
-                rebalanceAdapter: IRebalanceAdapterBase(
-                    address(rebalanceAdapterProxy)
-                ),
+                rebalanceAdapter: IRebalanceAdapterBase(address(rebalanceAdapterProxy)),
                 mintTokenFee: MINT_TOKEN_FEE,
                 redeemTokenFee: REDEEM_TOKEN_FEE
             }),
@@ -142,53 +132,30 @@ contract CreateLeverageToken is Script {
 
         console.log("LeverageToken deployed at: ", address(leverageToken));
 
-        require(
-            Id.unwrap(lendingAdapter.morphoMarketId()) ==
-                Id.unwrap(MORPHO_MARKET_ID),
-            "Invalid market"
-        );
+        require(Id.unwrap(lendingAdapter.morphoMarketId()) == Id.unwrap(MORPHO_MARKET_ID), "Invalid market");
 
         IMorpho morpho = IMorpho(DeployConstants.MORPHO);
-        MarketParams memory marketParams = morpho.idToMarketParams(
-            lendingAdapter.morphoMarketId()
-        );
+        MarketParams memory marketParams = morpho.idToMarketParams(lendingAdapter.morphoMarketId());
         IERC20Metadata loanToken = IERC20Metadata(marketParams.loanToken);
-        IERC20Metadata collateralToken = IERC20Metadata(
-            marketParams.collateralToken
-        );
+        IERC20Metadata collateralToken = IERC20Metadata(marketParams.collateralToken);
 
-        require(
-            address(loanToken) == DEBT_TOKEN_ADDRESS,
-            "Incorrect debt token on Morpho market"
-        );
-        require(
-            address(collateralToken) == COLLATERAL_TOKEN_ADDRESS,
-            "Incorrect collateral token on Morpho market"
-        );
+        require(address(loanToken) == DEBT_TOKEN_ADDRESS, "Incorrect debt token on Morpho market");
+        require(address(collateralToken) == COLLATERAL_TOKEN_ADDRESS, "Incorrect collateral token on Morpho market");
 
         _assertEqString(loanToken.name(), DEBT_TOKEN_NAME);
         _assertEqString(loanToken.symbol(), DEBT_TOKEN_SYMBOL);
         _assertEqString(collateralToken.name(), COLLATERAL_TOKEN_NAME);
         _assertEqString(collateralToken.symbol(), COLLATERAL_TOKEN_SYMBOL);
 
-        uint256 preLiquidationThreshold = IPreLiquidationRebalanceAdapter(
-            address(rebalanceAdapterProxy)
-        ).getCollateralRatioThreshold();
-        uint256 preLiquidationLltv = Math.mulDiv(
-            WAD,
-            WAD,
-            preLiquidationThreshold
-        );
+        uint256 preLiquidationThreshold =
+            IPreLiquidationRebalanceAdapter(address(rebalanceAdapterProxy)).getCollateralRatioThreshold();
+        uint256 preLiquidationLltv = Math.mulDiv(WAD, WAD, preLiquidationThreshold);
         uint256 marketLltv = marketParams.lltv;
 
-        require(
-            marketLltv >= preLiquidationLltv,
-            "Market LLTV is less than pre-liquidation LLTV"
-        );
+        require(marketLltv >= preLiquidationLltv, "Market LLTV is less than pre-liquidation LLTV");
 
-        uint256 minCollateralRatio = ICollateralRatiosRebalanceAdapter(
-            address(rebalanceAdapterProxy)
-        ).getLeverageTokenMinCollateralRatio();
+        uint256 minCollateralRatio =
+            ICollateralRatiosRebalanceAdapter(address(rebalanceAdapterProxy)).getLeverageTokenMinCollateralRatio();
         uint256 minLtv = Math.mulDiv(WAD, WAD, minCollateralRatio);
         require(marketLltv >= minLtv, "Market LLTV is less than min LTV");
 
@@ -197,15 +164,12 @@ contract CreateLeverageToken is Script {
             "Min collateral ratio is less than pre-liquidation collateral ratio threshold"
         );
 
-        ISwapAdapter.EtherFiSwapContext memory etherFiSwapContext = ISwapAdapter
-            .EtherFiSwapContext({
-                etherFiL2ModeSyncPool: IEtherFiL2ModeSyncPool(
-                    DeployConstants.ETHERFI_L2_MODE_SYNC_POOL
-                ),
-                tokenIn: DeployConstants.ETHERFI_ETH_IDENTIFIER,
-                weETH: DeployConstants.WEETH,
-                referral: address(0)
-            });
+        ISwapAdapter.EtherFiSwapContext memory etherFiSwapContext = ISwapAdapter.EtherFiSwapContext({
+            etherFiL2ModeSyncPool: IEtherFiL2ModeSyncPool(DeployConstants.ETHERFI_L2_MODE_SYNC_POOL),
+            tokenIn: DeployConstants.ETHERFI_ETH_IDENTIFIER,
+            weETH: DeployConstants.WEETH,
+            referral: address(0)
+        });
 
         ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
             path: new address[](0),
@@ -223,17 +187,8 @@ contract CreateLeverageToken is Script {
             additionalData: abi.encode(etherFiSwapContext)
         });
 
-        collateralToken.approve(
-            address(leverageRouter),
-            INITIAL_EQUITY_DEPOSIT + 1
-        );
-        leverageRouter.mint(
-            leverageToken,
-            INITIAL_EQUITY_DEPOSIT,
-            0,
-            INITIAL_EQUITY_DEPOSIT_MAX_SWAP_COST,
-            swapContext
-        );
+        collateralToken.approve(address(leverageRouter), INITIAL_EQUITY_DEPOSIT + 1);
+        leverageRouter.mint(leverageToken, INITIAL_EQUITY_DEPOSIT, 0, INITIAL_EQUITY_DEPOSIT_MAX_SWAP_COST, swapContext);
 
         console.log("Performed initial mint to leverage token");
 
@@ -241,9 +196,6 @@ contract CreateLeverageToken is Script {
     }
 
     function _assertEqString(string memory a, string memory b) internal pure {
-        require(
-            keccak256(abi.encodePacked(a)) == keccak256(abi.encodePacked(b)),
-            "Invalid token name or symbol"
-        );
+        require(keccak256(abi.encodePacked(a)) == keccak256(abi.encodePacked(b)), "Invalid token name or symbol");
     }
 }
