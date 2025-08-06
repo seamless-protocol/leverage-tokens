@@ -45,11 +45,11 @@ contract CreateLeverageToken is Script {
     /// @dev Maximum collateral ratio for the LT on 18 decimals
     uint256 public MAX_COLLATERAL_RATIO = 2.00001e18;
     /// @dev Duration of the dutch auction for the LT
-    uint120 public AUCTION_DURATION = 1 hours;
+    uint120 public AUCTION_DURATION = 20 minutes;
     /// @dev Initial oracle price multiplier on Dutch auction on 18 decimals. In percentage.
-    uint256 public INITIAL_PRICE_MULTIPLIER = 1.01e18;
+    uint256 public INITIAL_PRICE_MULTIPLIER = 1.005e18;
     /// @dev Minimum oracle price multiplier on Dutch auction on 18 decimals. In percentage.
-    uint256 public MIN_PRICE_MULTIPLIER = 0.999e18;
+    uint256 public MIN_PRICE_MULTIPLIER = 0.99e18;
     /// @dev Collateral ratio threshold for the pre-liquidation rebalance adapter
     /// @dev When collateral ratio falls below this value, rebalance adapter will allow rebalance without Dutch auction for special premium
     uint256 public PRE_LIQUIDATION_COLLATERAL_RATIO_THRESHOLD = 1.06061e18;
