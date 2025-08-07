@@ -127,6 +127,7 @@ contract LeverageManager is
         uint256 totalDebt = lendingAdapter.getDebt();
         uint256 feeAdjustedTotalSupply = _getFeeAdjustedTotalSupply(token);
 
+        // slither-disable-next-line incorrect-equality,timestamp
         if (feeAdjustedTotalSupply == 0) {
             uint256 initialCollateralRatio = getLeverageTokenInitialCollateralRatio(token);
             return lendingAdapter.convertCollateralToDebtAsset(
@@ -163,6 +164,7 @@ contract LeverageManager is
         uint256 totalDebt = lendingAdapter.getDebt();
         uint256 feeAdjustedTotalSupply = _getFeeAdjustedTotalSupply(token);
 
+        // slither-disable-next-line incorrect-equality,timestamp
         if (feeAdjustedTotalSupply == 0) {
             uint256 initialCollateralRatio = getLeverageTokenInitialCollateralRatio(token);
             return lendingAdapter.convertDebtToCollateralAsset(
