@@ -177,7 +177,6 @@ contract PreviewDepositTest is LeverageManagerTest {
 
         uint256 expectedShares =
             leverageManager.convertCollateralToShares(leverageToken, collateral, Math.Rounding.Floor);
-
         assertEq(previewData.shares, expectedShares);
         assertEq(previewData.tokenFee, 0);
         assertEq(previewData.treasuryFee, 0);
