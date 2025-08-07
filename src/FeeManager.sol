@@ -28,7 +28,13 @@ import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
     bytes32 public constant FEE_MANAGER_ROLE = keccak256("FEE_MANAGER_ROLE");
 
-    uint256 internal constant MAX_FEE = 100_00;
+    uint256 internal constant MAX_BPS = 100_00;
+
+    uint256 internal constant MAX_BPS_SQUARED = MAX_BPS * MAX_BPS;
+
+    uint256 internal constant MAX_ACTION_FEE = MAX_BPS - 1;
+
+    uint256 internal constant MAX_MANAGEMENT_FEE = MAX_BPS;
 
     uint256 internal constant SECS_PER_YEAR = 31536000;
 
@@ -99,7 +105,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
 
     /// @inheritdoc IFeeManager
     function setDefaultManagementFeeAtCreation(uint256 fee) external onlyRole(FEE_MANAGER_ROLE) {
-        _validateFee(fee);
+        _validateManagementFee(fee);
 
         _getFeeManagerStorage().defaultManagementFeeAtCreation = fee;
         emit DefaultManagementFeeAtCreationSet(fee);
@@ -110,7 +116,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
         // Charge any accrued management fees before setting the new management fee
         chargeManagementFee(token);
 
-        _validateFee(fee);
+        _validateManagementFee(fee);
 
         _getFeeManagerStorage().managementFee[token] = fee;
         emit ManagementFeeSet(token, fee);
@@ -123,7 +129,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
 
     /// @inheritdoc IFeeManager
     function setTreasuryActionFee(ExternalAction action, uint256 fee) external onlyRole(FEE_MANAGER_ROLE) {
-        _validateFee(fee);
+        _validateActionFee(fee);
         _getFeeManagerStorage().treasuryActionFee[action] = fee;
 
         emit TreasuryActionFeeSet(action, fee);
@@ -150,26 +156,97 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
 
     /// @notice Computes the token action fee for a given action
     /// @param token LeverageToken to compute token action fee for
-    /// @param equity Amount of equity to compute token action fee for, denominated in collateral asset
+    /// @param shares Amount of shares to compute token action fee for
     /// @param action Action to compute token action fee for, Mint or Redeem
-    /// @return equityForShares Equity to mint / burn shares for the LeverageToken after token action fees, denominated in
-    /// collateral asset of the LeverageToken
-    /// @return tokenFee LeverageToken token action fee amount in equity, denominated in the collateral asset of the
-    /// LeverageToken
+    /// @return sharesAfterFee Shares to mint / burn shares for the LeverageToken after token action fees
+    /// @return tokenFee LeverageToken token action fee amount in shares
     /// @dev Fees are always rounded up.
-    function _computeTokenFee(ILeverageToken token, uint256 equity, ExternalAction action)
+    function _computeTokenFee(ILeverageToken token, uint256 shares, ExternalAction action)
         internal
         view
         returns (uint256, uint256)
     {
-        uint256 tokenFee = Math.mulDiv(equity, getLeverageTokenActionFee(token, action), MAX_FEE, Math.Rounding.Ceil);
+        uint256 sharesTokenFee =
+            Math.mulDiv(shares, getLeverageTokenActionFee(token, action), MAX_BPS, Math.Rounding.Ceil);
 
         // To increase share value for existing users, less shares are minted on mints and more shares are burned on
         // redeems by subtracting the token fee from the equity on mints and adding the token fee to the equity on
         // redeems.
-        uint256 equityForShares = action == ExternalAction.Mint ? equity - tokenFee : equity + tokenFee;
+        uint256 sharesAfterFee = action == ExternalAction.Mint ? shares - sharesTokenFee : shares + sharesTokenFee;
 
-        return (equityForShares, tokenFee);
+        return (sharesAfterFee, sharesTokenFee);
+    }
+
+    /// @notice Computes the share fees for a given action and share amount
+    /// @param token LeverageToken to compute share fees for
+    /// @param grossShares Amount of shares to compute share fees for
+    /// @param action Action to compute share fees for
+    /// @return netShares Amount of shares after fees
+    /// @return sharesTokenFee Amount of shares that will be charged for the action that are given to the LeverageToken
+    /// @return treasuryFee Amount of shares that will be charged for the action that are given to the treasury
+    /// @dev Token action fee is applied first, then treasury action fee is applied on the remaining shares
+    function _computeFeesForGrossShares(ILeverageToken token, uint256 grossShares, ExternalAction action)
+        internal
+        view
+        returns (uint256, uint256, uint256)
+    {
+        (uint256 netShares, uint256 sharesTokenFee) = _computeTokenFee(token, grossShares, action);
+        uint256 treasuryFee = _computeTreasuryFee(action, netShares);
+
+        // On mints, some of the minted shares are for the treasury fee
+        // On redeems, additional shares are taken from the user to cover the treasury fee
+        netShares = action == ExternalAction.Mint ? netShares - treasuryFee : netShares + treasuryFee;
+
+        return (netShares, sharesTokenFee, treasuryFee);
+    }
+
+    /// @notice Based on an amount of net shares, compute the gross shares, token fee, and treasury fee
+    /// @param token LeverageToken to compute token fee for
+    /// @param netShares Net shares to compute token fee for
+    /// @param action Action to compute token fee for
+    /// @return grossShares Gross shares after token fee and treasury fee
+    /// @return sharesTokenFee Token fee amount in shares
+    /// @return treasuryFee Treasury fee amount in shares
+    /// @dev Token action fee is applied first, then treasury action fee is applied on the remaining shares
+    function _computeFeesForNetShares(ILeverageToken token, uint256 netShares, ExternalAction action)
+        internal
+        view
+        returns (uint256 grossShares, uint256 sharesTokenFee, uint256 treasuryFee)
+    {
+        uint256 tokenActionFeeRate = getLeverageTokenActionFee(token, action);
+        uint256 treasuryActionFeeRate = getTreasuryActionFee(action);
+
+        // Mathematical derivation for computing gross shares from net shares:
+        //
+        // Starting relationship for a single fee:
+        //   net = gross * (baseFee - feeRate) / baseFee
+        //   where feeRate is the fee percentage and baseFee is the base (100_00 for 100%)
+        //
+        // Rearranging to solve for gross:
+        //   gross = net * baseFee / (baseFee - feeRate)
+        //
+        // For two sequential fees (token action fee and treasury action fee), we apply this transformation twice:
+        //   1) First, apply token action fee: afterTokenFee = gross * (baseFee - tokenActionFeeRate) / baseFee
+        //   2) Then, apply treasury action fee: net = afterTokenFee * (baseFee - treasuryActionFeeRate) / baseFee
+        //
+        // Substituting step 1 into step 2:
+        //   net = gross * (baseFee - tokenActionFeeRate) / baseFee * (baseFee - treasuryActionFeeRate) / baseFee
+        //   net = gross * (baseFee - tokenActionFeeRate) * (baseFee - treasuryActionFeeRate) / (baseFee * baseFee)
+        //   net = gross * (baseFee - tokenActionFeeRate) * (baseFee - treasuryActionFeeRate) / baseFeeSquared
+        //
+        // Solving for gross:
+        //   gross = net * baseFeeSquared / ((baseFee - tokenActionFeeRate) * (baseFee - treasuryActionFeeRate))
+        grossShares = Math.mulDiv(
+            netShares,
+            MAX_BPS_SQUARED,
+            (MAX_BPS - tokenActionFeeRate) * (MAX_BPS - treasuryActionFeeRate),
+            Math.Rounding.Ceil
+        );
+        sharesTokenFee =
+            Math.min(Math.mulDiv(grossShares, tokenActionFeeRate, MAX_BPS, Math.Rounding.Ceil), grossShares - netShares);
+        treasuryFee = grossShares - sharesTokenFee - netShares;
+
+        return (grossShares, sharesTokenFee, treasuryFee);
     }
 
     /// @notice Computes the treasury action fee for a given action
@@ -177,7 +254,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     /// @param shares Shares to compute treasury action fee for
     /// @return treasuryFee Treasury action fee amount in shares
     function _computeTreasuryFee(ExternalAction action, uint256 shares) internal view returns (uint256) {
-        return Math.mulDiv(shares, getTreasuryActionFee(action), MAX_FEE, Math.Rounding.Ceil);
+        return Math.mulDiv(shares, getTreasuryActionFee(action), MAX_BPS, Math.Rounding.Ceil);
     }
 
     /// @notice Function that returns the total supply of the LeverageToken adjusted for any accrued management fees
@@ -200,7 +277,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
         uint256 duration = block.timestamp - lastManagementFeeAccrualTimestamp;
 
         uint256 sharesFee =
-            Math.mulDiv(managementFee * totalSupply, duration, MAX_FEE * SECS_PER_YEAR, Math.Rounding.Ceil);
+            Math.mulDiv(managementFee * totalSupply, duration, MAX_BPS * SECS_PER_YEAR, Math.Rounding.Ceil);
         return sharesFee;
     }
 
@@ -210,7 +287,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     /// @param fee Fee for action, 100_00 is 100%
     /// @dev If caller tries to set fee above 100% it reverts with FeeTooHigh error
     function _setLeverageTokenActionFee(ILeverageToken token, ExternalAction action, uint256 fee) internal {
-        _validateFee(fee);
+        _validateActionFee(fee);
 
         _getFeeManagerStorage().tokenActionFee[token][action] = fee;
         emit LeverageTokenActionFeeSet(token, action, fee);
@@ -239,11 +316,19 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
         emit TreasurySet(treasury);
     }
 
+    /// @notice Validates that the fee is not higher than 99.99%
+    /// @param fee Fee to validate
+    function _validateActionFee(uint256 fee) internal pure {
+        if (fee > MAX_ACTION_FEE) {
+            revert FeeTooHigh(fee, MAX_ACTION_FEE);
+        }
+    }
+
     /// @notice Validates that the fee is not higher than 100%
     /// @param fee Fee to validate
-    function _validateFee(uint256 fee) internal pure {
-        if (fee > MAX_FEE) {
-            revert FeeTooHigh(fee, MAX_FEE);
+    function _validateManagementFee(uint256 fee) internal pure {
+        if (fee > MAX_MANAGEMENT_FEE) {
+            revert FeeTooHigh(fee, MAX_MANAGEMENT_FEE);
         }
     }
 }

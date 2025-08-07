@@ -13,7 +13,7 @@ import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 contract SetDefaultManagementFeeAtCreationTest is FeeManagerTest {
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_setDefaultManagementFeeAtCreation(uint256 managementFee) public {
-        managementFee = bound(managementFee, 0, MAX_FEE);
+        managementFee = bound(managementFee, 0, MAX_MANAGEMENT_FEE);
 
         vm.expectEmit(true, true, true, true);
         emit IFeeManager.DefaultManagementFeeAtCreationSet(managementFee);
@@ -24,9 +24,9 @@ contract SetDefaultManagementFeeAtCreationTest is FeeManagerTest {
 
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_setDefaultManagementFeeAtCreation_RevertIf_FeeTooHigh(uint256 managementFee) public {
-        managementFee = bound(managementFee, MAX_FEE + 1, type(uint256).max);
+        managementFee = bound(managementFee, MAX_MANAGEMENT_FEE + 1, type(uint256).max);
 
-        vm.expectRevert(abi.encodeWithSelector(IFeeManager.FeeTooHigh.selector, managementFee, MAX_FEE));
+        vm.expectRevert(abi.encodeWithSelector(IFeeManager.FeeTooHigh.selector, managementFee, MAX_MANAGEMENT_FEE));
         _setDefaultManagementFeeAtCreation(feeManagerRole, managementFee);
     }
 
@@ -37,7 +37,7 @@ contract SetDefaultManagementFeeAtCreationTest is FeeManagerTest {
     ) public {
         vm.assume(caller != feeManagerRole);
 
-        managementFee = bound(managementFee, 0, MAX_FEE);
+        managementFee = bound(managementFee, 0, MAX_MANAGEMENT_FEE);
 
         vm.expectRevert(
             abi.encodeWithSelector(

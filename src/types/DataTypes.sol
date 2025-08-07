@@ -29,7 +29,21 @@ struct ActionData {
     uint256 equity;
     /// @dev Amount of shares the user gains or loses for the action (whether that be via minting, burning, or fees)
     uint256 shares;
-    /// @dev Fee charged for the action to the leverage token, denominated in collateral asset
+    /// @dev Fee charged for the action to the leverage token, denominated in shares
+    uint256 tokenFee;
+    /// @dev Fee charged for the action to the treasury, denominated in shares
+    uint256 treasuryFee;
+}
+
+/// @dev Struct that contains all data related to a LeverageToken action
+struct ActionDataV2 {
+    /// @dev Amount of collateral added or withdrawn
+    uint256 collateral;
+    /// @dev Amount of debt borrowed or repaid
+    uint256 debt;
+    /// @dev Amount of shares the user gains or loses for the action (whether that be via minting, burning, or fees)
+    uint256 shares;
+    /// @dev Fee charged for the action to the leverage token, denominated in shares
     uint256 tokenFee;
     /// @dev Fee charged for the action to the treasury, denominated in shares
     uint256 treasuryFee;

@@ -17,7 +17,10 @@ import {ExternalAction} from "src/types/DataTypes.sol";
 import {MockERC20} from "test/unit/mock/MockERC20.sol";
 
 contract FeeManagerTest is Test {
-    uint256 public constant MAX_FEE = 100_00;
+    uint256 public constant MAX_ACTION_FEE = 100_00 - 1;
+    uint256 public constant MAX_MANAGEMENT_FEE = 100_00;
+    uint256 public constant MAX_BPS = 100_00;
+    uint256 public constant MAX_BPS_SQUARED = MAX_BPS * MAX_BPS;
     uint256 public constant SECONDS_ONE_YEAR = 31536000;
 
     address public feeManagerRole = makeAddr("feeManagerRole");
@@ -60,6 +63,13 @@ contract FeeManagerTest is Test {
             feeManagerImplementation,
             abi.encodeWithSelector(FeeManagerHarness.initialize.selector, address(this), address(0))
         );
+    }
+
+    function _setLeverageTokenActionFees(uint256 mintTokenFee, uint256 redeemTokenFee) internal {
+        vm.startPrank(feeManagerRole);
+        feeManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Mint, mintTokenFee);
+        feeManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Redeem, redeemTokenFee);
+        vm.stopPrank();
     }
 
     function _setTreasuryActionFee(address caller, ExternalAction action, uint256 fee) internal {

@@ -14,6 +14,7 @@ import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
 import {LeverageManagerTest} from "./LeverageManager.t.sol";
 import {LeverageTokenConfig} from "src/types/DataTypes.sol";
 import {LeverageToken} from "src/LeverageToken.sol";
+import {MockRebalanceAdapter} from "test/unit/mock/MockRebalanceAdapter.sol";
 
 contract CreateNewLeverageTokenTest is LeverageManagerTest {
     function testFuzz_CreateNewLeverageToken(
@@ -29,7 +30,7 @@ contract CreateNewLeverageTokenTest is LeverageManagerTest {
         uint256 defaultManagementFeeAtCreation
     ) public {
         vm.assume(_treasury != address(0));
-        defaultManagementFeeAtCreation = bound(defaultManagementFeeAtCreation, 0, MAX_FEE);
+        defaultManagementFeeAtCreation = bound(defaultManagementFeeAtCreation, 0, MAX_MANAGEMENT_FEE);
 
         _setTreasury(feeManagerRole, _treasury);
         _setDefaultManagementFeeAtCreation(feeManagerRole, defaultManagementFeeAtCreation);
@@ -37,8 +38,8 @@ contract CreateNewLeverageTokenTest is LeverageManagerTest {
         config.rebalanceAdapter = IRebalanceAdapterBase(makeAddr(rebalanceAdapterName));
         config.lendingAdapter = ILendingAdapter(makeAddr(lendingAdapterName));
 
-        config.mintTokenFee = bound(config.mintTokenFee, 0, MAX_FEE);
-        config.redeemTokenFee = bound(config.redeemTokenFee, 0, MAX_FEE);
+        config.mintTokenFee = bound(config.mintTokenFee, 0, MAX_ACTION_FEE);
+        config.redeemTokenFee = bound(config.redeemTokenFee, 0, MAX_ACTION_FEE);
 
         address expectedLeverageTokenAddress = leverageTokenFactory.computeProxyAddress(
             address(leverageManager),
