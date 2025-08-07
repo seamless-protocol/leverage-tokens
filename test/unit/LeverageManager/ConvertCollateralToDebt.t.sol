@@ -19,9 +19,11 @@ contract ConvertCollateralToDebtTest is LeverageManagerTest {
         uint256 collateral = 5;
         uint256 totalCollateral = 100;
         uint256 totalDebt = 50;
+        uint256 totalSupply = 100;
 
         lendingAdapter.mockCollateral(totalCollateral);
         lendingAdapter.mockDebt(totalDebt);
+        _mintShares(address(1), totalSupply);
 
         uint256 debt = leverageManager.convertCollateralToDebt(leverageToken, collateral, Math.Rounding.Floor);
         assertEq(debt, 2);
@@ -37,10 +39,12 @@ contract ConvertCollateralToDebtTest is LeverageManagerTest {
         uint256 totalCollateral = 100;
         uint256 totalDebt = 0;
         uint256 initialCollateralRatio = 2 * _BASE_RATIO();
+        uint256 totalSupply = 100;
 
         lendingAdapter.mockCollateral(totalCollateral);
         lendingAdapter.mockDebt(totalDebt);
         lendingAdapter.mockConvertCollateralToDebtAssetExchangeRate(2e8); // 1 collateral = 2 debt
+        _mintShares(address(1), totalSupply);
 
         vm.mockCall(
             address(rebalanceAdapter),
@@ -49,12 +53,10 @@ contract ConvertCollateralToDebtTest is LeverageManagerTest {
         );
 
         uint256 debt = leverageManager.convertCollateralToDebt(leverageToken, collateral, Math.Rounding.Floor);
-        assertEq(debt, 4); // 5 collateral * 1e18 / 2e18 rounded down is 2 in collateral, * 2 = 4 in debt
-        assertEq(debt, Math.mulDiv(collateral, _BASE_RATIO(), initialCollateralRatio, Math.Rounding.Floor) * 2);
+        assertEq(debt, 0);
 
         debt = leverageManager.convertCollateralToDebt(leverageToken, collateral, Math.Rounding.Ceil);
-        assertEq(debt, 6); // 5 collateral * 1e18 / 2e18 rounded up is 3 in collateral, * 2 = 6 in debt
-        assertEq(debt, Math.mulDiv(collateral, _BASE_RATIO(), initialCollateralRatio, Math.Rounding.Ceil) * 2);
+        assertEq(debt, 0);
     }
 
     function test_convertCollateralToDebt_ZeroCollateral() public {
@@ -62,10 +64,12 @@ contract ConvertCollateralToDebtTest is LeverageManagerTest {
         uint256 totalCollateral = 0;
         uint256 totalDebt = 50;
         uint256 initialCollateralRatio = 2 * _BASE_RATIO();
+        uint256 totalSupply = 100;
 
         lendingAdapter.mockCollateral(totalCollateral);
         lendingAdapter.mockDebt(totalDebt);
         lendingAdapter.mockConvertCollateralToDebtAssetExchangeRate(2e8); // 1 collateral = 2 debt
+        _mintShares(address(1), totalSupply);
 
         vm.mockCall(
             address(rebalanceAdapter),
@@ -74,24 +78,50 @@ contract ConvertCollateralToDebtTest is LeverageManagerTest {
         );
 
         uint256 debt = leverageManager.convertCollateralToDebt(leverageToken, collateral, Math.Rounding.Floor);
-        assertEq(debt, 4); // 5 collateral * 1e18 / 2e18 rounded down is 2 in collateral, * 2 = 4 in debt
-        assertEq(debt, Math.mulDiv(collateral, _BASE_RATIO(), initialCollateralRatio, Math.Rounding.Floor) * 2);
+        assertEq(debt, 0);
 
         debt = leverageManager.convertCollateralToDebt(leverageToken, collateral, Math.Rounding.Ceil);
-        assertEq(debt, 6); // 5 collateral * 1e18 / 2e18 rounded up is 3 in collateral, * 2 = 6 in debt
-        assertEq(debt, Math.mulDiv(collateral, _BASE_RATIO(), initialCollateralRatio, Math.Rounding.Ceil) * 2);
+        assertEq(debt, 0);
     }
 
-    function test_convertCollateralToDebt_ZeroCollateral_ZeroDebt() public {
+    function test_convertCollateralToDebt_ZeroTotalCollateral_ZeroTotalDebt() public {
         uint256 collateral = 5;
         uint256 totalCollateral = 0;
         uint256 totalDebt = 0;
+        uint256 initialCollateralRatio = 2 * _BASE_RATIO();
+        uint256 totalSupply = 100;
+
+        lendingAdapter.mockCollateral(totalCollateral);
+        lendingAdapter.mockDebt(totalDebt);
+        lendingAdapter.mockConvertCollateralToDebtAssetExchangeRate(2e8); // 1 collateral = 2 debt
+        _mintShares(address(1), totalSupply);
+
+        vm.mockCall(
+            address(rebalanceAdapter),
+            abi.encodeWithSelector(IRebalanceAdapterBase.getLeverageTokenInitialCollateralRatio.selector),
+            abi.encode(initialCollateralRatio)
+        );
+
+        uint256 debt = leverageManager.convertCollateralToDebt(leverageToken, collateral, Math.Rounding.Floor);
+        assertEq(debt, 0);
+
+        debt = leverageManager.convertCollateralToDebt(leverageToken, collateral, Math.Rounding.Ceil);
+        assertEq(debt, 0);
+    }
+
+    function testFuzz_convertCollateralToDebt_ZeroTotalSupply(
+        uint256 collateral,
+        uint256 totalCollateral,
+        uint256 totalDebt
+    ) public {
         uint256 initialCollateralRatio = 2 * _BASE_RATIO();
 
         lendingAdapter.mockCollateral(totalCollateral);
         lendingAdapter.mockDebt(totalDebt);
         lendingAdapter.mockConvertCollateralToDebtAssetExchangeRate(2e8); // 1 collateral = 2 debt
 
+        collateral = bound(collateral, 0, type(uint256).max / _BASE_RATIO() / 2);
+
         vm.mockCall(
             address(rebalanceAdapter),
             abi.encodeWithSelector(IRebalanceAdapterBase.getLeverageTokenInitialCollateralRatio.selector),
@@ -99,18 +129,19 @@ contract ConvertCollateralToDebtTest is LeverageManagerTest {
         );
 
         uint256 debt = leverageManager.convertCollateralToDebt(leverageToken, collateral, Math.Rounding.Floor);
-        assertEq(debt, 4); // 5 collateral * 1e18 / 2e18 rounded down is 2 in collateral, * 2 = 4 in debt
-        assertEq(debt, Math.mulDiv(collateral, _BASE_RATIO(), initialCollateralRatio, Math.Rounding.Floor) * 2);
+        uint256 debtExpected = Math.mulDiv(collateral, _BASE_RATIO(), initialCollateralRatio, Math.Rounding.Floor) * 2;
+        assertEq(debt, debtExpected);
 
         debt = leverageManager.convertCollateralToDebt(leverageToken, collateral, Math.Rounding.Ceil);
-        assertEq(debt, 6); // 5 collateral * 1e18 / 2e18 rounded up is 3 in collateral, * 2 = 6 in debt
-        assertEq(debt, Math.mulDiv(collateral, _BASE_RATIO(), initialCollateralRatio, Math.Rounding.Ceil) * 2);
+        debtExpected = Math.mulDiv(collateral, _BASE_RATIO(), initialCollateralRatio, Math.Rounding.Ceil) * 2;
+        assertEq(debt, debtExpected);
     }
 
     function testFuzz_convertCollateralToDebt(
         uint256 collateral,
         uint256 totalCollateral,
         uint256 totalDebt,
+        uint256 totalSupply,
         uint256 initialCollateralRatio
     ) public {
         totalDebt = bound(totalDebt, 0, type(uint256).max);
@@ -121,6 +152,7 @@ contract ConvertCollateralToDebtTest is LeverageManagerTest {
 
         lendingAdapter.mockCollateral(totalCollateral);
         lendingAdapter.mockDebt(totalDebt);
+        _mintShares(address(1), totalSupply);
 
         vm.mockCall(
             address(rebalanceAdapter),
@@ -128,16 +160,20 @@ contract ConvertCollateralToDebtTest is LeverageManagerTest {
             abi.encode(initialCollateralRatio)
         );
 
-        if (totalCollateral == 0 || totalDebt == 0) {
-            uint256 debt = leverageManager.convertCollateralToDebt(leverageToken, collateral, Math.Rounding.Floor);
+        uint256 debt = leverageManager.convertCollateralToDebt(leverageToken, collateral, Math.Rounding.Floor);
+        if (totalSupply == 0) {
             uint256 debtExpected = Math.mulDiv(collateral, _BASE_RATIO(), initialCollateralRatio, Math.Rounding.Floor);
             assertEq(debt, debtExpected);
 
             debt = leverageManager.convertCollateralToDebt(leverageToken, collateral, Math.Rounding.Ceil);
             debtExpected = Math.mulDiv(collateral, _BASE_RATIO(), initialCollateralRatio, Math.Rounding.Ceil);
             assertEq(debt, debtExpected);
+        } else if (totalCollateral == 0) {
+            assertEq(debt, 0);
+
+            debt = leverageManager.convertCollateralToDebt(leverageToken, collateral, Math.Rounding.Ceil);
+            assertEq(debt, 0);
         } else {
-            uint256 debt = leverageManager.convertCollateralToDebt(leverageToken, collateral, Math.Rounding.Floor);
             uint256 debtExpected = Math.mulDiv(collateral, totalDebt, totalCollateral, Math.Rounding.Floor);
             assertEq(debt, debtExpected);
 
