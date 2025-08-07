@@ -15,7 +15,7 @@ contract SetLeverageTokenActionFeeTest is FeeManagerTest {
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_setLeverageTokenActionFee(ILeverageToken leverageToken, uint256 actionNum, uint256 fee) public {
         ExternalAction action = ExternalAction(actionNum % 2);
-        fee = bound(fee, 0, MAX_FEE);
+        fee = bound(fee, 0, MAX_ACTION_FEE);
 
         vm.expectEmit(true, true, true, true);
         emit IFeeManager.LeverageTokenActionFeeSet(leverageToken, action, fee);
@@ -32,9 +32,9 @@ contract SetLeverageTokenActionFeeTest is FeeManagerTest {
         uint256 fee
     ) public {
         ExternalAction action = ExternalAction(actionNum % 2);
-        fee = bound(fee, MAX_FEE + 1, type(uint256).max);
+        fee = bound(fee, MAX_ACTION_FEE + 1, type(uint256).max);
 
-        vm.expectRevert(abi.encodeWithSelector(IFeeManager.FeeTooHigh.selector, fee, MAX_FEE));
+        vm.expectRevert(abi.encodeWithSelector(IFeeManager.FeeTooHigh.selector, fee, MAX_ACTION_FEE));
         feeManager.exposed_setLeverageTokenActionFee(leverageToken, action, fee);
     }
 }

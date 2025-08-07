@@ -21,14 +21,12 @@ contract RebalanceTest is LeverageManagerTest {
     ERC20Mock public WETH = new ERC20Mock();
     ERC20Mock public USDC = new ERC20Mock();
 
-    MockRebalanceAdapter public rebalanceAdapter;
     MockLendingAdapter public adapter;
 
     function setUp() public override {
         super.setUp();
 
         adapter = new MockLendingAdapter(address(WETH), address(USDC), manager);
-        rebalanceAdapter = new MockRebalanceAdapter();
 
         _createNewLeverageToken(
             manager,

@@ -24,6 +24,22 @@ contract FeeManagerHarness is FeeManager {
         }
     }
 
+    function exposed_computeFeesForGrossShares(ILeverageToken token, uint256 shares, ExternalAction action)
+        external
+        view
+        returns (uint256, uint256, uint256)
+    {
+        return _computeFeesForGrossShares(token, shares, action);
+    }
+
+    function exposed_computeFeesForNetShares(ILeverageToken token, uint256 shares, ExternalAction action)
+        external
+        view
+        returns (uint256, uint256, uint256)
+    {
+        return _computeFeesForNetShares(token, shares, action);
+    }
+
     function exposed_computeTokenFee(ILeverageToken token, uint256 equityAmount, ExternalAction action)
         external
         view
@@ -52,7 +68,11 @@ contract FeeManagerHarness is FeeManager {
         return _getFeeAdjustedTotalSupply(token);
     }
 
-    function exposed_validateFee(uint256 fee) external pure {
-        _validateFee(fee);
+    function exposed_validateActionFee(uint256 fee) external pure {
+        _validateActionFee(fee);
+    }
+
+    function exposed_validateManagementFee(uint256 fee) external pure {
+        _validateManagementFee(fee);
     }
 }

@@ -56,8 +56,8 @@ contract RedeemTest is PreviewActionTest {
         uint16 tokenFee,
         uint16 treasuryFee
     ) public {
-        tokenFee = uint16(bound(tokenFee, 0, 1e4));
-        treasuryFee = uint16(bound(treasuryFee, 0, 1e4));
+        tokenFee = uint16(bound(tokenFee, 0, MAX_ACTION_FEE));
+        treasuryFee = uint16(bound(treasuryFee, 0, MAX_ACTION_FEE));
         initialDebtInCollateralAsset = uint128(bound(initialDebtInCollateralAsset, 0, initialCollateral));
         sharesTotalSupply = uint128(bound(sharesTotalSupply, 1, type(uint128).max));
 
@@ -84,8 +84,8 @@ contract RedeemTest is PreviewActionTest {
         uint16 tokenFee,
         uint16 treasuryFee
     ) public {
-        tokenFee = uint16(bound(tokenFee, 0, 1e4));
-        treasuryFee = uint16(bound(treasuryFee, 0, 1e4));
+        tokenFee = uint16(bound(tokenFee, 0, MAX_ACTION_FEE));
+        treasuryFee = uint16(bound(treasuryFee, 0, MAX_ACTION_FEE));
         leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Redeem, tokenFee);
         _setTreasuryActionFee(ExternalAction.Redeem, treasuryFee);
 

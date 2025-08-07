@@ -3,6 +3,7 @@ pragma solidity ^0.8.26;
 
 // Dependency imports
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // Internal imports
 import {IFeeManager} from "./IFeeManager.sol";
@@ -10,7 +11,9 @@ import {IRebalanceAdapterBase} from "./IRebalanceAdapterBase.sol";
 import {ILeverageToken} from "./ILeverageToken.sol";
 import {IBeaconProxyFactory} from "./IBeaconProxyFactory.sol";
 import {ILendingAdapter} from "./ILendingAdapter.sol";
-import {ActionData, LeverageTokenState, RebalanceAction, LeverageTokenConfig} from "src/types/DataTypes.sol";
+import {
+    ActionData, ActionDataV2, LeverageTokenState, RebalanceAction, LeverageTokenConfig
+} from "src/types/DataTypes.sol";
 
 interface ILeverageManager is IFeeManager {
     /// @notice Error thrown when someone tries to set zero address for collateral or debt asset when creating a LeverageToken
@@ -75,6 +78,66 @@ interface ILeverageManager is IFeeManager {
     /// @param actionData The action data of the redeem
     event Redeem(ILeverageToken indexed token, address indexed sender, ActionData actionData);
 
+    /// @notice Converts an amount of collateral to an amount of debt for a LeverageToken, based on the current
+    /// collateral ratio of the LeverageToken
+    /// @param token LeverageToken to convert collateral to debt for
+    /// @param collateral Amount of collateral to convert to debt
+    /// @param rounding Rounding mode to use for the conversion
+    /// @return debt Amount of debt that correspond to the collateral
+    /// @dev For deposits/mints, Math.Rounding.Floor should be used. For withdraws/redeems, Math.Rounding.Ceil should be used.
+    function convertCollateralToDebt(ILeverageToken token, uint256 collateral, Math.Rounding rounding)
+        external
+        view
+        returns (uint256 debt);
+
+    /// @notice Converts an amount of collateral to an amount of shares for a LeverageToken, based on the current
+    /// collateral ratio of the LeverageToken
+    /// @param token LeverageToken to convert collateral to shares for
+    /// @param collateral Amount of collateral to convert to shares
+    /// @param rounding Rounding mode to use for the conversion
+    /// @return shares Amount of shares that correspond to the collateral
+    /// @dev For deposits/mints, Math.Rounding.Floor should be used. For withdraws/redeems, Math.Rounding.Ceil should be used.
+    function convertCollateralToShares(ILeverageToken token, uint256 collateral, Math.Rounding rounding)
+        external
+        view
+        returns (uint256 shares);
+
+    /// @notice Converts an amount of debt to an amount of collateral for a LeverageToken, based on the current
+    /// collateral ratio of the LeverageToken
+    /// @param token LeverageToken to convert debt to collateral for
+    /// @param debt Amount of debt to convert to collateral
+    /// @param rounding Rounding mode to use for the conversion
+    /// @return collateral Amount of collateral that correspond to the debt amount
+    /// @dev For deposits/mints, Math.Rounding.Ceil should be used. For withdraws/redeems, Math.Rounding.Floor should be used.
+    function convertDebtToCollateral(ILeverageToken token, uint256 debt, Math.Rounding rounding)
+        external
+        view
+        returns (uint256 collateral);
+
+    /// @notice Converts an amount of shares to an amount of collateral for a LeverageToken, based on the current
+    /// collateral ratio of the LeverageToken
+    /// @param token LeverageToken to convert shares to collateral for
+    /// @param shares Amount of shares to convert to collateral
+    /// @param rounding Rounding mode to use for the conversion
+    /// @return collateral Amount of collateral that correspond to the shares
+    /// @dev For deposits/mints, Math.Rounding.Ceil should be used. For withdraws/redeems, Math.Rounding.Floor should be used.
+    function convertSharesToCollateral(ILeverageToken token, uint256 shares, Math.Rounding rounding)
+        external
+        view
+        returns (uint256 collateral);
+
+    /// @notice Converts an amount of shares to an amount of debt for a LeverageToken, based on the current
+    /// collateral ratio of the LeverageToken
+    /// @param token LeverageToken to convert shares to debt for
+    /// @param shares Amount of shares to convert to debt
+    /// @param rounding Rounding mode to use for the conversion
+    /// @return debt Amount of debt that correspond to the shares
+    /// @dev For deposits/mints, Math.Rounding.Floor should be used. For withdraws/redeems, Math.Rounding.Ceil should be used.
+    function convertSharesToDebt(ILeverageToken token, uint256 shares, Math.Rounding rounding)
+        external
+        view
+        returns (uint256 debt);
+
     /// @notice Returns the factory for creating new LeverageTokens
     /// @return factory Factory for creating new LeverageTokens
     function getLeverageTokenFactory() external view returns (IBeaconProxyFactory factory);
@@ -129,6 +192,30 @@ interface ILeverageManager is IFeeManager {
     function createNewLeverageToken(LeverageTokenConfig memory config, string memory name, string memory symbol)
         external
         returns (ILeverageToken token);
+
+    /// @notice Previews deposit function call and returns all required data
+    /// @param token LeverageToken to preview deposit for
+    /// @param collateral Amount of collateral to deposit
+    /// @return previewData Preview data for deposit
+    ///         - collateral Amount of collateral that will be added to the LeverageToken and sent to the receiver
+    ///         - debt Amount of debt that will be borrowed and sent to the receiver
+    ///         - shares Amount of shares that will be minted to the receiver
+    ///         - tokenFee Amount of shares that will be charged for the deposit that are given to the LeverageToken
+    ///         - treasuryFee Amount of shares that will be charged for the deposit that are given to the treasury
+    /// @dev Sender should approve leverage manager to spend collateral amount of collateral asset
+    function previewDeposit(ILeverageToken token, uint256 collateral) external view returns (ActionDataV2 memory);
+
+    /// @notice Previews mint function call and returns all required data
+    /// @param token LeverageToken to preview mint for
+    /// @param shares Amount of shares to mint
+    /// @return previewData Preview data for mint
+    ///         - collateral Amount of collateral that will be added to the LeverageToken and sent to the receiver
+    ///         - debt Amount of debt that will be borrowed and sent to the receiver
+    ///         - shares Amount of shares that will be minted to the receiver
+    ///         - tokenFee Amount of shares that will be charged for the mint that are given to the LeverageToken
+    ///         - treasuryFee Amount of shares that will be charged for the mint that are given to the treasury
+    /// @dev Sender should approve leverage manager to spend collateral amount of collateral asset
+    function previewMintV2(ILeverageToken token, uint256 shares) external view returns (ActionDataV2 memory);
 
     /// @notice Previews mint function call and returns all required data
     /// @param token LeverageToken to preview mint for

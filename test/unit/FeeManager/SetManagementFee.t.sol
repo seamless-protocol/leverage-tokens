@@ -14,7 +14,7 @@ import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 contract SetManagementFeeTest is FeeManagerTest {
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_setManagementFee(ILeverageToken token, uint256 managementFee) public {
-        managementFee = bound(managementFee, 0, MAX_FEE);
+        managementFee = bound(managementFee, 0, MAX_MANAGEMENT_FEE);
 
         vm.mockCall(
             address(token),
@@ -31,7 +31,7 @@ contract SetManagementFeeTest is FeeManagerTest {
 
     /// forge-config: default.fuzz.runs = 1
     function testFuzz_setManagementFee_RevertIf_FeeTooHigh(ILeverageToken token, uint256 managementFee) public {
-        managementFee = bound(managementFee, MAX_FEE + 1, type(uint256).max);
+        managementFee = bound(managementFee, MAX_MANAGEMENT_FEE + 1, type(uint256).max);
 
         vm.mockCall(
             address(token),
@@ -39,7 +39,7 @@ contract SetManagementFeeTest is FeeManagerTest {
             abi.encode(100 ether) // Mocked so that the call to totalSupply does not revert
         );
 
-        vm.expectRevert(abi.encodeWithSelector(IFeeManager.FeeTooHigh.selector, managementFee, MAX_FEE));
+        vm.expectRevert(abi.encodeWithSelector(IFeeManager.FeeTooHigh.selector, managementFee, MAX_MANAGEMENT_FEE));
         vm.prank(feeManagerRole);
         feeManager.setManagementFee(token, managementFee);
     }

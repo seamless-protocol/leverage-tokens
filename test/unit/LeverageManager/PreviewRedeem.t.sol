@@ -79,7 +79,7 @@ contract PreviewRedeemTest is PreviewActionTest {
 
         assertEq(previewData.collateral, collateralToRemove);
         assertEq(
-            previewData.treasuryFee, Math.mulDiv(expectedSharesBeforeFees, treasuryFee, MAX_FEE, Math.Rounding.Ceil)
+            previewData.treasuryFee, Math.mulDiv(expectedSharesBeforeFees, treasuryFee, MAX_BPS, Math.Rounding.Ceil)
         );
     }
 }
