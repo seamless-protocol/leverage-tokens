@@ -43,7 +43,7 @@ contract PreviewRedeemTest is LeverageManagerTest {
         );
     }
 
-    function test_previewRedeemV2_WithFee() public {
+    function test_previewRedeem_WithFee() public {
         _setManagementFee(feeManagerRole, leverageToken, 0.1e4); // 10% management fee
         feeManager.chargeManagementFee(leverageToken);
 
@@ -62,8 +62,8 @@ contract PreviewRedeemTest is LeverageManagerTest {
         uint256 shares = 17.1 ether;
         ActionDataV2 memory previewData = leverageManager.previewRedeemV2(leverageToken, shares);
 
-        assertEq(previewData.collateral, 17.1 ether);
-        assertEq(previewData.debt, 17.1 ether);
+        assertEq(previewData.collateral, 14.6205 ether);
+        assertEq(previewData.debt, 14.6205 ether);
         assertEq(previewData.shares, 17.1 ether);
         // 5% fee on shares
         assertEq(previewData.tokenFee, 0.855 ether);
@@ -75,14 +75,14 @@ contract PreviewRedeemTest is LeverageManagerTest {
         previewData = leverageManager.previewRedeemV2(leverageToken, shares);
 
         // Collateral, debt, and equity amounts are reduced by ~10% due to management fee diluting share value
-        assertEq(previewData.collateral, 15.545454545454545454 ether);
-        assertEq(previewData.debt, 15.545454545454545455 ether);
+        assertEq(previewData.collateral, 13.291363636363636363 ether);
+        assertEq(previewData.debt, 13.291363636363636364 ether);
         assertEq(previewData.shares, 17.1 ether);
         assertEq(previewData.tokenFee, 0.855 ether);
         assertEq(previewData.treasuryFee, 1.6245 ether);
     }
 
-    function test_previewRedeemV2_WithoutFee() public {
+    function test_previewRedeem_WithoutFee() public {
         MockLeverageManagerStateForAction memory beforeState =
             MockLeverageManagerStateForAction({collateral: 100 ether, debt: 50 ether, sharesTotalSupply: 100 ether});
 
@@ -98,7 +98,7 @@ contract PreviewRedeemTest is LeverageManagerTest {
         assertEq(previewData.treasuryFee, 0);
     }
 
-    function testFuzz_PreviewRedeemV2_ZeroShares(
+    function testFuzz_PreviewRedeem_ZeroShares(
         uint128 initialCollateral,
         uint128 initialDebt,
         uint128 initialSharesTotalSupply
@@ -121,7 +121,7 @@ contract PreviewRedeemTest is LeverageManagerTest {
         assertEq(previewData.treasuryFee, 0);
     }
 
-    function testFuzz_PreviewRedeemV2_ZeroTotalSupply(uint128 initialCollateral, uint128 initialDebt) public {
+    function testFuzz_PreviewRedeem_ZeroTotalSupply(uint128 initialCollateral, uint128 initialDebt) public {
         MockLeverageManagerStateForAction memory beforeState =
             MockLeverageManagerStateForAction({collateral: initialCollateral, debt: initialDebt, sharesTotalSupply: 0});
 
@@ -144,7 +144,7 @@ contract PreviewRedeemTest is LeverageManagerTest {
         assertEq(previewData.treasuryFee, 0);
     }
 
-    function testFuzz_PreviewRedeemV2(FuzzPreviewRedeemParams memory params) public {
+    function testFuzz_PreviewRedeem(FuzzPreviewRedeemParams memory params) public {
         // 0% to 99.99% token action fee
         params.fee = uint16(bound(params.fee, 0, MAX_ACTION_FEE));
         leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Redeem, params.fee);
@@ -189,12 +189,14 @@ contract PreviewRedeemTest is LeverageManagerTest {
         uint256 newShares = params.initialSharesTotalSupply - previewData.shares;
 
         {
-            (uint256 sharesAfterFee, uint256 tokenFee) =
+            (, uint256 tokenFee) =
                 leverageManager.exposed_computeTokenFee(leverageToken, params.shares, ExternalAction.Redeem);
-            uint256 treasuryFee = leverageManager.exposed_computeTreasuryFee(ExternalAction.Redeem, sharesAfterFee);
-            uint256 debt = leverageManager.convertSharesToDebt(leverageToken, params.shares, Math.Rounding.Ceil);
+            uint256 treasuryFee =
+                leverageManager.exposed_computeTreasuryFee(ExternalAction.Redeem, params.shares - tokenFee);
+            uint256 sharesAfterFees = params.shares - tokenFee - treasuryFee;
+            uint256 debt = leverageManager.convertSharesToDebt(leverageToken, sharesAfterFees, Math.Rounding.Ceil);
             uint256 collateral =
-                leverageManager.convertSharesToCollateral(leverageToken, params.shares, Math.Rounding.Floor);
+                leverageManager.convertSharesToCollateral(leverageToken, sharesAfterFees, Math.Rounding.Floor);
 
             // Validate if shares, collateral, debt, and fees are properly calculated and returned
             assertEq(previewData.shares, params.shares, "Preview shares incorrect");
@@ -235,11 +237,6 @@ contract PreviewRedeemTest is LeverageManagerTest {
         if (newCollateral == 0) {
             assertEq(newShares, 0, "New shares should be zero if collateral is zero");
             assertEq(newDebt, 0, "New debt should be zero if collateral is zero");
-        }
-
-        if (newShares == 0) {
-            assertEq(newCollateral, 0, "New collateral should be zero if shares are zero");
-            assertEq(newDebt, 0, "New debt should be zero if shares are zero");
         }
     }
 }

@@ -15,7 +15,7 @@ contract PreviewWithdrawTest is LeverageManagerTest {
         uint128 initialCollateral;
         uint128 initialDebt;
         uint128 initialSharesTotalSupply;
-        uint128 collateral;
+        uint256 collateral;
         uint16 fee;
         uint16 managementFee;
     }
@@ -64,11 +64,11 @@ contract PreviewWithdrawTest is LeverageManagerTest {
 
         assertEq(previewData.collateral, 17.1 ether);
         assertEq(previewData.debt, 17.1 ether);
-        // 5% fee on gross shares = 17.1 * 0.05 = 0.855
-        assertEq(previewData.tokenFee, 0.855 ether);
-        // 10% fee on gross shares after token fee applied = (17.1 - 0.855) * 0.1 = 1.6245
-        assertEq(previewData.treasuryFee, 1.6245 ether);
-        assertEq(previewData.shares, 17.1 ether);
+        // 5% fee on gross shares = 20 * 0.05 = 1
+        assertEq(previewData.tokenFee, 1 ether);
+        // 10% fee on gross shares after token fee applied = (20 - 1) * 0.1 = 1.9
+        assertEq(previewData.treasuryFee, 1.9 ether);
+        assertEq(previewData.shares, 20 ether);
 
         skip(SECONDS_ONE_YEAR);
 
@@ -77,9 +77,9 @@ contract PreviewWithdrawTest is LeverageManagerTest {
         // Share amounts are increased by ~10% due to management fee diluting share value
         assertEq(previewData.collateral, 17.1 ether);
         assertEq(previewData.debt, 17.1 ether);
-        assertEq(previewData.shares, 18.81 ether);
-        assertEq(previewData.tokenFee, 0.9405 ether);
-        assertEq(previewData.treasuryFee, 1.78695 ether);
+        assertEq(previewData.tokenFee, 1.1 ether);
+        assertEq(previewData.treasuryFee, 2.09 ether);
+        assertEq(previewData.shares, 22 ether);
     }
 
     function test_previewWithdraw_WithoutFee() public {
@@ -153,6 +153,9 @@ contract PreviewWithdrawTest is LeverageManagerTest {
         params.managementFee = uint16(bound(params.managementFee, 0, MAX_MANAGEMENT_FEE));
         _setManagementFee(feeManagerRole, leverageToken, params.managementFee);
 
+        params.initialCollateral =
+            uint128(bound(params.initialCollateral, 0, type(uint128).max / (MAX_BPS - params.fee)));
+
         // Bound initial debt in collateral asset to be less than or equal to initial collateral (1:1 exchange rate)
         params.initialDebt = uint128(bound(params.initialDebt, 0, params.initialCollateral));
 
@@ -162,8 +165,6 @@ contract PreviewWithdrawTest is LeverageManagerTest {
             params.initialSharesTotalSupply = uint128(bound(params.initialSharesTotalSupply, 1, type(uint128).max));
         }
 
-        params.collateral = uint128(bound(params.collateral, 0, params.initialCollateral));
-
         _prepareLeverageManagerStateForAction(
             MockLeverageManagerStateForAction({
                 collateral: params.initialCollateral,
@@ -172,9 +173,12 @@ contract PreviewWithdrawTest is LeverageManagerTest {
             })
         );
 
+        uint256 collateralToWithdraw =
+            bound(params.collateral, 0, params.initialCollateral * (MAX_BPS - params.fee) / MAX_BPS);
+
         LeverageTokenState memory prevState = leverageManager.getLeverageTokenState(leverageToken);
 
-        ActionDataV2 memory previewData = leverageManager.previewWithdraw(leverageToken, params.collateral);
+        ActionDataV2 memory previewData = leverageManager.previewWithdraw(leverageToken, collateralToWithdraw);
 
         // Calculate state after action
         uint256 newCollateralRatio = _computeLeverageTokenCRAfterAction(
@@ -186,18 +190,23 @@ contract PreviewWithdrawTest is LeverageManagerTest {
         );
         uint256 newDebt = params.initialDebt - previewData.debt;
         uint256 newCollateral = params.initialCollateral - previewData.collateral;
-        uint256 newShares = params.initialSharesTotalSupply - previewData.shares;
+
+        // Technically, executing a withdrawal where the previewed shares are greater than the initial shares total supply
+        // is not possible and revert. However, the invariants checked in this test should still hold
+        uint256 newShares = params.initialSharesTotalSupply > previewData.shares
+            ? params.initialSharesTotalSupply - previewData.shares
+            : 0;
 
         {
             uint256 shares =
-                leverageManager.convertCollateralToShares(leverageToken, params.collateral, Math.Rounding.Ceil);
-            (, uint256 tokenFee, uint256 treasuryFee) =
-                leverageManager.exposed_computeFeesForGrossShares(leverageToken, shares, ExternalAction.Redeem);
+                leverageManager.convertCollateralToShares(leverageToken, collateralToWithdraw, Math.Rounding.Ceil);
             uint256 debt = leverageManager.convertSharesToDebt(leverageToken, shares, Math.Rounding.Ceil);
+            (uint256 sharesAfterFees, uint256 tokenFee, uint256 treasuryFee) =
+                leverageManager.exposed_computeFeesForNetShares(leverageToken, shares, ExternalAction.Redeem);
 
             // Validate if shares, collateral, debt, and fees are properly calculated and returned
-            assertEq(previewData.shares, shares, "Preview shares incorrect");
-            assertEq(previewData.collateral, params.collateral, "Preview collateral incorrect");
+            assertEq(previewData.shares, sharesAfterFees, "Preview shares incorrect");
+            assertEq(previewData.collateral, collateralToWithdraw, "Preview collateral incorrect");
             assertEq(previewData.debt, debt, "Preview debt incorrect");
             assertEq(previewData.tokenFee, tokenFee, "Preview token fee incorrect");
             assertEq(previewData.treasuryFee, treasuryFee, "Preview treasury fee incorrect");
@@ -234,12 +243,6 @@ contract PreviewWithdrawTest is LeverageManagerTest {
         if (newCollateral == 0) {
             assertEq(newShares, 0, "New shares should be zero if collateral is zero");
             assertEq(newDebt, 0, "New debt should be zero if collateral is zero");
-        }
-
-        if (newShares == 0) {
-            // Debt should be 0, but collateral does not need to be; the withdrawer may have specified an amount of collateral
-            // that is less than the maximum amount for the shares burned
-            assertEq(newDebt, 0, "New debt should be zero if shares are zero");
         }
     }
 }

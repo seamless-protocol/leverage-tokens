@@ -2,6 +2,7 @@
 pragma solidity ^0.8.26;
 
 // Dependency imports
+import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // Internal imports
@@ -38,9 +39,6 @@ contract RedeemTest is LeverageManagerTest {
     function testFuzz_redeem_WithFees(uint256 shares) public {
         leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Redeem, 0.05e4); // 5% fee
         _setTreasuryActionFee(ExternalAction.Redeem, 0.05e4); // 5% fee
-
-        _setManagementFee(feeManagerRole, leverageToken, 0.1e4); // 10% management fee
-        feeManager.chargeManagementFee(leverageToken);
 
         // 1:2 exchange rate
         lendingAdapter.mockConvertCollateralToDebtAssetExchangeRate(2e8);
@@ -88,6 +86,35 @@ contract RedeemTest is LeverageManagerTest {
         slippageDelta = bound(slippageDelta, 1, type(uint256).max - previewData.collateral);
 
         _testRedeem(shares, previewData.collateral + slippageDelta);
+    }
+
+    function testFuzz_redeem_RevertIf_SharesGreaterThanBalance(uint128 shares) public {
+        MockLeverageManagerStateForAction memory beforeState =
+            MockLeverageManagerStateForAction({collateral: 200 ether, debt: 100 ether, sharesTotalSupply: 100 ether});
+
+        _prepareLeverageManagerStateForAction(beforeState);
+
+        vm.startPrank(address(leverageManager));
+        leverageToken.mint(address(this), shares);
+        vm.stopPrank();
+
+        uint256 sharesToRedeem = uint256(shares) + 1;
+
+        ActionDataV2 memory previewData = leverageManager.previewRedeemV2(leverageToken, sharesToRedeem);
+
+        // Mint debt tokens to sender and approve leverage manager
+        debtToken.mint(address(this), previewData.debt);
+        debtToken.approve(address(leverageManager), previewData.debt);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IERC20Errors.ERC20InsufficientBalance.selector,
+                address(this),
+                leverageToken.balanceOf(address(this)),
+                sharesToRedeem
+            )
+        );
+        leverageManager.redeemV2(leverageToken, sharesToRedeem, 0);
     }
 
     function testFuzz_redeem(

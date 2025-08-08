@@ -357,15 +357,26 @@ contract LeverageManager is
 
     /// @inheritdoc ILeverageManager
     function previewRedeemV2(ILeverageToken token, uint256 shares) public view returns (ActionDataV2 memory) {
-        (, uint256 sharesFee, uint256 treasuryFee) = _computeFeesForGrossShares(token, shares, ExternalAction.Redeem);
+        (uint256 sharesAfterFees, uint256 sharesFee, uint256 treasuryFee) =
+            _computeFeesForGrossShares(token, shares, ExternalAction.Redeem);
 
         ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
         uint256 feeAdjustedTotalSupply = _getFeeAdjustedTotalSupply(token);
+
+        // The redeemer receives collateral and repays debt for the net shares after fees are subtracted. The amount of
+        // shares their balance is decreased by is that net share amount (which is burned) plus the fees.
+        // - the treasury fee shares are given to the treasury
+        // - the token fee shares are burned to increase share value
         uint256 collateral = _convertSharesToCollateral(
-            token, lendingAdapter, shares, lendingAdapter.getCollateral(), feeAdjustedTotalSupply, Math.Rounding.Floor
+            token,
+            lendingAdapter,
+            sharesAfterFees,
+            lendingAdapter.getCollateral(),
+            feeAdjustedTotalSupply,
+            Math.Rounding.Floor
         );
         uint256 debt = _convertSharesToDebt(
-            token, lendingAdapter, shares, lendingAdapter.getDebt(), feeAdjustedTotalSupply, Math.Rounding.Ceil
+            token, lendingAdapter, sharesAfterFees, lendingAdapter.getDebt(), feeAdjustedTotalSupply, Math.Rounding.Ceil
         );
 
         return ActionDataV2({
@@ -382,18 +393,24 @@ contract LeverageManager is
         ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
         uint256 feeAdjustedTotalSupply = _getFeeAdjustedTotalSupply(token);
 
+        // The withdrawer receives their specified collateral amount and pays debt for the shares that can be exchanged
+        // for the collateral amount. The amount of shares their balance is decreased by is that share amount (which is
+        // burned) plus the fees.
+        // - the treasury fee shares are given to the treasury
+        // - the token fee shares are burned to increase share value
         uint256 shares =
             _convertCollateralToShares(token, lendingAdapter, collateral, feeAdjustedTotalSupply, Math.Rounding.Ceil);
-        (, uint256 sharesFee, uint256 treasuryFee) = _computeFeesForGrossShares(token, shares, ExternalAction.Redeem);
-
         uint256 debt = _convertSharesToDebt(
             token, lendingAdapter, shares, lendingAdapter.getDebt(), feeAdjustedTotalSupply, Math.Rounding.Ceil
         );
 
+        (uint256 sharesAfterFees, uint256 sharesFee, uint256 treasuryFee) =
+            _computeFeesForNetShares(token, shares, ExternalAction.Redeem);
+
         return ActionDataV2({
             collateral: collateral,
             debt: debt,
-            shares: shares,
+            shares: sharesAfterFees,
             tokenFee: sharesFee,
             treasuryFee: treasuryFee
         });
