@@ -97,12 +97,12 @@ contract PreviewMintV2Test is LeverageManagerTest {
 
     function testFuzz_PreviewMintV2_ZeroShares(
         uint128 initialCollateral,
-        uint128 initialDebtInCollateralAsset,
+        uint128 initialDebt,
         uint128 initialSharesTotalSupply
     ) public {
         MockLeverageManagerStateForAction memory beforeState = MockLeverageManagerStateForAction({
             collateral: initialCollateral,
-            debt: initialDebtInCollateralAsset,
+            debt: initialDebt,
             sharesTotalSupply: initialSharesTotalSupply
         });
 
@@ -114,6 +114,43 @@ contract PreviewMintV2Test is LeverageManagerTest {
         assertEq(previewData.collateral, 0);
         assertEq(previewData.debt, 0);
         assertEq(previewData.shares, 0);
+        assertEq(previewData.tokenFee, 0);
+        assertEq(previewData.treasuryFee, 0);
+    }
+
+    function testFuzz_PreviewMintV2_ZeroTotalCollateral(uint128 initialTotalSupply, uint128 initialDebt) public {
+        initialTotalSupply = uint128(bound(initialTotalSupply, 1, type(uint128).max));
+        MockLeverageManagerStateForAction memory beforeState =
+            MockLeverageManagerStateForAction({collateral: 0, debt: initialDebt, sharesTotalSupply: initialTotalSupply});
+
+        _prepareLeverageManagerStateForAction(beforeState);
+
+        uint256 shares = 100 ether;
+        ActionDataV2 memory previewData = leverageManager.previewMintV2(leverageToken, shares);
+
+        assertEq(previewData.collateral, 0);
+        assertEq(previewData.debt, shares * initialDebt / initialTotalSupply);
+        assertEq(previewData.shares, shares);
+        assertEq(previewData.tokenFee, 0);
+        assertEq(previewData.treasuryFee, 0);
+    }
+
+    function testFuzz_PreviewMintV2_ZeroTotalDebt(uint128 initialCollateral, uint128 initialTotalSupply) public {
+        initialTotalSupply = uint128(bound(initialTotalSupply, 1, type(uint128).max));
+        MockLeverageManagerStateForAction memory beforeState = MockLeverageManagerStateForAction({
+            collateral: initialCollateral,
+            debt: 0,
+            sharesTotalSupply: initialTotalSupply
+        });
+
+        _prepareLeverageManagerStateForAction(beforeState);
+
+        uint256 shares = 100 ether;
+        ActionDataV2 memory previewData = leverageManager.previewMintV2(leverageToken, shares);
+
+        assertEq(previewData.collateral, Math.mulDiv(shares, initialCollateral, initialTotalSupply, Math.Rounding.Ceil));
+        assertEq(previewData.debt, 0);
+        assertEq(previewData.shares, shares);
         assertEq(previewData.tokenFee, 0);
         assertEq(previewData.treasuryFee, 0);
     }

@@ -58,6 +58,12 @@ interface ILeverageManager is IFeeManager {
     /// @param actionData The action data of the mint
     event Mint(ILeverageToken indexed token, address indexed sender, ActionData actionData);
 
+    /// @notice Event emitted when a user mints LeverageToken shares
+    /// @param token The LeverageToken
+    /// @param sender The sender of the mint
+    /// @param actionData The action data of the mint
+    event MintV2(ILeverageToken indexed token, address indexed sender, ActionDataV2 actionData);
+
     /// @notice Event emitted when a user rebalances a LeverageToken
     /// @param token The LeverageToken
     /// @param sender The sender of the rebalance
@@ -192,6 +198,37 @@ interface ILeverageManager is IFeeManager {
     function createNewLeverageToken(LeverageTokenConfig memory config, string memory name, string memory symbol)
         external
         returns (ILeverageToken token);
+
+    /// @notice Deposits collateral into a LeverageToken and mints shares to the sender
+    /// @param token LeverageToken to deposit into
+    /// @param collateral Amount of collateral to deposit
+    /// @param minShares Minimum number of shares to mint
+    /// @return depositData Action data for the deposit
+    ///         - collateral Amount of collateral that was added, including any fees
+    ///         - debt Amount of debt that was added
+    ///         - shares Amount of shares minted to the sender
+    ///         - tokenFee Amount of shares that was charged for the deposit that are given to the LeverageToken
+    ///         - treasuryFee Amount of shares that was charged for the deposit that are given to the treasury
+    /// @dev Sender should approve leverage manager to spend collateral amount of collateral asset
+    function deposit(ILeverageToken token, uint256 collateral, uint256 minShares)
+        external
+        returns (ActionDataV2 memory);
+
+    /// @notice Mints shares of a LeverageToken to the sender
+    /// @param token LeverageToken to mint shares for
+    /// @param shares Amount of shares to mint
+    /// @param maxCollateral Maximum amount of collateral to use for minting
+    /// @return mintData Action data for the mint
+    ///         - collateral Amount of collateral that was added, including any fees
+    ///         - debt Amount of debt that was added
+    ///         - shares Amount of shares minted to the sender
+    ///         - tokenFee Amount of shares that was charged for the mint that are given to the LeverageToken
+    ///         - treasuryFee Amount of shares that was charged for the mint that are given to the treasury
+    /// @dev Sender should approve leverage manager to spend collateral amount of collateral asset, which can be
+    ///      previewed with previewMint
+    function mintV2(ILeverageToken token, uint256 shares, uint256 maxCollateral)
+        external
+        returns (ActionDataV2 memory);
 
     /// @notice Previews deposit function call and returns all required data
     /// @param token LeverageToken to preview deposit for
