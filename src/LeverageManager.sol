@@ -575,6 +575,48 @@ contract LeverageManager is
         emit Rebalance(leverageToken, msg.sender, stateBefore, stateAfter, actions);
     }
 
+    /// @inheritdoc ILeverageManager
+    function redeemV2(ILeverageToken token, uint256 shares, uint256 minCollateral)
+        external
+        nonReentrant
+        returns (ActionDataV2 memory actionData)
+    {
+        // Management fee is calculated from the total supply of the LeverageToken, so we need to claim it first
+        // before total supply is updated due to the redeem
+        chargeManagementFee(token);
+
+        ActionDataV2 memory redeemData = previewRedeemV2(token, shares);
+
+        if (redeemData.collateral < minCollateral) {
+            revert SlippageTooHigh(redeemData.collateral, minCollateral);
+        }
+
+        _redeem(token, redeemData);
+
+        return redeemData;
+    }
+
+    /// @inheritdoc ILeverageManager
+    function withdraw(ILeverageToken token, uint256 collateral, uint256 maxShares)
+        external
+        nonReentrant
+        returns (ActionDataV2 memory actionData)
+    {
+        // Management fee is calculated from the total supply of the LeverageToken, so we need to claim it first
+        // before total supply is updated due to the redeem
+        chargeManagementFee(token);
+
+        ActionDataV2 memory withdrawData = previewWithdraw(token, collateral);
+
+        if (withdrawData.shares > maxShares) {
+            revert SlippageTooHigh(withdrawData.shares, maxShares);
+        }
+
+        _redeem(token, withdrawData);
+
+        return withdrawData;
+    }
+
     function _convertCollateralToShares(
         ILeverageToken token,
         ILendingAdapter lendingAdapter,
@@ -856,6 +898,31 @@ contract LeverageManager is
 
         // Emit event and explicit return statement
         emit MintV2(token, msg.sender, mintData);
+    }
+
+    /// @notice Helper function for executing a redeem action on a LeverageToken
+    /// @param token LeverageToken to redeem shares for
+    /// @param redeemData Action data for the redeem
+    function _redeem(ILeverageToken token, ActionDataV2 memory redeemData) internal {
+        // Burn shares from user and total supply
+        token.burn(msg.sender, redeemData.shares);
+
+        // Mint shares to treasury for the treasury action fee
+        _chargeTreasuryFee(token, redeemData.treasuryFee);
+
+        // Take assets from sender and repay the debt
+        SafeERC20.safeTransferFrom(getLeverageTokenDebtAsset(token), msg.sender, address(this), redeemData.debt);
+        _executeLendingAdapterAction(token, ActionType.Repay, redeemData.debt);
+
+        // Remove collateral from lending pool
+        _executeLendingAdapterAction(token, ActionType.RemoveCollateral, redeemData.collateral);
+
+        // Send collateral assets to sender
+        IERC20 collateralAsset = getLeverageTokenCollateralAsset(token);
+        SafeERC20.safeTransfer(collateralAsset, msg.sender, redeemData.collateral);
+
+        // Emit event and explicit return statement
+        emit RedeemV2(token, msg.sender, redeemData);
     }
 
     /// @notice Helper function for transferring tokens, or no-op if token is 0 address
