@@ -14,12 +14,25 @@ import {MorphoLendingAdapterTest} from "../MorphoLendingAdapter.t.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IntegrationTestBase} from "../IntegrationTestBase.t.sol";
-import {LeverageTokenState} from "src/types/DataTypes.sol";
+import {LeverageTokenState, ActionData, ActionDataV2} from "src/types/DataTypes.sol";
 
 contract LeverageManagerTest is IntegrationTestBase {
     function testFork_setUp() public view virtual override {
         assertEq(address(leverageManager.getLeverageTokenCollateralAsset(leverageToken)), address(WETH));
         assertEq(address(leverageManager.getLeverageTokenDebtAsset(leverageToken)), address(USDC));
+    }
+
+    function _deposit(address caller, uint256 collateralToDeposit, uint256 minShares)
+        internal
+        returns (ActionDataV2 memory)
+    {
+        deal(address(WETH), caller, collateralToDeposit);
+        vm.startPrank(caller);
+        WETH.approve(address(leverageManager), collateralToDeposit);
+        ActionDataV2 memory depositData = leverageManager.deposit(leverageToken, collateralToDeposit, minShares);
+        vm.stopPrank();
+
+        return depositData;
     }
 
     function _mint(address caller, uint256 equityInCollateralAsset, uint256 collateralToAdd)
@@ -33,6 +46,19 @@ contract LeverageManagerTest is IntegrationTestBase {
         vm.stopPrank();
 
         return shares;
+    }
+
+    function _mintV2(address caller, uint256 sharesToMint, uint256 maxCollateral)
+        internal
+        returns (ActionDataV2 memory)
+    {
+        deal(address(WETH), caller, maxCollateral);
+        vm.startPrank(caller);
+        WETH.approve(address(leverageManager), maxCollateral);
+        ActionDataV2 memory mintData = leverageManager.mintV2(leverageToken, sharesToMint, maxCollateral);
+        vm.stopPrank();
+
+        return mintData;
     }
 
     function _redeem(address caller, uint256 equityInCollateralAsset, uint256 debtToRepay) internal returns (uint256) {

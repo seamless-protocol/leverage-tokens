@@ -126,11 +126,16 @@ contract LeverageManager is
         uint256 totalCollateral = lendingAdapter.getCollateral();
         uint256 totalDebt = lendingAdapter.getDebt();
 
-        if (totalCollateral == 0 || totalDebt == 0) {
-            uint256 initialCollateralRatio = getLeverageTokenInitialCollateralRatio(token);
-            return lendingAdapter.convertCollateralToDebtAsset(
-                Math.mulDiv(collateral, BASE_RATIO, initialCollateralRatio, rounding)
-            );
+        if (totalCollateral == 0) {
+            if (totalDebt == 0) {
+                // Initial state: no collateral or debt, use initial collateral ratio
+                uint256 initialCollateralRatio = getLeverageTokenInitialCollateralRatio(token);
+                return lendingAdapter.convertCollateralToDebtAsset(
+                    Math.mulDiv(collateral, BASE_RATIO, initialCollateralRatio, rounding)
+                );
+            }
+            // Liquidated state: no collateral but debt exists, cannot convert
+            return 0;
         }
 
         return Math.mulDiv(collateral, totalDebt, totalCollateral, rounding);
@@ -157,11 +162,16 @@ contract LeverageManager is
         uint256 totalCollateral = lendingAdapter.getCollateral();
         uint256 totalDebt = lendingAdapter.getDebt();
 
-        if (totalDebt == 0 || totalCollateral == 0) {
-            uint256 initialCollateralRatio = getLeverageTokenInitialCollateralRatio(token);
-            return lendingAdapter.convertDebtToCollateralAsset(
-                Math.mulDiv(debt, initialCollateralRatio, BASE_RATIO, rounding)
-            );
+        if (totalDebt == 0) {
+            if (totalCollateral == 0) {
+                // Initial state: no collateral or debt, use initial collateral ratio
+                uint256 initialCollateralRatio = getLeverageTokenInitialCollateralRatio(token);
+                return lendingAdapter.convertDebtToCollateralAsset(
+                    Math.mulDiv(debt, initialCollateralRatio, BASE_RATIO, rounding)
+                );
+            }
+            // Liquidated state: no collateral but debt exists, cannot convert
+            return 0;
         }
 
         return Math.mulDiv(debt, totalCollateral, totalDebt, rounding);
@@ -364,6 +374,50 @@ contract LeverageManager is
     }
 
     /// @inheritdoc ILeverageManager
+    function deposit(ILeverageToken token, uint256 collateral, uint256 minShares)
+        external
+        nonReentrant
+        returns (ActionDataV2 memory actionData)
+    {
+        // Management fee is calculated from the total supply of the LeverageToken, so we need to charge it first
+        // before total supply is updated due to the mint
+        chargeManagementFee(token);
+
+        ActionDataV2 memory depositData = previewDeposit(token, collateral);
+
+        // slither-disable-next-line timestamp
+        if (depositData.shares < minShares) {
+            revert SlippageTooHigh(depositData.shares, minShares); // TODO: check if this is correct
+        }
+
+        _mint(token, depositData);
+
+        return depositData;
+    }
+
+    /// @inheritdoc ILeverageManager
+    function mintV2(ILeverageToken token, uint256 shares, uint256 maxCollateral)
+        external
+        nonReentrant
+        returns (ActionDataV2 memory actionData)
+    {
+        // Management fee is calculated from the total supply of the LeverageToken, so we need to charge it first
+        // before total supply is updated due to the mint
+        chargeManagementFee(token);
+
+        ActionDataV2 memory mintData = previewMintV2(token, shares);
+
+        // slither-disable-next-line timestamp
+        if (mintData.collateral > maxCollateral) {
+            revert SlippageTooHigh(mintData.collateral, maxCollateral);
+        }
+
+        _mint(token, mintData);
+
+        return mintData;
+    }
+
+    /// @inheritdoc ILeverageManager
     function mint(ILeverageToken token, uint256 equityInCollateralAsset, uint256 minShares)
         external
         nonReentrant
@@ -487,7 +541,7 @@ contract LeverageManager is
         uint256 totalCollateral = lendingAdapter.getCollateral();
 
         // slither-disable-next-line incorrect-equality,timestamp
-        if (totalSupply == 0 || totalCollateral == 0) {
+        if (totalSupply == 0) {
             uint256 initialCollateralRatio = getLeverageTokenInitialCollateralRatio(token);
 
             uint256 equityInCollateralAsset =
@@ -505,6 +559,13 @@ contract LeverageManager is
                 uint256 scalingFactor = 10 ** (leverageTokenDecimals - collateralDecimals);
                 return equityInCollateralAsset * scalingFactor;
             }
+        }
+
+        // If total supply != 0 and total collateral is zero, the LeverageToken was fully liquidated. In this case,
+        // no amount of collateral can be converted to shares. An implication of this is that new mints of shares
+        // will not be possible for the LeverageToken.
+        if (totalCollateral == 0) {
+            return 0;
         }
 
         return Math.mulDiv(collateral, totalSupply, totalCollateral, rounding);
@@ -526,7 +587,7 @@ contract LeverageManager is
         Math.Rounding rounding
     ) internal view returns (uint256 collateral) {
         // slither-disable-next-line incorrect-equality,timestamp
-        if (totalSupply == 0 || totalCollateral == 0) {
+        if (totalSupply == 0) {
             uint256 leverageTokenDecimals = IERC20Metadata(address(token)).decimals();
             uint256 collateralDecimals = IERC20Metadata(address(lendingAdapter.getCollateralAsset())).decimals();
 
@@ -566,7 +627,7 @@ contract LeverageManager is
         Math.Rounding rounding
     ) internal view returns (uint256 debt) {
         // slither-disable-next-line incorrect-equality,timestamp
-        if (totalSupply == 0 || totalDebt == 0) {
+        if (totalSupply == 0) {
             uint256 leverageTokenDecimals = IERC20Metadata(address(token)).decimals();
             uint256 collateralDecimals = IERC20Metadata(address(lendingAdapter.getCollateralAsset())).decimals();
 
@@ -724,6 +785,32 @@ contract LeverageManager is
             // slither-disable-next-line reentrancy-events
             lendingAdapter.repay(amount);
         }
+    }
+
+    /// @notice Helper function for executing a mint action on a LeverageToken
+    /// @param token LeverageToken to mint shares for
+    /// @param mintData Action data for the mint
+    function _mint(ILeverageToken token, ActionDataV2 memory mintData) internal {
+        // Take collateral asset from sender
+        IERC20 collateralAsset = getLeverageTokenCollateralAsset(token);
+        SafeERC20.safeTransferFrom(collateralAsset, msg.sender, address(this), mintData.collateral);
+
+        // Add collateral to LeverageToken
+        _executeLendingAdapterAction(token, ActionType.AddCollateral, mintData.collateral);
+
+        // Borrow and send debt assets to caller
+        _executeLendingAdapterAction(token, ActionType.Borrow, mintData.debt);
+        SafeERC20.safeTransfer(getLeverageTokenDebtAsset(token), msg.sender, mintData.debt);
+
+        // Charge treasury fee
+        _chargeTreasuryFee(token, mintData.treasuryFee);
+
+        // Mint shares to user
+        // slither-disable-next-line reentrancy-events
+        token.mint(msg.sender, mintData.shares);
+
+        // Emit event and explicit return statement
+        emit MintV2(token, msg.sender, mintData);
     }
 
     /// @notice Helper function for transferring tokens, or no-op if token is 0 address
