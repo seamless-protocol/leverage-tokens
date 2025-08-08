@@ -123,8 +123,6 @@ contract ConvertSharesToDebtTest is LeverageManagerTest {
             abi.encode(initialCollateralRatio)
         );
 
-        uint256 scalingFactor = 10 ** (18 - collateralDecimals);
-
         uint256 debt = leverageManager.convertSharesToDebt(leverageToken, shares, Math.Rounding.Floor);
         assertEq(debt, 0);
 
@@ -134,6 +132,8 @@ contract ConvertSharesToDebtTest is LeverageManagerTest {
         totalDebt = nonZeroValue;
         lendingAdapter.mockDebt(totalDebt);
         _burnShares(address(1), totalSupply); // Burn all shares
+
+        uint256 scalingFactor = 10 ** (18 - collateralDecimals);
 
         uint256 expectedDebtFloored = Math.mulDiv(
             shares, _BASE_RATIO(), (initialCollateralRatio - _BASE_RATIO()) * scalingFactor, Math.Rounding.Floor
@@ -177,8 +177,6 @@ contract ConvertSharesToDebtTest is LeverageManagerTest {
             abi.encode(initialCollateralRatio)
         );
 
-        uint256 scalingFactor = 10 ** (collateralDecimals - 18);
-
         uint256 debt = leverageManager.convertSharesToDebt(leverageToken, shares, Math.Rounding.Floor);
         assertEq(debt, 0);
 
@@ -188,6 +186,8 @@ contract ConvertSharesToDebtTest is LeverageManagerTest {
         totalDebt = nonZeroValue;
         lendingAdapter.mockDebt(totalDebt);
         _burnShares(address(1), totalSupply); // Burn all shares
+
+        uint256 scalingFactor = 10 ** (collateralDecimals - 18);
 
         uint256 expectedDebtFloored = Math.mulDiv(
             shares * scalingFactor, _BASE_RATIO(), (initialCollateralRatio - _BASE_RATIO()), Math.Rounding.Floor

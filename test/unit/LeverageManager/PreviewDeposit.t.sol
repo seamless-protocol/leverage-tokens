@@ -121,8 +121,48 @@ contract PreviewDepositTest is LeverageManagerTest {
         assertEq(previewData.treasuryFee, 0);
     }
 
+    function testFuzz_previewDeposit_ZeroTotalCollateral(uint128 initialTotalSupply, uint128 initialDebt) public {
+        initialTotalSupply = uint128(bound(initialTotalSupply, 1, type(uint128).max));
+        MockLeverageManagerStateForAction memory beforeState =
+            MockLeverageManagerStateForAction({collateral: 0, debt: initialDebt, sharesTotalSupply: initialTotalSupply});
+
+        _prepareLeverageManagerStateForAction(beforeState);
+
+        uint256 collateral = 2 ether;
+        ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, collateral);
+
+        assertEq(previewData.collateral, collateral);
+        assertEq(previewData.debt, 0);
+        assertEq(previewData.shares, 0);
+        assertEq(previewData.tokenFee, 0);
+        assertEq(previewData.treasuryFee, 0);
+    }
+
+    function testFuzz_previewDeposit_ZeroTotalDebt(uint128 initialCollateral, uint128 initialTotalSupply) public {
+        initialTotalSupply = uint128(bound(initialTotalSupply, 1, type(uint128).max));
+        MockLeverageManagerStateForAction memory beforeState = MockLeverageManagerStateForAction({
+            collateral: initialCollateral,
+            debt: 0,
+            sharesTotalSupply: initialTotalSupply
+        });
+
+        _prepareLeverageManagerStateForAction(beforeState);
+
+        uint256 collateral = 2 ether;
+        ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, collateral);
+
+        assertEq(previewData.collateral, collateral);
+        assertEq(previewData.debt, 0);
+
+        uint256 expectedShares =
+            leverageManager.convertCollateralToShares(leverageToken, collateral, Math.Rounding.Floor);
+
+        assertEq(previewData.shares, expectedShares);
+        assertEq(previewData.tokenFee, 0);
+        assertEq(previewData.treasuryFee, 0);
+    }
+
     function testFuzz_previewDeposit_ZeroTotalSupply(uint128 initialCollateral, uint128 initialDebt) public {
-        initialDebt = initialCollateral == 0 ? 0 : uint128(bound(initialDebt, 0, initialCollateral - 1));
         MockLeverageManagerStateForAction memory beforeState =
             MockLeverageManagerStateForAction({collateral: initialCollateral, debt: initialDebt, sharesTotalSupply: 0});
 

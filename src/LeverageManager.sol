@@ -126,11 +126,16 @@ contract LeverageManager is
         uint256 totalCollateral = lendingAdapter.getCollateral();
         uint256 totalDebt = lendingAdapter.getDebt();
 
-        if (totalCollateral == 0 || totalDebt == 0) {
-            uint256 initialCollateralRatio = getLeverageTokenInitialCollateralRatio(token);
-            return lendingAdapter.convertCollateralToDebtAsset(
-                Math.mulDiv(collateral, BASE_RATIO, initialCollateralRatio, rounding)
-            );
+        if (totalCollateral == 0) {
+            if (totalDebt == 0) {
+                // Initial state: no collateral or debt, use initial collateral ratio
+                uint256 initialCollateralRatio = getLeverageTokenInitialCollateralRatio(token);
+                return lendingAdapter.convertCollateralToDebtAsset(
+                    Math.mulDiv(collateral, BASE_RATIO, initialCollateralRatio, rounding)
+                );
+            }
+            // Liquidated state: no collateral but debt exists, cannot convert
+            return 0;
         }
 
         return Math.mulDiv(collateral, totalDebt, totalCollateral, rounding);
@@ -157,11 +162,16 @@ contract LeverageManager is
         uint256 totalCollateral = lendingAdapter.getCollateral();
         uint256 totalDebt = lendingAdapter.getDebt();
 
-        if (totalDebt == 0 || totalCollateral == 0) {
-            uint256 initialCollateralRatio = getLeverageTokenInitialCollateralRatio(token);
-            return lendingAdapter.convertDebtToCollateralAsset(
-                Math.mulDiv(debt, initialCollateralRatio, BASE_RATIO, rounding)
-            );
+        if (totalDebt == 0) {
+            if (totalCollateral == 0) {
+                // Initial state: no collateral or debt, use initial collateral ratio
+                uint256 initialCollateralRatio = getLeverageTokenInitialCollateralRatio(token);
+                return lendingAdapter.convertDebtToCollateralAsset(
+                    Math.mulDiv(debt, initialCollateralRatio, BASE_RATIO, rounding)
+                );
+            }
+            // Liquidated state: no collateral but debt exists, cannot convert
+            return 0;
         }
 
         return Math.mulDiv(debt, totalCollateral, totalDebt, rounding);
@@ -419,6 +429,7 @@ contract LeverageManager is
 
         ActionDataV2 memory depositData = previewDeposit(token, collateral);
 
+        // slither-disable-next-line timestamp
         if (depositData.shares < minShares) {
             revert SlippageTooHigh(depositData.shares, minShares); // TODO: check if this is correct
         }
@@ -440,6 +451,7 @@ contract LeverageManager is
 
         ActionDataV2 memory mintData = previewMintV2(token, shares);
 
+        // slither-disable-next-line timestamp
         if (mintData.collateral > maxCollateral) {
             revert SlippageTooHigh(mintData.collateral, maxCollateral);
         }
@@ -573,7 +585,7 @@ contract LeverageManager is
         uint256 totalCollateral = lendingAdapter.getCollateral();
 
         // slither-disable-next-line incorrect-equality,timestamp
-        if (totalSupply == 0 || totalCollateral == 0) {
+        if (totalSupply == 0) {
             uint256 initialCollateralRatio = getLeverageTokenInitialCollateralRatio(token);
 
             uint256 equityInCollateralAsset =
@@ -591,6 +603,13 @@ contract LeverageManager is
                 uint256 scalingFactor = 10 ** (leverageTokenDecimals - collateralDecimals);
                 return equityInCollateralAsset * scalingFactor;
             }
+        }
+
+        // If total supply != 0 and total collateral is zero, the LeverageToken was fully liquidated. In this case,
+        // no amount of collateral can be converted to shares. An implication of this is that new mints of shares
+        // will not be possible for the LeverageToken.
+        if (totalCollateral == 0) {
+            return 0;
         }
 
         return Math.mulDiv(collateral, totalSupply, totalCollateral, rounding);
