@@ -604,6 +604,7 @@ contract LeverageManager is
 
         ActionDataV2 memory redeemData = previewRedeemV2(token, shares);
 
+        // slither-disable-next-line timestamp
         if (redeemData.collateral < minCollateral) {
             revert SlippageTooHigh(redeemData.collateral, minCollateral);
         }
@@ -625,6 +626,7 @@ contract LeverageManager is
 
         ActionDataV2 memory withdrawData = previewWithdraw(token, collateral);
 
+        // slither-disable-next-line timestamp
         if (withdrawData.shares > maxShares) {
             revert SlippageTooHigh(withdrawData.shares, maxShares);
         }
