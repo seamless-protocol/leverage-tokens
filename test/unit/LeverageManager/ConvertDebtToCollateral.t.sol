@@ -51,12 +51,10 @@ contract ConvertDebtToCollateralTest is LeverageManagerTest {
         );
 
         uint256 collateral = leverageManager.convertDebtToCollateral(leverageToken, debt, Math.Rounding.Floor);
-        assertEq(collateral, 12);
-        assertEq(collateral, Math.mulDiv(debt, initialCollateralRatio, _BASE_RATIO(), Math.Rounding.Floor) * 2);
+        assertEq(collateral, 0);
 
         collateral = leverageManager.convertDebtToCollateral(leverageToken, debt, Math.Rounding.Ceil);
-        assertEq(collateral, 14);
-        assertEq(collateral, Math.mulDiv(debt, initialCollateralRatio, _BASE_RATIO(), Math.Rounding.Ceil) * 2);
+        assertEq(collateral, 0);
     }
 
     function test_convertDebtToCollateral_ZeroTotalCollateral() public {
@@ -76,21 +74,17 @@ contract ConvertDebtToCollateralTest is LeverageManagerTest {
         );
 
         uint256 collateral = leverageManager.convertDebtToCollateral(leverageToken, debt, Math.Rounding.Floor);
-        assertEq(collateral, 12);
-        assertEq(collateral, Math.mulDiv(debt, initialCollateralRatio, _BASE_RATIO(), Math.Rounding.Floor) * 2);
+        assertEq(collateral, 0);
 
         collateral = leverageManager.convertDebtToCollateral(leverageToken, debt, Math.Rounding.Ceil);
-        assertEq(collateral, 14);
-        assertEq(collateral, Math.mulDiv(debt, initialCollateralRatio, _BASE_RATIO(), Math.Rounding.Ceil) * 2);
+        assertEq(collateral, 0);
     }
 
-    function testFuzz_convertDebtToCollateral_ZeroTotalSupply(uint256 debt, uint256 totalDebt, uint256 totalCollateral)
-        public
-    {
+    function testFuzz_convertDebtToCollateral_ZeroTotalDebt_ZeroTotalCollateral(uint256 debt) public {
         uint256 initialCollateralRatio = 2.1e18;
 
-        lendingAdapter.mockCollateral(totalCollateral);
-        lendingAdapter.mockDebt(totalDebt);
+        lendingAdapter.mockCollateral(0);
+        lendingAdapter.mockDebt(0);
         lendingAdapter.mockConvertCollateralToDebtAssetExchangeRate(0.5e8); // 2 collateral = 1 debt
 
         debt = bound(debt, 0, type(uint256).max / initialCollateralRatio / 2);

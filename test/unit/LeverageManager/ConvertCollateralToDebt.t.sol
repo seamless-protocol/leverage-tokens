@@ -84,43 +84,15 @@ contract ConvertCollateralToDebtTest is LeverageManagerTest {
         assertEq(debt, 0);
     }
 
-    function test_convertCollateralToDebt_ZeroTotalCollateral_ZeroTotalDebt() public {
-        uint256 collateral = 5;
-        uint256 totalCollateral = 0;
-        uint256 totalDebt = 0;
+    function testFuzz_convertCollateralToDebt_ZeroTotalCollateral_ZeroTotalDebt(uint256 collateral) public {
+        collateral = bound(collateral, 0, type(uint256).max / _BASE_RATIO() / 2);
         uint256 initialCollateralRatio = 2 * _BASE_RATIO();
         uint256 totalSupply = 100;
 
-        lendingAdapter.mockCollateral(totalCollateral);
-        lendingAdapter.mockDebt(totalDebt);
+        lendingAdapter.mockCollateral(0);
+        lendingAdapter.mockDebt(0);
         lendingAdapter.mockConvertCollateralToDebtAssetExchangeRate(2e8); // 1 collateral = 2 debt
         _mintShares(address(1), totalSupply);
-
-        vm.mockCall(
-            address(rebalanceAdapter),
-            abi.encodeWithSelector(IRebalanceAdapterBase.getLeverageTokenInitialCollateralRatio.selector),
-            abi.encode(initialCollateralRatio)
-        );
-
-        uint256 debt = leverageManager.convertCollateralToDebt(leverageToken, collateral, Math.Rounding.Floor);
-        assertEq(debt, 0);
-
-        debt = leverageManager.convertCollateralToDebt(leverageToken, collateral, Math.Rounding.Ceil);
-        assertEq(debt, 0);
-    }
-
-    function testFuzz_convertCollateralToDebt_ZeroTotalSupply(
-        uint256 collateral,
-        uint256 totalCollateral,
-        uint256 totalDebt
-    ) public {
-        uint256 initialCollateralRatio = 2 * _BASE_RATIO();
-
-        lendingAdapter.mockCollateral(totalCollateral);
-        lendingAdapter.mockDebt(totalDebt);
-        lendingAdapter.mockConvertCollateralToDebtAssetExchangeRate(2e8); // 1 collateral = 2 debt
-
-        collateral = bound(collateral, 0, type(uint256).max / _BASE_RATIO() / 2);
 
         vm.mockCall(
             address(rebalanceAdapter),

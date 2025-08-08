@@ -125,17 +125,16 @@ contract LeverageManager is
         ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
         uint256 totalCollateral = lendingAdapter.getCollateral();
         uint256 totalDebt = lendingAdapter.getDebt();
-        uint256 feeAdjustedTotalSupply = _getFeeAdjustedTotalSupply(token);
-
-        // slither-disable-next-line incorrect-equality,timestamp
-        if (feeAdjustedTotalSupply == 0) {
-            uint256 initialCollateralRatio = getLeverageTokenInitialCollateralRatio(token);
-            return lendingAdapter.convertCollateralToDebtAsset(
-                Math.mulDiv(collateral, BASE_RATIO, initialCollateralRatio, rounding)
-            );
-        }
 
         if (totalCollateral == 0) {
+            if (totalDebt == 0) {
+                // Initial state: no collateral or debt, use initial collateral ratio
+                uint256 initialCollateralRatio = getLeverageTokenInitialCollateralRatio(token);
+                return lendingAdapter.convertCollateralToDebtAsset(
+                    Math.mulDiv(collateral, BASE_RATIO, initialCollateralRatio, rounding)
+                );
+            }
+            // Liquidated state: no collateral but debt exists, cannot convert
             return 0;
         }
 
@@ -162,17 +161,16 @@ contract LeverageManager is
         ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
         uint256 totalCollateral = lendingAdapter.getCollateral();
         uint256 totalDebt = lendingAdapter.getDebt();
-        uint256 feeAdjustedTotalSupply = _getFeeAdjustedTotalSupply(token);
-
-        // slither-disable-next-line incorrect-equality,timestamp
-        if (feeAdjustedTotalSupply == 0) {
-            uint256 initialCollateralRatio = getLeverageTokenInitialCollateralRatio(token);
-            return lendingAdapter.convertDebtToCollateralAsset(
-                Math.mulDiv(debt, initialCollateralRatio, BASE_RATIO, rounding)
-            );
-        }
 
         if (totalDebt == 0) {
+            if (totalCollateral == 0) {
+                // Initial state: no collateral or debt, use initial collateral ratio
+                uint256 initialCollateralRatio = getLeverageTokenInitialCollateralRatio(token);
+                return lendingAdapter.convertDebtToCollateralAsset(
+                    Math.mulDiv(debt, initialCollateralRatio, BASE_RATIO, rounding)
+                );
+            }
+            // Liquidated state: no collateral but debt exists, cannot convert
             return 0;
         }
 
