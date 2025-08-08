@@ -85,10 +85,11 @@ contract WithdrawTest is LeverageManagerTest {
         collateral = uint256(bound(collateral, 1, 200 ether));
 
         ActionDataV2 memory previewData = leverageManager.previewWithdraw(leverageToken, collateral);
+        vm.assume(previewData.shares > 0);
 
-        slippageDelta = uint256(bound(slippageDelta, 1, type(uint256).max - previewData.shares));
+        slippageDelta = uint256(bound(slippageDelta, 1, previewData.shares));
 
-        _testWithdraw(collateral, previewData.shares + slippageDelta);
+        _testWithdraw(collateral, previewData.shares - slippageDelta);
     }
 
     function test_withdraw_RevertIf_SharesGreaterThanBalance() public {
