@@ -98,11 +98,44 @@ contract PreviewRedeemTest is LeverageManagerTest {
         assertEq(previewData.treasuryFee, 0);
     }
 
-    function testFuzz_PreviewRedeem_ZeroShares(
+    function testFuzz_PreviewRedeem_ZeroShares_WithoutFees(
         uint128 initialCollateral,
         uint128 initialDebt,
         uint128 initialSharesTotalSupply
     ) public {
+        MockLeverageManagerStateForAction memory beforeState = MockLeverageManagerStateForAction({
+            collateral: initialCollateral,
+            debt: initialDebt,
+            sharesTotalSupply: initialSharesTotalSupply
+        });
+
+        _prepareLeverageManagerStateForAction(beforeState);
+
+        uint256 shares = 0;
+        ActionDataV2 memory previewData = leverageManager.previewRedeemV2(leverageToken, shares);
+
+        assertEq(previewData.collateral, 0);
+        assertEq(previewData.debt, 0);
+        assertEq(previewData.shares, 0);
+        assertEq(previewData.tokenFee, 0);
+        assertEq(previewData.treasuryFee, 0);
+    }
+
+    function testFuzz_PreviewRedeem_ZeroShares_WithFees(
+        uint128 initialCollateral,
+        uint128 initialDebt,
+        uint128 initialSharesTotalSupply,
+        uint16 tokenActionFee,
+        uint16 treasuryActionFee
+    ) public {
+        // 0% to 99.99% token action fee
+        tokenActionFee = uint16(bound(tokenActionFee, 0, MAX_ACTION_FEE));
+        leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Redeem, tokenActionFee);
+
+        // 0% to 100% management fee
+        treasuryActionFee = uint16(bound(treasuryActionFee, 0, MAX_ACTION_FEE));
+        _setTreasuryActionFee(feeManagerRole, ExternalAction.Redeem, treasuryActionFee);
+
         MockLeverageManagerStateForAction memory beforeState = MockLeverageManagerStateForAction({
             collateral: initialCollateral,
             debt: initialDebt,

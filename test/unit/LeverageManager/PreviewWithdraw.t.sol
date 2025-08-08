@@ -82,7 +82,7 @@ contract PreviewWithdrawTest is LeverageManagerTest {
         assertEq(previewData.shares, 22 ether);
     }
 
-    function test_previewWithdraw_WithoutFee() public {
+    function test_previewWithdraw_WithoutFees() public {
         MockLeverageManagerStateForAction memory beforeState =
             MockLeverageManagerStateForAction({collateral: 100 ether, debt: 50 ether, sharesTotalSupply: 100 ether});
 
@@ -98,11 +98,42 @@ contract PreviewWithdrawTest is LeverageManagerTest {
         assertEq(previewData.treasuryFee, 0);
     }
 
-    function testFuzz_PreviewWithdraw_ZeroCollateral(
+    function testFuzz_PreviewWithdraw_ZeroCollateral_WithoutFees(
         uint128 initialCollateral,
         uint128 initialDebt,
         uint128 initialSharesTotalSupply
     ) public {
+        MockLeverageManagerStateForAction memory beforeState = MockLeverageManagerStateForAction({
+            collateral: initialCollateral,
+            debt: initialDebt,
+            sharesTotalSupply: initialSharesTotalSupply
+        });
+
+        _prepareLeverageManagerStateForAction(beforeState);
+
+        uint256 collateral = 0;
+        ActionDataV2 memory previewData = leverageManager.previewWithdraw(leverageToken, collateral);
+
+        assertEq(previewData.collateral, 0);
+        assertEq(previewData.debt, 0);
+        assertEq(previewData.shares, 0);
+        assertEq(previewData.tokenFee, 0);
+        assertEq(previewData.treasuryFee, 0);
+    }
+
+    function testFuzz_PreviewWithdraw_ZeroCollateral_WithFees(
+        uint128 initialCollateral,
+        uint128 initialDebt,
+        uint128 initialSharesTotalSupply,
+        uint16 tokenActionFee,
+        uint16 treasuryActionFee
+    ) public {
+        tokenActionFee = uint16(bound(tokenActionFee, 0, MAX_ACTION_FEE));
+        leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Redeem, tokenActionFee);
+
+        treasuryActionFee = uint16(bound(treasuryActionFee, 0, MAX_ACTION_FEE));
+        _setTreasuryActionFee(feeManagerRole, ExternalAction.Redeem, treasuryActionFee);
+
         MockLeverageManagerStateForAction memory beforeState = MockLeverageManagerStateForAction({
             collateral: initialCollateral,
             debt: initialDebt,
@@ -153,9 +184,6 @@ contract PreviewWithdrawTest is LeverageManagerTest {
         params.managementFee = uint16(bound(params.managementFee, 0, MAX_MANAGEMENT_FEE));
         _setManagementFee(feeManagerRole, leverageToken, params.managementFee);
 
-        params.initialCollateral =
-            uint128(bound(params.initialCollateral, 0, type(uint128).max / (MAX_BPS - params.fee)));
-
         // Bound initial debt in collateral asset to be less than or equal to initial collateral (1:1 exchange rate)
         params.initialDebt = uint128(bound(params.initialDebt, 0, params.initialCollateral));
 
@@ -174,7 +202,7 @@ contract PreviewWithdrawTest is LeverageManagerTest {
         );
 
         uint256 collateralToWithdraw =
-            bound(params.collateral, 0, params.initialCollateral * (MAX_BPS - params.fee) / MAX_BPS);
+            bound(params.collateral, 0, uint256(params.initialCollateral) * (MAX_BPS - params.fee) / MAX_BPS);
 
         LeverageTokenState memory prevState = leverageManager.getLeverageTokenState(leverageToken);
 

@@ -3,6 +3,7 @@ pragma solidity ^0.8.26;
 
 // Dependency imports
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
@@ -51,6 +52,104 @@ contract WithdrawTest is LeverageManagerTest {
         collateral = uint256(bound(collateral, 1, maxCollateralAfterFees));
 
         _testWithdraw(collateral, type(uint256).max);
+    }
+
+    function testFuzz_withdraw_WithoutFees(uint256 collateral) public {
+        // 1:2 exchange rate
+        lendingAdapter.mockConvertCollateralToDebtAssetExchangeRate(2e8);
+
+        MockLeverageManagerStateForAction memory beforeState =
+            MockLeverageManagerStateForAction({collateral: 200 ether, debt: 100 ether, sharesTotalSupply: 100 ether});
+
+        _prepareLeverageManagerStateForAction(beforeState);
+
+        collateral = uint256(bound(collateral, 1, 200 ether));
+        _testWithdraw(collateral, type(uint256).max);
+    }
+
+    function test_withdraw_ZeroCollateral() public {
+        MockLeverageManagerStateForAction memory beforeState =
+            MockLeverageManagerStateForAction({collateral: 200 ether, debt: 100 ether, sharesTotalSupply: 100 ether});
+
+        _prepareLeverageManagerStateForAction(beforeState);
+
+        _testWithdraw(0, 0);
+    }
+
+    function testFuzz_withdraw_RevertIf_SlippageTooHigh(uint256 collateral, uint256 slippageDelta) public {
+        MockLeverageManagerStateForAction memory beforeState =
+            MockLeverageManagerStateForAction({collateral: 200 ether, debt: 100 ether, sharesTotalSupply: 100 ether});
+
+        _prepareLeverageManagerStateForAction(beforeState);
+
+        collateral = uint256(bound(collateral, 1, 200 ether));
+
+        ActionDataV2 memory previewData = leverageManager.previewWithdraw(leverageToken, collateral);
+
+        slippageDelta = uint256(bound(slippageDelta, 1, type(uint256).max - previewData.shares));
+
+        _testWithdraw(collateral, previewData.shares + slippageDelta);
+    }
+
+    function test_withdraw_RevertIf_SharesGreaterThanBalance() public {
+        uint256 shares = 100 ether;
+
+        MockLeverageManagerStateForAction memory beforeState =
+            MockLeverageManagerStateForAction({collateral: 200 ether, debt: 100 ether, sharesTotalSupply: shares});
+
+        _prepareLeverageManagerStateForAction(beforeState);
+
+        vm.startPrank(address(leverageManager));
+        leverageToken.burn(address(1), shares - 1);
+        leverageToken.mint(address(this), shares - 1);
+        vm.stopPrank();
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IERC20Errors.ERC20InsufficientBalance.selector,
+                address(this),
+                leverageToken.balanceOf(address(this)),
+                shares
+            )
+        );
+        leverageManager.withdraw(leverageToken, 200 ether, type(uint256).max);
+    }
+
+    function testFuzz_withdraw(
+        uint128 initialCollateral,
+        uint128 initialDebtInCollateralAsset,
+        uint128 sharesTotalSupply,
+        uint256 collateral,
+        uint16 tokenFee,
+        uint16 treasuryFee
+    ) public {
+        tokenFee = uint16(bound(tokenFee, 0, MAX_ACTION_FEE));
+        treasuryFee = uint16(bound(treasuryFee, 0, MAX_ACTION_FEE));
+        leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Redeem, tokenFee);
+        _setTreasuryActionFee(ExternalAction.Redeem, treasuryFee);
+
+        initialCollateral =
+            uint128(bound(initialCollateral, 0, type(uint128).max / ((MAX_BPS - tokenFee) * (MAX_BPS - treasuryFee))));
+
+        // Bound debt to be lower than collateral asset and share total supply to be greater than 0 otherwise redeem can not work
+        initialDebtInCollateralAsset = uint128(bound(initialDebtInCollateralAsset, 0, initialCollateral));
+        sharesTotalSupply = uint128(bound(sharesTotalSupply, 1, type(uint128).max));
+
+        _prepareLeverageManagerStateForAction(
+            MockLeverageManagerStateForAction({
+                collateral: initialCollateral,
+                debt: initialDebtInCollateralAsset,
+                sharesTotalSupply: sharesTotalSupply
+            })
+        );
+
+        uint256 maxCollateral = sharesTotalSupply * (MAX_BPS - tokenFee) * (MAX_BPS - treasuryFee) / MAX_BPS_SQUARED
+            * initialCollateral / sharesTotalSupply;
+        collateral = bound(collateral, 0, maxCollateral);
+
+        uint256 expectedShares = leverageManager.previewWithdraw(leverageToken, collateral).shares;
+
+        _testWithdraw(collateral, expectedShares);
     }
 
     function _testWithdraw(uint256 collateral, uint256 maxShares) internal {
