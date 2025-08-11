@@ -78,6 +78,15 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
         return _getFeeManagerStorage().defaultManagementFeeAtCreation;
     }
 
+    /// @notice Function that returns the total supply of the LeverageToken adjusted for any accrued management fees
+    /// @param token LeverageToken to get fee adjusted total supply for
+    /// @return totalSupply Fee adjusted total supply of the LeverageToken
+    function getFeeAdjustedTotalSupply(ILeverageToken token) public view returns (uint256) {
+        uint256 totalSupply = token.totalSupply();
+        uint256 accruedManagementFee = _getAccruedManagementFee(token);
+        return totalSupply + accruedManagementFee;
+    }
+
     /// @inheritdoc IFeeManager
     function getLastManagementFeeAccrualTimestamp(ILeverageToken token) public view returns (uint120) {
         return _getFeeManagerStorage().lastManagementFeeAccrualTimestamp[token];
@@ -255,15 +264,6 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     /// @return treasuryFee Treasury action fee amount in shares
     function _computeTreasuryFee(ExternalAction action, uint256 shares) internal view returns (uint256) {
         return Math.mulDiv(shares, getTreasuryActionFee(action), MAX_BPS, Math.Rounding.Ceil);
-    }
-
-    /// @notice Function that returns the total supply of the LeverageToken adjusted for any accrued management fees
-    /// @param token LeverageToken to get fee adjusted total supply for
-    /// @return totalSupply Fee adjusted total supply of the LeverageToken
-    function _getFeeAdjustedTotalSupply(ILeverageToken token) internal view returns (uint256) {
-        uint256 totalSupply = token.totalSupply();
-        uint256 accruedManagementFee = _getAccruedManagementFee(token);
-        return totalSupply + accruedManagementFee;
     }
 
     /// @notice Function that calculates how many shares to mint for the accrued management fee at the current timestamp

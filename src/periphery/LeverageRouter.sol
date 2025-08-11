@@ -2,16 +2,18 @@
 pragma solidity ^0.8.26;
 
 // Dependency imports
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // Internal imports
+import {ILendingAdapter} from "../interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "../interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "../interfaces/ILeverageToken.sol";
 import {ISwapAdapter} from "../interfaces/periphery/ISwapAdapter.sol";
 import {ILeverageRouter} from "../interfaces/periphery/ILeverageRouter.sol";
-import {ActionData, ExternalAction} from "../types/DataTypes.sol";
+import {ActionData, ActionDataV2, ExternalAction} from "../types/DataTypes.sol";
 
 /**
  * @dev The LeverageRouter contract is an immutable periphery contract that facilitates the use of Morpho flash loans and a swap adapter
@@ -90,6 +92,31 @@ contract LeverageRouter is ILeverageRouter {
         leverageManager = _leverageManager;
         morpho = _morpho;
         swapper = _swapper;
+    }
+
+    function previewDeposit(ILeverageToken token, uint256 equityInCollateralAsset)
+        external
+        view
+        returns (ActionDataV2 memory)
+    {
+        uint256 collateralRatio = leverageManager.getLeverageTokenState(token).collateralRatio;
+        uint256 totalSupply = leverageManager.getFeeAdjustedTotalSupply(token);
+        uint256 baseRatio = leverageManager.BASE_RATIO();
+
+        uint256 collateral;
+        if (totalSupply == 0) {
+            uint256 initialCollateralRatio = leverageManager.getLeverageTokenInitialCollateralRatio(token);
+            collateral = Math.mulDiv(
+                equityInCollateralAsset, initialCollateralRatio, initialCollateralRatio - baseRatio, Math.Rounding.Ceil
+            );
+        } else if (collateralRatio == type(uint256).max) {
+            collateral = equityInCollateralAsset;
+        } else {
+            collateral =
+                Math.mulDiv(equityInCollateralAsset, collateralRatio, collateralRatio - baseRatio, Math.Rounding.Ceil);
+        }
+
+        return leverageManager.previewDeposit(token, collateral);
     }
 
     /// @inheritdoc ILeverageRouter

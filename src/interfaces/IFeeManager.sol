@@ -52,6 +52,11 @@ interface IFeeManager {
     /// @return fee The default management fee for new LeverageTokens, 100_00 is 100%
     function getDefaultManagementFeeAtCreation() external view returns (uint256 fee);
 
+    /// @notice Returns the total supply of the LeverageToken adjusted for any accrued management fees
+    /// @param token LeverageToken to get fee adjusted total supply for
+    /// @return totalSupply Fee adjusted total supply of the LeverageToken
+    function getFeeAdjustedTotalSupply(ILeverageToken token) external view returns (uint256 totalSupply);
+
     /// @notice Returns the timestamp of the most recent management fee accrual for a LeverageToken
     /// @param leverageToken The LeverageToken to get the timestamp for
     /// @return timestamp The timestamp of the most recent management fee accrual

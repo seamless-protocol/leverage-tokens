@@ -148,7 +148,7 @@ contract LeverageManager is
         returns (uint256 shares)
     {
         ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
-        uint256 totalSupply = _getFeeAdjustedTotalSupply(token);
+        uint256 totalSupply = getFeeAdjustedTotalSupply(token);
         return _convertCollateralToShares(token, lendingAdapter, collateral, totalSupply, rounding);
     }
 
@@ -177,6 +177,25 @@ contract LeverageManager is
         return Math.mulDiv(debt, totalCollateral, totalDebt, rounding);
     }
 
+    // function convertEquityToCollateral(ILeverageToken token, uint256 equityInCollateralAsset, Math.Rounding rounding)
+    //     external
+    //     view
+    //     returns (uint256 collateral)
+    // {
+    //     LeverageTokenState memory state = getLeverageTokenState(token);
+    //     uint256 totalSupply = getFeeAdjustedTotalSupply(token);
+    //     uint256 baseRatio = BASE_RATIO;
+
+    //     if (totalSupply == 0) {
+    //         uint256 initialCollateralRatio = getLeverageTokenInitialCollateralRatio(token);
+    //         return Math.mulDiv(equityInCollateralAsset, initialCollateralRatio, initialCollateralRatio - baseRatio, rounding);
+    //     } else if (state.collateralRatio == type(uint256).max) {
+    //         return equityInCollateralAsset;
+    //     } else {
+    //         return Math.mulDiv(equityInCollateralAsset, state.collateralRatio, state.collateralRatio - baseRatio, rounding);
+    //     }
+    // }
+
     /// @inheritdoc ILeverageManager
     function convertSharesToCollateral(ILeverageToken token, uint256 shares, Math.Rounding rounding)
         external
@@ -185,7 +204,7 @@ contract LeverageManager is
     {
         ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
         uint256 totalCollateral = lendingAdapter.getCollateral();
-        uint256 totalSupply = _getFeeAdjustedTotalSupply(token);
+        uint256 totalSupply = getFeeAdjustedTotalSupply(token);
         return _convertSharesToCollateral(token, lendingAdapter, shares, totalCollateral, totalSupply, rounding);
     }
 
@@ -197,7 +216,7 @@ contract LeverageManager is
     {
         ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
         uint256 totalDebt = lendingAdapter.getDebt();
-        uint256 totalSupply = _getFeeAdjustedTotalSupply(token);
+        uint256 totalSupply = getFeeAdjustedTotalSupply(token);
         return _convertSharesToDebt(token, lendingAdapter, shares, totalDebt, totalSupply, rounding);
     }
 
@@ -307,7 +326,7 @@ contract LeverageManager is
     /// @inheritdoc ILeverageManager
     function previewDeposit(ILeverageToken token, uint256 collateral) public view returns (ActionDataV2 memory) {
         ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
-        uint256 feeAdjustedTotalSupply = _getFeeAdjustedTotalSupply(token);
+        uint256 feeAdjustedTotalSupply = getFeeAdjustedTotalSupply(token);
 
         uint256 shares =
             _convertCollateralToShares(token, lendingAdapter, collateral, feeAdjustedTotalSupply, Math.Rounding.Floor);
@@ -333,7 +352,7 @@ contract LeverageManager is
             _computeFeesForNetShares(token, shares, ExternalAction.Mint);
 
         ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
-        uint256 feeAdjustedTotalSupply = _getFeeAdjustedTotalSupply(token);
+        uint256 feeAdjustedTotalSupply = getFeeAdjustedTotalSupply(token);
         uint256 collateral = _convertSharesToCollateral(
             token,
             lendingAdapter,
@@ -664,7 +683,7 @@ contract LeverageManager is
     {
         ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
 
-        uint256 totalSupply = _getFeeAdjustedTotalSupply(token);
+        uint256 totalSupply = getFeeAdjustedTotalSupply(token);
         uint256 totalEquityInCollateralAsset = lendingAdapter.getEquityInCollateralAsset();
 
         // If leverage token is empty we mint it in 1:1 ratio with collateral asset but we align it on 18 decimals always
@@ -735,7 +754,7 @@ contract LeverageManager is
     ) internal view returns (uint256 collateral, uint256 debt) {
         ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
         uint256 totalDebt = lendingAdapter.getDebt();
-        uint256 totalShares = _getFeeAdjustedTotalSupply(token);
+        uint256 totalShares = getFeeAdjustedTotalSupply(token);
 
         Math.Rounding collateralRounding = action == ExternalAction.Mint ? Math.Rounding.Ceil : Math.Rounding.Floor;
         Math.Rounding debtRounding = action == ExternalAction.Mint ? Math.Rounding.Floor : Math.Rounding.Ceil;
