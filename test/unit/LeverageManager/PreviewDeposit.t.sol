@@ -278,18 +278,30 @@ contract PreviewDepositTest is LeverageManagerTest {
             }
         } else {
             if (params.initialCollateral == 0 || params.initialDebtInCollateralAsset == 0) {
-                if (params.initialCollateral == 0) {
-                    // Precision of new CR wrt the target depends on the amount of collateral added when the strategy is empty
+                if (
+                    params.initialCollateral == 0
+                        && previewData.collateral >= params.collateralRatioTarget / _BASE_RATIO()
+                ) {
+                    // Precision of new CR wrt the target depends on the amount of shares minted when the strategy is empty
                     assertApproxEqRel(
                         newCollateralRatio,
                         params.collateralRatioTarget,
-                        _getAllowedCollateralRatioSlippage(params.collateral),
+                        _getAllowedCollateralRatioSlippage(previewData.shares),
                         "Collateral ratio after deposit when there is zero collateral should be within the allowed slippage"
                     );
                     assertGe(
                         newCollateralRatio,
                         params.collateralRatioTarget,
                         "Collateral ratio after deposit when there is zero collateral should be greater than or equal to target"
+                    );
+                } else if (
+                    params.initialCollateral == 0
+                        && previewData.collateral < params.collateralRatioTarget / _BASE_RATIO()
+                ) {
+                    assertEq(
+                        newCollateralRatio,
+                        type(uint256).max,
+                        "Collateral ratio after deposit should be equal to type(uint256).max if collateral added is less than the CR"
                     );
                 } else if (params.initialDebtInCollateralAsset == 0 && params.initialSharesTotalSupply == 0) {
                     assertGe(

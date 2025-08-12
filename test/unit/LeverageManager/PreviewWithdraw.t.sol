@@ -205,11 +205,7 @@ contract PreviewWithdrawTest is LeverageManagerTest {
         // Bound initial debt in collateral asset to be less than or equal to initial collateral (1:1 exchange rate)
         params.initialDebt = uint128(bound(params.initialDebt, 0, params.initialCollateral));
 
-        if (params.initialCollateral == 0 && params.initialDebt == 0) {
-            params.initialSharesTotalSupply = 0;
-        } else {
-            params.initialSharesTotalSupply = uint128(bound(params.initialSharesTotalSupply, 1, type(uint128).max));
-        }
+        params.initialSharesTotalSupply = uint128(bound(params.initialSharesTotalSupply, 1, type(uint128).max));
 
         _prepareLeverageManagerStateForAction(
             MockLeverageManagerStateForAction({
@@ -219,8 +215,7 @@ contract PreviewWithdrawTest is LeverageManagerTest {
             })
         );
 
-        uint256 collateralToWithdraw =
-            bound(params.collateral, 0, uint256(params.initialCollateral) * (MAX_BPS - params.fee) / MAX_BPS);
+        uint256 collateralToWithdraw = bound(params.collateral, 0, uint256(params.initialCollateral));
 
         LeverageTokenState memory prevState = leverageManager.getLeverageTokenState(leverageToken);
 
@@ -287,8 +282,21 @@ contract PreviewWithdrawTest is LeverageManagerTest {
         }
 
         if (newCollateral == 0) {
-            assertEq(newShares, 0, "New shares should be zero if collateral is zero");
-            assertEq(newDebt, 0, "New debt should be zero if collateral is zero");
+            if (params.initialSharesTotalSupply > 0 && params.initialCollateral == 0 && params.initialDebt == 0) {
+                assertEq(
+                    previewData.collateral,
+                    0,
+                    "Preview collateral should be zero if initial collateral and initial debt are zero but initial shares total supply is greater than zero"
+                );
+                assertEq(
+                    previewData.debt,
+                    0,
+                    "Preview debt should be zero if initial collateral and initial debt are zero but initial shares total supply is greater than zero"
+                );
+            } else {
+                assertEq(newShares, 0, "New shares should be zero if new collateral is zero");
+                assertEq(newDebt, 0, "New debt should be zero if new collateral is zero");
+            }
         }
     }
 }
