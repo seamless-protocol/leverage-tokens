@@ -92,7 +92,10 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             WETH, USDC, userBalanceOfCollateralAsset, collateralFromSender, debtReduced, minShares, swapContext
         );
 
-        // Collateral is taken from the user for the mint
+        // Collateral is taken from the user for the mint. Any remaining collateral is returned to the user
+        uint256 remainingCollateral = collateralFromSender - (collateralRequired - collateralReceivedFromDebtSwap);
+        assertEq(remainingCollateral, 0.000009544441612763 ether);
+        assertEq(WETH.balanceOf(user), userBalanceOfCollateralAsset - collateralFromSender + remainingCollateral);
         assertEq(
             WETH.balanceOf(user), userBalanceOfCollateralAsset - (collateralRequired - collateralReceivedFromDebtSwap)
         );
