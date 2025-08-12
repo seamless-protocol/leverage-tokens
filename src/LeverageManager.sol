@@ -177,25 +177,6 @@ contract LeverageManager is
         return Math.mulDiv(debt, totalCollateral, totalDebt, rounding);
     }
 
-    // function convertEquityToCollateral(ILeverageToken token, uint256 equityInCollateralAsset, Math.Rounding rounding)
-    //     external
-    //     view
-    //     returns (uint256 collateral)
-    // {
-    //     LeverageTokenState memory state = getLeverageTokenState(token);
-    //     uint256 totalSupply = getFeeAdjustedTotalSupply(token);
-    //     uint256 baseRatio = BASE_RATIO;
-
-    //     if (totalSupply == 0) {
-    //         uint256 initialCollateralRatio = getLeverageTokenInitialCollateralRatio(token);
-    //         return Math.mulDiv(equityInCollateralAsset, initialCollateralRatio, initialCollateralRatio - baseRatio, rounding);
-    //     } else if (state.collateralRatio == type(uint256).max) {
-    //         return equityInCollateralAsset;
-    //     } else {
-    //         return Math.mulDiv(equityInCollateralAsset, state.collateralRatio, state.collateralRatio - baseRatio, rounding);
-    //     }
-    // }
-
     /// @inheritdoc ILeverageManager
     function convertSharesToCollateral(ILeverageToken token, uint256 shares, Math.Rounding rounding)
         external
