@@ -196,6 +196,28 @@ contract PreviewWithdrawTest is LeverageManagerTest {
         assertEq(previewData.treasuryFee, 0);
     }
 
+    function testFuzz_previewWithdraw_WithFuzzedExchangeRate(uint256 exchangeRate) public {
+        exchangeRate = uint256(bound(exchangeRate, 1, 100000e8));
+        lendingAdapter.mockConvertCollateralToDebtAssetExchangeRate(exchangeRate);
+
+        uint256 collateral = 100 ether;
+        uint256 debt = lendingAdapter.convertCollateralToDebtAsset(collateral) / 2; // 2x LT
+
+        MockLeverageManagerStateForAction memory beforeState =
+            MockLeverageManagerStateForAction({collateral: collateral, debt: debt, sharesTotalSupply: 100 ether});
+
+        _prepareLeverageManagerStateForAction(beforeState);
+
+        uint256 collateralToWithdraw = 10 ether;
+        ActionDataV2 memory previewData = leverageManager.previewWithdraw(leverageToken, collateralToWithdraw);
+
+        assertEq(previewData.collateral, 10 ether);
+        assertEq(previewData.debt, lendingAdapter.convertCollateralToDebtAsset(10 ether) / 2);
+        assertEq(
+            previewData.shares, leverageManager.convertCollateralToShares(leverageToken, 10 ether, Math.Rounding.Ceil)
+        );
+    }
+
     function testFuzz_PreviewWithdraw(FuzzPreviewWithdrawParams memory params) public {
         params.collateralRatioTarget =
             uint256(bound(params.collateralRatioTarget, _BASE_RATIO() + 1, 10 * _BASE_RATIO()));
