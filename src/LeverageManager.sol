@@ -937,8 +937,7 @@ contract LeverageManager is
         _executeLendingAdapterAction(token, ActionType.RemoveCollateral, redeemData.collateral);
 
         // Send collateral assets to sender
-        IERC20 collateralAsset = getLeverageTokenCollateralAsset(token);
-        SafeERC20.safeTransfer(collateralAsset, msg.sender, redeemData.collateral);
+        SafeERC20.safeTransfer(getLeverageTokenCollateralAsset(token), msg.sender, redeemData.collateral);
 
         // Emit event and explicit return statement
         emit RedeemV2(token, msg.sender, redeemData);
