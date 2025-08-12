@@ -18,6 +18,7 @@ contract PreviewWithdrawTest is LeverageManagerTest {
         uint256 collateral;
         uint16 fee;
         uint16 managementFee;
+        uint256 collateralRatioTarget;
     }
 
     uint256 private COLLATERAL_RATIO_TARGET;
@@ -175,10 +176,27 @@ contract PreviewWithdrawTest is LeverageManagerTest {
         assertEq(previewData.treasuryFee, 0);
     }
 
-    function testFuzz_PreviewWithdraw1(FuzzPreviewWithdrawParams memory params) public {
+    function testFuzz_PreviewWithdraw(FuzzPreviewWithdrawParams memory params) public {
+        params.collateralRatioTarget =
+            uint256(bound(params.collateralRatioTarget, _BASE_RATIO() + 1, 10 * _BASE_RATIO()));
+
         // 0% to 99.99% token action fee
         params.fee = uint16(bound(params.fee, 0, MAX_ACTION_FEE));
-        leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Redeem, params.fee);
+
+        _createNewLeverageToken(
+            manager,
+            params.collateralRatioTarget,
+            LeverageTokenConfig({
+                lendingAdapter: ILendingAdapter(address(lendingAdapter)),
+                rebalanceAdapter: IRebalanceAdapter(address(rebalanceAdapter)),
+                mintTokenFee: 0,
+                redeemTokenFee: params.fee
+            }),
+            address(collateralToken),
+            address(debtToken),
+            "dummy name",
+            "dummy symbol"
+        );
 
         // 0% to 100% management fee
         params.managementFee = uint16(bound(params.managementFee, 0, MAX_MANAGEMENT_FEE));

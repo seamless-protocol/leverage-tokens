@@ -122,11 +122,29 @@ contract WithdrawTest is LeverageManagerTest {
         uint128 sharesTotalSupply,
         uint256 collateral,
         uint16 tokenFee,
-        uint16 treasuryFee
+        uint16 treasuryFee,
+        uint256 collateralRatioTarget
     ) public {
+        collateralRatioTarget = uint256(bound(collateralRatioTarget, _BASE_RATIO() + 1, 10 * _BASE_RATIO()));
+
         tokenFee = uint16(bound(tokenFee, 0, MAX_ACTION_FEE));
+
+        _createNewLeverageToken(
+            manager,
+            collateralRatioTarget,
+            LeverageTokenConfig({
+                lendingAdapter: ILendingAdapter(address(lendingAdapter)),
+                rebalanceAdapter: IRebalanceAdapter(address(rebalanceAdapter)),
+                mintTokenFee: 0,
+                redeemTokenFee: tokenFee
+            }),
+            address(collateralToken),
+            address(debtToken),
+            "dummy name",
+            "dummy symbol"
+        );
+
         treasuryFee = uint16(bound(treasuryFee, 0, MAX_ACTION_FEE));
-        leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Redeem, tokenFee);
         _setTreasuryActionFee(ExternalAction.Redeem, treasuryFee);
 
         initialCollateral =

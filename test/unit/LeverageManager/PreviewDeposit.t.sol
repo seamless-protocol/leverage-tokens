@@ -18,6 +18,7 @@ contract PreviewDepositTest is LeverageManagerTest {
         uint128 collateral;
         uint16 fee;
         uint16 managementFee;
+        uint256 collateralRatioTarget;
     }
 
     uint256 private COLLATERAL_RATIO_TARGET;
@@ -183,9 +184,26 @@ contract PreviewDepositTest is LeverageManagerTest {
     }
 
     function testFuzz_previewDeposit(FuzzPreviewDepositParams memory params) public {
+        params.collateralRatioTarget =
+            uint256(bound(params.collateralRatioTarget, _BASE_RATIO() + 1, 10 * _BASE_RATIO()));
+
         // 0% to 99.99% token action fee
         params.fee = uint16(bound(params.fee, 0, MAX_ACTION_FEE));
-        leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Mint, params.fee);
+
+        _createNewLeverageToken(
+            manager,
+            params.collateralRatioTarget,
+            LeverageTokenConfig({
+                lendingAdapter: ILendingAdapter(address(lendingAdapter)),
+                rebalanceAdapter: IRebalanceAdapter(address(rebalanceAdapter)),
+                mintTokenFee: params.fee,
+                redeemTokenFee: 0
+            }),
+            address(collateralToken),
+            address(debtToken),
+            "dummy name",
+            "dummy symbol"
+        );
 
         // 0% to 100% management fee
         params.managementFee = uint16(bound(params.managementFee, 0, MAX_MANAGEMENT_FEE));
@@ -254,7 +272,7 @@ contract PreviewDepositTest is LeverageManagerTest {
             } else {
                 assertGe(
                     newCollateralRatio,
-                    COLLATERAL_RATIO_TARGET,
+                    params.collateralRatioTarget,
                     "Collateral ratio after deposit should be greater than or equal to target if zero shares are minted"
                 );
             }
@@ -264,19 +282,19 @@ contract PreviewDepositTest is LeverageManagerTest {
                     // Precision of new CR wrt the target depends on the amount of collateral added when the strategy is empty
                     assertApproxEqRel(
                         newCollateralRatio,
-                        COLLATERAL_RATIO_TARGET,
+                        params.collateralRatioTarget,
                         _getAllowedCollateralRatioSlippage(params.collateral),
                         "Collateral ratio after deposit when there is zero collateral should be within the allowed slippage"
                     );
                     assertGe(
                         newCollateralRatio,
-                        COLLATERAL_RATIO_TARGET,
+                        params.collateralRatioTarget,
                         "Collateral ratio after deposit when there is zero collateral should be greater than or equal to target"
                     );
                 } else if (params.initialDebtInCollateralAsset == 0 && params.initialSharesTotalSupply == 0) {
                     assertGe(
                         newCollateralRatio,
-                        COLLATERAL_RATIO_TARGET,
+                        params.collateralRatioTarget,
                         "Collateral ratio after deposit when there is zero debt and zero total supply should be greater than or equal to target"
                     );
                 }
