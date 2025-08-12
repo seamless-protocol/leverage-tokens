@@ -178,6 +178,26 @@ contract PreviewRedeemTest is LeverageManagerTest {
         assertEq(previewData.treasuryFee, 0);
     }
 
+    function testFuzz_previewRedeem_ZeroCollateralZeroDebtNonZeroTotalSupply(
+        uint256 sharesToRedeem,
+        uint256 totalSupply
+    ) public {
+        totalSupply = uint256(bound(totalSupply, 1, type(uint256).max));
+        MockLeverageManagerStateForAction memory beforeState =
+            MockLeverageManagerStateForAction({collateral: 0, debt: 0, sharesTotalSupply: totalSupply});
+
+        _prepareLeverageManagerStateForAction(beforeState);
+
+        uint256 shares = sharesToRedeem;
+        ActionDataV2 memory previewData = leverageManager.previewRedeemV2(leverageToken, shares);
+
+        assertEq(previewData.collateral, 0);
+        assertEq(previewData.debt, 0);
+        assertEq(previewData.shares, sharesToRedeem);
+        assertEq(previewData.tokenFee, 0);
+        assertEq(previewData.treasuryFee, 0);
+    }
+
     function testFuzz_PreviewRedeem(FuzzPreviewRedeemParams memory params) public {
         params.collateralRatioTarget =
             uint256(bound(params.collateralRatioTarget, _BASE_RATIO() + 1, 10 * _BASE_RATIO()));
