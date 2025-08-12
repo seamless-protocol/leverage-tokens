@@ -30,6 +30,20 @@ interface ILeverageRouter {
     /// @return _swapper The swap adapter contract
     function swapper() external view returns (ISwapAdapter _swapper);
 
+    /// @notice Deposits collateral into a LeverageToken and mints shares to the sender
+    /// @param leverageToken LeverageToken to deposit into
+    /// @param collateralFromSender Maximum amount of collateral to deposit from the sender
+    /// @param debt Amount of debt to borrow
+    /// @param minShares Minimum number of shares to mint
+    /// @param swapContext Swap context to use for the swap (which DEX to use, the route, tick spacing, etc.)
+    function deposit(
+        ILeverageToken leverageToken,
+        uint256 collateralFromSender,
+        uint256 debt,
+        uint256 minShares,
+        ISwapAdapter.SwapContext memory swapContext
+    ) external;
+
     /// @notice Mint shares of a LeverageToken by adding equity
     /// @param token LeverageToken to mint shares of
     /// @param equityInCollateralAsset The amount of equity to mint LeverageToken shares for. Denominated in the collateral

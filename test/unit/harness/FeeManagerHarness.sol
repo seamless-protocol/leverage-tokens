@@ -65,7 +65,7 @@ contract FeeManagerHarness is FeeManager {
     }
 
     function exposed_getFeeAdjustedTotalSupply(ILeverageToken token) external view returns (uint256) {
-        return _getFeeAdjustedTotalSupply(token);
+        return getFeeAdjustedTotalSupply(token);
     }
 
     function exposed_validateActionFee(uint256 fee) external pure {

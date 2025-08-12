@@ -69,4 +69,27 @@ contract LeverageRouterTest is IntegrationTestBase {
         assertEq(debtAsset.balanceOf(address(leverageRouter)), 0);
         assertEq(debtAsset.balanceOf(address(swapAdapter)), 0);
     }
+
+    function _dealAndDeposit(
+        IERC20 collateralAsset,
+        IERC20 debtAsset,
+        uint256 dealAmount,
+        uint256 collateralFromSender,
+        uint256 debt,
+        uint256 minShares,
+        ISwapAdapter.SwapContext memory swapContext
+    ) internal {
+        deal(address(collateralAsset), user, dealAmount);
+
+        vm.startPrank(user);
+        collateralAsset.approve(address(leverageRouter), collateralFromSender);
+        leverageRouter.deposit(leverageToken, collateralFromSender, debt, minShares, swapContext);
+        vm.stopPrank();
+
+        // No leftover assets in the LeverageRouter or the SwapAdapter
+        assertEq(collateralAsset.balanceOf(address(leverageRouter)), 0);
+        assertEq(collateralAsset.balanceOf(address(swapAdapter)), 0);
+        assertEq(debtAsset.balanceOf(address(leverageRouter)), 0);
+        assertEq(debtAsset.balanceOf(address(swapAdapter)), 0);
+    }
 }
