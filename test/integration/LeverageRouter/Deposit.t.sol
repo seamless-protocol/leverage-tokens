@@ -24,6 +24,16 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         uint256 minShares = sharesFromDeposit * 0.99e18 / 1e18; // 1% slippage
         uint256 collateralReceivedFromDebtSwap = 0.997140594716559346 ether; // Swap of 3392.292471 USDC results in 0.997140594716559346 WETH
 
+        {
+            // Sanity check that LR preview deposit matches test params
+            ActionDataV2 memory previewData = leverageRouter.previewDeposit(leverageToken, collateralFromSender);
+            assertEq(previewData.debt, debt);
+            assertEq(previewData.shares, sharesFromDeposit);
+            assertEq(previewData.collateral, collateralToAdd);
+            assertEq(previewData.tokenFee, 0);
+            assertEq(previewData.treasuryFee, 0);
+        }
+
         // The swap results in less collateral than required to get the flash loaned debt amount from a LM deposit, so the debt amount flash loaned
         // needs to be reduced. We reduce it by the percentage delta between the required collateral and the collateral received from the swap
         uint256 deltaPercentage = collateralReceivedFromDebtSwap * 1e18 / (collateralToAdd - collateralFromSender);

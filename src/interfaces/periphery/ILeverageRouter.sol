@@ -8,6 +8,7 @@ import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 import {ILeverageManager} from "../ILeverageManager.sol";
 import {ILeverageToken} from "../ILeverageToken.sol";
 import {ISwapAdapter} from "./ISwapAdapter.sol";
+import {ActionDataV2} from "src/types/DataTypes.sol";
 
 interface ILeverageRouter {
     /// @notice Error thrown when the cost of a swap exceeds the maximum allowed cost
@@ -25,6 +26,20 @@ interface ILeverageRouter {
     /// @notice The Morpho core protocol contract
     /// @return _morpho The Morpho core protocol contract
     function morpho() external view returns (IMorpho _morpho);
+
+    /// @notice Previews the deposit function call and returns all required data
+    /// @param token LeverageToken to preview deposit for
+    /// @param equityInCollateralAsset The amount of equity to deposit. Denominated in the collateral asset of the LeverageToken
+    /// @return previewData Preview data for deposit
+    ///         - collateral Amount of collateral that will be added to the LeverageToken and sent to the receiver
+    ///         - debt Amount of debt that will be borrowed and sent to the receiver
+    ///         - shares Amount of shares that will be minted to the receiver
+    ///         - tokenFee Amount of shares that will be charged for the deposit that are given to the LeverageToken
+    ///         - treasuryFee Amount of shares that will be charged for the deposit that are given to the treasury
+    function previewDeposit(ILeverageToken token, uint256 equityInCollateralAsset)
+        external
+        view
+        returns (ActionDataV2 memory);
 
     /// @notice The swap adapter contract used to facilitate swaps
     /// @return _swapper The swap adapter contract
