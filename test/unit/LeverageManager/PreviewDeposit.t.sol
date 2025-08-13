@@ -278,9 +278,31 @@ contract PreviewDepositTest is LeverageManagerTest {
             }
         } else {
             if (params.initialCollateral == 0 || params.initialDebtInCollateralAsset == 0) {
+                // The preview deposit logic first calculates shares from collateral, then
+                // debt from shares. When the LT has zero total supply, the precision of the resulting CR is dependent
+                // on the amount of collateral added wrt the target CR. In cases where the collateral added is less than
+                // the target CR / base ratio, the debt will be zero and the collateral ratio will be type(uint256).max.
+                // For example, if the target CR is 6e18 and the collateral added is 5:
+                // shares = collateral * (targetCR - baseRatio) / targetCR
+                //        = 5 * (6e18 - 1e18) / 6e18
+                //        = 4.16666..
+                //        = 4 (rounded down)
+                // debt = shares * baseRatio / (targetCR - baseRatio)
+                //      = 4 * 1e18 / (6e18 - 1e18)
+                //      = 0.8
+                //      = 0 (rounded down)
+                //
+                // Now, if instead the target CR is 6e18 and the collateral added is 6:
+                // shares = collateral * (targetCR - baseRatio) / targetCR
+                //        = 6 * (6e18 - 1e18) / 6e18
+                //        = 5
+                // debt = shares * baseRatio / (targetCR - baseRatio)
+                //      = 5 * 1e18 / (6e18 - 1e18)
+                //      = 1
+                //      = 1 (rounded down)
                 if (
-                    params.initialCollateral == 0
-                        && previewData.collateral >= params.collateralRatioTarget / _BASE_RATIO()
+                    params.initialSharesTotalSupply == 0
+                        && params.collateral >= params.collateralRatioTarget / _BASE_RATIO()
                 ) {
                     // Precision of new CR wrt the target depends on the amount of shares minted when the strategy is empty
                     assertApproxEqRel(
@@ -295,7 +317,7 @@ contract PreviewDepositTest is LeverageManagerTest {
                         "Collateral ratio after deposit when there is zero collateral should be greater than or equal to target"
                     );
                 } else if (
-                    params.initialCollateral == 0
+                    params.initialSharesTotalSupply == 0
                         && previewData.collateral < params.collateralRatioTarget / _BASE_RATIO()
                 ) {
                     assertEq(
