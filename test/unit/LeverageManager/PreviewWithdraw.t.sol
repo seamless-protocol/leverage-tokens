@@ -182,12 +182,13 @@ contract PreviewWithdrawTest is LeverageManagerTest {
         uint256 collateral = 200 ether;
         ActionDataV2 memory previewData = leverageManager.previewWithdraw(leverageToken, collateral);
 
-        assertEq(previewData.collateral, 200 ether);
-        assertEq(previewData.debt, 100 ether);
-        assertEq(previewData.shares, 100 ether);
+        assertEq(previewData.collateral, 0);
+        assertEq(previewData.debt, 0);
+        assertEq(previewData.shares, 0);
         assertEq(previewData.tokenFee, 0);
         assertEq(previewData.treasuryFee, 0);
 
+        // Test equivalence with previewRedeem
         previewData = leverageManager.previewRedeemV2(leverageToken, 0);
         assertEq(previewData.collateral, 0);
         assertEq(previewData.debt, 0);

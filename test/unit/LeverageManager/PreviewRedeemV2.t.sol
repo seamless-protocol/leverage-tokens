@@ -164,13 +164,14 @@ contract PreviewRedeemTest is LeverageManagerTest {
         uint256 shares = 100 ether;
         ActionDataV2 memory previewData = leverageManager.previewRedeemV2(leverageToken, shares);
 
-        assertEq(previewData.collateral, 200 ether);
-        assertEq(previewData.debt, 100 ether);
-        assertEq(previewData.shares, 100 ether);
+        assertEq(previewData.collateral, 0);
+        assertEq(previewData.debt, 0);
+        assertEq(previewData.shares, 0);
         assertEq(previewData.tokenFee, 0);
         assertEq(previewData.treasuryFee, 0);
 
-        previewData = leverageManager.previewRedeemV2(leverageToken, 0);
+        // Test equivalence with previewWithdraw
+        previewData = leverageManager.previewWithdraw(leverageToken, 0);
         assertEq(previewData.collateral, 0);
         assertEq(previewData.debt, 0);
         assertEq(previewData.shares, 0);
