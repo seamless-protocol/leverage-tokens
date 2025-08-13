@@ -251,7 +251,7 @@ contract PreviewMintV2Test is LeverageManagerTest {
             assertEq(previewData.treasuryFee, treasuryFee, "Preview treasury fee incorrect");
         }
 
-        // If no shares are minted, the deposit is a essentially a donation of equity
+        // If no shares are minted, the mint is a essentially a donation of equity
         if (previewData.shares == 0) {
             if (prevState.collateralRatio != type(uint256).max) {
                 assertGe(
@@ -259,12 +259,34 @@ contract PreviewMintV2Test is LeverageManagerTest {
                     prevState.collateralRatio,
                     "Collateral ratio after deposit should be greater than or equal to before if zero shares are minted when the strategy has debt (collateral ratio != type(uint256).max)"
                 );
+                assertApproxEqRel(
+                    newCollateralRatio,
+                    prevState.collateralRatio,
+                    _getAllowedCollateralRatioSlippage(
+                        Math.min(
+                            Math.min(params.initialDebt, params.initialCollateral), params.initialSharesTotalSupply
+                        )
+                    ),
+                    "Collateral ratio after deposit should be still be within the allowed slippage if zero shares are minted and previous collateral ratio is not type(uint256).max"
+                );
             } else {
                 assertGe(
                     newCollateralRatio,
                     params.collateralRatioTarget,
-                    "Collateral ratio after deposit should be greater than or equal to target if zero shares are minted"
+                    "Collateral ratio after deposit should be greater than or equal to target if zero shares are minted and previous collateral ratio is type(uint256).max"
                 );
+
+                // Below 10 debt, the precision of the new collateral ratio is variable due to rounding down when
+                // converting collateral to shares, then rounding down again when converting shares to debt in the
+                // deposit preview logic.
+                if (params.initialDebt + previewData.debt > 10) {
+                    assertApproxEqRel(
+                        newCollateralRatio,
+                        params.collateralRatioTarget,
+                        _getAllowedCollateralRatioSlippage(previewData.collateral),
+                        "Collateral ratio after deposit should be still be within the allowed slippage if zero shares are minted, debt is added, and previous collateral ratio is type(uint256).max"
+                    );
+                }
             }
         } else {
             if (params.initialCollateral == 0 || params.initialDebt == 0) {
