@@ -199,12 +199,12 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
         view
         returns (uint256, uint256, uint256)
     {
-        (uint256 netShares, uint256 sharesTokenFee) = _computeTokenFee(token, grossShares, action);
+        uint256 sharesTokenFee =
+            Math.mulDiv(grossShares, getLeverageTokenActionFee(token, action), MAX_BPS, Math.Rounding.Ceil);
+        uint256 netShares = grossShares - sharesTokenFee;
         uint256 treasuryFee = _computeTreasuryFee(action, netShares);
 
-        // On mints, some of the minted shares are for the treasury fee
-        // On redeems, additional shares are taken from the user to cover the treasury fee
-        netShares = action == ExternalAction.Mint ? netShares - treasuryFee : netShares + treasuryFee;
+        netShares = netShares - treasuryFee;
 
         return (netShares, sharesTokenFee, treasuryFee);
     }

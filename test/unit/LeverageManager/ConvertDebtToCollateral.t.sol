@@ -128,7 +128,7 @@ contract ConvertDebtToCollateralTest is LeverageManagerTest {
         );
 
         uint256 collateral = leverageManager.convertDebtToCollateral(leverageToken, debt, Math.Rounding.Floor);
-        if (totalSupply == 0) {
+        if (totalCollateral == 0 && totalDebt == 0) {
             uint256 collateralExpected = Math.mulDiv(debt, initialCollateralRatio, _BASE_RATIO(), Math.Rounding.Floor);
             assertEq(collateral, collateralExpected);
 
