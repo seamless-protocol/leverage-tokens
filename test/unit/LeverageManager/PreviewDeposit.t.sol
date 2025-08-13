@@ -13,11 +13,12 @@ import {LeverageManagerTest} from "../LeverageManager/LeverageManager.t.sol";
 contract PreviewDepositTest is LeverageManagerTest {
     struct FuzzPreviewDepositParams {
         uint128 initialCollateral;
-        uint128 initialDebtInCollateralAsset;
+        uint128 initialDebt;
         uint128 initialSharesTotalSupply;
         uint128 collateral;
         uint16 fee;
         uint16 managementFee;
+        uint256 collateralRatioTarget;
     }
 
     uint256 private COLLATERAL_RATIO_TARGET;
@@ -183,19 +184,35 @@ contract PreviewDepositTest is LeverageManagerTest {
     }
 
     function testFuzz_previewDeposit(FuzzPreviewDepositParams memory params) public {
+        params.collateralRatioTarget =
+            uint256(bound(params.collateralRatioTarget, _BASE_RATIO() + 1, 10 * _BASE_RATIO()));
+
         // 0% to 99.99% token action fee
         params.fee = uint16(bound(params.fee, 0, MAX_ACTION_FEE));
-        leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Mint, params.fee);
+
+        _createNewLeverageToken(
+            manager,
+            params.collateralRatioTarget,
+            LeverageTokenConfig({
+                lendingAdapter: ILendingAdapter(address(lendingAdapter)),
+                rebalanceAdapter: IRebalanceAdapter(address(rebalanceAdapter)),
+                mintTokenFee: params.fee,
+                redeemTokenFee: 0
+            }),
+            address(collateralToken),
+            address(debtToken),
+            "dummy name",
+            "dummy symbol"
+        );
 
         // 0% to 100% management fee
         params.managementFee = uint16(bound(params.managementFee, 0, MAX_MANAGEMENT_FEE));
         _setManagementFee(feeManagerRole, leverageToken, params.managementFee);
 
-        // Bound initial debt in collateral asset to be less than or equal to initial collateral (1:1 exchange rate)
-        params.initialDebtInCollateralAsset =
-            uint128(bound(params.initialDebtInCollateralAsset, 0, params.initialCollateral));
+        // Bound initial debt  to be less than or equal to initial collateral (1:1 exchange rate)
+        params.initialDebt = uint128(bound(params.initialDebt, 0, params.initialCollateral));
 
-        if (params.initialCollateral == 0 && params.initialDebtInCollateralAsset == 0) {
+        if (params.initialCollateral == 0 && params.initialDebt == 0) {
             params.initialSharesTotalSupply = 0;
         } else {
             params.initialSharesTotalSupply = uint128(bound(params.initialSharesTotalSupply, 1, type(uint128).max));
@@ -204,7 +221,7 @@ contract PreviewDepositTest is LeverageManagerTest {
         _prepareLeverageManagerStateForAction(
             MockLeverageManagerStateForAction({
                 collateral: params.initialCollateral,
-                debt: params.initialDebtInCollateralAsset, // 1:1 exchange rate for this test
+                debt: params.initialDebt, // 1:1 exchange rate for this test
                 sharesTotalSupply: params.initialSharesTotalSupply
             })
         );
@@ -220,11 +237,7 @@ contract PreviewDepositTest is LeverageManagerTest {
 
         // Calculate state after action
         uint256 newCollateralRatio = _computeLeverageTokenCRAfterAction(
-            params.initialCollateral,
-            params.initialDebtInCollateralAsset,
-            previewData.collateral,
-            previewData.debt,
-            ExternalAction.Mint
+            params.initialCollateral, params.initialDebt, previewData.collateral, previewData.debt, ExternalAction.Mint
         );
 
         {
@@ -251,34 +264,111 @@ contract PreviewDepositTest is LeverageManagerTest {
                     prevState.collateralRatio,
                     "Collateral ratio after deposit should be greater than or equal to before if zero shares are minted when the strategy has debt (collateral ratio != type(uint256).max)"
                 );
+                assertApproxEqRel(
+                    newCollateralRatio,
+                    prevState.collateralRatio,
+                    _getAllowedCollateralRatioSlippage(
+                        Math.min(
+                            Math.min(params.initialDebt, params.initialCollateral), params.initialSharesTotalSupply
+                        )
+                    ),
+                    "Collateral ratio after deposit should be still be within the allowed slippage if zero shares are minted and previous collateral ratio is not type(uint256).max"
+                );
             } else {
                 assertGe(
                     newCollateralRatio,
-                    COLLATERAL_RATIO_TARGET,
-                    "Collateral ratio after deposit should be greater than or equal to target if zero shares are minted"
+                    params.collateralRatioTarget,
+                    "Collateral ratio after deposit should be greater than or equal to target if zero shares are minted and previous collateral ratio is type(uint256).max"
                 );
-            }
-        } else {
-            if (params.initialCollateral == 0 || params.initialDebtInCollateralAsset == 0) {
-                if (params.initialCollateral == 0) {
-                    // Precision of new CR wrt the target depends on the amount of collateral added when the strategy is empty
+
+                // Below 10 debt, the precision of the new collateral ratio is variable due to rounding down when
+                // converting collateral to shares, then rounding down again when converting shares to debt in the
+                // deposit preview logic.
+                if (params.initialDebt + previewData.debt > 10) {
                     assertApproxEqRel(
                         newCollateralRatio,
-                        COLLATERAL_RATIO_TARGET,
+                        params.collateralRatioTarget,
                         _getAllowedCollateralRatioSlippage(params.collateral),
-                        "Collateral ratio after deposit when there is zero collateral should be within the allowed slippage"
+                        "Collateral ratio after deposit should be still be within the allowed slippage if zero shares are minted, debt is added, and previous collateral ratio is type(uint256).max"
                     );
+                }
+            }
+        } else {
+            if (params.initialCollateral == 0 || params.initialDebt == 0) {
+                // The deposit preview logic first calculates shares from collateral, then debt from shares. When the LT
+                // has zero total supply, the precision of the resulting CR is dependent on the amount of collateral added
+                // wrt the target CR. In cases where the collateral added is less than the target CR / base ratio, the debt
+                // will be zero and the collateral ratio will be type(uint256).max.
+                // For example, if the target CR is 6e18 and the collateral added is 5:
+                // shares = collateral * (targetCR - baseRatio) / targetCR
+                //        = 5 * (6e18 - 1e18) / 6e18
+                //        = 4.16666..
+                //        = 4 (rounded down)
+                // debt = shares * baseRatio / (targetCR - baseRatio)
+                //      = 4 * 1e18 / (6e18 - 1e18)
+                //      = 0.8
+                //      = 0 (rounded down)
+                //
+                // Now, if instead the target CR is 6e18 and the collateral added is 6:
+                // shares = collateral * (targetCR - baseRatio) / targetCR
+                //        = 6 * (6e18 - 1e18) / 6e18
+                //        = 5
+                // debt = shares * baseRatio / (targetCR - baseRatio)
+                //      = 5 * 1e18 / (6e18 - 1e18)
+                //      = 1
+                //      = 1 (rounded down)
+                if (
+                    params.initialSharesTotalSupply == 0
+                        && params.collateral
+                            >= Math.mulDiv(params.collateralRatioTarget, 1, _BASE_RATIO(), Math.Rounding.Ceil)
+                ) {
+                    // Precision of new CR wrt the target depends on the amount of shares minted when the strategy is empty.
+                    // Below 10 debt, the precision of the new collateral ratio is variable due to rounding down when
+                    // converting collateral to shares, then rounding down again when converting shares to debt in the
+                    // deposit preview logic.
+                    if (params.initialDebt + previewData.debt > 10) {
+                        assertApproxEqRel(
+                            newCollateralRatio,
+                            params.collateralRatioTarget,
+                            _getAllowedCollateralRatioSlippage(previewData.shares),
+                            "Collateral ratio after deposit when there is zero collateral should be within the allowed slippage"
+                        );
+                    }
                     assertGe(
                         newCollateralRatio,
-                        COLLATERAL_RATIO_TARGET,
+                        params.collateralRatioTarget,
                         "Collateral ratio after deposit when there is zero collateral should be greater than or equal to target"
                     );
-                } else if (params.initialDebtInCollateralAsset == 0 && params.initialSharesTotalSupply == 0) {
-                    assertGe(
+                } else if (
+                    params.initialSharesTotalSupply == 0
+                        && previewData.collateral
+                            < Math.mulDiv(params.collateralRatioTarget, 1, _BASE_RATIO(), Math.Rounding.Ceil)
+                ) {
+                    assertEq(
                         newCollateralRatio,
-                        COLLATERAL_RATIO_TARGET,
-                        "Collateral ratio after deposit when there is zero debt and zero total supply should be greater than or equal to target"
+                        type(uint256).max,
+                        "Collateral ratio after deposit should be equal to type(uint256).max if collateral added is less than the CR"
                     );
+                } else {
+                    if (params.initialDebt + previewData.debt != 0) {
+                        assertApproxEqRel(
+                            newCollateralRatio,
+                            params.collateralRatioTarget,
+                            _getAllowedCollateralRatioSlippage(params.collateral),
+                            "Collateral ratio after deposit should be within the allowed slippage"
+                        );
+                        assertGe(
+                            newCollateralRatio,
+                            params.collateralRatioTarget,
+                            "Collateral ratio after deposit when there is zero collateral should be greater than or equal to target"
+                        );
+                    } else {
+                        assertEq(
+                            newCollateralRatio,
+                            type(uint256).max,
+                            "Collateral ratio after deposit should be equal to type(uint256).max if debt is zero"
+                        );
+                    }
                 }
             } else {
                 assertApproxEqRel(
@@ -286,8 +376,7 @@ contract PreviewDepositTest is LeverageManagerTest {
                     prevState.collateralRatio,
                     _getAllowedCollateralRatioSlippage(
                         Math.min(
-                            Math.min(params.initialSharesTotalSupply, params.initialCollateral),
-                            params.initialDebtInCollateralAsset
+                            Math.min(params.initialSharesTotalSupply, params.initialCollateral), params.initialDebt
                         )
                     ),
                     "Collateral ratio after deposit should be within the allowed slippage"

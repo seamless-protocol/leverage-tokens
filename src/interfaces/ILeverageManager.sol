@@ -84,6 +84,12 @@ interface ILeverageManager is IFeeManager {
     /// @param actionData The action data of the redeem
     event Redeem(ILeverageToken indexed token, address indexed sender, ActionData actionData);
 
+    /// @notice Event emitted when a user redeems LeverageToken shares
+    /// @param token The LeverageToken
+    /// @param sender The sender of the redeem
+    /// @param actionData The action data of the redeem
+    event RedeemV2(ILeverageToken indexed token, address indexed sender, ActionDataV2 actionData);
+
     /// @notice Converts an amount of collateral to an amount of debt for a LeverageToken, based on the current
     /// collateral ratio of the LeverageToken
     /// @param token LeverageToken to convert collateral to debt for
@@ -287,6 +293,30 @@ interface ILeverageManager is IFeeManager {
         view
         returns (ActionData memory previewData);
 
+    /// @notice Previews redeem function call and returns all required data
+    /// @param token LeverageToken to preview redeem for
+    /// @param shares Amount of shares to redeem
+    /// @return previewData Preview data for redeem
+    ///         - collateral Amount of collateral that will be removed from the LeverageToken and sent to the sender
+    ///         - debt Amount of debt that will be taken from sender and repaid to the LeverageToken
+    ///         - shares Amount of shares that will be burned from sender
+    ///         - tokenFee Amount of shares that will be charged for the redeem that are given to the LeverageToken
+    ///         - treasuryFee Amount of shares that will be charged for the redeem that are given to the treasury
+    /// @dev Sender should approve LeverageManager to spend debt amount of debt asset
+    function previewRedeemV2(ILeverageToken token, uint256 shares) external view returns (ActionDataV2 memory);
+
+    /// @notice Previews withdraw function call and returns all required data
+    /// @param token LeverageToken to preview withdraw for
+    /// @param collateral Amount of collateral to withdraw
+    /// @return previewData Preview data for withdraw
+    ///         - collateral Amount of collateral that will be removed from the LeverageToken and sent to the sender
+    ///         - debt Amount of debt that will be taken from sender and repaid to the LeverageToken
+    ///         - shares Amount of shares that will be burned from sender
+    ///         - tokenFee Amount of shares that will be charged for the redeem that are given to the LeverageToken
+    ///         - treasuryFee Amount of shares that will be charged for the redeem that are given to the treasury
+    /// @dev Sender should approve LeverageManager to spend debt amount of debt asset
+    function previewWithdraw(ILeverageToken token, uint256 collateral) external view returns (ActionDataV2 memory);
+
     /// @notice Adds equity to a LeverageToken and mints shares of it to the sender
     /// @param token The LeverageToken to mint shares of
     /// @param equityInCollateralAsset The amount of equity to mint shares for, denominated in the collateral asset of the LeverageToken
@@ -317,6 +347,20 @@ interface ILeverageManager is IFeeManager {
         external
         returns (ActionData memory actionData);
 
+    /// @notice Redeems equity from a LeverageToken and burns shares from sender
+    /// @param token The LeverageToken to redeem from
+    /// @param shares The amount of shares to redeem
+    /// @param minCollateral The minimum amount of collateral to receive
+    /// @return actionData Data about the redeem
+    ///         - collateral Amount of collateral that was removed from LeverageToken and sent to sender
+    ///         - debt Amount of debt that was repaid to LeverageToken, taken from sender
+    ///         - shares Amount of the sender's shares that were burned for the redeem
+    ///         - tokenFee Amount of shares that was charged for the redeem that are given to the LeverageToken
+    ///         - treasuryFee Amount of shares that was charged for the redeem that are given to the treasury
+    function redeemV2(ILeverageToken token, uint256 shares, uint256 minCollateral)
+        external
+        returns (ActionDataV2 memory actionData);
+
     /// @notice Rebalances a LeverageToken based on provided actions
     /// @param leverageToken LeverageToken to rebalance
     /// @param actions Rebalance actions to execute (add collateral, remove collateral, borrow or repay)
@@ -338,4 +382,18 @@ interface ILeverageManager is IFeeManager {
         uint256 amountIn,
         uint256 amountOut
     ) external;
+
+    /// @notice Withdraws collateral from a LeverageToken and burns shares from sender
+    /// @param token The LeverageToken to withdraw from
+    /// @param collateral The amount of collateral to withdraw
+    /// @param maxShares The maximum amount of shares to burn
+    /// @return actionData Data about the withdraw
+    ///         - collateral Amount of collateral that was removed from LeverageToken and sent to sender
+    ///         - debt Amount of debt that was repaid to LeverageToken, taken from sender
+    ///         - shares Amount of the sender's shares that were burned for the withdraw
+    ///         - tokenFee Amount of shares that was charged for the withdraw that are given to the LeverageToken
+    ///         - treasuryFee Amount of shares that was charged for the withdraw that are given to the treasury
+    function withdraw(ILeverageToken token, uint256 collateral, uint256 maxShares)
+        external
+        returns (ActionDataV2 memory actionData);
 }

@@ -356,6 +356,67 @@ contract LeverageManager is
     }
 
     /// @inheritdoc ILeverageManager
+    function previewRedeemV2(ILeverageToken token, uint256 shares) public view returns (ActionDataV2 memory) {
+        (uint256 sharesAfterFees, uint256 sharesFee, uint256 treasuryFee) =
+            _computeFeesForGrossShares(token, shares, ExternalAction.Redeem);
+
+        ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
+        uint256 feeAdjustedTotalSupply = _getFeeAdjustedTotalSupply(token);
+
+        // The redeemer receives collateral and repays debt for the net shares after fees are subtracted. The amount of
+        // shares their balance is decreased by is that net share amount (which is burned) plus the fees.
+        // - the treasury fee shares are given to the treasury
+        // - the token fee shares are burned to increase share value
+        uint256 collateral = _convertSharesToCollateral(
+            token,
+            lendingAdapter,
+            sharesAfterFees,
+            lendingAdapter.getCollateral(),
+            feeAdjustedTotalSupply,
+            Math.Rounding.Floor
+        );
+        uint256 debt = _convertSharesToDebt(
+            token, lendingAdapter, sharesAfterFees, lendingAdapter.getDebt(), feeAdjustedTotalSupply, Math.Rounding.Ceil
+        );
+
+        return ActionDataV2({
+            collateral: collateral,
+            debt: debt,
+            shares: shares,
+            tokenFee: sharesFee,
+            treasuryFee: treasuryFee
+        });
+    }
+
+    /// @inheritdoc ILeverageManager
+    function previewWithdraw(ILeverageToken token, uint256 collateral) public view returns (ActionDataV2 memory) {
+        ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
+        uint256 feeAdjustedTotalSupply = _getFeeAdjustedTotalSupply(token);
+
+        // The withdrawer receives their specified collateral amount and pays debt for the shares that can be exchanged
+        // for the collateral amount. The amount of shares their balance is decreased by is that share amount (which is
+        // burned) plus the fees.
+        // - the treasury fee shares are given to the treasury
+        // - the token fee shares are burned to increase share value
+        uint256 shares =
+            _convertCollateralToShares(token, lendingAdapter, collateral, feeAdjustedTotalSupply, Math.Rounding.Ceil);
+        uint256 debt = _convertSharesToDebt(
+            token, lendingAdapter, shares, lendingAdapter.getDebt(), feeAdjustedTotalSupply, Math.Rounding.Ceil
+        );
+
+        (uint256 sharesAfterFees, uint256 sharesFee, uint256 treasuryFee) =
+            _computeFeesForNetShares(token, shares, ExternalAction.Redeem);
+
+        return ActionDataV2({
+            collateral: collateral,
+            debt: debt,
+            shares: sharesAfterFees,
+            tokenFee: sharesFee,
+            treasuryFee: treasuryFee
+        });
+    }
+
+    /// @inheritdoc ILeverageManager
     function previewMint(ILeverageToken token, uint256 equityInCollateralAsset)
         public
         view
@@ -531,6 +592,50 @@ contract LeverageManager is
         emit Rebalance(leverageToken, msg.sender, stateBefore, stateAfter, actions);
     }
 
+    /// @inheritdoc ILeverageManager
+    function redeemV2(ILeverageToken token, uint256 shares, uint256 minCollateral)
+        external
+        nonReentrant
+        returns (ActionDataV2 memory actionData)
+    {
+        // Management fee is calculated from the total supply of the LeverageToken, so we need to claim it first
+        // before total supply is updated due to the redeem
+        chargeManagementFee(token);
+
+        ActionDataV2 memory redeemData = previewRedeemV2(token, shares);
+
+        // slither-disable-next-line timestamp
+        if (redeemData.collateral < minCollateral) {
+            revert SlippageTooHigh(redeemData.collateral, minCollateral);
+        }
+
+        _redeem(token, redeemData);
+
+        return redeemData;
+    }
+
+    /// @inheritdoc ILeverageManager
+    function withdraw(ILeverageToken token, uint256 collateral, uint256 maxShares)
+        external
+        nonReentrant
+        returns (ActionDataV2 memory actionData)
+    {
+        // Management fee is calculated from the total supply of the LeverageToken, so we need to claim it first
+        // before total supply is updated due to the redeem
+        chargeManagementFee(token);
+
+        ActionDataV2 memory withdrawData = previewWithdraw(token, collateral);
+
+        // slither-disable-next-line timestamp
+        if (withdrawData.shares > maxShares) {
+            revert SlippageTooHigh(withdrawData.shares, maxShares);
+        }
+
+        _redeem(token, withdrawData);
+
+        return withdrawData;
+    }
+
     function _convertCollateralToShares(
         ILeverageToken token,
         ILendingAdapter lendingAdapter,
@@ -647,6 +752,7 @@ contract LeverageManager is
                 );
             }
         }
+
         return Math.mulDiv(shares, totalDebt, totalSupply, rounding);
     }
 
@@ -811,6 +917,30 @@ contract LeverageManager is
 
         // Emit event and explicit return statement
         emit MintV2(token, msg.sender, mintData);
+    }
+
+    /// @notice Helper function for executing a redeem action on a LeverageToken
+    /// @param token LeverageToken to redeem shares for
+    /// @param redeemData Action data for the redeem
+    function _redeem(ILeverageToken token, ActionDataV2 memory redeemData) internal {
+        // Burn shares from user and total supply
+        token.burn(msg.sender, redeemData.shares);
+
+        // Mint shares to treasury for the treasury action fee
+        _chargeTreasuryFee(token, redeemData.treasuryFee);
+
+        // Take assets from sender and repay the debt
+        SafeERC20.safeTransferFrom(getLeverageTokenDebtAsset(token), msg.sender, address(this), redeemData.debt);
+        _executeLendingAdapterAction(token, ActionType.Repay, redeemData.debt);
+
+        // Remove collateral from lending pool
+        _executeLendingAdapterAction(token, ActionType.RemoveCollateral, redeemData.collateral);
+
+        // Send collateral assets to sender
+        SafeERC20.safeTransfer(getLeverageTokenCollateralAsset(token), msg.sender, redeemData.collateral);
+
+        // Emit event and explicit return statement
+        emit RedeemV2(token, msg.sender, redeemData);
     }
 
     /// @notice Helper function for transferring tokens, or no-op if token is 0 address
