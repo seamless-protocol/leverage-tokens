@@ -18,7 +18,7 @@ contract PreviewRedeemTest is PreviewActionTest {
     ) public {
         initialDebtInCollateralAsset = uint128(bound(initialDebtInCollateralAsset, 0, initialCollateral));
 
-        treasuryFee = uint16(bound(treasuryFee, 0, 1e4));
+        treasuryFee = uint16(bound(treasuryFee, 0, MAX_ACTION_FEE));
         _setTreasuryActionFee(ExternalAction.Redeem, treasuryFee);
 
         equityToRedeemInCollateralAsset =
