@@ -325,6 +325,7 @@ contract PreviewRedeemTest is LeverageManagerTest {
                 "Collateral ratio after redeem should be equal to type(uint256).max if zero debt is left"
             );
         } else {
+            // Below 10 debt, the precision of the new collateral ratio can be variable due to low precision
             if (newDebt > 10) {
                 assertApproxEqRel(
                     newCollateralRatio,

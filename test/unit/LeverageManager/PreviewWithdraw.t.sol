@@ -324,7 +324,10 @@ contract PreviewWithdrawTest is LeverageManagerTest {
                 "Collateral ratio after redeem should be equal to type(uint256).max if zero debt is left"
             );
         } else {
-            if (newDebt > 10 && newCollateral > 10 && newShares > 10) {
+            // Below 10 debt, the new collateral ratio can be variable due to low precision.
+            // The precision is also dependent on shares because shares are calculated from the collateral
+            // withdrawn, then debt is calculated from those shares.
+            if (newDebt > 10 && newShares > 10) {
                 assertApproxEqRel(
                     newCollateralRatio,
                     prevState.collateralRatio,
