@@ -99,6 +99,22 @@ contract PreviewWithdrawTest is LeverageManagerTest {
         assertEq(previewData.treasuryFee, 0);
     }
 
+    function test_PreviewWithdraw_CollateralGtTotalCollateral() public {
+        MockLeverageManagerStateForAction memory beforeState =
+            MockLeverageManagerStateForAction({collateral: 100 ether, debt: 50 ether, sharesTotalSupply: 100 ether});
+
+        _prepareLeverageManagerStateForAction(beforeState);
+
+        uint256 collateral = 150 ether;
+        ActionDataV2 memory previewData = leverageManager.previewWithdraw(leverageToken, collateral);
+
+        assertEq(previewData.collateral, 150 ether);
+        assertEq(previewData.debt, 75 ether);
+        assertEq(previewData.shares, 150 ether);
+        assertEq(previewData.tokenFee, 0);
+        assertEq(previewData.treasuryFee, 0);
+    }
+
     function testFuzz_previewWithdraw_ZeroCollateralZeroDebtNonZeroTotalSupply(
         uint256 collateralToWithdraw,
         uint256 totalSupply

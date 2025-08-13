@@ -99,6 +99,22 @@ contract PreviewRedeemTest is LeverageManagerTest {
         assertEq(previewData.treasuryFee, 0);
     }
 
+    function test_PreviewRedeem_SharesGtTotalSupply() public {
+        MockLeverageManagerStateForAction memory beforeState =
+            MockLeverageManagerStateForAction({collateral: 100 ether, debt: 50 ether, sharesTotalSupply: 100 ether});
+
+        _prepareLeverageManagerStateForAction(beforeState);
+
+        uint256 shares = 150 ether;
+        ActionDataV2 memory previewData = leverageManager.previewRedeemV2(leverageToken, shares);
+
+        assertEq(previewData.collateral, 150 ether);
+        assertEq(previewData.debt, 75 ether);
+        assertEq(previewData.shares, 150 ether);
+        assertEq(previewData.tokenFee, 0);
+        assertEq(previewData.treasuryFee, 0);
+    }
+
     function testFuzz_PreviewRedeem_ZeroShares_WithoutFees(
         uint128 initialCollateral,
         uint128 initialDebt,
