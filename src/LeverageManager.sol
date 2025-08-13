@@ -357,12 +357,11 @@ contract LeverageManager is
 
     /// @inheritdoc ILeverageManager
     function previewRedeemV2(ILeverageToken token, uint256 shares) public view returns (ActionDataV2 memory) {
-        uint256 feeAdjustedTotalSupply = _getFeeAdjustedTotalSupply(token);
-
         (uint256 sharesAfterFees, uint256 sharesFee, uint256 treasuryFee) =
-            feeAdjustedTotalSupply != 0 ? _computeFeesForGrossShares(token, shares, ExternalAction.Redeem) : (0, 0, 0);
+            _computeFeesForGrossShares(token, shares, ExternalAction.Redeem);
 
         ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
+        uint256 feeAdjustedTotalSupply = _getFeeAdjustedTotalSupply(token);
 
         // The redeemer receives collateral and repays debt for the net shares after fees are subtracted. The amount of
         // shares their balance is decreased by is that net share amount (which is burned) plus the fees.
@@ -383,7 +382,7 @@ contract LeverageManager is
         return ActionDataV2({
             collateral: collateral,
             debt: debt,
-            shares: feeAdjustedTotalSupply != 0 ? shares : 0,
+            shares: shares,
             tokenFee: sharesFee,
             treasuryFee: treasuryFee
         });
@@ -399,9 +398,8 @@ contract LeverageManager is
         // burned) plus the fees.
         // - the treasury fee shares are given to the treasury
         // - the token fee shares are burned to increase share value
-        uint256 shares = feeAdjustedTotalSupply != 0
-            ? _convertCollateralToShares(token, lendingAdapter, collateral, feeAdjustedTotalSupply, Math.Rounding.Ceil)
-            : 0;
+        uint256 shares =
+            _convertCollateralToShares(token, lendingAdapter, collateral, feeAdjustedTotalSupply, Math.Rounding.Ceil);
         uint256 debt = _convertSharesToDebt(
             token, lendingAdapter, shares, lendingAdapter.getDebt(), feeAdjustedTotalSupply, Math.Rounding.Ceil
         );
@@ -410,7 +408,7 @@ contract LeverageManager is
             _computeFeesForNetShares(token, shares, ExternalAction.Redeem);
 
         return ActionDataV2({
-            collateral: feeAdjustedTotalSupply != 0 ? collateral : 0,
+            collateral: collateral,
             debt: debt,
             shares: sharesAfterFees,
             tokenFee: sharesFee,
