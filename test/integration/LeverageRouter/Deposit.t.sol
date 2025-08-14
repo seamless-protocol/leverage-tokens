@@ -6,10 +6,12 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // Internal imports
+import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
+import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
-import {ActionDataV2} from "src/types/DataTypes.sol";
+import {ActionDataV2, LeverageTokenConfig} from "src/types/DataTypes.sol";
 import {LeverageRouterTest} from "./LeverageRouter.t.sol";
 import {SwapPathLib} from "../../utils/SwapPathLib.sol";
 
@@ -44,11 +46,8 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         assertEq(debtReduced, 3382_592531);
 
         // Preview the amount of collateral required to get the flash loaned debt amount from a LM deposit
-        // We add 1 to offset precision differences between LM.previewDeposit (used by LM.deposit) and LM.convertDebtToCollateral.
-        // convertDebtToCollateral rounds up, previewDeposit rounds down when calculating debt from shares, and shares is calculated
-        // from collateral, also rounded down.
         uint256 collateralRequired =
-            leverageManager.convertDebtToCollateral(leverageToken, debtReduced, Math.Rounding.Ceil) + 1;
+            leverageManager.convertDebtToCollateral(leverageToken, debtReduced, Math.Rounding.Ceil);
         assertEq(collateralRequired, 1.994281188504426822 ether);
 
         {
@@ -59,6 +58,11 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             // More than minShares (1% slippage) will be minted
             assertGe(previewData.shares, minShares);
             assertEq(previewData.shares, 0.997140594252213411 ether);
+
+            // Sanity check: previewMint results in the same collateral and debt amounts
+            previewData = leverageManager.previewMintV2(leverageToken, previewData.shares);
+            assertEq(previewData.collateral, collateralRequired);
+            assertEq(previewData.debt, debtReduced);
 
             // Updated collateral received from the debt swap for lower debt amount
             collateralReceivedFromDebtSwap = 0.994290732650270211 ether;
@@ -131,11 +135,8 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         assertEq(debtReduced, 3382_592531);
 
         // Preview the amount of collateral required to get the flash loaned debt amount from a LM deposit
-        // We add 1 to offset precision differences between LM.previewDeposit (used by LM.deposit) and LM.convertDebtToCollateral.
-        // convertDebtToCollateral rounds up, previewDeposit rounds down when calculating debt from shares, and shares is calculated
-        // from collateral, also rounded down.
         uint256 collateralRequired =
-            leverageManager.convertDebtToCollateral(leverageToken, debtReduced, Math.Rounding.Ceil) + 1;
+            leverageManager.convertDebtToCollateral(leverageToken, debtReduced, Math.Rounding.Ceil);
         assertEq(collateralRequired, 1.994281188504426822 ether);
 
         {
@@ -150,6 +151,11 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             // The slippage is greater than 0.01%
             uint256 actualSlippage = 1e18 - previewData.shares * 1e18 / sharesFromDeposit;
             assertEq(actualSlippage, 0.002859405747786589e18); // ~0.286% slippage
+
+            // Sanity check: previewMint results in the same collateral and debt amounts
+            previewData = leverageManager.previewMintV2(leverageToken, previewData.shares);
+            assertEq(previewData.collateral, collateralRequired);
+            assertEq(previewData.debt, debtReduced);
 
             // Updated collateral received from the debt swap for lower debt amount
             collateralReceivedFromDebtSwap = 0.994290732650270211 ether;
@@ -203,8 +209,8 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         assertEq(previewData.debt, collateralFromSenderInDebt);
 
         uint256 collateralRequired =
-            leverageManager.convertDebtToCollateral(leverageToken, previewData.debt, Math.Rounding.Ceil) + 1;
-        assertEq(collateralRequired, 0.019999999577917045 ether);
+            leverageManager.convertDebtToCollateral(leverageToken, previewData.debt, Math.Rounding.Ceil);
+        assertEq(collateralRequired, 0.019999999577917044 ether);
 
         // Preview again using the new collateral required; results in the same debt amount
         assertEq(leverageManager.previewDeposit(leverageToken, collateralRequired).debt, previewData.debt);
@@ -258,28 +264,18 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         assertEq(debtReduced, 33.842036e6);
 
         // Preview the amount of collateral required to get the flash loaned debt amount from a LM deposit
-        collateralRequired = leverageManager.convertDebtToCollateral(leverageToken, debtReduced, Math.Rounding.Ceil) + 1;
+        collateralRequired = leverageManager.convertDebtToCollateral(leverageToken, debtReduced, Math.Rounding.Ceil);
         assertEq(collateralRequired, 0.019952310293648432 ether);
 
         // Sanity check: preview again using the new collateral required. This is used by the LM deposit logic
         previewData = leverageManager.previewDeposit(leverageToken, collateralRequired);
         assertEq(previewData.debt, debtReduced);
 
+        // Sanity check: previewMint results in the same collateral and debt amounts
+        previewData = leverageManager.previewMintV2(leverageToken, previewData.shares);
+        assertEq(previewData.collateral, collateralRequired);
+        assertEq(previewData.debt, debtReduced);
+
         _dealAndDeposit(WETH, USDC, collateralFromSender, collateralFromSender, debtReduced, 0, swapContext);
-    }
-
-    function testFuzzFork_deposit_UniswapV2_ExceedsSlippage(uint256 collateralFromSender) public {
-        rebalanceAdapter = _deployRebalanceAdapter(1.5e18, 2e18, 2.5e18, 7 minutes, 1.2e18, 0.9e18, 1.2e18, 40_00);
-
-        leverageToken = leverageManager.createNewLeverageToken(
-            LeverageTokenConfig({
-                lendingAdapter: ILendingAdapter(address(morphoLendingAdapter)),
-                rebalanceAdapter: IRebalanceAdapter(address(rebalanceAdapter)),
-                mintTokenFee: 0,
-                redeemTokenFee: 0
-            }),
-            "Seamless ETH/USDC 2x leverage token",
-            "ltETH/USDC-2x"
-        );
     }
 }

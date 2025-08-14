@@ -128,11 +128,9 @@ contract LeverageManager is
 
         if (totalCollateral == 0) {
             if (totalDebt == 0) {
-                // Initial state: no collateral or debt, use initial collateral ratio
-                uint256 initialCollateralRatio = getLeverageTokenInitialCollateralRatio(token);
-                return lendingAdapter.convertCollateralToDebtAsset(
-                    Math.mulDiv(collateral, BASE_RATIO, initialCollateralRatio, rounding)
-                );
+                uint256 totalSupply = getFeeAdjustedTotalSupply(token);
+                uint256 shares = _convertCollateralToShares(token, lendingAdapter, collateral, totalSupply, rounding);
+                return _convertSharesToDebt(token, lendingAdapter, shares, totalDebt, totalSupply, rounding);
             }
             // Liquidated state: no collateral but debt exists, cannot convert
             return 0;
@@ -164,17 +162,27 @@ contract LeverageManager is
 
         if (totalDebt == 0) {
             if (totalCollateral == 0) {
-                // Initial state: no collateral or debt, use initial collateral ratio
-                uint256 initialCollateralRatio = getLeverageTokenInitialCollateralRatio(token);
-                return lendingAdapter.convertDebtToCollateralAsset(
-                    Math.mulDiv(debt, initialCollateralRatio, BASE_RATIO, rounding)
-                );
+                uint256 totalSupply = getFeeAdjustedTotalSupply(token);
+                uint256 shares = _convertDebtToShares(token, lendingAdapter, debt, totalDebt, totalSupply, rounding);
+                return _convertSharesToCollateral(token, lendingAdapter, shares, totalCollateral, totalSupply, rounding);
             }
             // Liquidated state: no collateral but debt exists, cannot convert
             return 0;
         }
 
         return Math.mulDiv(debt, totalCollateral, totalDebt, rounding);
+    }
+
+    /// @inheritdoc ILeverageManager
+    function convertDebtToShares(ILeverageToken token, uint256 debt, Math.Rounding rounding)
+        external
+        view
+        returns (uint256 shares)
+    {
+        ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
+        uint256 totalDebt = lendingAdapter.getDebt();
+        uint256 totalSupply = getFeeAdjustedTotalSupply(token);
+        return _convertDebtToShares(token, lendingAdapter, debt, totalDebt, totalSupply, rounding);
     }
 
     /// @inheritdoc ILeverageManager
@@ -636,6 +644,13 @@ contract LeverageManager is
         return withdrawData;
     }
 
+    /// @notice Converts collateral to shares given the state of the LeverageToken
+    /// @param token LeverageToken to convert collateral for
+    /// @param lendingAdapter Lending adapter of the LeverageToken
+    /// @param collateral Collateral to convert to shares
+    /// @param totalSupply Total supply of shares of the LeverageToken
+    /// @param rounding Rounding mode
+    /// @return shares Shares
     function _convertCollateralToShares(
         ILeverageToken token,
         ILendingAdapter lendingAdapter,
@@ -674,6 +689,51 @@ contract LeverageManager is
         }
 
         return Math.mulDiv(collateral, totalSupply, totalCollateral, rounding);
+    }
+
+    /// @notice Converts debt to shares given the state of the LeverageToken
+    /// @param token LeverageToken to convert debt for
+    /// @param lendingAdapter Lending adapter of the LeverageToken
+    /// @param debt Debt to convert to shares
+    /// @param totalDebt Total debt of the LeverageToken
+    /// @param totalSupply Total supply of shares of the LeverageToken
+    /// @param rounding Rounding mode
+    /// @return shares Shares
+    function _convertDebtToShares(
+        ILeverageToken token,
+        ILendingAdapter lendingAdapter,
+        uint256 debt,
+        uint256 totalDebt,
+        uint256 totalSupply,
+        Math.Rounding rounding
+    ) internal view returns (uint256 shares) {
+        // slither-disable-next-line incorrect-equality,timestamp
+        if (totalSupply == 0) {
+            uint256 initialCollateralRatio = getLeverageTokenInitialCollateralRatio(token);
+
+            // Calculate equity from debt
+            uint256 equityInDebtAsset = Math.mulDiv(debt, initialCollateralRatio - BASE_RATIO, BASE_RATIO, rounding);
+            uint256 equityInCollateralAsset = lendingAdapter.convertDebtToCollateralAsset(equityInDebtAsset);
+
+            uint256 leverageTokenDecimals = IERC20Metadata(address(token)).decimals();
+            uint256 collateralDecimals = IERC20Metadata(address(lendingAdapter.getCollateralAsset())).decimals();
+
+            // If collateral asset has more decimals than leverage token, we scale down the equity in collateral asset
+            // Otherwise we scale up the equity in collateral asset
+            if (collateralDecimals > leverageTokenDecimals) {
+                uint256 scalingFactor = 10 ** (collateralDecimals - leverageTokenDecimals);
+                return equityInCollateralAsset / scalingFactor;
+            } else {
+                uint256 scalingFactor = 10 ** (leverageTokenDecimals - collateralDecimals);
+                return equityInCollateralAsset * scalingFactor;
+            }
+        }
+
+        if (totalDebt == 0) {
+            return 0;
+        }
+
+        return Math.mulDiv(debt, totalSupply, totalDebt, rounding);
     }
 
     /// @notice Converts shares to collateral given the state of the LeverageToken

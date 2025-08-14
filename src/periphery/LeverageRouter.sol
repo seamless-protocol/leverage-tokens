@@ -249,11 +249,8 @@ contract LeverageRouter is ILeverageRouter {
         );
 
         // Preview the amount of collateral required to get the flash loaned debt amount from a LM deposit.
-        // We add 1 to offset precision differences between LM.previewDeposit (used by LM.deposit) and LM.convertDebtToCollateral.
-        // convertDebtToCollateral rounds up, previewDeposit rounds down when calculating debt from shares, and shares is calculated
-        // from collateral, also rounded down.
         uint256 collateralRequired =
-            leverageManager.convertDebtToCollateral(params.leverageToken, debtLoan, Math.Rounding.Ceil) + 1;
+            leverageManager.convertDebtToCollateral(params.leverageToken, debtLoan, Math.Rounding.Ceil);
 
         uint256 totalCollateral = collateralFromSwap + params.collateralFromSender;
         if (totalCollateral < collateralRequired) {
