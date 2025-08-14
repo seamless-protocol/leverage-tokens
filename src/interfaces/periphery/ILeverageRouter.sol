@@ -11,6 +11,11 @@ import {ISwapAdapter} from "./ISwapAdapter.sol";
 import {ActionDataV2} from "src/types/DataTypes.sol";
 
 interface ILeverageRouter {
+    /// @notice Error thrown when the collateral from the swap + the collateral from the sender is less than the collateral required for the deposit
+    /// @param available The collateral from the swap + the collateral from the sender, available for the deposit
+    /// @param required The collateral required for the deposit
+    error InsufficientCollateralForDeposit(uint256 available, uint256 required);
+
     /// @notice Error thrown when the cost of a swap exceeds the maximum allowed cost
     /// @param actualCost The actual cost of the swap
     /// @param maxCost The maximum allowed cost of the swap

@@ -83,8 +83,6 @@ contract LeverageRouter is ILeverageRouter {
         bytes data;
     }
 
-    error InsufficientCollateralForDeposit(uint256 available, uint256 required);
-
     /// @inheritdoc ILeverageRouter
     ILeverageManager public immutable leverageManager;
 
@@ -250,9 +248,16 @@ contract LeverageRouter is ILeverageRouter {
             params.swapContext
         );
 
-        // Preview the amount of collateral required to get the flash loaned debt amount from a LM deposit
+        // Preview the amount of collateral required to get the flash loaned debt amount from a LM deposit.
+        // We add 1 to the collateral required to accomodate for precision loss that occurs during the LM deposit
+        // (rounding down when converting collateral to shares, and rounding down when converting shares to debt).
         uint256 collateralRequired =
-            leverageManager.convertDebtToCollateral(params.leverageToken, debtLoan, Math.Rounding.Ceil);
+            leverageManager.convertDebtToCollateral(params.leverageToken, debtLoan, Math.Rounding.Ceil) + 1;
+
+        uint256 totalCollateral = collateralFromSwap + params.collateralFromSender;
+        if (totalCollateral < collateralRequired) {
+            revert InsufficientCollateralForDeposit(totalCollateral, collateralRequired);
+        }
 
         // Use the flash loaned collateral and the collateral from the sender for the deposit into the LeverageToken
         SafeERC20.forceApprove(collateralAsset, address(leverageManager), collateralRequired);
@@ -263,7 +268,6 @@ contract LeverageRouter is ILeverageRouter {
             leverageManager.deposit(params.leverageToken, collateralRequired, params.minShares);
 
         // Transfer any surplus collateral assets to the sender
-        uint256 totalCollateral = collateralFromSwap + params.collateralFromSender;
         if (totalCollateral > collateralRequired) {
             SafeERC20.safeTransfer(collateralAsset, params.sender, totalCollateral - collateralRequired);
         }

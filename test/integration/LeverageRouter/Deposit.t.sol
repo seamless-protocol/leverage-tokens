@@ -7,6 +7,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // Internal imports
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
+import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {ActionDataV2} from "src/types/DataTypes.sol";
 import {LeverageRouterTest} from "./LeverageRouter.t.sol";
@@ -110,6 +111,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         assertEq(morphoLendingAdapter.getDebt(), debtReduced + 1); // + 1 because of rounding up by MorphoBalancesLib.expectedBorrowAssets
     }
 
+    /// @dev In this block price on oracle 3392.292471591441746049801068
     function testFork_deposit_UniswapV2_ExceedsSlippage() public {
         uint256 collateralFromSender = 1 ether;
         uint256 collateralToAdd = 2 * collateralFromSender;
@@ -198,6 +200,73 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             abi.encodeWithSelector(ILeverageManager.SlippageTooHigh.selector, 0.997140593957427507 ether, 0.99715 ether)
         );
         leverageRouter.deposit(leverageToken, collateralFromSender, debtReduced, minShares, swapContext);
+        vm.stopPrank();
+    }
+
+    function testFork_deposit_UniswapV2_InsufficientCollateralForDeposit() public {
+        uint256 collateralFromSender = 0.01 ether;
+
+        uint256 collateralFromSenderInDebt = morphoLendingAdapter.convertCollateralToDebtAsset(collateralFromSender);
+        assertEq(collateralFromSenderInDebt, 33.922924e6);
+        // Slightly less when converting back to collateral due to precision loss
+        assertEq(
+            morphoLendingAdapter.convertDebtToCollateralAsset(collateralFromSenderInDebt), 0.009999999788958522 ether
+        );
+
+        // 2x collateral ratio, so required collateral is 2x the collateral from the sender (equity) and debt is the equity amount denominated in debt asset
+        uint256 collateralToAdd = collateralFromSender * 2;
+        ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, collateralToAdd);
+        assertEq(previewData.debt, collateralFromSenderInDebt);
+
+        uint256 collateralRequired =
+            leverageManager.convertDebtToCollateral(leverageToken, previewData.debt, Math.Rounding.Ceil);
+        // Slightly less than collateralToAdd when converting back to collateral due to precision loss
+        assertEq(collateralRequired, 0.019999999577917044 ether);
+
+        // Preview again using the new collateral required - results in the same debt amount.
+        // Note: In this case, it works out, but as seen in the other test cases, sometimes the debt amount returned by previewDeposit
+        // is different from the amount returned by convertDebtToCollateral, depending on precision loss that may occur during
+        // the calculations used
+        assertEq(leverageManager.previewDeposit(leverageToken, collateralRequired).debt, previewData.debt);
+
+        address[] memory path = new address[](2);
+        path[0] = address(USDC);
+        path[1] = address(WETH);
+
+        ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
+            exchange: ISwapAdapter.Exchange.UNISWAP_V2,
+            encodedPath: new bytes(0),
+            path: path,
+            fees: new uint24[](0),
+            tickSpacing: new int24[](0),
+            exchangeAddresses: ISwapAdapter.ExchangeAddresses({
+                aerodromeRouter: address(0),
+                aerodromePoolFactory: address(0),
+                aerodromeSlipstreamRouter: address(0),
+                uniswapSwapRouter02: address(0),
+                uniswapV2Router02: UNISWAP_V2_ROUTER02
+            }),
+            additionalData: new bytes(0)
+        });
+
+        // The collateral received from swapping 33.922924e6 USDC is 0.009976155542446272 WETH in this block using Uniswap V2
+        uint256 collateralFromSwap = 0.009976155542446272 ether;
+
+        // The collateral from the swap + the collateral from the sender is less than the collateral required
+        uint256 totalCollateral = collateralFromSwap + collateralFromSender;
+        assertLt(totalCollateral, collateralRequired);
+
+        deal(address(WETH), user, collateralFromSender);
+        vm.startPrank(user);
+        WETH.approve(address(leverageRouter), collateralFromSender);
+
+        // Reverts due to insufficient collateral from swap + user for the deposit
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ILeverageRouter.InsufficientCollateralForDeposit.selector, totalCollateral, collateralRequired
+            )
+        );
+        leverageRouter.deposit(leverageToken, collateralFromSender, previewData.debt, 0, swapContext);
         vm.stopPrank();
     }
 }
