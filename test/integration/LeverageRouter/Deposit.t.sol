@@ -44,8 +44,9 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         assertEq(debtReduced, 3382_592531);
 
         // Preview the amount of collateral required to get the flash loaned debt amount from a LM deposit
-        // We add 1 to the collateral required to accomodate for precision loss that occurs during the LM deposit
-        // (rounding down when converting collateral to shares, and rounding down when converting shares to debt).
+        // We add 1 to offset precision differences between LM.previewDeposit (used by LM.deposit) and LM.convertDebtToCollateral.
+        // convertDebtToCollateral rounds up, previewDeposit rounds down when calculating debt from shares, and shares is calculated
+        // from collateral, also rounded down.
         uint256 collateralRequired =
             leverageManager.convertDebtToCollateral(leverageToken, debtReduced, Math.Rounding.Ceil) + 1;
         assertEq(collateralRequired, 1.994281188504426822 ether);
@@ -130,8 +131,9 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         assertEq(debtReduced, 3382_592531);
 
         // Preview the amount of collateral required to get the flash loaned debt amount from a LM deposit
-        // We add 1 to the collateral required to accomodate for precision loss that occurs during the LM deposit
-        // (rounding down when converting collateral to shares, and rounding down when converting shares to debt).
+        // We add 1 to offset precision differences between LM.previewDeposit (used by LM.deposit) and LM.convertDebtToCollateral.
+        // convertDebtToCollateral rounds up, previewDeposit rounds down when calculating debt from shares, and shares is calculated
+        // from collateral, also rounded down.
         uint256 collateralRequired =
             leverageManager.convertDebtToCollateral(leverageToken, debtReduced, Math.Rounding.Ceil) + 1;
         assertEq(collateralRequired, 1.994281188504426822 ether);
@@ -264,5 +266,20 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         assertEq(previewData.debt, debtReduced);
 
         _dealAndDeposit(WETH, USDC, collateralFromSender, collateralFromSender, debtReduced, 0, swapContext);
+    }
+
+    function testFuzzFork_deposit_UniswapV2_ExceedsSlippage(uint256 collateralFromSender) public {
+        rebalanceAdapter = _deployRebalanceAdapter(1.5e18, 2e18, 2.5e18, 7 minutes, 1.2e18, 0.9e18, 1.2e18, 40_00);
+
+        leverageToken = leverageManager.createNewLeverageToken(
+            LeverageTokenConfig({
+                lendingAdapter: ILendingAdapter(address(morphoLendingAdapter)),
+                rebalanceAdapter: IRebalanceAdapter(address(rebalanceAdapter)),
+                mintTokenFee: 0,
+                redeemTokenFee: 0
+            }),
+            "Seamless ETH/USDC 2x leverage token",
+            "ltETH/USDC-2x"
+        );
     }
 }
