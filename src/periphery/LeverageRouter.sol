@@ -255,17 +255,10 @@ contract LeverageRouter is ILeverageRouter {
         // Preview the amount of collateral required to get the flash loaned debt amount from a LM deposit.
         uint256 collateralRequired =
             leverageManager.convertDebtToCollateral(params.leverageToken, debtLoan, Math.Rounding.Ceil);
-
         console2.log("collateralRequired", collateralRequired);
 
-        // Add buffer, but may result in debt left over. Maybe a better solution/calculation can be used
-        // Have also tried just adding +1 to collateral required, but that won't be enough in all cases
-        ILendingAdapter lendingAdapter = leverageManager.getLeverageTokenLendingAdapter(params.leverageToken);
-        uint256 totalDebt = lendingAdapter.getDebt();
-        if (totalDebt != 0) {
-            collateralRequired +=
-                Math.mulDiv(lendingAdapter.getCollateral(), 1, lendingAdapter.getDebt(), Math.Rounding.Floor);
-        } else {
+        if (leverageManager.getFeeAdjustedTotalSupply(params.leverageToken) == 0) {
+            ILendingAdapter lendingAdapter = leverageManager.getLeverageTokenLendingAdapter(params.leverageToken);
             collateralRequired += lendingAdapter.convertDebtToCollateralAsset(1);
         }
 
