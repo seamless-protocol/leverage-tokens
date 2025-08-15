@@ -15,6 +15,8 @@ import {ISwapAdapter} from "../interfaces/periphery/ISwapAdapter.sol";
 import {ILeverageRouter} from "../interfaces/periphery/ILeverageRouter.sol";
 import {ActionData, ActionDataV2, ExternalAction} from "../types/DataTypes.sol";
 
+import {console2} from "forge-std/console2.sol";
+
 /**
  * @dev The LeverageRouter contract is an immutable periphery contract that facilitates the use of Morpho flash loans and a swap adapter
  * to mint and redeem equity from LeverageTokens.
@@ -248,9 +250,26 @@ contract LeverageRouter is ILeverageRouter {
             params.swapContext
         );
 
+        console2.log("collateralFromSwap", collateralFromSwap);
+
         // Preview the amount of collateral required to get the flash loaned debt amount from a LM deposit.
         uint256 collateralRequired =
             leverageManager.convertDebtToCollateral(params.leverageToken, debtLoan, Math.Rounding.Ceil);
+
+        console2.log("collateralRequired", collateralRequired);
+
+        // Add buffer, but may result in debt left over. Maybe a better solution/calculation can be used
+        // Have also tried just adding +1 to collateral required, but that won't be enough in all cases
+        ILendingAdapter lendingAdapter = leverageManager.getLeverageTokenLendingAdapter(params.leverageToken);
+        uint256 totalDebt = lendingAdapter.getDebt();
+        if (totalDebt != 0) {
+            collateralRequired +=
+                Math.mulDiv(lendingAdapter.getCollateral(), 1, lendingAdapter.getDebt(), Math.Rounding.Floor);
+        } else {
+            collateralRequired += lendingAdapter.convertDebtToCollateralAsset(1);
+        }
+
+        console2.log("collateralRequired with buffer", collateralRequired);
 
         uint256 totalCollateral = collateralFromSwap + params.collateralFromSender;
         if (totalCollateral < collateralRequired) {
