@@ -409,24 +409,22 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             return;
         }
 
-        {
-            uint256 collateralRequired =
-                leverageManager.convertDebtToCollateral(params.leverageToken, debtReduced, Math.Rounding.Ceil);
+        uint256 collateralRequired =
+            leverageManager.convertDebtToCollateral(params.leverageToken, debtReduced, Math.Rounding.Ceil);
 
-            // When the total supply of the LT is zero, we need to add the buffer applied onto the required collateral to accommodate for rounding asymmetry
-            ILendingAdapter _lendingAdapter = leverageManager.getLeverageTokenLendingAdapter(params.leverageToken);
-            if (_lendingAdapter.getCollateral() == 0 && _lendingAdapter.getDebt() == 0) {
-                collateralRequired += _lendingAdapter.convertDebtToCollateralAsset(1);
-            }
-
-            assertGe(leverageManager.previewDeposit(params.leverageToken, collateralRequired).debt, debtReduced);
-            // Mock the swap of the debt asset to the collateral asset to be the required amount
-            uint256 collateralReceivedFromReducedDebtSwap =
-                collateralRequired > params.collateralFromSender ? collateralRequired - params.collateralFromSender : 0;
-            mockSwapper.mockNextExactInputSwap(
-                params.debtAsset, params.collateralAsset, collateralReceivedFromReducedDebtSwap
-            );
+        // When the total supply of the LT is zero, we need to add the buffer applied onto the required collateral to accommodate for rounding asymmetry
+        ILendingAdapter _lendingAdapter = leverageManager.getLeverageTokenLendingAdapter(params.leverageToken);
+        if (_lendingAdapter.getCollateral() == 0 && _lendingAdapter.getDebt() == 0) {
+            collateralRequired += _lendingAdapter.convertDebtToCollateralAsset(1);
         }
+
+        assertGe(leverageManager.previewDeposit(params.leverageToken, collateralRequired).debt, debtReduced);
+        // Mock the swap of the debt asset to the collateral asset to be the required amount
+        uint256 collateralReceivedFromReducedDebtSwap =
+            collateralRequired > params.collateralFromSender ? collateralRequired - params.collateralFromSender : 0;
+        mockSwapper.mockNextExactInputSwap(
+            params.debtAsset, params.collateralAsset, collateralReceivedFromReducedDebtSwap
+        );
 
         {
             address[] memory path = new address[](2);
@@ -459,8 +457,19 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             vm.stopPrank();
         }
 
+        // No leftover assets in the LR
         assertEq(params.collateralAsset.balanceOf(address(leverageRouterWithMockSwapAdapter)), 0);
         assertEq(params.debtAsset.balanceOf(address(leverageRouterWithMockSwapAdapter)), 0);
+
+        // Collateral is taken from the user for the deposit. Any remaining collateral is returned to the user
+        uint256 remainingCollateral =
+            params.collateralFromSender + collateralReceivedFromReducedDebtSwap - collateralRequired;
+        assertEq(params.collateralAsset.balanceOf(user), remainingCollateral);
+        // Transfer any assets away from user for next test iterations
+        if (remainingCollateral > 0) {
+            vm.prank(user);
+            params.collateralAsset.transfer(address(this), remainingCollateral);
+        }
     }
 
     /// @dev In this block price on oracle 3392.292471591441746049801068
@@ -639,6 +648,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         assertEq(previewData.collateral, collateralRequired - 1); // -1 to accommodate for the buffer added
         assertEq(previewData.debt, debtReduced);
 
+        // Does not revert
         _dealAndDeposit(WETH, USDC, collateralFromSender, collateralFromSender, debtReduced, 0, swapContext);
     }
 
