@@ -26,8 +26,6 @@ enum RebalanceType {
 contract RebalanceTest is LeverageManagerTest {
     int256 public constant MAX_PERCENTAGE = 100_00; // 100%
 
-    Id public constant USDC_WETH_MARKET_ID = Id.wrap(0x3b3769cfca57be2eaed03fcc5299c25691b77781a1e124e7a8d520eb9a7eabb5);
-
     ILeverageToken ethLong2x;
     ILeverageToken ethShort2x;
 

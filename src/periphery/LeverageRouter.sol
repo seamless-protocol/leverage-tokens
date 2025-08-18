@@ -110,11 +110,11 @@ contract LeverageRouter is ILeverageRouter {
         returns (ActionDataV2 memory)
     {
         uint256 collateralRatio = leverageManager.getLeverageTokenState(token).collateralRatio;
-        uint256 totalSupply = leverageManager.getFeeAdjustedTotalSupply(token);
+        ILendingAdapter lendingAdapter = leverageManager.getLeverageTokenLendingAdapter(token);
         uint256 baseRatio = leverageManager.BASE_RATIO();
 
         uint256 collateral;
-        if (totalSupply == 0) {
+        if (lendingAdapter.getCollateral() == 0 && lendingAdapter.getDebt() == 0) {
             uint256 initialCollateralRatio = leverageManager.getLeverageTokenInitialCollateralRatio(token);
             collateral = Math.mulDiv(
                 equityInCollateralAsset, initialCollateralRatio, initialCollateralRatio - baseRatio, Math.Rounding.Ceil
@@ -257,8 +257,9 @@ contract LeverageRouter is ILeverageRouter {
             leverageManager.convertDebtToCollateral(params.leverageToken, debtLoan, Math.Rounding.Ceil);
         console2.log("collateralRequired", collateralRequired);
 
-        if (leverageManager.getFeeAdjustedTotalSupply(params.leverageToken) == 0) {
-            ILendingAdapter lendingAdapter = leverageManager.getLeverageTokenLendingAdapter(params.leverageToken);
+        //
+        ILendingAdapter lendingAdapter = leverageManager.getLeverageTokenLendingAdapter(params.leverageToken);
+        if (lendingAdapter.getCollateral() == 0 && lendingAdapter.getDebt() == 0) {
             collateralRequired += lendingAdapter.convertDebtToCollateralAsset(1);
         }
 
@@ -280,6 +281,11 @@ contract LeverageRouter is ILeverageRouter {
         // Transfer any surplus collateral assets to the sender
         if (totalCollateral > collateralRequired) {
             SafeERC20.safeTransfer(collateralAsset, params.sender, totalCollateral - collateralRequired);
+        }
+
+        // Transfer any surplus debt assets to the sender
+        if (debtLoan < actionData.debt) {
+            SafeERC20.safeTransfer(debtAsset, params.sender, actionData.debt - debtLoan);
         }
 
         // Transfer shares received from the deposit to the deposit sender
