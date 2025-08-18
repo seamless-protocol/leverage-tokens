@@ -258,10 +258,10 @@ contract LeverageRouter is ILeverageRouter {
         console2.log("collateralRequired", collateralRequired);
 
         //
-        ILendingAdapter lendingAdapter = leverageManager.getLeverageTokenLendingAdapter(params.leverageToken);
-        if (lendingAdapter.getCollateral() == 0 && lendingAdapter.getDebt() == 0) {
-            collateralRequired += lendingAdapter.convertDebtToCollateralAsset(1);
-        }
+        // ILendingAdapter lendingAdapter = leverageManager.getLeverageTokenLendingAdapter(params.leverageToken);
+        // if (lendingAdapter.getCollateral() == 0 && lendingAdapter.getDebt() == 0) {
+        //     collateralRequired += lendingAdapter.convertDebtToCollateralAsset(1);
+        // }
 
         console2.log("collateralRequired with buffer", collateralRequired);
 
@@ -271,17 +271,17 @@ contract LeverageRouter is ILeverageRouter {
         }
 
         // Use the flash loaned collateral and the collateral from the sender for the deposit into the LeverageToken
-        SafeERC20.forceApprove(collateralAsset, address(leverageManager), collateralRequired);
+        SafeERC20.forceApprove(collateralAsset, address(leverageManager), totalCollateral);
 
         // Note: This will revert if the collateral required is greater than the sum of the collateral from the swap
         // and the collateral from the sender
         ActionDataV2 memory actionData =
-            leverageManager.deposit(params.leverageToken, collateralRequired, params.minShares);
+            leverageManager.deposit(params.leverageToken, totalCollateral, params.minShares);
 
-        // Transfer any surplus collateral assets to the sender
-        if (totalCollateral > collateralRequired) {
-            SafeERC20.safeTransfer(collateralAsset, params.sender, totalCollateral - collateralRequired);
-        }
+        // // Transfer any surplus collateral assets to the sender
+        // if (totalCollateral > collateralRequired) {
+        //     SafeERC20.safeTransfer(collateralAsset, params.sender, totalCollateral - collateralRequired);
+        // }
 
         // Transfer any surplus debt assets to the sender
         if (debtLoan < actionData.debt) {
