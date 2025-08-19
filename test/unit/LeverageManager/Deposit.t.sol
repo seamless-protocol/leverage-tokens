@@ -108,8 +108,8 @@ contract DepositTest is LeverageManagerTest {
 
         _prepareLeverageManagerStateForAction(beforeState);
 
-        uint256 collateralToDeposit = 2 ether; // 2x target CR
-        uint256 expectedDebtToBorrow = 1 ether;
+        uint256 collateralToDeposit = 2 ether;
+        uint256 expectedDebtToBorrow = 0.666666666666666666 ether; // 3x CR
         uint256 expectedShares = 1 ether;
 
         deal(address(collateralToken), address(this), collateralToDeposit);
@@ -125,7 +125,7 @@ contract DepositTest is LeverageManagerTest {
 
         LeverageTokenState memory afterState = leverageManager.getLeverageTokenState(leverageToken);
         assertEq(afterState.collateralInDebtAsset, collateralToDeposit + beforeState.collateral);
-        assertEq(afterState.debt, expectedDebtToBorrow + beforeState.debt); // 1:1 collateral to debt exchange rate, 2x target CR
+        assertEq(afterState.debt, expectedDebtToBorrow + beforeState.debt); // 1:1 collateral to debt exchange rate, ~3x target CR
         assertEq(
             afterState.collateralRatio,
             Math.mulDiv(

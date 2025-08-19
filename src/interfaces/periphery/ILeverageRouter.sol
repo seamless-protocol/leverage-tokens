@@ -36,9 +36,9 @@ interface ILeverageRouter {
     /// @param token LeverageToken to preview deposit for
     /// @param equityInCollateralAsset The amount of equity to deposit. Denominated in the collateral asset of the LeverageToken
     /// @return previewData Preview data for deposit
-    ///         - collateral Amount of collateral that will be added to the LeverageToken and sent to the receiver
-    ///         - debt Amount of debt that will be borrowed and sent to the receiver
-    ///         - shares Amount of shares that will be minted to the receiver
+    ///         - collateral Amount of collateral that will be added to the LeverageToken
+    ///         - debt Amount of debt that will be borrowed
+    ///         - shares Amount of shares that will be minted
     ///         - tokenFee Amount of shares that will be charged for the deposit that are given to the LeverageToken
     ///         - treasuryFee Amount of shares that will be charged for the deposit that are given to the treasury
     function previewDeposit(ILeverageToken token, uint256 equityInCollateralAsset)
@@ -50,10 +50,11 @@ interface ILeverageRouter {
     /// @return _swapper The swap adapter contract
     function swapper() external view returns (ISwapAdapter _swapper);
 
-    /// @notice Deposits collateral into a LeverageToken and mints shares to the sender
+    /// @notice Deposits collateral into a LeverageToken and mints shares to the sender. Any surplus debt received from
+    /// the deposit of (collateralFromSender + debt swapped to collateral) is given to the sender.
     /// @param leverageToken LeverageToken to deposit into
-    /// @param collateralFromSender Maximum amount of collateral to deposit from the sender
-    /// @param debt Amount of debt to borrow
+    /// @param collateralFromSender Collateral asset amount from the sender to deposit
+    /// @param debt Amount of debt to flash loan, which is swapped to collateral and used to deposit into the LeverageToken
     /// @param minShares Minimum number of shares to mint
     /// @param swapContext Swap context to use for the swap (which DEX to use, the route, tick spacing, etc.)
     function deposit(
@@ -61,28 +62,6 @@ interface ILeverageRouter {
         uint256 collateralFromSender,
         uint256 debt,
         uint256 minShares,
-        ISwapAdapter.SwapContext memory swapContext
-    ) external;
-
-    /// @notice Mint shares of a LeverageToken by adding equity
-    /// @param token LeverageToken to mint shares of
-    /// @param equityInCollateralAsset The amount of equity to mint LeverageToken shares for. Denominated in the collateral
-    ///        asset of the LeverageToken
-    /// @param minShares Minimum shares (LeverageTokens) to receive from the mint
-    /// @param maxSwapCostInCollateralAsset The maximum amount of collateral from the sender to use to help repay the flash loan
-    ///        due to the swap of debt to collateral being unfavorable
-    /// @param swapContext Swap context to use for the swap (which DEX to use, the route, tick spacing, etc.)
-    /// @dev Flash loans the collateral required to add the equity to the LeverageToken, receives debt, then swaps the debt to the
-    ///      LeverageToken's collateral asset. The swapped assets and the sender's supplied collateral are used to repay the flash loan
-    /// @dev The sender should approve the LeverageRouter to spend an amount of collateral assets greater than the equity being added
-    ///      to facilitate the mint in the case that the mint requires additional collateral to cover swap slippage when swapping
-    ///      debt to collateral to repay the flash loan. The approved amount should equal at least `equityInCollateralAsset + maxSwapCostInCollateralAsset`.
-    ///      To see the preview of the mint, `LeverageRouter.leverageManager().previewMint(...)` can be used.
-    function mint(
-        ILeverageToken token,
-        uint256 equityInCollateralAsset,
-        uint256 minShares,
-        uint256 maxSwapCostInCollateralAsset,
         ISwapAdapter.SwapContext memory swapContext
     ) external;
 

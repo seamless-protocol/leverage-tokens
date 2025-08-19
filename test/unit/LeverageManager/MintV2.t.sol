@@ -110,8 +110,8 @@ contract MintTest is LeverageManagerTest {
         _prepareLeverageManagerStateForAction(beforeState);
 
         uint256 sharesToMint = 1 ether;
-        uint256 expectedCollateralToAdd = 2 ether; // 2x target CR
-        uint256 expectedDebtToBorrow = 1 ether;
+        uint256 expectedCollateralToAdd = 2 ether;
+        uint256 expectedDebtToBorrow = 0.666666666666666666 ether; // 3x CR
         uint256 expectedShares = sharesToMint;
 
         deal(address(collateralToken), address(this), expectedCollateralToAdd);

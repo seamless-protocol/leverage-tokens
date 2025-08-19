@@ -18,7 +18,7 @@ import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
 import {IMorphoLendingAdapterFactory} from "src/interfaces/IMorphoLendingAdapterFactory.sol";
-import {LeverageTokenConfig} from "src/types/DataTypes.sol";
+import {ActionDataV2, LeverageTokenConfig} from "src/types/DataTypes.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
@@ -187,8 +187,12 @@ contract CreateLeverageToken is Script {
             additionalData: abi.encode(etherFiSwapContext)
         });
 
+        ActionDataV2 memory previewData = leverageRouter.previewDeposit(leverageToken, INITIAL_EQUITY_DEPOSIT);
+
         collateralToken.approve(address(leverageRouter), INITIAL_EQUITY_DEPOSIT + 1);
-        leverageRouter.mint(leverageToken, INITIAL_EQUITY_DEPOSIT, 0, INITIAL_EQUITY_DEPOSIT_MAX_SWAP_COST, swapContext);
+        leverageRouter.deposit(
+            leverageToken, INITIAL_EQUITY_DEPOSIT + 1, previewData.debt, previewData.shares, swapContext
+        );
 
         console.log("Performed initial mint to leverage token");
 
