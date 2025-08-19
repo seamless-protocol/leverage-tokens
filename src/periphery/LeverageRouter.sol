@@ -16,45 +16,32 @@ import {ILeverageRouter} from "../interfaces/periphery/ILeverageRouter.sol";
 import {ActionData, ActionDataV2, ExternalAction} from "../types/DataTypes.sol";
 
 /**
- * @dev The LeverageRouter contract is an immutable periphery contract that facilitates the use of Morpho flash loans and a swap adapter
- * to mint and redeem equity from LeverageTokens.
+ * @dev The LeverageRouter contract is an immutable periphery contract that facilitates the use of flash loans and a swap adapter
+ * to deposit and redeem equity from LeverageTokens.
  *
- * The high-level mint flow is as follows:
- *   1. The user calls `mint` with the amount of equity to mint LeverageTokens (shares) for, the minimum amount of shares to receive, the maximum
- *      cost to the sender for the swap of debt to collateral during the mint to help repay the flash loan, and the swap context.
- *   2. The LeverageRouter will flash loan the required collateral asset from Morpho.
- *   3. The LeverageRouter will use the flash loaned collateral and the equity from the sender for the mint into the LeverageToken,
- *      receiving LeverageTokens and debt in return.
- *   4. The LeverageRouter will swap the debt received from the mint to the collateral asset.
- *   5. The LeverageRouter will use the swapped assets to repay the flash loan along with the collateral asset from the sender
- *      (the maximum swap cost)
- *   6. The LeverageRouter will transfer the LeverageTokens and any remaining collateral asset to the sender.
+ * The high-level deposit flow is as follows:
+ *   1. The user calls `deposit` with the amount of collateral from the sender to deposit, the amount of debt to flash loan
+ *      (which will be swapped to collateral), the minimum amount of shares to receive, and the swap context
+ *   2. The LeverageRouter will flash loan the debt asset amount and swap it to collateral
+ *   3. The LeverageRouter will use the collateral from the swapped debt and the collateral from the sender for the deposit
+ *      into the LeverageToken, receiving LeverageTokens and debt in return
+ *   4. The LeverageRouter will use the debt received from the deposit to repay the flash loan
+ *   6. The LeverageRouter will transfer the LeverageToken shares and any surplus debt assets to the sender
  *
- * The high-level redeem flow is the same as the mint flow, but in reverse.
+ * The high-level redeem flow is the same as the deposit flow, but in reverse.
  */
 contract LeverageRouter is ILeverageRouter {
+    /// @notice Deposit related parameters to pass to the Morpho flash loan callback handler for deposits
     struct DepositParams {
+        // Address of the sender of the deposit
         address sender;
+        // LeverageToken to deposit into
         ILeverageToken leverageToken;
+        // Amount of collateral from the sender to deposit
         uint256 collateralFromSender;
-        uint256 minShares;
-        ISwapAdapter.SwapContext swapContext;
-    }
-
-    /// @notice Mint related parameters to pass to the Morpho flash loan callback handler for mints
-    struct MintParams {
-        // LeverageToken to mint shares of
-        ILeverageToken token;
-        // Amount of equity to mint LeverageTokens (shares) for, denominated in the collateral asset
-        uint256 equityInCollateralAsset;
         // Minimum amount of shares (LeverageTokens) to receive
         uint256 minShares;
-        // Maximum cost to the sender for the swap of debt to collateral during the mint to repay the flash loan,
-        // denominated in the collateral asset
-        uint256 maxSwapCostInCollateralAsset;
-        // Address of the sender of the mint, who will also receive the shares
-        address sender;
-        // Swap context for the debt swap
+        // Swap context for the swap of flash loaned debt to collateral
         ISwapAdapter.SwapContext swapContext;
     }
 
@@ -102,6 +89,7 @@ contract LeverageRouter is ILeverageRouter {
         swapper = _swapper;
     }
 
+    /// @inheritdoc ILeverageRouter
     function previewDeposit(ILeverageToken token, uint256 equityInCollateralAsset)
         external
         view
@@ -127,6 +115,7 @@ contract LeverageRouter is ILeverageRouter {
         return leverageManager.previewDeposit(token, collateral);
     }
 
+    /// @inheritdoc ILeverageRouter
     function deposit(
         ILeverageToken leverageToken,
         uint256 collateralFromSender,
