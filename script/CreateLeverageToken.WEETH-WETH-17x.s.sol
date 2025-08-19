@@ -189,9 +189,13 @@ contract CreateLeverageToken is Script {
 
         ActionDataV2 memory previewData = leverageRouter.previewDeposit(leverageToken, INITIAL_EQUITY_DEPOSIT);
 
-        collateralToken.approve(address(leverageRouter), INITIAL_EQUITY_DEPOSIT + 1);
+        collateralToken.approve(address(leverageRouter), INITIAL_EQUITY_DEPOSIT + INITIAL_EQUITY_DEPOSIT_MAX_SWAP_COST);
         leverageRouter.deposit(
-            leverageToken, INITIAL_EQUITY_DEPOSIT + 1, previewData.debt, previewData.shares, swapContext
+            leverageToken,
+            INITIAL_EQUITY_DEPOSIT + INITIAL_EQUITY_DEPOSIT_MAX_SWAP_COST,
+            previewData.debt,
+            previewData.shares,
+            swapContext
         );
 
         console.log("Performed initial mint to leverage token");

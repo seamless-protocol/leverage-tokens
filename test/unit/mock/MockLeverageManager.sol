@@ -97,8 +97,14 @@ contract MockLeverageManager is Test {
 
     mapping(ILeverageToken => address) public leverageTokenRebalanceAdapter;
 
+    mapping(ILeverageToken => uint256) public leverageTokenInitialCollateralRatio;
+
     function getLeverageTokenCollateralAsset(ILeverageToken leverageToken) external view returns (IERC20) {
         return leverageTokens[leverageToken].collateralAsset;
+    }
+
+    function getLeverageTokenInitialCollateralRatio(ILeverageToken leverageToken) external view returns (uint256) {
+        return leverageTokenInitialCollateralRatio[leverageToken];
     }
 
     function getLeverageTokenLendingAdapter(ILeverageToken leverageToken) external view returns (ILendingAdapter) {
@@ -115,6 +121,12 @@ contract MockLeverageManager is Test {
 
     function getLeverageTokenDebtAsset(ILeverageToken leverageToken) external view returns (IERC20) {
         return leverageTokens[leverageToken].debtAsset;
+    }
+
+    function setLeverageTokenInitialCollateralRatio(ILeverageToken leverageToken, uint256 _initialCollateralRatio)
+        external
+    {
+        leverageTokenInitialCollateralRatio[leverageToken] = _initialCollateralRatio;
     }
 
     function setLeverageTokenData(ILeverageToken leverageToken, LeverageTokenData memory _leverageTokenData) external {
@@ -180,6 +192,21 @@ contract MockLeverageManager is Test {
     {
         bytes32 mockConvertDebtToCollateralDataKey = keccak256(abi.encode(leverageToken, debt));
         return mockConvertDebtToCollateralData[mockConvertDebtToCollateralDataKey];
+    }
+
+    function previewDeposit(ILeverageToken leverageToken, uint256 collateral)
+        external
+        view
+        returns (ActionDataV2 memory)
+    {
+        bytes32 mockPreviewDepositDataKey = keccak256(abi.encode(leverageToken, collateral));
+        return ActionDataV2({
+            collateral: mockPreviewDepositData[mockPreviewDepositDataKey].collateral,
+            debt: mockPreviewDepositData[mockPreviewDepositDataKey].debt,
+            shares: mockPreviewDepositData[mockPreviewDepositDataKey].shares,
+            tokenFee: mockPreviewDepositData[mockPreviewDepositDataKey].tokenFee,
+            treasuryFee: mockPreviewDepositData[mockPreviewDepositDataKey].treasuryFee
+        });
     }
 
     function previewRedeem(ILeverageToken leverageToken, uint256 equityInCollateralAsset)

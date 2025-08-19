@@ -194,7 +194,7 @@ contract DepositTest is LeverageManagerTest {
 
         LeverageTokenState memory beforeState = leverageManager.getLeverageTokenState(leverageToken);
         uint256 beforeSharesTotalSupply = leverageToken.totalSupply();
-        uint256 beforeSharesFeeAdjustedTotalSupply = leverageManager.exposed_getFeeAdjustedTotalSupply(leverageToken);
+        uint256 beforeSharesFeeAdjustedTotalSupply = leverageManager.getFeeAdjustedTotalSupply(leverageToken);
 
         // The assertion for collateral ratio before and after the deposit in this helper only makes sense to use
         // if the leverage token has totalSupply > 0 before deposit, as a deposit of collateral into a leverage token with totalSupply = 0

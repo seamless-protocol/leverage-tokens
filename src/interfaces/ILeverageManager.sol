@@ -130,17 +130,6 @@ interface ILeverageManager is IFeeManager {
         view
         returns (uint256 collateral);
 
-    /// @notice Converts an amount of debt to an amount of shares for a LeverageToken, based on the current
-    /// collateral ratio of the LeverageToken
-    /// @param token LeverageToken to convert debt for
-    /// @param debt Debt to convert to shares
-    /// @param rounding Rounding mode
-    /// @return shares Shares
-    function convertDebtToShares(ILeverageToken token, uint256 debt, Math.Rounding rounding)
-        external
-        view
-        returns (uint256 shares);
-
     /// @notice Converts an amount of shares to an amount of collateral for a LeverageToken, based on the current
     /// collateral ratio of the LeverageToken
     /// @param token LeverageToken to convert shares to collateral for

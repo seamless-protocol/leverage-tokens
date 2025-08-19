@@ -196,7 +196,7 @@ contract MintTest is LeverageManagerTest {
 
         LeverageTokenState memory beforeState = leverageManager.getLeverageTokenState(leverageToken);
         uint256 beforeSharesTotalSupply = leverageToken.totalSupply();
-        uint256 beforeSharesFeeAdjustedTotalSupply = leverageManager.exposed_getFeeAdjustedTotalSupply(leverageToken);
+        uint256 beforeSharesFeeAdjustedTotalSupply = leverageManager.getFeeAdjustedTotalSupply(leverageToken);
 
         // The assertion for collateral ratio before and after the mint in this helper only makes sense to use
         // if the leverage token has totalSupply > 0 before mint, as a mint of equity into a leverage token with totalSupply = 0
