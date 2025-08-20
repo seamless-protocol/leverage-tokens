@@ -90,7 +90,7 @@ contract LeverageRouter is ILeverageRouter {
     }
 
     /// @inheritdoc ILeverageRouter
-    function previewDeposit(ILeverageToken token, uint256 equityInCollateralAsset)
+    function previewDeposit(ILeverageToken token, uint256 collateralFromSender)
         external
         view
         returns (ActionDataV2 memory)
@@ -103,13 +103,13 @@ contract LeverageRouter is ILeverageRouter {
         if (lendingAdapter.getCollateral() == 0 && lendingAdapter.getDebt() == 0) {
             uint256 initialCollateralRatio = leverageManager.getLeverageTokenInitialCollateralRatio(token);
             collateral = Math.mulDiv(
-                equityInCollateralAsset, initialCollateralRatio, initialCollateralRatio - baseRatio, Math.Rounding.Ceil
+                collateralFromSender, initialCollateralRatio, initialCollateralRatio - baseRatio, Math.Rounding.Ceil
             );
         } else if (collateralRatio == type(uint256).max) {
-            collateral = equityInCollateralAsset;
+            collateral = collateralFromSender;
         } else {
             collateral =
-                Math.mulDiv(equityInCollateralAsset, collateralRatio, collateralRatio - baseRatio, Math.Rounding.Ceil);
+                Math.mulDiv(collateralFromSender, collateralRatio, collateralRatio - baseRatio, Math.Rounding.Ceil);
         }
 
         return leverageManager.previewDeposit(token, collateral);

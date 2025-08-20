@@ -11,18 +11,18 @@ import {MockLeverageManager} from "../mock/MockLeverageManager.sol";
 
 contract PreviewDepositTest is LeverageRouterTest {
     function testFuzz_previewDeposit_ZeroCollateralZeroDebt(
-        uint256 equityInCollateralAsset,
+        uint256 collateralFromSender,
         uint256 initialCollateralRatio
     ) public {
         initialCollateralRatio = bound(initialCollateralRatio, leverageManager.BASE_RATIO() + 1, type(uint256).max);
-        equityInCollateralAsset = bound(equityInCollateralAsset, 0, type(uint256).max / initialCollateralRatio);
+        collateralFromSender = bound(collateralFromSender, 0, type(uint256).max / initialCollateralRatio);
 
         lendingAdapter.mockCollateral(0);
         lendingAdapter.mockDebt(0);
         leverageManager.setLeverageTokenInitialCollateralRatio(leverageToken, initialCollateralRatio);
 
         uint256 expectedCollateral = Math.mulDiv(
-            equityInCollateralAsset,
+            collateralFromSender,
             initialCollateralRatio,
             initialCollateralRatio - leverageManager.BASE_RATIO(),
             Math.Rounding.Ceil
@@ -39,11 +39,11 @@ contract PreviewDepositTest is LeverageRouterTest {
                 treasuryFee: 0
             })
         );
-        assertEq(leverageRouter.previewDeposit(leverageToken, equityInCollateralAsset).collateral, expectedCollateral);
+        assertEq(leverageRouter.previewDeposit(leverageToken, collateralFromSender).collateral, expectedCollateral);
     }
 
     function testFuzz_previewDeposit_NonZeroCollateralOrNonZeroDebt_MaxCollateralRatio(
-        uint256 equityInCollateralAsset,
+        uint256 collateralFromSender,
         uint256 collateral
     ) public {
         collateral = bound(collateral, 1, type(uint256).max);
@@ -58,22 +58,20 @@ contract PreviewDepositTest is LeverageRouterTest {
 
         // Since we are mocking the leverageManager previewDeposit call, we only really care about the returned collateral
         leverageManager.setMockPreviewDepositData(
-            MockLeverageManager.PreviewDepositParams({leverageToken: leverageToken, collateral: equityInCollateralAsset}),
+            MockLeverageManager.PreviewDepositParams({leverageToken: leverageToken, collateral: collateralFromSender}),
             MockLeverageManager.MockPreviewDepositData({
-                collateral: equityInCollateralAsset,
+                collateral: collateralFromSender,
                 debt: 0,
                 shares: 0,
                 tokenFee: 0,
                 treasuryFee: 0
             })
         );
-        assertEq(
-            leverageRouter.previewDeposit(leverageToken, equityInCollateralAsset).collateral, equityInCollateralAsset
-        );
+        assertEq(leverageRouter.previewDeposit(leverageToken, collateralFromSender).collateral, collateralFromSender);
     }
 
     function testFuzz_previewDeposit_NonZeroCollateralOrNonZeroDebt_NonMaxCollateralRatio(
-        uint256 equityInCollateralAsset,
+        uint256 collateralFromSender,
         uint256 collateral,
         uint256 debt,
         uint256 collateralRatio
@@ -83,7 +81,7 @@ contract PreviewDepositTest is LeverageRouterTest {
         vm.assume(debt > 0 || collateral > 0);
 
         collateralRatio = bound(collateralRatio, leverageManager.BASE_RATIO() + 1, type(uint256).max - 1);
-        equityInCollateralAsset = bound(equityInCollateralAsset, 0, type(uint256).max / collateralRatio);
+        collateralFromSender = bound(collateralFromSender, 0, type(uint256).max / collateralRatio);
 
         lendingAdapter.mockCollateral(collateral);
         lendingAdapter.mockDebt(debt);
@@ -95,7 +93,7 @@ contract PreviewDepositTest is LeverageRouterTest {
         );
 
         uint256 expectedCollateral = Math.mulDiv(
-            equityInCollateralAsset, collateralRatio, collateralRatio - leverageManager.BASE_RATIO(), Math.Rounding.Ceil
+            collateralFromSender, collateralRatio, collateralRatio - leverageManager.BASE_RATIO(), Math.Rounding.Ceil
         );
 
         // Since we are mocking the leverageManager previewDeposit call, we only really care about the returned collateral
@@ -109,6 +107,6 @@ contract PreviewDepositTest is LeverageRouterTest {
                 treasuryFee: 0
             })
         );
-        assertEq(leverageRouter.previewDeposit(leverageToken, equityInCollateralAsset).collateral, expectedCollateral);
+        assertEq(leverageRouter.previewDeposit(leverageToken, collateralFromSender).collateral, expectedCollateral);
     }
 }

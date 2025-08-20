@@ -34,14 +34,14 @@ interface ILeverageRouter {
 
     /// @notice Previews the deposit function call for an amount of equity and returns all required data
     /// @param token LeverageToken to preview deposit for
-    /// @param equityInCollateralAsset The amount of equity to deposit. Denominated in the collateral asset of the LeverageToken
+    /// @param collateralFromSender The amount of collateral from the sender to deposit
     /// @return previewData Preview data for deposit
-    ///         - collateral Amount of collateral that will be added to the LeverageToken
+    ///         - collateral Total amount of collateral that will be added to the LeverageToken (including collateral from swapping flash loaned debt)
     ///         - debt Amount of debt that will be borrowed
     ///         - shares Amount of shares that will be minted
     ///         - tokenFee Amount of shares that will be charged for the deposit that are given to the LeverageToken
     ///         - treasuryFee Amount of shares that will be charged for the deposit that are given to the treasury
-    function previewDeposit(ILeverageToken token, uint256 equityInCollateralAsset)
+    function previewDeposit(ILeverageToken token, uint256 collateralFromSender)
         external
         view
         returns (ActionDataV2 memory);

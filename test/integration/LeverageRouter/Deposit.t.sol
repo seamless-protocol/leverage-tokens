@@ -1205,7 +1205,6 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             collateralRequired += _lendingAdapter.convertDebtToCollateralAsset(1);
         }
 
-        // assertGe(leverageManager.previewDeposit(params.leverageToken, collateralRequired).debt, debtReduced);
         // Mock the swap of the debt asset to the collateral asset to be the required amount
         uint256 collateralReceivedFromReducedDebtSwap =
             collateralRequired > params.collateralFromSender ? collateralRequired - params.collateralFromSender : 0;
