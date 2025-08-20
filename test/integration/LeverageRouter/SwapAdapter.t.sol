@@ -41,7 +41,8 @@ contract SwapAdapterTest is LeverageRouterTest {
 
         vm.startPrank(user);
         WETH.approve(address(swapAdapter), amountIn);
-        bytes memory result = swapAdapter.execute(call, approval, address(tokenIn), address(tokenOut), payable(user));
+        bytes memory result =
+            swapAdapter.execute(call, approval, address(tokenIn), address(tokenOut), amountIn, payable(user));
         vm.stopPrank();
 
         assertEq(USDC.balanceOf(user), expectedAmountOut);

@@ -24,26 +24,31 @@ contract SwapAdapter is ISwapAdapter {
         Approval calldata approval,
         address inputToken,
         address outputToken,
+        uint256 inputAmount,
         address payable recipient
     ) external payable returns (bytes memory result) {
         require(recipient != address(0), "BAD_RECIPIENT");
         require(call.target != address(0) && call.target != address(this), "BAD_TARGET");
 
-        // 1) Optional stateless approval (skip if approval.token == address(0)) and transfer input token to this contract.
+        // 1) Transfer input token to this contract. (skip if inputAmount == 0)
+        if (inputAmount != 0) {
+            SafeERC20.safeTransferFrom(IERC20(inputToken), msg.sender, address(this), inputAmount);
+        }
+
+        // 2) Approval (skip if approval.token == address(0))
         if (approval.token != address(0)) {
             require(approval.spender != address(0), "BAD_APPROVAL_SPENDER");
-            SafeERC20.safeTransferFrom(IERC20(approval.token), msg.sender, address(this), approval.amount);
             SafeERC20.forceApprove(IERC20(approval.token), approval.spender, approval.amount);
         }
 
-        // 2) Perform the external call.
+        // 3) Perform the external call.
         (bool ok, bytes memory ret) = call.target.call{value: call.value}(call.data);
         if (!ok) {
             revert(_getRevertMsg(ret));
         }
         result = ret;
 
-        // 3) Send any balance of outputToken to the recipient
+        // 4) Send any balance of outputToken to the recipient
         bool isOutputTokenETH = outputToken == address(0);
         if (!isOutputTokenETH) {
             uint256 amountOutReceivedBySwapAdapter = IERC20(outputToken).balanceOf(address(this));
@@ -53,7 +58,7 @@ contract SwapAdapter is ISwapAdapter {
             _safeSendETH(recipient, amountOutReceivedBySwapAdapter);
         }
 
-        // 4) Send any leftover input token to the sender, if theres is any remaining.
+        // 5) Send any leftover input token to the sender, if theres is any remaining.
         // Note: If the input token is the same as the output token, any surplus was already sent to the recipient
         // instead of the sender
         bool isInputTokenETH = inputToken == address(0);
