@@ -27,17 +27,14 @@ contract SwapAdapter is ISwapAdapter {
         uint256 inputAmount,
         address payable recipient
     ) external payable returns (bytes memory result) {
-        require(recipient != address(0), "BAD_RECIPIENT");
-        require(call.target != address(0) && call.target != address(this), "BAD_TARGET");
-
         // 1) Transfer input token to this contract. (skip if inputAmount == 0)
         if (inputAmount != 0) {
             SafeERC20.safeTransferFrom(IERC20(inputToken), msg.sender, address(this), inputAmount);
         }
 
         // 2) Approval (skip if approval.token == address(0))
-        if (approval.token != address(0)) {
-            require(approval.spender != address(0), "BAD_APPROVAL_SPENDER");
+        bool approvalRequired = approval.token != address(0);
+        if (approvalRequired) {
             SafeERC20.forceApprove(IERC20(approval.token), approval.spender, approval.amount);
         }
 
@@ -68,6 +65,11 @@ contract SwapAdapter is ISwapAdapter {
         } else {
             uint256 leftover = address(this).balance;
             if (leftover > 0) _safeSendETH(payable(msg.sender), leftover);
+        }
+
+        // 6) Reset approval to zero
+        if (approvalRequired) {
+            SafeERC20.forceApprove(IERC20(approval.token), approval.spender, 0);
         }
 
         emit Executed(call, approval, inputToken, outputToken, recipient, result);

@@ -45,11 +45,20 @@ contract SwapAdapterTest is LeverageRouterTest {
             swapAdapter.execute(call, approval, address(tokenIn), address(tokenOut), amountIn, payable(user));
         vm.stopPrank();
 
-        assertEq(USDC.balanceOf(user), expectedAmountOut);
-        assertEq(USDC.balanceOf(address(swapAdapter)), 0);
-
+        // Check the swap result
         uint256[] memory amounts = abi.decode(result, (uint256[]));
         assertEq(amounts[0], amountIn);
         assertEq(amounts[1], expectedAmountOut);
+        assertEq(tokenOut.balanceOf(user), expectedAmountOut);
+        assertEq(tokenOut.balanceOf(address(swapAdapter)), 0);
+
+        // Because this was an exact input swap, the input token should be fully spent
+        assertEq(tokenIn.balanceOf(user), 0);
+
+        // No tokenIn should be left in the swap adapter
+        assertEq(tokenIn.balanceOf(address(swapAdapter)), 0);
+
+        // Allowance should be reset to zero
+        assertEq(tokenIn.allowance(address(swapAdapter), UNISWAP_V2_ROUTER02), 0);
     }
 }
