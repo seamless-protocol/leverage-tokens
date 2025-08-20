@@ -68,7 +68,9 @@ interface ISwapAdapter {
     }
 
     /// @notice Emitted when a swap is executed using an arbitrary external call
-    event Executed(Call call, Approval approval, address tokenOut, address recipient, bytes result);
+    event Executed(
+        Call call, Approval approval, address inputToken, address outputToken, address recipient, bytes result
+    );
 
     /// @notice Error thrown when the number of ticks is invalid
     error InvalidNumTicks();
@@ -76,10 +78,21 @@ interface ISwapAdapter {
     /// @notice Error thrown when the number of fees is invalid
     error InvalidNumFees();
 
-    function execute(Call calldata call, Approval calldata approval, address tokenOut, address payable recipient)
-        external
-        payable
-        returns (bytes memory result);
+    /// @notice Execute one approval (optional), then one arbitrary call. All outputToken is sent to the recipient. Any
+    /// leftover inputToken is sent to the sender.
+    /// @param approval The approval to set before the call (set token=address(0) to skip).
+    /// @param call External call to perform (DEX/router).
+    /// @param inputToken Input token for the swap (address(0) = ETH).
+    /// @param outputToken Output token for the swap (address(0) = ETH).
+    /// @param recipient Where to send the output and any leftover ETH.
+    /// @return result Return data of the external call.
+    function execute(
+        Call calldata call,
+        Approval calldata approval,
+        address inputToken,
+        address outputToken,
+        address payable recipient
+    ) external payable returns (bytes memory result);
 
     /// @notice Swap tokens from the `inputToken` to the `outputToken` using the specified provider
     /// @dev The `outputToken` must be encoded in the `swapContext` path

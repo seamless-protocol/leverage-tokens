@@ -18,18 +18,14 @@ import {IWETH9} from "../interfaces/periphery/IWETH9.sol";
  * @dev The SwapAdapter contract is a periphery contract that facilitates the use of various DEXes for swaps.
  */
 contract SwapAdapter is ISwapAdapter {
-    /// @notice Execute one approval (optional), then one arbitrary call; assert minimum output.
-    /// @param approval   The approval to set before the call (set token=address(0) to skip).
-    ///                   The specified token and amount are the inputs for the swap.
-    /// @param call       External call to perform (DEX/router).
-    /// @param tokenOut   Token we measure as output (address(0) = ETH).
-    /// @param recipient  Where to send the output and any leftover ETH.
-    /// @return result    Return data of the external call.
-    function execute(Call calldata call, Approval calldata approval, address tokenOut, address payable recipient)
-        external
-        payable
-        returns (bytes memory result)
-    {
+    /// @inheritdoc ISwapAdapter
+    function execute(
+        Call calldata call,
+        Approval calldata approval,
+        address inputToken,
+        address outputToken,
+        address payable recipient
+    ) external payable returns (bytes memory result) {
         require(recipient != address(0), "BAD_RECIPIENT");
         require(call.target != address(0) && call.target != address(this), "BAD_TARGET");
 
@@ -47,33 +43,29 @@ contract SwapAdapter is ISwapAdapter {
         }
         result = ret;
 
-        // 3) Enforce minOut
-        bool isTokenOutETH = tokenOut == address(0);
-        uint256 amountOutReceivedBySwapAdapter;
-        if (!isTokenOutETH) {
-            amountOutReceivedBySwapAdapter = IERC20(tokenOut).balanceOf(address(this));
+        // 3) Send any balance of outputToken to the recipient
+        bool isOutputTokenETH = outputToken == address(0);
+        if (!isOutputTokenETH) {
+            uint256 amountOutReceivedBySwapAdapter = IERC20(outputToken).balanceOf(address(this));
+            SafeERC20.safeTransfer(IERC20(outputToken), recipient, amountOutReceivedBySwapAdapter);
         } else {
-            amountOutReceivedBySwapAdapter = address(this).balance;
-        }
-
-        // 4) Send any balance of tokenOut to the recipient
-        if (!isTokenOutETH) {
-            SafeERC20.safeTransfer(IERC20(tokenOut), recipient, amountOutReceivedBySwapAdapter);
-        } else {
+            uint256 amountOutReceivedBySwapAdapter = address(this).balance;
             _safeSendETH(recipient, amountOutReceivedBySwapAdapter);
         }
 
-        // 5) Send any leftover input token to the sender, if theres is any remaining.
-        // Note: If the input token is the same as the output token, any surplus was already sent to the recipient.
-        if (!isTokenOutETH) {
-            uint256 leftover = IERC20(approval.token).balanceOf(address(this));
-            if (leftover > 0) SafeERC20.safeTransfer(IERC20(approval.token), msg.sender, leftover);
+        // 4) Send any leftover input token to the sender, if theres is any remaining.
+        // Note: If the input token is the same as the output token, any surplus was already sent to the recipient
+        // instead of the sender
+        bool isInputTokenETH = inputToken == address(0);
+        if (!isInputTokenETH) {
+            uint256 leftover = IERC20(inputToken).balanceOf(address(this));
+            if (leftover > 0) SafeERC20.safeTransfer(IERC20(inputToken), msg.sender, leftover);
         } else {
             uint256 leftover = address(this).balance;
             if (leftover > 0) _safeSendETH(payable(msg.sender), leftover);
         }
 
-        emit Executed(call, approval, tokenOut, recipient, result);
+        emit Executed(call, approval, inputToken, outputToken, recipient, result);
     }
 
     /// @dev Best-effort bubble of revert reasons.
