@@ -55,7 +55,7 @@ contract SwapAdapter is ISwapAdapter {
             _safeSendETH(recipient, amountOutReceivedBySwapAdapter);
         }
 
-        // 5) Send any leftover input token to the sender, if theres is any remaining.
+        // 5) Send any leftover input token to the sender, if there is any remaining.
         // Note: If the input token is the same as the output token, any surplus was already sent to the recipient
         // instead of the sender
         bool isInputTokenETH = inputToken == address(0);
