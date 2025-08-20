@@ -11,7 +11,7 @@ import {SwapAdapter} from "src/periphery/SwapAdapter.sol";
 import {LeverageRouterTest} from "./LeverageRouter.t.sol";
 
 contract SwapAdapterTest is LeverageRouterTest {
-    function testFork_execute_SwapUniswapV2() public {
+    function testFork_execute_SwapUniswapV2_ExactInput() public {
         IERC20 tokenIn = WETH;
         IERC20 tokenOut = USDC;
         uint256 amountIn = 1 ether;
@@ -72,7 +72,7 @@ contract SwapAdapterTest is LeverageRouterTest {
         assertEq(tokenIn.allowance(address(swapAdapter), UNISWAP_V2_ROUTER02), 0);
     }
 
-    function testFork_execute_SwapUniswapV2_WithLeftoverInputToken() public {
+    function testFork_execute_SwapUniswapV2_ExactInput_WithLeftoverInputToken() public {
         IERC20 tokenIn = WETH;
         IERC20 tokenOut = USDC;
         uint256 amountIn = 1 ether;
@@ -135,7 +135,7 @@ contract SwapAdapterTest is LeverageRouterTest {
         assertEq(tokenIn.allowance(address(swapAdapter), UNISWAP_V2_ROUTER02), 0);
     }
 
-    function testFork_execute_SwapUniswapV2_TransferAmountInBeforeExecute() public {
+    function testFork_execute_SwapUniswapV2_ExactInput_TransferAmountInBeforeExecute() public {
         IERC20 tokenIn = WETH;
         IERC20 tokenOut = USDC;
         uint256 amountIn = 1 ether;
@@ -197,7 +197,7 @@ contract SwapAdapterTest is LeverageRouterTest {
         assertEq(tokenIn.allowance(address(swapAdapter), UNISWAP_V2_ROUTER02), 0);
     }
 
-    function testFork_execute_SwapUniswapV2_ETH() public {
+    function testFork_execute_SwapUniswapV2_ExactInput_ETH() public {
         // UniswapV2Router02 expects WETH as the first token in the path for swapExactETHForTokens (reverts otherwise)
         IERC20 tokenIn = WETH;
         IERC20 tokenOut = USDC;
@@ -258,7 +258,7 @@ contract SwapAdapterTest is LeverageRouterTest {
         assertEq(tokenIn.allowance(address(swapAdapter), UNISWAP_V2_ROUTER02), 0);
     }
 
-    function testFork_execute_SwapUniswapV2_ETH_WithLeftoverInputToken() public {
+    function testFork_execute_SwapUniswapV2_ExactInput_ETH_WithLeftoverInputToken() public {
         // UniswapV2Router02 expects WETH as the first token in the path for swapExactETHForTokens (reverts otherwise)
         IERC20 tokenIn = WETH;
         IERC20 tokenOut = USDC;
@@ -318,4 +318,6 @@ contract SwapAdapterTest is LeverageRouterTest {
         // Allowance should be reset to zero
         assertEq(tokenIn.allowance(address(swapAdapter), UNISWAP_V2_ROUTER02), 0);
     }
+
+    function testFork_execute_SwapUniswapV2_ExactOutput() public {}
 }
