@@ -18,6 +18,80 @@ import {IWETH9} from "../interfaces/periphery/IWETH9.sol";
  * @dev The SwapAdapter contract is a periphery contract that facilitates the use of various DEXes for swaps.
  */
 contract SwapAdapter is ISwapAdapter {
+    /// @notice Execute one approval (optional), then one arbitrary call; assert minimum output.
+    /// @param approval   The approval to set before the call (set token=address(0) to skip).
+    ///                   The specified token and amount are the inputs for the swap.
+    /// @param call       External call to perform (DEX/router).
+    /// @param tokenOut   Token we measure as output (address(0) = ETH).
+    /// @param recipient  Where to send the output and any leftover ETH.
+    /// @return result    Return data of the external call.
+    function execute(Call calldata call, Approval calldata approval, address tokenOut, address payable recipient)
+        external
+        payable
+        returns (bytes memory result)
+    {
+        require(recipient != address(0), "BAD_RECIPIENT");
+        require(call.target != address(0) && call.target != address(this), "BAD_TARGET");
+
+        // 1) Optional stateless approval (skip if approval.token == address(0)) and transfer input token to this contract.
+        if (approval.token != address(0)) {
+            require(approval.spender != address(0), "BAD_APPROVAL_SPENDER");
+            SafeERC20.safeTransferFrom(IERC20(approval.token), msg.sender, address(this), approval.amount);
+            SafeERC20.forceApprove(IERC20(approval.token), approval.spender, approval.amount);
+        }
+
+        // 2) Perform the external call.
+        (bool ok, bytes memory ret) = call.target.call{value: call.value}(call.data);
+        if (!ok) {
+            revert(_getRevertMsg(ret));
+        }
+        result = ret;
+
+        // 3) Enforce minOut
+        bool isTokenOutETH = tokenOut == address(0);
+        uint256 amountOutReceivedBySwapAdapter;
+        if (!isTokenOutETH) {
+            amountOutReceivedBySwapAdapter = IERC20(tokenOut).balanceOf(address(this));
+        } else {
+            amountOutReceivedBySwapAdapter = address(this).balance;
+        }
+
+        // 4) Send any balance of tokenOut to the recipient
+        if (!isTokenOutETH) {
+            SafeERC20.safeTransfer(IERC20(tokenOut), recipient, amountOutReceivedBySwapAdapter);
+        } else {
+            _safeSendETH(recipient, amountOutReceivedBySwapAdapter);
+        }
+
+        // 5) Send any leftover input token to the sender, if theres is any remaining.
+        // Note: If the input token is the same as the output token, any surplus was already sent to the recipient.
+        if (!isTokenOutETH) {
+            uint256 leftover = IERC20(approval.token).balanceOf(address(this));
+            if (leftover > 0) SafeERC20.safeTransfer(IERC20(approval.token), msg.sender, leftover);
+        } else {
+            uint256 leftover = address(this).balance;
+            if (leftover > 0) _safeSendETH(payable(msg.sender), leftover);
+        }
+
+        emit Executed(call, approval, tokenOut, recipient, result);
+    }
+
+    /// @dev Best-effort bubble of revert reasons.
+    function _getRevertMsg(bytes memory ret) internal pure returns (string memory) {
+        // If ret < 68, just generic.
+        if (ret.length < 68) return "CALL_FAILED";
+        // Slice out the revert reason from standard Error(string).
+        assembly {
+            ret := add(ret, 0x04)
+        }
+        return abi.decode(ret, (string));
+    }
+
+    function _safeSendETH(address payable to, uint256 value) internal {
+        (bool ok,) = to.call{value: value}("");
+        require(ok, "ETH_SEND_FAIL");
+    }
+
     /// @inheritdoc ISwapAdapter
     function swapExactInput(
         IERC20 inputToken,

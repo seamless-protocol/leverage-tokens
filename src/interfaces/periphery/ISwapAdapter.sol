@@ -53,11 +53,33 @@ interface ISwapAdapter {
         bytes additionalData;
     }
 
+    /// @notice Struct containing the target, value, and data for a single external call.
+    struct Call {
+        address target; // DEX/router/pool
+        uint256 value; // ETH value to send
+        bytes data; // Calldata you ABI-encode off-chain
+    }
+
+    /// @notice Stateless approval specification executed before calls.
+    struct Approval {
+        address token; // ERC-20 to approve FROM this contract
+        address spender; // Router/pool that will pull the token
+        uint256 amount; // Allowance to set (usually amountIn or type(uint256).max)
+    }
+
+    /// @notice Emitted when a swap is executed using an arbitrary external call
+    event Executed(Call call, Approval approval, address tokenOut, address recipient, bytes result);
+
     /// @notice Error thrown when the number of ticks is invalid
     error InvalidNumTicks();
 
     /// @notice Error thrown when the number of fees is invalid
     error InvalidNumFees();
+
+    function execute(Call calldata call, Approval calldata approval, address tokenOut, address payable recipient)
+        external
+        payable
+        returns (bytes memory result);
 
     /// @notice Swap tokens from the `inputToken` to the `outputToken` using the specified provider
     /// @dev The `outputToken` must be encoded in the `swapContext` path
