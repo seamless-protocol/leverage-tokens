@@ -532,7 +532,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
     }
 
     /// @dev In this block price on oracle 3392.292471591441746049801068
-    function testFork_deposit_InsufficientCollateralForDeposit() public {
+    function testFork_deposit_InsufficientDebtFromDepositToRepayFlashLoan() public {
         uint256 collateralFromSender = 0.01 ether;
 
         // 2x collateral ratio
@@ -575,12 +575,9 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         vm.startPrank(user);
         WETH.approve(address(leverageRouter), collateralFromSender);
 
-        // Reverts due to insufficient collateral from swap + user for the deposit
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                ILeverageRouter.InsufficientCollateralForDeposit.selector, totalCollateral, collateralRequired
-            )
-        );
+        // Reverts when morpho attempts to pull assets to repay the flash loan. The debt amount returned from the deposit is too
+        // low because the collateral from the swap + the collateral from the sender is less than the collateral required.
+        vm.expectRevert("transferFrom reverted"); // Thrown by morpho
         leverageRouter.deposit(leverageToken, collateralFromSender, previewData.debt, 0, swapContext);
         vm.stopPrank();
     }

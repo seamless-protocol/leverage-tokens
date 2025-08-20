@@ -119,7 +119,7 @@ contract LeverageRouter is ILeverageRouter {
     function deposit(
         ILeverageToken leverageToken,
         uint256 collateralFromSender,
-        uint256 debt,
+        uint256 flashLoanAmount,
         uint256 minShares,
         ISwapAdapter.SwapContext memory swapContext
     ) external {
@@ -135,7 +135,7 @@ contract LeverageRouter is ILeverageRouter {
 
         morpho.flashLoan(
             address(leverageManager.getLeverageTokenDebtAsset(leverageToken)),
-            debt,
+            flashLoanAmount,
             abi.encode(MorphoCallbackData({action: ExternalAction.Mint, data: depositData}))
         );
     }
@@ -210,14 +210,7 @@ contract LeverageRouter is ILeverageRouter {
             params.swapContext
         );
 
-        // Preview the amount of collateral required to get the flash loaned debt amount from a LM deposit.
-        uint256 collateralRequired =
-            leverageManager.convertDebtToCollateral(params.leverageToken, debtLoan, Math.Rounding.Ceil);
-
         uint256 totalCollateral = collateralFromSwap + params.collateralFromSender;
-        if (totalCollateral < collateralRequired) {
-            revert InsufficientCollateralForDeposit(totalCollateral, collateralRequired);
-        }
 
         // Use the collateral from the swap and the collateral from the sender for the deposit into the LeverageToken
         SafeERC20.forceApprove(collateralAsset, address(leverageManager), totalCollateral);
@@ -234,6 +227,8 @@ contract LeverageRouter is ILeverageRouter {
         SafeERC20.safeTransfer(params.leverageToken, params.sender, actionData.shares);
 
         // Approve morpho to transfer debt assets to repay the flash loan
+        // Note: if insufficient debt is available to repay the flash loan, the transaction will revert when Morpho
+        // attempts to transfer the debt assets to repay the flash loan
         SafeERC20.forceApprove(debtAsset, address(morpho), debtLoan);
     }
 
