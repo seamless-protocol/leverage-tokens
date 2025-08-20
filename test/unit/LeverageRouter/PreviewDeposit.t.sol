@@ -80,6 +80,7 @@ contract PreviewDepositTest is LeverageRouterTest {
     ) public {
         collateral = bound(collateral, 0, type(uint256).max);
         debt = bound(debt, 0, type(uint256).max);
+        vm.assume(debt > 0 || collateral > 0);
 
         collateralRatio = bound(collateralRatio, leverageManager.BASE_RATIO() + 1, type(uint256).max - 1);
         equityInCollateralAsset = bound(equityInCollateralAsset, 0, type(uint256).max / collateralRatio);

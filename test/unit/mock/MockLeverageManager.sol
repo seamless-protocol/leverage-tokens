@@ -46,11 +46,6 @@ contract MockLeverageManager is Test {
         uint256 collateral;
     }
 
-    struct ConvertDebtToCollateralParams {
-        ILeverageToken leverageToken;
-        uint256 debt;
-    }
-
     struct MockDepositData {
         uint256 collateral;
         uint256 debt;
@@ -92,8 +87,6 @@ contract MockLeverageManager is Test {
     mapping(bytes32 => MockPreviewDepositData) public mockPreviewDepositData;
 
     mapping(bytes32 => MockPreviewRedeemData) public mockPreviewRedeemData;
-
-    mapping(bytes32 => uint256) public mockConvertDebtToCollateralData;
 
     mapping(ILeverageToken => address) public leverageTokenRebalanceAdapter;
 
@@ -174,24 +167,6 @@ contract MockLeverageManager is Test {
             abi.encode(_redeemParams.leverageToken, _redeemParams.equityInCollateralAsset, _redeemParams.maxShares)
         );
         mockRedeemData[mockRedeemDataKey].push(_mockRedeemData);
-    }
-
-    function setMockConvertDebtToCollateralData(
-        ConvertDebtToCollateralParams memory _convertDebtToCollateralParams,
-        uint256 collateral
-    ) external {
-        bytes32 mockConvertDebtToCollateralDataKey =
-            keccak256(abi.encode(_convertDebtToCollateralParams.leverageToken, _convertDebtToCollateralParams.debt));
-        mockConvertDebtToCollateralData[mockConvertDebtToCollateralDataKey] = collateral;
-    }
-
-    function convertDebtToCollateral(ILeverageToken leverageToken, uint256 debt, Math.Rounding /* rounding */ )
-        external
-        view
-        returns (uint256)
-    {
-        bytes32 mockConvertDebtToCollateralDataKey = keccak256(abi.encode(leverageToken, debt));
-        return mockConvertDebtToCollateralData[mockConvertDebtToCollateralDataKey];
     }
 
     function previewDeposit(ILeverageToken leverageToken, uint256 collateral)
