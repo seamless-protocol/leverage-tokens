@@ -32,7 +32,7 @@ interface ILeverageRouter {
     /// @return _morpho The Morpho core protocol contract
     function morpho() external view returns (IMorpho _morpho);
 
-    /// @notice Previews the deposit function call and returns all required data
+    /// @notice Previews the deposit function call for an amount of equity and returns all required data
     /// @param token LeverageToken to preview deposit for
     /// @param equityInCollateralAsset The amount of equity to deposit. Denominated in the collateral asset of the LeverageToken
     /// @return previewData Preview data for deposit
@@ -55,7 +55,7 @@ interface ILeverageRouter {
     /// @param leverageToken LeverageToken to deposit into
     /// @param collateralFromSender Collateral asset amount from the sender to deposit
     /// @param debt Amount of debt to flash loan, which is swapped to collateral and used to deposit into the LeverageToken
-    /// @param minShares Minimum number of shares to mint
+    /// @param minShares Minimum number of shares expected to be received by the sender
     /// @param swapContext Swap context to use for the swap (which DEX to use, the route, tick spacing, etc.)
     function deposit(
         ILeverageToken leverageToken,

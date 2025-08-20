@@ -622,6 +622,14 @@ contract LeverageManager is
         return withdrawData;
     }
 
+    /// @notice Converts collateral to debt given the state of the LeverageToken
+    /// @param token LeverageToken to convert collateral for
+    /// @param lendingAdapter Lending adapter of the LeverageToken
+    /// @param collateral Collateral to convert to debt
+    /// @param totalCollateral Total collateral of the LeverageToken
+    /// @param totalDebt Total debt of the LeverageToken
+    /// @param rounding Rounding mode
+    /// @return debt Debt
     function _convertCollateralToDebt(
         ILeverageToken token,
         ILendingAdapter lendingAdapter,
@@ -643,29 +651,6 @@ contract LeverageManager is
         }
 
         return Math.mulDiv(collateral, totalDebt, totalCollateral, rounding);
-    }
-
-    function _convertDebtToCollateral(
-        ILeverageToken token,
-        ILendingAdapter lendingAdapter,
-        uint256 debt,
-        uint256 totalCollateral,
-        uint256 totalDebt,
-        Math.Rounding rounding
-    ) internal view returns (uint256 collateral) {
-        if (totalDebt == 0) {
-            if (totalCollateral == 0) {
-                // Initial state: no collateral or debt, use initial collateral ratio
-                uint256 initialCollateralRatio = getLeverageTokenInitialCollateralRatio(token);
-                return lendingAdapter.convertDebtToCollateralAsset(
-                    Math.mulDiv(debt, initialCollateralRatio, BASE_RATIO, rounding)
-                );
-            }
-            // Liquidated state: no collateral but debt exists, cannot convert
-            return 0;
-        }
-
-        return Math.mulDiv(debt, totalCollateral, totalDebt, rounding);
     }
 
     /// @notice Converts collateral to shares given the state of the LeverageToken
@@ -713,6 +698,37 @@ contract LeverageManager is
         }
 
         return Math.mulDiv(collateral, totalSupply, totalCollateral, rounding);
+    }
+
+    /// @notice Converts debt to collateral given the state of the LeverageToken
+    /// @param token LeverageToken to convert debt for
+    /// @param lendingAdapter Lending adapter of the LeverageToken
+    /// @param debt Debt to convert to collateral
+    /// @param totalCollateral Total collateral of the LeverageToken
+    /// @param totalDebt Total debt of the LeverageToken
+    /// @param rounding Rounding mode
+    /// @return collateral Collateral
+    function _convertDebtToCollateral(
+        ILeverageToken token,
+        ILendingAdapter lendingAdapter,
+        uint256 debt,
+        uint256 totalCollateral,
+        uint256 totalDebt,
+        Math.Rounding rounding
+    ) internal view returns (uint256 collateral) {
+        if (totalDebt == 0) {
+            if (totalCollateral == 0) {
+                // Initial state: no collateral or debt, use initial collateral ratio
+                uint256 initialCollateralRatio = getLeverageTokenInitialCollateralRatio(token);
+                return lendingAdapter.convertDebtToCollateralAsset(
+                    Math.mulDiv(debt, initialCollateralRatio, BASE_RATIO, rounding)
+                );
+            }
+            // Liquidated state: no collateral but debt exists, cannot convert
+            return 0;
+        }
+
+        return Math.mulDiv(debt, totalCollateral, totalDebt, rounding);
     }
 
     /// @notice Converts shares to collateral given the state of the LeverageToken

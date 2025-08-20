@@ -20,11 +20,11 @@ import {ActionData, ActionDataV2, ExternalAction} from "../types/DataTypes.sol";
  * to deposit and redeem equity from LeverageTokens.
  *
  * The high-level deposit flow is as follows:
- *   1. The user calls `deposit` with the amount of collateral from the sender to deposit, the amount of debt to flash loan
+ *   1. The sender calls `deposit` with the amount of collateral from the sender to deposit, the amount of debt to flash loan
  *      (which will be swapped to collateral), the minimum amount of shares to receive, and the swap context
  *   2. The LeverageRouter will flash loan the debt asset amount and swap it to collateral
  *   3. The LeverageRouter will use the collateral from the swapped debt and the collateral from the sender for the deposit
- *      into the LeverageToken, receiving LeverageTokens and debt in return
+ *      into the LeverageToken, receiving LeverageToken shares and debt in return
  *   4. The LeverageRouter will use the debt received from the deposit to repay the flash loan
  *   6. The LeverageRouter will transfer the LeverageToken shares and any surplus debt assets to the sender
  *
@@ -188,7 +188,8 @@ contract LeverageRouter is ILeverageRouter {
     }
 
     /// @notice Executes the deposit into a LeverageToken by flash loaning the debt asset, swapping it to collateral,
-    /// depositing into the LeverageToken, and using the resulting debt to repay the flash loan
+    /// depositing into the LeverageToken with the sender's collateral, and using the resulting debt to repay the flash loan.
+    /// Any surplus debt assets after repaying the flash loan are given to the sender.
     /// @param params Params for the deposit into a LeverageToken
     /// @param debtLoan Amount of debt asset flash loaned
     function _depositAndRepayMorphoFlashLoan(DepositParams memory params, uint256 debtLoan) internal {
@@ -218,11 +219,9 @@ contract LeverageRouter is ILeverageRouter {
             revert InsufficientCollateralForDeposit(totalCollateral, collateralRequired);
         }
 
-        // Use the flash loaned collateral and the collateral from the sender for the deposit into the LeverageToken
+        // Use the collateral from the swap and the collateral from the sender for the deposit into the LeverageToken
         SafeERC20.forceApprove(collateralAsset, address(leverageManager), totalCollateral);
 
-        // Note: This will revert if the collateral required is greater than the sum of the collateral from the swap
-        // and the collateral from the sender
         ActionDataV2 memory actionData =
             leverageManager.deposit(params.leverageToken, totalCollateral, params.minShares);
 
