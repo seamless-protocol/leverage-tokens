@@ -40,6 +40,7 @@ contract SwapAdapter is ISwapAdapter {
         }
 
         // 3) Perform the external call.
+        // slither-disable-next-line arbitrary-send-eth,reentrancy-events
         (bool ok, bytes memory ret) = call.target.call{value: call.value}(call.data);
         if (!ok) {
             // Bubble up the error / revert reason
@@ -56,6 +57,7 @@ contract SwapAdapter is ISwapAdapter {
             SafeERC20.safeTransfer(IERC20(outputToken), recipient, amountOutReceivedBySwapAdapter);
         } else {
             uint256 amountOutReceivedBySwapAdapter = address(this).balance;
+            // slither-disable-next-line reentrancy-events
             Address.sendValue(recipient, amountOutReceivedBySwapAdapter);
         }
 
@@ -68,6 +70,7 @@ contract SwapAdapter is ISwapAdapter {
             if (leftover > 0) SafeERC20.safeTransfer(IERC20(inputToken), msg.sender, leftover);
         } else {
             uint256 leftover = address(this).balance;
+            // slither-disable-next-line reentrancy-events
             if (leftover > 0) Address.sendValue(payable(msg.sender), leftover);
         }
 
