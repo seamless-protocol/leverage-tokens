@@ -26,7 +26,7 @@ contract ExecuteTest is SwapAdapterTest {
         user = makeAddr("user");
     }
 
-    function testFuzz_execute_SwapUniswapV2_ExactInput(uint256 amountIn, uint256 expectedAmountOut) public {
+    function testFuzz_execute_SwapUniswapV2_ExactTokensForTokens(uint256 amountIn, uint256 expectedAmountOut) public {
         IERC20 tokenIn = WETH;
         IERC20 tokenOut = USDC;
 
@@ -96,9 +96,11 @@ contract ExecuteTest is SwapAdapterTest {
         assertEq(tokenIn.allowance(address(swapAdapter), address(mockUniswapV2Router02)), 0);
     }
 
-    function testFuzz_execute_SwapUniswapV2_ExactOutput(uint256 amountOut, uint256 amountIn, uint256 amountInExcess)
-        public
-    {
+    function testFuzz_execute_SwapUniswapV2_SwapTokensForExactTokens(
+        uint256 amountOut,
+        uint256 amountIn,
+        uint256 amountInExcess
+    ) public {
         IERC20 tokenIn = WETH;
         IERC20 tokenOut = USDC;
         amountInExcess = bound(amountInExcess, 0, type(uint256).max - amountIn);
@@ -174,7 +176,7 @@ contract ExecuteTest is SwapAdapterTest {
         assertEq(tokenIn.allowance(address(swapAdapter), address(mockUniswapV2Router02)), 0);
     }
 
-    function test_execute_SwapUniswapV2_ExactInputForETH() public {
+    function test_execute_SwapUniswapV2_ExactTokensForETH() public {
         IERC20 tokenIn = USDC;
         IERC20 tokenOut = IERC20(address(0)); // Use address 0 for ETH
 
@@ -247,7 +249,7 @@ contract ExecuteTest is SwapAdapterTest {
         assertEq(tokenIn.allowance(address(swapAdapter), address(mockUniswapV2Router02)), 0);
     }
 
-    function test_execute_SwapUniswapV2_ETHForExactTokens() public {
+    function test_execute_SwapUniswapV2_SwapETHForExactTokens() public {
         uint256 amountOut = 100 ether;
         uint256 amountIn = 1 ether;
         uint256 amountInExcess = 0.2 ether;

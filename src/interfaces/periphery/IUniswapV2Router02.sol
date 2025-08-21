@@ -69,4 +69,20 @@ interface IUniswapV2Router02 {
         address to,
         uint256 deadline
     ) external returns (uint256[] memory amounts);
+
+    /// @notice Swaps as little as possible of one token for `amountOut` of ETH along the specified path (reversed)
+    /// that may remain in the router after the swap.
+    /// @param amountOut The amount of ETH to receive
+    /// @param amountInMax The maximum amount of token to swap
+    /// @param path The ordered list of tokens to swap through
+    /// @param to The recipient address
+    /// @param deadline The time by which the transaction must be included to be executed
+    /// @return amounts The amounts of the swapped tokens
+    function swapTokensForExactETH(
+        uint256 amountOut,
+        uint256 amountInMax,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external returns (uint256[] memory amounts);
 }
