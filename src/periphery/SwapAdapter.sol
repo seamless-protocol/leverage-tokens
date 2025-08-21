@@ -2,6 +2,7 @@
 pragma solidity ^0.8.26;
 
 // Dependency imports
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
@@ -41,7 +42,10 @@ contract SwapAdapter is ISwapAdapter {
         // 3) Perform the external call.
         (bool ok, bytes memory ret) = call.target.call{value: call.value}(call.data);
         if (!ok) {
-            revert(_getRevertMsg(ret));
+            // Bubble up the error / revert reason
+            assembly {
+                revert(add(ret, 0x20), mload(ret))
+            }
         }
         result = ret;
 
@@ -52,7 +56,7 @@ contract SwapAdapter is ISwapAdapter {
             SafeERC20.safeTransfer(IERC20(outputToken), recipient, amountOutReceivedBySwapAdapter);
         } else {
             uint256 amountOutReceivedBySwapAdapter = address(this).balance;
-            _safeSendETH(recipient, amountOutReceivedBySwapAdapter);
+            Address.sendValue(recipient, amountOutReceivedBySwapAdapter);
         }
 
         // 5) Send any leftover input token to the sender, if there is any remaining.
@@ -64,7 +68,7 @@ contract SwapAdapter is ISwapAdapter {
             if (leftover > 0) SafeERC20.safeTransfer(IERC20(inputToken), msg.sender, leftover);
         } else {
             uint256 leftover = address(this).balance;
-            if (leftover > 0) _safeSendETH(payable(msg.sender), leftover);
+            if (leftover > 0) Address.sendValue(payable(msg.sender), leftover);
         }
 
         // 6) Reset approval to zero
@@ -73,22 +77,6 @@ contract SwapAdapter is ISwapAdapter {
         }
 
         emit Executed(call, approval, inputToken, outputToken, recipient, result);
-    }
-
-    /// @dev Best-effort bubble of revert reasons.
-    function _getRevertMsg(bytes memory ret) internal pure returns (string memory) {
-        // If ret < 68, just generic.
-        if (ret.length < 68) return "CALL_FAILED";
-        // Slice out the revert reason from standard Error(string).
-        assembly {
-            ret := add(ret, 0x04)
-        }
-        return abi.decode(ret, (string));
-    }
-
-    function _safeSendETH(address payable to, uint256 value) internal {
-        (bool ok,) = to.call{value: value}("");
-        require(ok, "ETH_SEND_FAIL");
     }
 
     /// @inheritdoc ISwapAdapter
