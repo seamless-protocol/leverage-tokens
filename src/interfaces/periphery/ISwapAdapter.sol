@@ -78,9 +78,6 @@ interface ISwapAdapter {
     /// @notice Error thrown when the number of fees is invalid
     error InvalidNumFees();
 
-    /// @notice Execute an approval (optional), then an arbitrary external swap call. All outputToken is sent to the
-    /// recipient. Any leftover inputToken is sent to the sender.
-
     /// @notice Execute an arbitrary external swap call. All outputToken is sent to the recipient. Any leftover inputToken is sent to the sender.
     /// Note: If the inputToken is the same as the outputToken, any leftover inputToken is sent to the recipient instead of the sender.
     /// @param approval The approval to set before the call (set token=address(0) to skip). e.g. approving a DEX to pull the inputToken from the SwapAdapter.
@@ -89,7 +86,7 @@ interface ISwapAdapter {
     /// @param outputToken Output token for the swap (address(0) = ETH).
     /// @param inputAmount Amount of input token for the swap, which is tranferred from the sender to the SwapAdapter.
     /// Note: If the sender transferred the required amount of input token to this contract already, this can be set to zero.
-    /// @param recipient Where to send the output and any leftover ETH.
+    /// @param recipient Where to send the outputToken.
     /// @return result Return data of the external call.
     function execute(
         Call calldata call,
