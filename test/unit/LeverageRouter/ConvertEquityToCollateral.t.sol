@@ -10,6 +10,19 @@ import {LeverageRouterTest} from "./LeverageRouter.t.sol";
 import {MockLeverageManager} from "../mock/MockLeverageManager.sol";
 
 contract ConvertEquityToCollateralTest is LeverageRouterTest {
+    function test_convertEquityToCollatereal_ZeroCollateralZeroDebt() public {
+        uint256 initialCollateralRatio = 1.5e18; // 1.5 CR, 3x leverage
+        uint256 equityInCollateralAsset = 1 ether;
+
+        lendingAdapter.mockCollateral(0);
+        lendingAdapter.mockDebt(0);
+        leverageManager.setLeverageTokenInitialCollateralRatio(leverageToken, initialCollateralRatio);
+
+        uint256 expectedCollateral = 3e18; // 3x leverage
+
+        assertEq(leverageRouter.convertEquityToCollateral(leverageToken, equityInCollateralAsset), expectedCollateral);
+    }
+
     function testFuzz_convertEquityToCollateral_ZeroCollateralZeroDebt(
         uint256 equityInCollateralAsset,
         uint256 initialCollateralRatio
@@ -47,6 +60,54 @@ contract ConvertEquityToCollateralTest is LeverageRouterTest {
         assertEq(
             leverageRouter.convertEquityToCollateral(leverageToken, equityInCollateralAsset), equityInCollateralAsset
         );
+    }
+
+    function test_convertEquityToCollateral_NonZeroCollateralOrNonZeroDebt_NonMaxCollateralRatio() public {
+        uint256 collateral = 1.5 ether;
+        uint256 debt = 1 ether;
+        uint256 collateralRatio = 1.5e18; // 1.5 CR, 3x leverage
+        uint256 equityInCollateralAsset = 1 ether;
+
+        lendingAdapter.mockCollateral(collateral);
+        lendingAdapter.mockDebt(debt);
+
+        leverageManager.setLeverageTokenState(
+            leverageToken,
+            LeverageTokenState({
+                collateralRatio: collateralRatio,
+                debt: debt,
+                equity: 0, // Doesnt matter for this test
+                collateralInDebtAsset: collateral
+            })
+        );
+
+        uint256 expectedCollateral = 3 * equityInCollateralAsset; // 3x leverage
+
+        assertEq(leverageRouter.convertEquityToCollateral(leverageToken, equityInCollateralAsset), expectedCollateral);
+
+        // Set debt to 0
+        leverageManager.setLeverageTokenState(
+            leverageToken,
+            LeverageTokenState({
+                collateralRatio: collateralRatio,
+                debt: 0,
+                equity: 0, // Doesnt matter for this test
+                collateralInDebtAsset: collateral
+            })
+        );
+        assertEq(leverageRouter.convertEquityToCollateral(leverageToken, equityInCollateralAsset), expectedCollateral);
+
+        // Set collateral to 0
+        leverageManager.setLeverageTokenState(
+            leverageToken,
+            LeverageTokenState({
+                collateralRatio: collateralRatio,
+                debt: debt,
+                equity: 0, // Doesnt matter for this test
+                collateralInDebtAsset: collateral
+            })
+        );
+        assertEq(leverageRouter.convertEquityToCollateral(leverageToken, equityInCollateralAsset), expectedCollateral);
     }
 
     function testFuzz_convertEquityToCollateral_NonZeroCollateralOrNonZeroDebt_NonMaxCollateralRatio(
