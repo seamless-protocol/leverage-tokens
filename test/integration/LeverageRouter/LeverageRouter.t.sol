@@ -13,22 +13,11 @@ import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {IntegrationTestBase} from "../IntegrationTestBase.t.sol";
 
 contract LeverageRouterTest is IntegrationTestBase {
-    address public constant AERODROME_ROUTER = 0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43;
-    address public constant AERODROME_SLIPSTREAM_ROUTER = 0xBE6D8f0d05cC4be24d5167a3eF062215bE6D18a5;
-    address public constant AERODROME_POOL_FACTORY = 0x420DD381b31aEf6683db6B902084cB0FFECe40Da;
-    address public constant UNISWAP_V2_ROUTER02 = 0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24;
-    address public constant UNISWAP_SWAP_ROUTER02 = 0x2626664c2603336E57B271c5C0b26F421741e481;
-
-    address public constant DAI = 0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb;
-    address public constant cbBTC = 0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf;
-
     ILeverageRouter public leverageRouter;
-    ISwapAdapter public swapAdapter;
 
     function setUp() public virtual override {
         super.setUp();
 
-        swapAdapter = new SwapAdapter();
         leverageRouter = new LeverageRouter(leverageManager, MORPHO, swapAdapter);
 
         vm.label(address(leverageRouter), "leverageRouter");

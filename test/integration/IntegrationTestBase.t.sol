@@ -18,6 +18,7 @@ import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
+import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {MorphoLendingAdapter} from "src/lending/MorphoLendingAdapter.sol";
 import {BeaconProxyFactory} from "src/BeaconProxyFactory.sol";
 import {LeverageManager} from "src/LeverageManager.sol";
@@ -26,6 +27,7 @@ import {LeverageTokenConfig} from "src/types/DataTypes.sol";
 import {LeverageManagerHarness} from "test/unit/harness/LeverageManagerHarness.t.sol";
 import {MorphoLendingAdapterFactory} from "src/lending/MorphoLendingAdapterFactory.sol";
 import {RebalanceAdapter} from "src/rebalance/RebalanceAdapter.sol";
+import {SwapAdapter} from "src/periphery/SwapAdapter.sol";
 
 contract IntegrationTestBase is Test {
     uint256 public constant FORK_BLOCK_NUMBER = 25473904;
@@ -38,6 +40,15 @@ contract IntegrationTestBase is Test {
     Id public constant WETH_USDC_MARKET_ID = Id.wrap(0x8793cf302b8ffd655ab97bd1c695dbd967807e8367a65cb2f4edaf1380ba1bda);
     Id public constant USDC_WETH_MARKET_ID = Id.wrap(0x3b3769cfca57be2eaed03fcc5299c25691b77781a1e124e7a8d520eb9a7eabb5);
 
+    address public constant AERODROME_ROUTER = 0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43;
+    address public constant AERODROME_SLIPSTREAM_ROUTER = 0xBE6D8f0d05cC4be24d5167a3eF062215bE6D18a5;
+    address public constant AERODROME_POOL_FACTORY = 0x420DD381b31aEf6683db6B902084cB0FFECe40Da;
+    address public constant UNISWAP_V2_ROUTER02 = 0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24;
+    address public constant UNISWAP_SWAP_ROUTER02 = 0x2626664c2603336E57B271c5C0b26F421741e481;
+
+    address public constant DAI = 0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb;
+    address public constant cbBTC = 0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf;
+
     address public user = makeAddr("user");
     address public treasury = makeAddr("treasury");
 
@@ -46,6 +57,7 @@ contract IntegrationTestBase is Test {
     ILeverageToken public leverageToken;
     IMorphoLendingAdapterFactory public morphoLendingAdapterFactory;
     ILeverageManager public leverageManager = ILeverageManager(makeAddr("leverageManager"));
+    ISwapAdapter public swapAdapter;
     MorphoLendingAdapter public morphoLendingAdapter;
     RebalanceAdapter public rebalanceAdapter;
 
@@ -89,6 +101,8 @@ contract IntegrationTestBase is Test {
             "Seamless ETH/USDC 2x leverage token",
             "ltETH/USDC-2x"
         );
+
+        swapAdapter = new SwapAdapter();
 
         vm.label(address(user), "user");
         vm.label(address(treasury), "treasury");
