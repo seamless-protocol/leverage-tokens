@@ -90,19 +90,25 @@ contract LeverageRouter is ILeverageRouter {
     }
 
     /// @inheritdoc ILeverageRouter
-    function convertEquityToCollateral(ILeverageToken token, uint256 equity) public view returns (uint256 collateral) {
+    function convertEquityToCollateral(ILeverageToken token, uint256 equityInCollateralAsset)
+        public
+        view
+        returns (uint256 collateral)
+    {
         uint256 collateralRatio = leverageManager.getLeverageTokenState(token).collateralRatio;
         ILendingAdapter lendingAdapter = leverageManager.getLeverageTokenLendingAdapter(token);
         uint256 baseRatio = leverageManager.BASE_RATIO();
 
         if (lendingAdapter.getCollateral() == 0 && lendingAdapter.getDebt() == 0) {
             uint256 initialCollateralRatio = leverageManager.getLeverageTokenInitialCollateralRatio(token);
-            collateral =
-                Math.mulDiv(equity, initialCollateralRatio, initialCollateralRatio - baseRatio, Math.Rounding.Ceil);
+            collateral = Math.mulDiv(
+                equityInCollateralAsset, initialCollateralRatio, initialCollateralRatio - baseRatio, Math.Rounding.Ceil
+            );
         } else if (collateralRatio == type(uint256).max) {
-            collateral = equity;
+            collateral = equityInCollateralAsset;
         } else {
-            collateral = Math.mulDiv(equity, collateralRatio, collateralRatio - baseRatio, Math.Rounding.Ceil);
+            collateral =
+                Math.mulDiv(equityInCollateralAsset, collateralRatio, collateralRatio - baseRatio, Math.Rounding.Ceil);
         }
 
         return collateral;

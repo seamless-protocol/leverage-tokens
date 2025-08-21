@@ -27,9 +27,9 @@ interface ILeverageRouter {
     /// @notice Converts an amount of equity to an amount of collateral for a LeverageToken, based on the current
     /// collateral ratio of the LeverageToken
     /// @param token LeverageToken to convert equity to collateral for
-    /// @param equity Amount of equity to convert to collateral
+    /// @param equityInCollateralAsset Amount of equity to convert to collateral, denominated in the collateral asset of the LeverageToken
     /// @return collateral Amount of collateral that correspond to the equity amount
-    function convertEquityToCollateral(ILeverageToken token, uint256 equity)
+    function convertEquityToCollateral(ILeverageToken token, uint256 equityInCollateralAsset)
         external
         view
         returns (uint256 collateral);

@@ -10,24 +10,28 @@ import {LeverageRouterTest} from "./LeverageRouter.t.sol";
 import {MockLeverageManager} from "../mock/MockLeverageManager.sol";
 
 contract ConvertEquityToCollateralTest is LeverageRouterTest {
-    function testFuzz_convertEquityToCollateral_ZeroCollateralZeroDebt(uint256 equity, uint256 initialCollateralRatio)
-        public
-    {
+    function testFuzz_convertEquityToCollateral_ZeroCollateralZeroDebt(
+        uint256 equityInCollateralAsset,
+        uint256 initialCollateralRatio
+    ) public {
         initialCollateralRatio = bound(initialCollateralRatio, leverageManager.BASE_RATIO() + 1, type(uint256).max);
-        equity = bound(equity, 0, type(uint256).max / initialCollateralRatio);
+        equityInCollateralAsset = bound(equityInCollateralAsset, 0, type(uint256).max / initialCollateralRatio);
 
         lendingAdapter.mockCollateral(0);
         lendingAdapter.mockDebt(0);
         leverageManager.setLeverageTokenInitialCollateralRatio(leverageToken, initialCollateralRatio);
 
         uint256 expectedCollateral = Math.mulDiv(
-            equity, initialCollateralRatio, initialCollateralRatio - leverageManager.BASE_RATIO(), Math.Rounding.Ceil
+            equityInCollateralAsset,
+            initialCollateralRatio,
+            initialCollateralRatio - leverageManager.BASE_RATIO(),
+            Math.Rounding.Ceil
         );
-        assertEq(leverageRouter.convertEquityToCollateral(leverageToken, equity), expectedCollateral);
+        assertEq(leverageRouter.convertEquityToCollateral(leverageToken, equityInCollateralAsset), expectedCollateral);
     }
 
     function testFuzz_convertEquityToCollateral_NonZeroCollateralOrNonZeroDebt_MaxCollateralRatio(
-        uint256 equity,
+        uint256 equityInCollateralAsset,
         uint256 collateral
     ) public {
         collateral = bound(collateral, 1, type(uint256).max);
@@ -40,11 +44,13 @@ contract ConvertEquityToCollateralTest is LeverageRouterTest {
             LeverageTokenState({collateralRatio: type(uint256).max, debt: 0, equity: 0, collateralInDebtAsset: 0})
         );
 
-        assertEq(leverageRouter.convertEquityToCollateral(leverageToken, equity), equity);
+        assertEq(
+            leverageRouter.convertEquityToCollateral(leverageToken, equityInCollateralAsset), equityInCollateralAsset
+        );
     }
 
     function testFuzz_convertEquityToCollateral_NonZeroCollateralOrNonZeroDebt_NonMaxCollateralRatio(
-        uint256 equity,
+        uint256 equityInCollateralAsset,
         uint256 collateral,
         uint256 debt,
         uint256 collateralRatio
@@ -54,7 +60,7 @@ contract ConvertEquityToCollateralTest is LeverageRouterTest {
         vm.assume(debt > 0 || collateral > 0);
 
         collateralRatio = bound(collateralRatio, leverageManager.BASE_RATIO() + 1, type(uint256).max - 1);
-        equity = bound(equity, 0, type(uint256).max / collateralRatio);
+        equityInCollateralAsset = bound(equityInCollateralAsset, 0, type(uint256).max / collateralRatio);
 
         lendingAdapter.mockCollateral(collateral);
         lendingAdapter.mockDebt(debt);
@@ -65,9 +71,10 @@ contract ConvertEquityToCollateralTest is LeverageRouterTest {
             LeverageTokenState({collateralRatio: collateralRatio, debt: debt, equity: 0, collateralInDebtAsset: 0})
         );
 
-        uint256 expectedCollateral =
-            Math.mulDiv(equity, collateralRatio, collateralRatio - leverageManager.BASE_RATIO(), Math.Rounding.Ceil);
+        uint256 expectedCollateral = Math.mulDiv(
+            equityInCollateralAsset, collateralRatio, collateralRatio - leverageManager.BASE_RATIO(), Math.Rounding.Ceil
+        );
 
-        assertEq(leverageRouter.convertEquityToCollateral(leverageToken, equity), expectedCollateral);
+        assertEq(leverageRouter.convertEquityToCollateral(leverageToken, equityInCollateralAsset), expectedCollateral);
     }
 }
