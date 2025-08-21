@@ -4,6 +4,17 @@ pragma solidity ^0.8.26;
 /// @notice Interface for the Uniswap V2 Router
 /// @dev https://github.com/Uniswap/v2-core/blob/master/contracts/interfaces/IUniswapV2Router02.sol
 interface IUniswapV2Router02 {
+    /// @notice Swaps ETH for exact amount of output token
+    /// @param amountOut The amount of output token to receive
+    /// @param path The ordered list of tokens to swap through
+    /// @param to The recipient address
+    /// @param deadline The time by which the transaction must be included to be executed
+    /// @return amounts The amounts of the swapped tokens
+    function swapETHForExactTokens(uint256 amountOut, address[] calldata path, address to, uint256 deadline)
+        external
+        payable
+        returns (uint256[] memory amounts);
+
     /// @notice Swaps ETH for as much as possible of another token
     /// @param amountOutMin The minimum amount of output that must be received
     /// @param path The ordered list of tokens to swap through
@@ -14,6 +25,21 @@ interface IUniswapV2Router02 {
         external
         payable
         returns (uint256[] memory amounts);
+
+    /// @notice Swaps exact amount of token for ETH
+    /// @param amountIn The amount of token to swap
+    /// @param amountOutMin The minimum amount of ETH to receive
+    /// @param path The ordered list of tokens to swap through
+    /// @param to The recipient address
+    /// @param deadline The time by which the transaction must be included to be executed
+    /// @return amounts The amounts of the swapped tokens
+    function swapExactTokensForETH(
+        uint256 amountIn,
+        uint256 amountOutMin,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external returns (uint256[] memory amounts);
 
     /// @notice Swaps `amountIn` of one token for as much as possible of another token
     /// @param amountIn The amount of token to swap

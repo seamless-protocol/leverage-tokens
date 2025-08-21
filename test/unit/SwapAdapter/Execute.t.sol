@@ -204,7 +204,7 @@ contract ExecuteTest is SwapAdapterTest {
             target: address(mockUniswapV2Router02),
             value: 0,
             data: abi.encodeWithSelector(
-                MockUniswapV2Router02.swapExactTokensForETH.selector,
+                IUniswapV2Router02.swapExactTokensForETH.selector,
                 amountIn,
                 expectedAmountOut,
                 path,
@@ -220,6 +220,11 @@ contract ExecuteTest is SwapAdapterTest {
 
         vm.startPrank(user);
         USDC.approve(address(swapAdapter), amountIn);
+
+        vm.expectEmit(true, true, true, true);
+        emit ISwapAdapter.Executed(
+            call, approval, address(tokenIn), address(tokenOut), user, abi.encode(expectedResult)
+        );
 
         bytes memory result =
             swapAdapter.execute(call, approval, address(tokenIn), address(tokenOut), amountIn, payable(user));
@@ -271,7 +276,7 @@ contract ExecuteTest is SwapAdapterTest {
             target: address(mockUniswapV2Router02),
             value: amountInMax,
             data: abi.encodeWithSelector(
-                MockUniswapV2Router02.swapETHForExactTokens.selector, amountOut, path, address(swapAdapter), block.timestamp
+                IUniswapV2Router02.swapETHForExactTokens.selector, amountOut, path, address(swapAdapter), block.timestamp
             )
         });
 
@@ -281,6 +286,10 @@ contract ExecuteTest is SwapAdapterTest {
         deal(user, amountInMax);
 
         vm.startPrank(user);
+
+        vm.expectEmit(true, true, true, true);
+        emit ISwapAdapter.Executed(call, approval, address(0), address(USDC), user, abi.encode(expectedResult));
+
         bytes memory result =
             swapAdapter.execute{value: amountInMax}(call, approval, address(0), address(USDC), 0, payable(user));
         vm.stopPrank();

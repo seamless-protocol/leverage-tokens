@@ -11,7 +11,7 @@ import {SwapAdapter} from "src/periphery/SwapAdapter.sol";
 import {IntegrationTestBase} from "../IntegrationTestBase.t.sol";
 
 contract SwapAdapterTest is IntegrationTestBase {
-    function testFork_execute_SwapUniswapV2_ExactInput() public {
+    function testFork_execute_SwapUniswapV2_ExactTokensForTokens() public {
         IERC20 tokenIn = WETH;
         IERC20 tokenOut = USDC;
         uint256 amountIn = 1 ether;
@@ -72,7 +72,7 @@ contract SwapAdapterTest is IntegrationTestBase {
         assertEq(tokenIn.allowance(address(swapAdapter), UNISWAP_V2_ROUTER02), 0);
     }
 
-    function testFork_execute_SwapUniswapV2_ExactOutput() public {
+    function testFork_execute_SwapUniswapV2_TokensForExactTokens() public {
         IERC20 tokenIn = WETH;
         IERC20 tokenOut = USDC;
         uint256 amountOut = 3378.387886e6;
@@ -136,7 +136,7 @@ contract SwapAdapterTest is IntegrationTestBase {
         assertEq(tokenIn.allowance(address(swapAdapter), UNISWAP_V2_ROUTER02), 0);
     }
 
-    function testFork_execute_SwapUniswapV2_ExactInput_WithLeftoverInputToken() public {
+    function testFork_execute_SwapUniswapV2_ExactTokensForTokens_WithLeftoverInputToken() public {
         IERC20 tokenIn = WETH;
         IERC20 tokenOut = USDC;
         uint256 amountIn = 1 ether;
@@ -199,7 +199,7 @@ contract SwapAdapterTest is IntegrationTestBase {
         assertEq(tokenIn.allowance(address(swapAdapter), UNISWAP_V2_ROUTER02), 0);
     }
 
-    function testFork_execute_SwapUniswapV2_ExactInput_TransferAmountInBeforeExecute() public {
+    function testFork_execute_SwapUniswapV2_ExactTokensForTokens_TransferAmountInBeforeExecute() public {
         IERC20 tokenIn = WETH;
         IERC20 tokenOut = USDC;
         uint256 amountIn = 1 ether;
@@ -261,7 +261,7 @@ contract SwapAdapterTest is IntegrationTestBase {
         assertEq(tokenIn.allowance(address(swapAdapter), UNISWAP_V2_ROUTER02), 0);
     }
 
-    function testFork_execute_SwapUniswapV2_ExactInput_ETH() public {
+    function testFork_execute_SwapUniswapV2_ExactETHForTokens() public {
         // UniswapV2Router02 expects WETH as the first token in the path for swapExactETHForTokens (reverts otherwise)
         IERC20 tokenIn = WETH;
         IERC20 tokenOut = USDC;
@@ -322,7 +322,7 @@ contract SwapAdapterTest is IntegrationTestBase {
         assertEq(tokenIn.allowance(address(swapAdapter), UNISWAP_V2_ROUTER02), 0);
     }
 
-    function testFork_execute_SwapUniswapV2_ExactInput_ETH_WithLeftoverInputToken() public {
+    function testFork_execute_SwapUniswapV2_ExactETHForTokens_WithLeftoverInputToken() public {
         // UniswapV2Router02 expects WETH as the first token in the path for swapExactETHForTokens (reverts otherwise)
         IERC20 tokenIn = WETH;
         IERC20 tokenOut = USDC;
@@ -381,5 +381,109 @@ contract SwapAdapterTest is IntegrationTestBase {
 
         // Allowance should be reset to zero
         assertEq(tokenIn.allowance(address(swapAdapter), UNISWAP_V2_ROUTER02), 0);
+    }
+
+    function testFork_execute_SwapUniswapV2_ETHForExactTokens() public {
+        // UniswapV2Router02 expects WETH as the first token in the path for swapETHForExactTokens (reverts otherwise)
+        IERC20 tokenIn = WETH;
+        IERC20 tokenOut = USDC;
+        uint256 amountOut = 3378.387886e6;
+        uint256 amountIn = 0.99999999991932932 ether;
+
+        uint256[] memory expectedResult = new uint256[](2);
+        expectedResult[0] = amountIn;
+        expectedResult[1] = amountOut;
+
+        address[] memory path = new address[](2);
+        path[0] = address(tokenIn);
+        path[1] = address(tokenOut);
+
+        ISwapAdapter.Call memory call = ISwapAdapter.Call({
+            target: UNISWAP_V2_ROUTER02,
+            value: amountIn,
+            data: abi.encodeWithSelector(
+                IUniswapV2Router02.swapETHForExactTokens.selector, amountOut, path, address(swapAdapter), block.timestamp
+            )
+        });
+
+        ISwapAdapter.Approval memory approval =
+            ISwapAdapter.Approval({token: address(0), spender: UNISWAP_V2_ROUTER02, amount: amountIn});
+
+        deal(user, amountIn);
+
+        vm.startPrank(user);
+
+        vm.expectEmit(true, true, true, true);
+        emit ISwapAdapter.Executed(call, approval, address(0), address(tokenOut), user, abi.encode(expectedResult));
+
+        bytes memory result =
+            swapAdapter.execute{value: amountIn}(call, approval, address(0), address(tokenOut), 0, payable(user));
+        vm.stopPrank();
+
+        // Check the swap result
+        uint256[] memory resultDecoded = abi.decode(result, (uint256[]));
+        assertEq(resultDecoded[0], expectedResult[0]);
+        assertEq(resultDecoded[1], expectedResult[1]);
+        assertEq(tokenOut.balanceOf(user), amountOut);
+
+        // All of the ETH should be spent
+        assertEq(user.balance, 0);
+
+        // No tokenIn or tokenOut should be left in the swap adapter
+        assertEq(address(swapAdapter).balance, 0);
+        assertEq(tokenOut.balanceOf(address(swapAdapter)), 0);
+    }
+
+    function testFork_execute_SwapUniswapV2_ETHForExactTokens_WithLeftoverInputToken() public {
+        // UniswapV2Router02 expects WETH as the first token in the path for swapETHForExactTokens (reverts otherwise)
+        IERC20 tokenIn = WETH;
+        IERC20 tokenOut = USDC;
+        uint256 amountOut = 3378.387886e6;
+        uint256 amountIn = 0.99999999991932932 ether;
+        uint256 amountInExcess = 0.5 ether;
+        uint256 amountInTotal = amountIn + amountInExcess;
+
+        uint256[] memory expectedResult = new uint256[](2);
+        expectedResult[0] = amountIn;
+        expectedResult[1] = amountOut;
+
+        address[] memory path = new address[](2);
+        path[0] = address(tokenIn);
+        path[1] = address(tokenOut);
+
+        ISwapAdapter.Call memory call = ISwapAdapter.Call({
+            target: UNISWAP_V2_ROUTER02,
+            value: amountIn,
+            data: abi.encodeWithSelector(
+                IUniswapV2Router02.swapETHForExactTokens.selector, amountOut, path, address(swapAdapter), block.timestamp
+            )
+        });
+
+        ISwapAdapter.Approval memory approval =
+            ISwapAdapter.Approval({token: address(0), spender: UNISWAP_V2_ROUTER02, amount: amountIn});
+
+        deal(user, amountInTotal);
+
+        vm.startPrank(user);
+
+        vm.expectEmit(true, true, true, true);
+        emit ISwapAdapter.Executed(call, approval, address(0), address(tokenOut), user, abi.encode(expectedResult));
+
+        bytes memory result =
+            swapAdapter.execute{value: amountIn}(call, approval, address(0), address(tokenOut), 0, payable(user));
+        vm.stopPrank();
+
+        // Check the swap result
+        uint256[] memory resultDecoded = abi.decode(result, (uint256[]));
+        assertEq(resultDecoded[0], expectedResult[0]);
+        assertEq(resultDecoded[1], expectedResult[1]);
+        assertEq(tokenOut.balanceOf(user), amountOut);
+
+        // Excess ETH should be returned to the user
+        assertEq(user.balance, amountInExcess);
+
+        // No tokenIn or tokenOut should be left in the swap adapter
+        assertEq(address(swapAdapter).balance, 0);
+        assertEq(tokenOut.balanceOf(address(swapAdapter)), 0);
     }
 }
