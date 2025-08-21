@@ -24,6 +24,16 @@ interface ILeverageRouter {
     /// @notice Error thrown when the caller is not authorized to execute a function
     error Unauthorized();
 
+    /// @notice Converts an amount of equity to an amount of collateral for a LeverageToken, based on the current
+    /// collateral ratio of the LeverageToken
+    /// @param token LeverageToken to convert equity to collateral for
+    /// @param equity Amount of equity to convert to collateral
+    /// @return collateral Amount of collateral that correspond to the equity amount
+    function convertEquityToCollateral(ILeverageToken token, uint256 equity)
+        external
+        view
+        returns (uint256 collateral);
+
     /// @notice The LeverageManager contract
     /// @return _leverageManager The LeverageManager contract
     function leverageManager() external view returns (ILeverageManager _leverageManager);

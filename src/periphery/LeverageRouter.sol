@@ -90,28 +90,31 @@ contract LeverageRouter is ILeverageRouter {
     }
 
     /// @inheritdoc ILeverageRouter
-    function previewDeposit(ILeverageToken token, uint256 collateralFromSender)
-        external
-        view
-        returns (ActionDataV2 memory)
-    {
+    function convertEquityToCollateral(ILeverageToken token, uint256 equity) public view returns (uint256 collateral) {
         uint256 collateralRatio = leverageManager.getLeverageTokenState(token).collateralRatio;
         ILendingAdapter lendingAdapter = leverageManager.getLeverageTokenLendingAdapter(token);
         uint256 baseRatio = leverageManager.BASE_RATIO();
 
-        uint256 collateral;
         if (lendingAdapter.getCollateral() == 0 && lendingAdapter.getDebt() == 0) {
             uint256 initialCollateralRatio = leverageManager.getLeverageTokenInitialCollateralRatio(token);
-            collateral = Math.mulDiv(
-                collateralFromSender, initialCollateralRatio, initialCollateralRatio - baseRatio, Math.Rounding.Ceil
-            );
-        } else if (collateralRatio == type(uint256).max) {
-            collateral = collateralFromSender;
-        } else {
             collateral =
-                Math.mulDiv(collateralFromSender, collateralRatio, collateralRatio - baseRatio, Math.Rounding.Ceil);
+                Math.mulDiv(equity, initialCollateralRatio, initialCollateralRatio - baseRatio, Math.Rounding.Ceil);
+        } else if (collateralRatio == type(uint256).max) {
+            collateral = equity;
+        } else {
+            collateral = Math.mulDiv(equity, collateralRatio, collateralRatio - baseRatio, Math.Rounding.Ceil);
         }
 
+        return collateral;
+    }
+
+    /// @inheritdoc ILeverageRouter
+    function previewDeposit(ILeverageToken token, uint256 collateralFromSender)
+        external
+        view
+        returns (ActionDataV2 memory previewData)
+    {
+        uint256 collateral = convertEquityToCollateral(token, collateralFromSender);
         return leverageManager.previewDeposit(token, collateral);
     }
 
