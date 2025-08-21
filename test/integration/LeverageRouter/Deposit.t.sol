@@ -28,8 +28,9 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         IERC20 debtAsset;
         uint256 userBalanceOfCollateralAsset;
         uint256 collateralFromSender;
-        uint256 debt;
+        uint256 flashLoanAmount;
         uint256 minShares;
+        uint256 collateralRequired;
         uint256 collateralReceivedFromDebtSwap;
     }
 
@@ -353,8 +354,9 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
                 debtAsset: USDC,
                 userBalanceOfCollateralAsset: collateralFromSenderA,
                 collateralFromSender: collateralFromSenderA,
-                debt: previewData.debt,
+                flashLoanAmount: previewData.debt,
                 minShares: 0,
+                collateralRequired: previewData.collateral,
                 collateralReceivedFromDebtSwap: collateralReceivedFromDebtSwapA
             })
         );
@@ -371,8 +373,9 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
                 debtAsset: USDC,
                 userBalanceOfCollateralAsset: collateralFromSenderB,
                 collateralFromSender: collateralFromSenderB,
-                debt: previewData.debt,
+                flashLoanAmount: previewData.debt,
                 minShares: 0,
+                collateralRequired: previewData.collateral,
                 collateralReceivedFromDebtSwap: collateralReceivedFromDebtSwapB
             })
         );
@@ -389,8 +392,9 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
                 debtAsset: USDC,
                 userBalanceOfCollateralAsset: collateralFromSenderC,
                 collateralFromSender: collateralFromSenderC,
-                debt: previewData.debt,
+                flashLoanAmount: previewData.debt,
                 minShares: 0,
+                collateralRequired: previewData.collateral,
                 collateralReceivedFromDebtSwap: collateralReceivedFromDebtSwapC
             })
         );
@@ -423,8 +427,9 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
                 debtAsset: WETH,
                 userBalanceOfCollateralAsset: collateralFromSenderA,
                 collateralFromSender: collateralFromSenderA,
-                debt: previewData.debt,
+                flashLoanAmount: previewData.debt,
                 minShares: 0,
+                collateralRequired: previewData.collateral,
                 collateralReceivedFromDebtSwap: collateralReceivedFromDebtSwapA
             })
         );
@@ -441,8 +446,9 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
                 debtAsset: WETH,
                 userBalanceOfCollateralAsset: collateralFromSenderB,
                 collateralFromSender: collateralFromSenderB,
-                debt: previewData.debt,
+                flashLoanAmount: previewData.debt,
                 minShares: 0,
+                collateralRequired: previewData.collateral,
                 collateralReceivedFromDebtSwap: collateralReceivedFromDebtSwapB
             })
         );
@@ -459,8 +465,9 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
                 debtAsset: WETH,
                 userBalanceOfCollateralAsset: collateralFromSenderC,
                 collateralFromSender: collateralFromSenderC,
-                debt: previewData.debt,
+                flashLoanAmount: previewData.debt,
                 minShares: 0,
+                collateralRequired: previewData.collateral,
                 collateralReceivedFromDebtSwap: collateralReceivedFromDebtSwapC
             })
         );
@@ -548,10 +555,6 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         assertEq(previewData.collateral, collateralFromSender * 2);
         assertEq(previewData.debt, 33.922924e6);
 
-        uint256 collateralRequired =
-            leverageManager.convertDebtToCollateral(leverageToken, previewData.debt, Math.Rounding.Ceil);
-        assertEq(collateralRequired, 0.019999999577917044 ether);
-
         address[] memory path = new address[](2);
         path[0] = address(USDC);
         path[1] = address(WETH);
@@ -577,7 +580,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
 
         // The collateral from the swap + the collateral from the sender is less than the collateral required
         uint256 totalCollateral = collateralReceivedFromDebtSwap + collateralFromSender;
-        assertLt(totalCollateral, collateralRequired);
+        assertLt(totalCollateral, previewData.collateral);
 
         deal(address(WETH), user, collateralFromSender);
         vm.startPrank(user);
@@ -759,10 +762,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         // Swap is favorable with slipstream, results in more than required collateral
         uint256 collateralReceivedFromDebtSwap = 1.00009355883189593 ether; // Swap of 3392.292471 USDC
 
-        uint256 collateralRequired =
-            leverageManager.convertDebtToCollateral(leverageToken, flashLoanAmount, Math.Rounding.Ceil);
         uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
-        assertGt(totalCollateral, collateralRequired);
 
         {
             // Sanity check that LR preview deposit matches test params
@@ -1171,31 +1171,23 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         uint256 collateralToAdd =
             leverageRouter.previewDeposit(params.leverageToken, params.collateralFromSender).collateral;
 
-        uint256 flashLoanAmountReduced = params.debt;
+        uint256 flashLoanAmountReduced = params.flashLoanAmount;
         if (params.collateralReceivedFromDebtSwap < collateralToAdd - params.collateralFromSender) {
             // The swap results in less collateral than required to get the flash loaned debt amount from a LM deposit, so the debt amount flash loaned
             // needs to be reduced. We reduce it by the percentage delta between the required collateral and the collateral received from the swap
             uint256 deltaPercentage =
                 params.collateralReceivedFromDebtSwap * 1e18 / (collateralToAdd - params.collateralFromSender);
-            flashLoanAmountReduced = params.debt * deltaPercentage / 1e18;
+            flashLoanAmountReduced = params.flashLoanAmount * deltaPercentage / 1e18;
         }
 
         if (flashLoanAmountReduced == 0) {
             return;
         }
 
-        uint256 collateralRequired =
-            leverageManager.convertDebtToCollateral(params.leverageToken, flashLoanAmountReduced, Math.Rounding.Ceil);
-
-        // When the total supply of the LT is zero, we need to add the buffer applied onto the required collateral to accommodate for rounding asymmetry
-        ILendingAdapter _lendingAdapter = leverageManager.getLeverageTokenLendingAdapter(params.leverageToken);
-        if (_lendingAdapter.getCollateral() == 0 && _lendingAdapter.getDebt() == 0) {
-            collateralRequired += _lendingAdapter.convertDebtToCollateralAsset(1);
-        }
-
         // Mock the swap of the debt asset to the collateral asset to be the required amount
-        uint256 collateralReceivedFromReducedDebtSwap =
-            collateralRequired > params.collateralFromSender ? collateralRequired - params.collateralFromSender : 0;
+        uint256 collateralReceivedFromReducedDebtSwap = params.collateralRequired > params.collateralFromSender
+            ? params.collateralRequired - params.collateralFromSender
+            : 0;
 
         // The entire amount of collateral is used for the deposit
         uint256 collateralUsedForDeposit = params.collateralFromSender + collateralReceivedFromReducedDebtSwap;
