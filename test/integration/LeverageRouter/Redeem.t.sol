@@ -12,7 +12,7 @@ import {SwapPathLib} from "test/utils/SwapPathLib.sol";
 
 contract LeverageRouterRedeemTest is LeverageRouterTest {
     function testFork_redeem_UniswapV2_FullRedeem() public {
-        uint256 equityInCollateralAsset = _mint();
+        uint256 equityInCollateralAsset = _deposit();
 
         uint256 collateralUsedForDebtSwap = 1.003150469473258488 ether; // Swap to 3392.292472 USDC requires 1.003150469473258488 WETH
 
@@ -44,7 +44,7 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
     }
 
     function testFork_redeem_UniswapV2_PartialRedeem() public {
-        uint256 equityInCollateralAssetMinted = _mint();
+        uint256 equityInCollateralAssetMinted = _deposit();
         uint256 equityInCollateralAssetToRedeem = equityInCollateralAssetMinted / 2;
 
         uint256 collateralUsedForDebtSwap = 0.501454232794326784 ether; // Swap to 1696.146236 USDC requires 0.501454232794326784 WETH
@@ -78,7 +78,7 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
     }
 
     function testFork_redeem_UniswapV3_FullRedeem() public {
-        uint256 equityInCollateralAsset = _mint();
+        uint256 equityInCollateralAsset = _deposit();
 
         uint256 collateralUsedForDebtSwap = 1.000932853734567851 ether; // Swap to 3392.292472 USDC requires 1.000932853734567851 WETH
 
@@ -115,7 +115,7 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
     }
 
     function testFork_redeem_UniswapV3_PartialRedeem() public {
-        uint256 equityInCollateralAssetMinted = _mint();
+        uint256 equityInCollateralAssetMinted = _deposit();
         uint256 equityInCollateralAssetToRedeem = equityInCollateralAssetMinted / 2;
 
         uint256 collateralUsedForDebtSwap = 0.500462327543122173 ether; // Swap to 1696.146236 USDC requires 0.500462327543122173 WETH
@@ -154,7 +154,7 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
     }
 
     function testFork_redeem_Aerodrome_FullRedeem() public {
-        uint256 equityInCollateralAsset = _mint();
+        uint256 equityInCollateralAsset = _deposit();
 
         uint256 collateralUsedForDebtSwap = 1.010346527757605823 ether; // Swap to 3392.292472 USDC requires 1.010346527757605823 WETH
 
@@ -186,7 +186,7 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
     }
 
     function testFork_redeem_Aerodrome_PartialRedeem() public {
-        uint256 equityInCollateralAssetMinted = _mint();
+        uint256 equityInCollateralAssetMinted = _deposit();
         uint256 equityInCollateralAssetToRedeem = equityInCollateralAssetMinted / 2;
 
         uint256 collateralUsedForDebtSwap = 0.505102807630211973 ether; // Swap to 1696.146236 USDC requires 0.505102807630211973 WETH
@@ -220,7 +220,7 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
     }
 
     function testFork_redeem_AerodromeSlipstream_FullRedeem() public {
-        uint256 equityInCollateralAsset = _mint();
+        uint256 equityInCollateralAsset = _deposit();
 
         uint256 collateralUsedForDebtSwap = 1.00090332288531026 ether; // Swap to 3392.292472 USDC requires 1.000903322885310260 WETH
 
@@ -257,7 +257,7 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
     }
 
     function testFork_redeem_AerodromeSlipstream_PartialRedeem() public {
-        uint256 equityInCollateralAssetMinted = _mint();
+        uint256 equityInCollateralAssetMinted = _deposit();
         uint256 equityInCollateralAssetToRedeem = equityInCollateralAssetMinted / 2;
 
         uint256 collateralUsedForDebtSwap = 0.500450510128598052 ether; // Swap to 1696.146236 USDC requires 0.500450510128598052 WETH
@@ -296,7 +296,7 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
     }
 
     function testFork_redeem_UniswapV3_MultiHop() public {
-        uint256 equityInCollateralAsset = _mint();
+        uint256 equityInCollateralAsset = _deposit();
 
         uint256 collateralUsedForDebtSwap = 1.001190795778625348 ether; // Swap to 3392.292472 USDC requires 1.001190795778625348 WETH
 
@@ -335,7 +335,7 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
     }
 
     function testFork_redeem_Aerodrome_MultiHop() public {
-        uint256 equityInCollateralAsset = _mint();
+        uint256 equityInCollateralAsset = _deposit();
 
         uint256 collateralUsedForDebtSwap = 1.023409712556120568 ether; // Swap to 3392.292472 USDC requires 1.023409712556120568 WETH
 
@@ -368,7 +368,7 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
     }
 
     function testFork_redeem_AerodromeSlipstream_MultiHop() public {
-        uint256 equityInCollateralAsset = _mint();
+        uint256 equityInCollateralAsset = _deposit();
 
         uint256 collateralUsedForDebtSwap = 1.001101865694523417 ether; // Swap to 3392.292472 USDC requires 1.001101865694523417 WETH
 
@@ -407,7 +407,7 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
     }
 
     function testFork_redeem_RevertIf_InsufficientSenderShares() public {
-        uint256 equityInCollateralAsset = _mint();
+        uint256 equityInCollateralAsset = _deposit();
 
         // User tries to redeem more equity than they have
         uint256 equityToRedeem = equityInCollateralAsset + 1;
@@ -445,15 +445,15 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
         vm.stopPrank();
     }
 
-    function _mint() internal returns (uint256 shareValueInCollateralAsset) {
-        uint256 equityInCollateralAsset = 1 ether;
-        uint256 collateralToAdd = 2 * equityInCollateralAsset;
+    function _deposit() internal returns (uint256 shareValueInCollateralAsset) {
+        uint256 collateralFromSender = 1 ether;
+        uint256 collateralToAdd = 2 * collateralFromSender;
+        uint256 debt = 3392.292471e6;
         uint256 userBalanceOfCollateralAssetBefore = 4 ether; // User has more than enough assets for the mint of equity
         uint256 collateralReceivedFromDebtSwap = 0.997140594716559346 ether; // Swap of 3392.292471 USDC results in 0.997140594716559346 WETH
 
         // The swap results in less collateral than required to repay the flash loan, so the user needs to approve more collateral than `equityInCollateralAsset`
-        uint256 additionalCollateralRequired =
-            collateralToAdd - (equityInCollateralAsset + collateralReceivedFromDebtSwap);
+        uint256 additionalCollateralRequired = collateralToAdd - (collateralFromSender + collateralReceivedFromDebtSwap);
 
         address[] memory path = new address[](2);
         path[0] = address(USDC);
@@ -477,12 +477,13 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
             additionalData: new bytes(0)
         });
 
-        _dealAndMint(
+        _dealAndDeposit(
             WETH,
             USDC,
             userBalanceOfCollateralAssetBefore,
-            equityInCollateralAsset,
-            additionalCollateralRequired,
+            collateralFromSender + additionalCollateralRequired,
+            debt,
+            0,
             swapContext
         );
 

@@ -13,10 +13,10 @@ import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {IEtherFiL2ModeSyncPool} from "src/interfaces/periphery/IEtherFiL2ModeSyncPool.sol";
 import {IEtherFiL2ExchangeRateProvider} from "src/interfaces/periphery/IEtherFiL2ExchangeRateProvider.sol";
-import {ActionData, LeverageTokenConfig} from "src/types/DataTypes.sol";
+import {ActionDataV2, LeverageTokenConfig} from "src/types/DataTypes.sol";
 import {LeverageRouterTest} from "../LeverageRouter.t.sol";
 
-contract LeverageRouterMintEtherFiTest is LeverageRouterTest {
+contract LeverageRouterDepositEtherFiTest is LeverageRouterTest {
     /// @notice The ETH address per the EtherFi L2 Mode Sync Pool contract
     address internal constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
@@ -53,12 +53,67 @@ contract LeverageRouterMintEtherFiTest is LeverageRouterTest {
         );
     }
 
-    function _dealAndMint(
-        IERC20 collateralAsset,
-        uint256 dealAmount,
-        uint256 equityInCollateralAsset,
-        uint256 maxSwapCostInCollateralAsset
-    ) internal {
+    function testFork_setUp() public view virtual override {
+        assertEq(address(leverageManager.getLeverageTokenCollateralAsset(leverageToken)), address(WEETH));
+        assertEq(address(leverageManager.getLeverageTokenDebtAsset(leverageToken)), address(WETH));
+
+        assertEq(address(leverageRouter.leverageManager()), address(leverageManager));
+        assertEq(address(leverageRouter.morpho()), address(MORPHO));
+    }
+
+    function testFork_Deposit() public {
+        uint256 collateralFromSender = 1 ether;
+        uint256 collateralToAdd = 2 * collateralFromSender;
+        uint256 userBalanceOfCollateralAsset = 4 ether; // User has more than enough assets for the mint of equity
+        uint256 debt = leverageRouter.previewDeposit(leverageToken, collateralFromSender).debt;
+
+        _dealAndDeposit(WEETH, userBalanceOfCollateralAsset, collateralFromSender, debt);
+
+        // Initial mint results in 1:1 shares to equity
+        assertEq(leverageToken.balanceOf(user), collateralFromSender);
+        // Collateral is taken from the user for the mint
+        assertEq(WEETH.balanceOf(user), userBalanceOfCollateralAsset - collateralFromSender);
+
+        assertEq(morphoLendingAdapter.getCollateral(), collateralToAdd);
+        // 1.058332450654038384 WETH (WEETH to WETH is not 1:1)
+        assertEq(morphoLendingAdapter.getDebt(), 1_058332450654038384);
+
+        // No leftover assets in the LeverageRouter
+        assertEq(WEETH.balanceOf(address(leverageRouter)), 0);
+        assertEq(WETH.balanceOf(address(leverageRouter)), 0);
+        assertEq(address(leverageRouter).balance, 0);
+    }
+
+    function testFuzzFork_Deposit(uint256 collateralFromSender) public {
+        collateralFromSender = bound(collateralFromSender, 1 ether, 500 ether);
+
+        ActionDataV2 memory previewData = leverageRouter.previewDeposit(leverageToken, collateralFromSender);
+
+        uint256 expectedWeEthFromDebtSwap =
+            etherFiL2ExchangeRateProvider.getConversionAmount(ETH_ADDRESS, previewData.debt);
+
+        if (expectedWeEthFromDebtSwap + collateralFromSender < previewData.collateral) {
+            collateralFromSender += 100;
+        }
+
+        ActionDataV2 memory previewDataFullDeposit =
+            leverageManager.previewDeposit(leverageToken, collateralFromSender + expectedWeEthFromDebtSwap);
+
+        _dealAndDeposit(WEETH, collateralFromSender, collateralFromSender, previewData.debt);
+
+        // All collateral is used for the deposit
+        assertEq(WEETH.balanceOf(user), 0);
+        assertEq(WEETH.balanceOf(address(leverageRouter)), 0);
+
+        // User receives shares and surplus debt
+        assertEq(leverageToken.balanceOf(user), previewDataFullDeposit.shares);
+        assertEq(WETH.balanceOf(user), previewDataFullDeposit.debt - previewData.debt);
+        assertEq(WETH.balanceOf(address(leverageRouter)), 0);
+    }
+
+    function _dealAndDeposit(IERC20 collateralAsset, uint256 dealAmount, uint256 collateralFromSender, uint256 debt)
+        internal
+    {
         deal(address(collateralAsset), user, dealAmount);
 
         ISwapAdapter.EtherFiSwapContext memory etherFiSwapContext = ISwapAdapter.EtherFiSwapContext({
@@ -85,64 +140,11 @@ contract LeverageRouterMintEtherFiTest is LeverageRouterTest {
         });
 
         vm.startPrank(user);
-        collateralAsset.approve(address(leverageRouter), equityInCollateralAsset + maxSwapCostInCollateralAsset);
-        leverageRouter.mint(leverageToken, equityInCollateralAsset, 0, maxSwapCostInCollateralAsset, swapContext);
+        collateralAsset.approve(address(leverageRouter), collateralFromSender);
+        leverageRouter.deposit(leverageToken, collateralFromSender, debt, 0, swapContext);
         vm.stopPrank();
 
         // No leftover assets in the LeverageRouter
         assertEq(collateralAsset.balanceOf(address(leverageRouter)), 0);
-    }
-
-    function testFork_setUp() public view virtual override {
-        assertEq(address(leverageManager.getLeverageTokenCollateralAsset(leverageToken)), address(WEETH));
-        assertEq(address(leverageManager.getLeverageTokenDebtAsset(leverageToken)), address(WETH));
-
-        assertEq(address(leverageRouter.leverageManager()), address(leverageManager));
-        assertEq(address(leverageRouter.morpho()), address(MORPHO));
-    }
-
-    function testFork_Mint() public {
-        uint256 equityInCollateralAsset = 1 ether;
-        uint256 collateralToAdd = 2 * equityInCollateralAsset;
-        uint256 userBalanceOfCollateralAsset = 4 ether; // User has more than enough assets for the mint of equity
-
-        _dealAndMint(WEETH, userBalanceOfCollateralAsset, equityInCollateralAsset, 0);
-
-        // Initial mint results in 1:1 shares to equity
-        assertEq(leverageToken.balanceOf(user), equityInCollateralAsset);
-        // Collateral is taken from the user for the mint
-        assertEq(WEETH.balanceOf(user), userBalanceOfCollateralAsset - equityInCollateralAsset);
-
-        assertEq(morphoLendingAdapter.getCollateral(), collateralToAdd);
-        // 1.058332450654038384 WETH (WEETH to WETH is not 1:1)
-        assertEq(morphoLendingAdapter.getDebt(), 1_058332450654038384);
-
-        // No leftover assets in the LeverageRouter
-        assertEq(WEETH.balanceOf(address(leverageRouter)), 0);
-        assertEq(WETH.balanceOf(address(leverageRouter)), 0);
-        assertEq(address(leverageRouter).balance, 0);
-    }
-
-    function testFuzzFork_Mint(uint256 equityInCollateralAsset) public {
-        equityInCollateralAsset = bound(equityInCollateralAsset, 1 ether, 500 ether);
-
-        ActionData memory actionData = leverageManager.previewMint(leverageToken, equityInCollateralAsset);
-
-        uint256 expectedWeEthFromDebtSwap =
-            etherFiL2ExchangeRateProvider.getConversionAmount(ETH_ADDRESS, actionData.debt);
-
-        uint256 requiredFlashLoan = actionData.collateral - equityInCollateralAsset;
-        uint256 additionalCollateralForSwap = requiredFlashLoan - expectedWeEthFromDebtSwap;
-        uint256 excessCollateralForSwap = 100;
-
-        _dealAndMint(
-            WEETH,
-            equityInCollateralAsset + additionalCollateralForSwap + excessCollateralForSwap,
-            equityInCollateralAsset,
-            additionalCollateralForSwap + excessCollateralForSwap
-        );
-
-        assertEq(leverageToken.balanceOf(user), actionData.shares);
-        assertEq(WEETH.balanceOf(user), 100); // Excess collateral is returned to the user
     }
 }

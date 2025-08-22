@@ -2,49 +2,46 @@
 pragma solidity ^0.8.26;
 
 // Dependency imports
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // Internal imports
+import {ILendingAdapter} from "../interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "../interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "../interfaces/ILeverageToken.sol";
 import {ISwapAdapter} from "../interfaces/periphery/ISwapAdapter.sol";
 import {ILeverageRouter} from "../interfaces/periphery/ILeverageRouter.sol";
-import {ActionData, ExternalAction} from "../types/DataTypes.sol";
+import {ActionData, ActionDataV2, ExternalAction} from "../types/DataTypes.sol";
 
 /**
- * @dev The LeverageRouter contract is an immutable periphery contract that facilitates the use of Morpho flash loans and a swap adapter
- * to mint and redeem equity from LeverageTokens.
+ * @dev The LeverageRouter contract is an immutable periphery contract that facilitates the use of flash loans and a swap adapter
+ * to deposit and redeem equity from LeverageTokens.
  *
- * The high-level mint flow is as follows:
- *   1. The user calls `mint` with the amount of equity to mint LeverageTokens (shares) for, the minimum amount of shares to receive, the maximum
- *      cost to the sender for the swap of debt to collateral during the mint to help repay the flash loan, and the swap context.
- *   2. The LeverageRouter will flash loan the required collateral asset from Morpho.
- *   3. The LeverageRouter will use the flash loaned collateral and the equity from the sender for the mint into the LeverageToken,
- *      receiving LeverageTokens and debt in return.
- *   4. The LeverageRouter will swap the debt received from the mint to the collateral asset.
- *   5. The LeverageRouter will use the swapped assets to repay the flash loan along with the collateral asset from the sender
- *      (the maximum swap cost)
- *   6. The LeverageRouter will transfer the LeverageTokens and any remaining collateral asset to the sender.
+ * The high-level deposit flow is as follows:
+ *   1. The sender calls `deposit` with the amount of collateral from the sender to deposit, the amount of debt to flash loan
+ *      (which will be swapped to collateral), the minimum amount of shares to receive, and the swap context
+ *   2. The LeverageRouter will flash loan the debt asset amount and swap it to collateral
+ *   3. The LeverageRouter will use the collateral from the swapped debt and the collateral from the sender for the deposit
+ *      into the LeverageToken, receiving LeverageToken shares and debt in return
+ *   4. The LeverageRouter will use the debt received from the deposit to repay the flash loan
+ *   6. The LeverageRouter will transfer the LeverageToken shares and any surplus debt assets to the sender
  *
- * The high-level redeem flow is the same as the mint flow, but in reverse.
+ * The high-level redeem flow is the same as the deposit flow, but in reverse.
  */
 contract LeverageRouter is ILeverageRouter {
-    /// @notice Mint related parameters to pass to the Morpho flash loan callback handler for mints
-    struct MintParams {
-        // LeverageToken to mint shares of
-        ILeverageToken token;
-        // Amount of equity to mint LeverageTokens (shares) for, denominated in the collateral asset
-        uint256 equityInCollateralAsset;
+    /// @notice Deposit related parameters to pass to the Morpho flash loan callback handler for deposits
+    struct DepositParams {
+        // Address of the sender of the deposit
+        address sender;
+        // LeverageToken to deposit into
+        ILeverageToken leverageToken;
+        // Amount of collateral from the sender to deposit
+        uint256 collateralFromSender;
         // Minimum amount of shares (LeverageTokens) to receive
         uint256 minShares;
-        // Maximum cost to the sender for the swap of debt to collateral during the mint to repay the flash loan,
-        // denominated in the collateral asset
-        uint256 maxSwapCostInCollateralAsset;
-        // Address of the sender of the mint, who will also receive the shares
-        address sender;
-        // Swap context for the debt swap
+        // Swap context for the swap of flash loaned debt to collateral
         ISwapAdapter.SwapContext swapContext;
     }
 
@@ -93,32 +90,62 @@ contract LeverageRouter is ILeverageRouter {
     }
 
     /// @inheritdoc ILeverageRouter
-    function mint(
-        ILeverageToken token,
-        uint256 equityInCollateralAsset,
+    function convertEquityToCollateral(ILeverageToken token, uint256 equityInCollateralAsset)
+        public
+        view
+        returns (uint256 collateral)
+    {
+        uint256 collateralRatio = leverageManager.getLeverageTokenState(token).collateralRatio;
+        ILendingAdapter lendingAdapter = leverageManager.getLeverageTokenLendingAdapter(token);
+        uint256 baseRatio = leverageManager.BASE_RATIO();
+
+        if (lendingAdapter.getCollateral() == 0 && lendingAdapter.getDebt() == 0) {
+            uint256 initialCollateralRatio = leverageManager.getLeverageTokenInitialCollateralRatio(token);
+            collateral = Math.mulDiv(
+                equityInCollateralAsset, initialCollateralRatio, initialCollateralRatio - baseRatio, Math.Rounding.Ceil
+            );
+        } else if (collateralRatio == type(uint256).max) {
+            collateral = equityInCollateralAsset;
+        } else {
+            collateral =
+                Math.mulDiv(equityInCollateralAsset, collateralRatio, collateralRatio - baseRatio, Math.Rounding.Ceil);
+        }
+
+        return collateral;
+    }
+
+    /// @inheritdoc ILeverageRouter
+    function previewDeposit(ILeverageToken token, uint256 collateralFromSender)
+        external
+        view
+        returns (ActionDataV2 memory previewData)
+    {
+        uint256 collateral = convertEquityToCollateral(token, collateralFromSender);
+        return leverageManager.previewDeposit(token, collateral);
+    }
+
+    /// @inheritdoc ILeverageRouter
+    function deposit(
+        ILeverageToken leverageToken,
+        uint256 collateralFromSender,
+        uint256 flashLoanAmount,
         uint256 minShares,
-        uint256 maxSwapCostInCollateralAsset,
         ISwapAdapter.SwapContext memory swapContext
     ) external {
-        uint256 collateralToAdd = leverageManager.previewMint(token, equityInCollateralAsset).collateral;
-
-        bytes memory mintData = abi.encode(
-            MintParams({
-                token: token,
-                equityInCollateralAsset: equityInCollateralAsset,
-                minShares: minShares,
-                maxSwapCostInCollateralAsset: maxSwapCostInCollateralAsset,
+        bytes memory depositData = abi.encode(
+            DepositParams({
                 sender: msg.sender,
+                leverageToken: leverageToken,
+                collateralFromSender: collateralFromSender,
+                minShares: minShares,
                 swapContext: swapContext
             })
         );
 
-        // Flash loan the additional required collateral (the sender must supply at least equityInCollateralAsset),
-        // and pass the required data to the Morpho flash loan callback handler for the mint.
         morpho.flashLoan(
-            address(leverageManager.getLeverageTokenCollateralAsset(token)),
-            collateralToAdd - equityInCollateralAsset,
-            abi.encode(MorphoCallbackData({action: ExternalAction.Mint, data: mintData}))
+            address(leverageManager.getLeverageTokenDebtAsset(leverageToken)),
+            flashLoanAmount,
+            abi.encode(MorphoCallbackData({action: ExternalAction.Mint, data: depositData}))
         );
     }
 
@@ -161,65 +188,57 @@ contract LeverageRouter is ILeverageRouter {
         MorphoCallbackData memory callbackData = abi.decode(data, (MorphoCallbackData));
 
         if (callbackData.action == ExternalAction.Mint) {
-            MintParams memory params = abi.decode(callbackData.data, (MintParams));
-            _mintAndRepayMorphoFlashLoan(params, loanAmount);
+            DepositParams memory params = abi.decode(callbackData.data, (DepositParams));
+            _depositAndRepayMorphoFlashLoan(params, loanAmount);
         } else if (callbackData.action == ExternalAction.Redeem) {
             RedeemParams memory params = abi.decode(callbackData.data, (RedeemParams));
             _redeemAndRepayMorphoFlashLoan(params, loanAmount);
         }
     }
 
-    /// @notice Executes the mint of a LeverageToken and the swap of debt assets to the collateral asset
-    /// to repay the flash loan from Morpho
-    /// @param params Params for the mint into a LeverageToken
-    /// @param collateralLoanAmount Amount of collateral asset flash loaned
-    function _mintAndRepayMorphoFlashLoan(MintParams memory params, uint256 collateralLoanAmount) internal {
-        IERC20 collateralAsset = leverageManager.getLeverageTokenCollateralAsset(params.token);
-        IERC20 debtAsset = leverageManager.getLeverageTokenDebtAsset(params.token);
+    /// @notice Executes the deposit into a LeverageToken by flash loaning the debt asset, swapping it to collateral,
+    /// depositing into the LeverageToken with the sender's collateral, and using the resulting debt to repay the flash loan.
+    /// Any surplus debt assets after repaying the flash loan are given to the sender.
+    /// @param params Params for the deposit into a LeverageToken
+    /// @param debtLoan Amount of debt asset flash loaned
+    function _depositAndRepayMorphoFlashLoan(DepositParams memory params, uint256 debtLoan) internal {
+        IERC20 collateralAsset = leverageManager.getLeverageTokenCollateralAsset(params.leverageToken);
+        IERC20 debtAsset = leverageManager.getLeverageTokenDebtAsset(params.leverageToken);
 
-        // Transfer the collateral from the sender for the mint
+        // Transfer the collateral from the sender for the deposit
         // slither-disable-next-line arbitrary-send-erc20
-        SafeERC20.safeTransferFrom(
-            collateralAsset,
-            params.sender,
-            address(this),
-            params.equityInCollateralAsset + params.maxSwapCostInCollateralAsset
-        );
+        SafeERC20.safeTransferFrom(collateralAsset, params.sender, address(this), params.collateralFromSender);
 
-        // Use the flash loaned collateral and the equity from the sender for the mint into the LeverageToken
-        SafeERC20.forceApprove(
-            collateralAsset, address(leverageManager), collateralLoanAmount + params.equityInCollateralAsset
-        );
-        ActionData memory actionData =
-            leverageManager.mint(params.token, params.equityInCollateralAsset, params.minShares);
-
-        // Swap the debt asset received from the mint to the collateral asset, used to repay the flash loan
-        SafeERC20.forceApprove(debtAsset, address(swapper), actionData.debt);
+        // Swap the debt asset received from the flash loan to the collateral asset, used to deposit
+        SafeERC20.forceApprove(debtAsset, address(swapper), debtLoan);
 
         uint256 collateralFromSwap = swapper.swapExactInput(
             debtAsset,
-            actionData.debt,
-            0, // Set to zero because additional collateral from the sender is used to help repay the flash loan
+            debtLoan,
+            0, // Set to zero because collateral from the sender is used to help with the deposit
             params.swapContext
         );
 
-        // Transfer any surplus collateral assets to the sender
-        uint256 assetsAvailableToRepayFlashLoan = collateralFromSwap + params.maxSwapCostInCollateralAsset;
-        if (collateralLoanAmount > assetsAvailableToRepayFlashLoan) {
-            revert MaxSwapCostExceeded(collateralLoanAmount - collateralFromSwap, params.maxSwapCostInCollateralAsset);
-        } else {
-            // Return any surplus collateral assets to the sender
-            uint256 collateralAssetSurplus = assetsAvailableToRepayFlashLoan - collateralLoanAmount;
-            if (collateralAssetSurplus > 0) {
-                SafeERC20.safeTransfer(collateralAsset, params.sender, collateralAssetSurplus);
-            }
+        uint256 totalCollateral = collateralFromSwap + params.collateralFromSender;
+
+        // Use the collateral from the swap and the collateral from the sender for the deposit into the LeverageToken
+        SafeERC20.forceApprove(collateralAsset, address(leverageManager), totalCollateral);
+
+        ActionDataV2 memory actionData =
+            leverageManager.deposit(params.leverageToken, totalCollateral, params.minShares);
+
+        // Transfer any surplus debt assets to the sender
+        if (debtLoan < actionData.debt) {
+            SafeERC20.safeTransfer(debtAsset, params.sender, actionData.debt - debtLoan);
         }
 
-        // Transfer shares received from the mint to the mint sender
-        SafeERC20.safeTransfer(params.token, params.sender, actionData.shares);
+        // Transfer shares received from the deposit to the deposit sender
+        SafeERC20.safeTransfer(params.leverageToken, params.sender, actionData.shares);
 
-        // Approve morpho to transfer assets to repay the flash loan
-        SafeERC20.forceApprove(collateralAsset, address(morpho), collateralLoanAmount);
+        // Approve morpho to transfer debt assets to repay the flash loan
+        // Note: if insufficient debt is available to repay the flash loan, the transaction will revert when Morpho
+        // attempts to transfer the debt assets to repay the flash loan
+        SafeERC20.forceApprove(debtAsset, address(morpho), debtLoan);
     }
 
     /// @notice Executes redeem on a LeverageToken to receive equity and the swap of collateral assets to the debt asset

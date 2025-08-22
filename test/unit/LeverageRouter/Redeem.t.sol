@@ -5,14 +5,10 @@ pragma solidity ^0.8.26;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
-import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
-import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {LeverageRouter} from "src/periphery/LeverageRouter.sol";
-import {ExternalAction} from "src/types/DataTypes.sol";
 import {LeverageRouterTest} from "./LeverageRouter.t.sol";
-import {MockLeverageManager} from "../mock/MockLeverageManager.sol";
 
 contract RedeemTest is LeverageRouterTest {
     function testFuzz_redeem_CollateralSwapWithinMaxCostForFlashLoanRepaymentDebt(
@@ -48,7 +44,7 @@ contract RedeemTest is LeverageRouterTest {
             redeemShares
         );
 
-        _mint(
+        _deposit(
             equityInCollateralAsset,
             requiredCollateral,
             requiredDebt,
@@ -123,7 +119,7 @@ contract RedeemTest is LeverageRouterTest {
             requiredCollateral, equityInCollateralAsset, requiredDebt, requiredCollateralForSwap, shares, shares
         );
 
-        _mint(
+        _deposit(
             equityInCollateralAsset,
             requiredCollateral,
             requiredDebt,
@@ -178,7 +174,7 @@ contract RedeemTest is LeverageRouterTest {
             30 ether, redeemEquityInCollateralAsset, 15 ether, 15 ether, redeemShares, totalShares
         );
 
-        _mint(30 ether, 60 ether, 30 ether, 30 ether, totalShares);
+        _deposit(30 ether, 60 ether, 30 ether, 30 ether, totalShares);
         leverageToken.approve(address(leverageRouter), totalShares);
 
         // Expect the shares to be redeemed to be transferred to the LeverageRouter, not the maxShares parameter (totalShares)

@@ -9,23 +9,20 @@ import {ExternalAction} from "src/types/DataTypes.sol";
 import {LeverageRouterTest} from "./LeverageRouter.t.sol";
 
 contract OnMorphoFlashLoanTest is LeverageRouterTest {
-    function test_onMorphoFlashLoan_Mint() public {
+    function test_onMorphoFlashLoan_Deposit() public {
         uint256 requiredCollateral = 10 ether;
-        uint256 equityInCollateralAsset = 5 ether;
+        uint256 collateralFromSender = 5 ether;
         uint256 collateralReceivedFromDebtSwap = 5 ether;
         uint256 shares = 10 ether;
         uint256 requiredDebt = 100e6;
 
-        _mockLeverageManagerMint(
-            requiredCollateral, equityInCollateralAsset, requiredDebt, collateralReceivedFromDebtSwap, shares
-        );
+        _mockLeverageManagerDeposit(requiredCollateral, requiredDebt, collateralReceivedFromDebtSwap, shares);
 
-        bytes memory mintData = abi.encode(
-            LeverageRouter.MintParams({
-                token: leverageToken,
-                equityInCollateralAsset: equityInCollateralAsset,
+        bytes memory depositData = abi.encode(
+            LeverageRouter.DepositParams({
+                leverageToken: leverageToken,
+                collateralFromSender: collateralFromSender,
                 minShares: shares,
-                maxSwapCostInCollateralAsset: 0,
                 sender: address(this),
                 swapContext: ISwapAdapter.SwapContext({
                     path: new address[](0),
@@ -45,19 +42,21 @@ contract OnMorphoFlashLoanTest is LeverageRouterTest {
             })
         );
 
-        deal(address(collateralToken), address(this), equityInCollateralAsset);
-        collateralToken.approve(address(leverageRouter), equityInCollateralAsset);
+        deal(address(collateralToken), address(this), collateralFromSender);
+        collateralToken.approve(address(leverageRouter), collateralFromSender);
 
-        // Also mock morpho flash loaning the additional collateral required for the mint
-        uint256 flashLoanAmount = requiredCollateral - equityInCollateralAsset;
-        deal(address(collateralToken), address(leverageRouter), flashLoanAmount);
+        // Also mock morpho flash loaning the debt required for the deposit
+        uint256 flashLoanAmount = requiredDebt;
+        deal(address(debtToken), address(leverageRouter), flashLoanAmount);
 
         vm.prank(address(morpho));
         leverageRouter.onMorphoFlashLoan(
             flashLoanAmount,
-            abi.encode(LeverageRouter.MorphoCallbackData({action: ExternalAction.Mint, data: mintData}))
+            abi.encode(LeverageRouter.MorphoCallbackData({action: ExternalAction.Mint, data: depositData}))
         );
         assertEq(leverageToken.balanceOf(address(this)), shares);
+        assertEq(debtToken.balanceOf(address(leverageRouter)), requiredDebt);
+        assertEq(debtToken.allowance(address(leverageRouter), address(morpho)), requiredDebt);
     }
 
     function test_onMorphoFlashLoan_Redeem() public {
@@ -67,7 +66,7 @@ contract OnMorphoFlashLoanTest is LeverageRouterTest {
         uint256 shares = 10 ether;
         uint256 requiredDebt = 100e6;
 
-        _mint(equityInCollateralAsset, requiredCollateral, requiredDebt, collateralReceivedFromDebtSwap, shares);
+        _deposit(equityInCollateralAsset, requiredCollateral, requiredDebt, collateralReceivedFromDebtSwap, shares);
 
         _mockLeverageManagerRedeem(
             requiredCollateral,

@@ -90,6 +90,10 @@ interface ILeverageManager is IFeeManager {
     /// @param actionData The action data of the redeem
     event RedeemV2(ILeverageToken indexed token, address indexed sender, ActionDataV2 actionData);
 
+    /// @notice Returns the base collateral ratio
+    /// @return baseRatio Base collateral ratio
+    function BASE_RATIO() external view returns (uint256);
+
     /// @notice Converts an amount of collateral to an amount of debt for a LeverageToken, based on the current
     /// collateral ratio of the LeverageToken
     /// @param token LeverageToken to convert collateral to debt for

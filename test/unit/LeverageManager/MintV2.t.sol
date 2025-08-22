@@ -110,8 +110,8 @@ contract MintTest is LeverageManagerTest {
         _prepareLeverageManagerStateForAction(beforeState);
 
         uint256 sharesToMint = 1 ether;
-        uint256 expectedCollateralToAdd = 2 ether; // 2x target CR
-        uint256 expectedDebtToBorrow = 1 ether;
+        uint256 expectedCollateralToAdd = 2 ether;
+        uint256 expectedDebtToBorrow = 0.666666666666666666 ether; // 3x CR
         uint256 expectedShares = sharesToMint;
 
         deal(address(collateralToken), address(this), expectedCollateralToAdd);
@@ -196,7 +196,7 @@ contract MintTest is LeverageManagerTest {
 
         LeverageTokenState memory beforeState = leverageManager.getLeverageTokenState(leverageToken);
         uint256 beforeSharesTotalSupply = leverageToken.totalSupply();
-        uint256 beforeSharesFeeAdjustedTotalSupply = leverageManager.exposed_getFeeAdjustedTotalSupply(leverageToken);
+        uint256 beforeSharesFeeAdjustedTotalSupply = leverageManager.getFeeAdjustedTotalSupply(leverageToken);
 
         // The assertion for collateral ratio before and after the mint in this helper only makes sense to use
         // if the leverage token has totalSupply > 0 before mint, as a mint of equity into a leverage token with totalSupply = 0
