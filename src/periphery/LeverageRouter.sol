@@ -32,45 +32,6 @@ import {ActionData, ActionDataV2, ExternalAction} from "../types/DataTypes.sol";
  * The high-level redeem flow is the same as the deposit flow, but in reverse.
  */
 contract LeverageRouter is ILeverageRouter {
-    /// @notice Deposit related parameters to pass to the Morpho flash loan callback handler for deposits
-    struct DepositParams {
-        // Address of the sender of the deposit
-        address sender;
-        // LeverageToken to deposit into
-        ILeverageToken leverageToken;
-        // Amount of collateral from the sender to deposit
-        uint256 collateralFromSender;
-        // Minimum amount of shares (LeverageTokens) to receive
-        uint256 minShares;
-        // External calls to execute for the swap of flash loaned debt to collateral
-        Call[] swapCalls;
-    }
-
-    /// @notice Redeem related parameters to pass to the Morpho flash loan callback handler for redeems
-    struct RedeemParams {
-        // LeverageToken to redeem from
-        ILeverageToken token;
-        // Amount of equity to receive by redeeming, denominated in the collateral asset
-        uint256 equityInCollateralAsset;
-        // Amount of LeverageToken shares to redeem for the equity
-        uint256 shares;
-        // Maximum amount of shares (LeverageTokens) to be burned during the redeem
-        uint256 maxShares;
-        // Maximum cost to the sender for the swap of debt to collateral during the redeem to repay the flash loan,
-        // denominated in the collateral asset. This cost is applied to the equity being received
-        uint256 maxSwapCostInCollateralAsset;
-        // Address of the sender of the redeem, whose shares will be burned and the equity will be transferred to
-        address sender;
-        // Swap context for the debt swap
-        ISwapAdapter.SwapContext swapContext;
-    }
-
-    /// @notice Morpho flash loan callback data to pass to the Morpho flash loan callback handler
-    struct MorphoCallbackData {
-        ExternalAction action;
-        bytes data;
-    }
-
     /// @inheritdoc ILeverageRouter
     ILeverageManager public immutable leverageManager;
 

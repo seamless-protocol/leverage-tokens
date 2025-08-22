@@ -42,7 +42,7 @@ contract OnMorphoFlashLoanTest is LeverageRouterTest {
         });
 
         bytes memory depositData = abi.encode(
-            LeverageRouter.DepositParams({
+            ILeverageRouter.DepositParams({
                 leverageToken: leverageToken,
                 collateralFromSender: collateralFromSender,
                 minShares: shares,
@@ -61,7 +61,7 @@ contract OnMorphoFlashLoanTest is LeverageRouterTest {
         vm.prank(address(morpho));
         leverageRouter.onMorphoFlashLoan(
             flashLoanAmount,
-            abi.encode(LeverageRouter.MorphoCallbackData({action: ExternalAction.Mint, data: depositData}))
+            abi.encode(ILeverageRouter.MorphoCallbackData({action: ExternalAction.Mint, data: depositData}))
         );
         assertEq(leverageToken.balanceOf(address(this)), shares);
         assertEq(debtToken.balanceOf(address(leverageRouter)), requiredDebt);
@@ -87,7 +87,7 @@ contract OnMorphoFlashLoanTest is LeverageRouterTest {
         );
 
         bytes memory redeemData = abi.encode(
-            LeverageRouter.RedeemParams({
+            ILeverageRouter.RedeemParams({
                 token: leverageToken,
                 equityInCollateralAsset: equityInCollateralAsset,
                 shares: shares,
@@ -121,7 +121,7 @@ contract OnMorphoFlashLoanTest is LeverageRouterTest {
         vm.prank(address(morpho));
         leverageRouter.onMorphoFlashLoan(
             flashLoanAmount,
-            abi.encode(LeverageRouter.MorphoCallbackData({action: ExternalAction.Redeem, data: redeemData}))
+            abi.encode(ILeverageRouter.MorphoCallbackData({action: ExternalAction.Redeem, data: redeemData}))
         );
         assertEq(leverageToken.balanceOf(address(this)), 0);
         assertEq(collateralToken.balanceOf(address(this)), equityInCollateralAsset);

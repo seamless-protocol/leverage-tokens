@@ -190,7 +190,7 @@ contract LeverageRouterTest is Test {
         });
 
         bytes memory depositData = abi.encode(
-            LeverageRouter.DepositParams({
+            ILeverageRouter.DepositParams({
                 sender: address(this),
                 leverageToken: leverageToken,
                 collateralFromSender: collateralFromSender,
@@ -209,7 +209,7 @@ contract LeverageRouterTest is Test {
         vm.prank(address(morpho));
         leverageRouter.onMorphoFlashLoan(
             requiredDebt,
-            abi.encode(LeverageRouter.MorphoCallbackData({action: ExternalAction.Mint, data: depositData}))
+            abi.encode(ILeverageRouter.MorphoCallbackData({action: ExternalAction.Mint, data: depositData}))
         );
 
         // Repayment of flash loan
