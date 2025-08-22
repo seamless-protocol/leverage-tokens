@@ -14,6 +14,7 @@ import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {LeverageRouter} from "src/periphery/LeverageRouter.sol";
+import {LeverageRouterHarness} from "./LeverageRouterHarness.t.sol";
 import {ExternalAction} from "src/types/DataTypes.sol";
 import {MockERC20} from "../mock/MockERC20.sol";
 import {MockLendingAdapter} from "../mock/MockLendingAdapter.sol";
@@ -44,7 +45,7 @@ contract LeverageRouterTest is Test {
 
     MockLeverageManager public leverageManager;
 
-    LeverageRouter public leverageRouter;
+    LeverageRouterHarness public leverageRouter;
 
     function setUp() public virtual {
         // Setup mocked contracts
@@ -64,7 +65,7 @@ contract LeverageRouterTest is Test {
         swapper = new MockSwapper();
 
         // Setup the leverage router
-        leverageRouter = new LeverageRouter(
+        leverageRouter = new LeverageRouterHarness(
             ILeverageManager(address(leverageManager)), IMorpho(address(morpho)), ISwapAdapter(address(swapper))
         );
 

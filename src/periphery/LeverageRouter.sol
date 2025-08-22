@@ -2,6 +2,7 @@
 pragma solidity ^0.8.26;
 
 // Dependency imports
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -87,6 +88,48 @@ contract LeverageRouter is ILeverageRouter {
         leverageManager = _leverageManager;
         morpho = _morpho;
         swapper = _swapper;
+    }
+
+    /// @inheritdoc ILeverageRouter
+    function executeSwap(
+        Call calldata call,
+        Approval calldata approval,
+        address inputToken,
+        address outputToken,
+        uint256 inputAmount,
+        address payable recipient
+    ) public payable returns (bytes memory result) {
+        // 1) Transfer input token to this contract. (skip if inputAmount == 0)
+        if (inputAmount != 0) {
+            SafeERC20.safeTransferFrom(IERC20(inputToken), msg.sender, address(this), inputAmount);
+        }
+
+        // 2) Execute the approval and external call
+        result = _execute(call, approval);
+
+        // 3) Send any balance of outputToken to the recipient
+        bool isOutputTokenETH = outputToken == address(0);
+        if (!isOutputTokenETH) {
+            uint256 amountOutReceivedBySwapAdapter = IERC20(outputToken).balanceOf(address(this));
+            SafeERC20.safeTransfer(IERC20(outputToken), recipient, amountOutReceivedBySwapAdapter);
+        } else {
+            uint256 amountOutReceivedBySwapAdapter = address(this).balance;
+            // slither-disable-next-line reentrancy-events
+            Address.sendValue(recipient, amountOutReceivedBySwapAdapter);
+        }
+
+        // 4) Send any leftover input token to the sender, if there is any remaining.
+        // Note: If the input token is the same as the output token, any surplus was already sent to the recipient
+        // instead of the sender
+        bool isInputTokenETH = inputToken == address(0);
+        if (!isInputTokenETH) {
+            uint256 leftover = IERC20(inputToken).balanceOf(address(this));
+            if (leftover > 0) SafeERC20.safeTransfer(IERC20(inputToken), msg.sender, leftover);
+        } else {
+            uint256 leftover = address(this).balance;
+            // slither-disable-next-line reentrancy-events
+            if (leftover > 0) Address.sendValue(payable(msg.sender), leftover);
+        }
     }
 
     /// @inheritdoc ILeverageRouter
@@ -187,6 +230,26 @@ contract LeverageRouter is ILeverageRouter {
         }
     }
 
+    /// @notice Executes an arbitrary external call and optionally executes a token approval before the call
+    /// @param call The call to execute
+    /// @param approval The approval to set before the call (set token=address(0) to skip)
+    /// @return result Return data of the external call
+    function _execute(Call calldata call, Approval calldata approval) internal returns (bytes memory result) {
+        // 1) Approval (skip if approval.token == address(0))
+        bool approvalRequired = approval.token != address(0);
+        if (approval.token != address(0)) {
+            SafeERC20.forceApprove(IERC20(approval.token), approval.spender, approval.amount);
+        }
+
+        // 2) Perform the external call
+        result = Address.functionCallWithValue(call.target, call.data, call.value);
+
+        // 3) Reset approval to zero
+        if (approvalRequired) {
+            SafeERC20.forceApprove(IERC20(approval.token), approval.spender, 0);
+        }
+    }
+
     /// @notice Executes the deposit into a LeverageToken by flash loaning the debt asset, swapping it to collateral,
     /// depositing into the LeverageToken with the sender's collateral, and using the resulting debt to repay the flash loan.
     /// Any surplus debt assets after repaying the flash loan are given to the sender.
@@ -272,4 +335,6 @@ contract LeverageRouter is ILeverageRouter {
         // Approve morpho to transfer assets to repay the flash loan
         SafeERC20.forceApprove(debtAsset, address(morpho), debtLoanAmount);
     }
+
+    receive() external payable {}
 }

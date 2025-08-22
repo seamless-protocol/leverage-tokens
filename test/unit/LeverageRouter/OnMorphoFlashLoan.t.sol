@@ -122,6 +122,6 @@ contract OnMorphoFlashLoanTest is LeverageRouterTest {
     function testFuzz_onMorphoFlashLoan_RevertIf_Unauthorized(address caller) public {
         vm.assume(caller != address(morpho));
         vm.expectRevert(ILeverageRouter.Unauthorized.selector);
-        LeverageRouter(address(leverageRouter)).onMorphoFlashLoan(0, "");
+        leverageRouter.onMorphoFlashLoan(0, "");
     }
 }
