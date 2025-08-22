@@ -38,6 +38,16 @@ interface ILeverageRouter {
     /// @notice Error thrown when the caller is not authorized to execute a function
     error Unauthorized();
 
+    /// @notice Converts an amount of equity to an amount of collateral for a LeverageToken, based on the current
+    /// collateral ratio of the LeverageToken
+    /// @param token LeverageToken to convert equity to collateral for
+    /// @param equityInCollateralAsset Amount of equity to convert to collateral, denominated in the collateral asset of the LeverageToken
+    /// @return collateral Amount of collateral that correspond to the equity amount
+    function convertEquityToCollateral(ILeverageToken token, uint256 equityInCollateralAsset)
+        external
+        view
+        returns (uint256 collateral);
+
     /// @notice The LeverageManager contract
     /// @return _leverageManager The LeverageManager contract
     function leverageManager() external view returns (ILeverageManager _leverageManager);
@@ -48,14 +58,14 @@ interface ILeverageRouter {
 
     /// @notice Previews the deposit function call for an amount of equity and returns all required data
     /// @param token LeverageToken to preview deposit for
-    /// @param equityInCollateralAsset The amount of equity to deposit. Denominated in the collateral asset of the LeverageToken
+    /// @param collateralFromSender The amount of collateral from the sender to deposit
     /// @return previewData Preview data for deposit
-    ///         - collateral Amount of collateral that will be added to the LeverageToken
+    ///         - collateral Total amount of collateral that will be added to the LeverageToken (including collateral from swapping flash loaned debt)
     ///         - debt Amount of debt that will be borrowed
     ///         - shares Amount of shares that will be minted
     ///         - tokenFee Amount of shares that will be charged for the deposit that are given to the LeverageToken
     ///         - treasuryFee Amount of shares that will be charged for the deposit that are given to the treasury
-    function previewDeposit(ILeverageToken token, uint256 equityInCollateralAsset)
+    function previewDeposit(ILeverageToken token, uint256 collateralFromSender)
         external
         view
         returns (ActionDataV2 memory);
@@ -68,13 +78,13 @@ interface ILeverageRouter {
     /// the deposit of (collateralFromSender + debt swapped to collateral) is given to the sender.
     /// @param leverageToken LeverageToken to deposit into
     /// @param collateralFromSender Collateral asset amount from the sender to deposit
-    /// @param debt Amount of debt to flash loan, which is swapped to collateral and used to deposit into the LeverageToken
+    /// @param flashLoanAmount Amount of debt to flash loan, which is swapped to collateral and used to deposit into the LeverageToken
     /// @param minShares Minimum number of shares expected to be received by the sender
     /// @param swapContext Swap context to use for the swap (which DEX to use, the route, tick spacing, etc.)
     function deposit(
         ILeverageToken leverageToken,
         uint256 collateralFromSender,
-        uint256 debt,
+        uint256 flashLoanAmount,
         uint256 minShares,
         ISwapAdapter.SwapContext memory swapContext
     ) external;

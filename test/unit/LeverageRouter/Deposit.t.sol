@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
+// Dependency imports
+import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
+
 // Internal imports
 import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
@@ -146,7 +149,7 @@ contract DepositTest is LeverageRouterTest {
         assertEq(collateralToken.balanceOf(address(leverageRouter)), 0);
     }
 
-    function testFuzz_Deposit_RevertIf_InsufficientCollateralForDeposit(
+    function testFuzz_Deposit_RevertIf_InsufficientDebtFromDepositToRepayFlashLoan(
         uint256 requiredCollateral,
         uint256 debtFlashLoan,
         uint256 debtFromDeposit,
@@ -169,12 +172,8 @@ contract DepositTest is LeverageRouterTest {
         // Mocked exchange rate of shares (Doesn't matter for this test as the shares received and previewed are mocked)
         uint256 shares = 10 ether;
 
-        // Mock the convert debt to collateral to return a value greater than the total collateral available
+        // Total collateral available for the deosit
         uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
-        leverageManager.setMockConvertDebtToCollateralData(
-            MockLeverageManager.ConvertDebtToCollateralParams({leverageToken: leverageToken, debt: debtFlashLoan}),
-            totalCollateral + 1
-        );
 
         // Mock the swap of the debt asset to the collateral asset
         swapper.mockNextExactInputSwap(debtToken, collateralToken, collateralReceivedFromDebtSwap);
@@ -183,11 +182,8 @@ contract DepositTest is LeverageRouterTest {
         deal(address(collateralToken), address(this), collateralFromSender);
         collateralToken.approve(address(leverageRouter), collateralFromSender);
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                ILeverageRouter.InsufficientCollateralForDeposit.selector, totalCollateral, totalCollateral + 1
-            )
-        );
+        _mockLeverageManagerDeposit(totalCollateral, debtFromDeposit, collateralReceivedFromDebtSwap, shares);
+
         leverageRouter.deposit(
             leverageToken,
             collateralFromSender,
@@ -210,5 +206,18 @@ contract DepositTest is LeverageRouterTest {
                 additionalData: new bytes(0)
             })
         );
+
+        // Mimic Morpho attempting to transfer debt from the LeverageRouter to repay the flash loan
+        vm.startPrank(address(morpho));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IERC20Errors.ERC20InsufficientBalance.selector,
+                address(leverageRouter),
+                debtToken.balanceOf(address(leverageRouter)),
+                debtFlashLoan
+            )
+        );
+        debtToken.transferFrom(address(leverageRouter), address(morpho), debtFlashLoan);
+        vm.stopPrank();
     }
 }

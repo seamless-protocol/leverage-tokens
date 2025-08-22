@@ -91,16 +91,15 @@ contract LeverageRouter is ILeverageRouter {
     }
 
     /// @inheritdoc ILeverageRouter
-    function previewDeposit(ILeverageToken token, uint256 equityInCollateralAsset)
-        external
+    function convertEquityToCollateral(ILeverageToken token, uint256 equityInCollateralAsset)
+        public
         view
-        returns (ActionDataV2 memory)
+        returns (uint256 collateral)
     {
         uint256 collateralRatio = leverageManager.getLeverageTokenState(token).collateralRatio;
         ILendingAdapter lendingAdapter = leverageManager.getLeverageTokenLendingAdapter(token);
         uint256 baseRatio = leverageManager.BASE_RATIO();
 
-        uint256 collateral;
         if (lendingAdapter.getCollateral() == 0 && lendingAdapter.getDebt() == 0) {
             uint256 initialCollateralRatio = leverageManager.getLeverageTokenInitialCollateralRatio(token);
             collateral = Math.mulDiv(
@@ -113,6 +112,16 @@ contract LeverageRouter is ILeverageRouter {
                 Math.mulDiv(equityInCollateralAsset, collateralRatio, collateralRatio - baseRatio, Math.Rounding.Ceil);
         }
 
+        return collateral;
+    }
+
+    /// @inheritdoc ILeverageRouter
+    function previewDeposit(ILeverageToken token, uint256 collateralFromSender)
+        external
+        view
+        returns (ActionDataV2 memory previewData)
+    {
+        uint256 collateral = convertEquityToCollateral(token, collateralFromSender);
         return leverageManager.previewDeposit(token, collateral);
     }
 
@@ -120,7 +129,7 @@ contract LeverageRouter is ILeverageRouter {
     function deposit(
         ILeverageToken leverageToken,
         uint256 collateralFromSender,
-        uint256 debt,
+        uint256 flashLoanAmount,
         uint256 minShares,
         ISwapAdapter.SwapContext memory swapContext
     ) external {
@@ -136,7 +145,7 @@ contract LeverageRouter is ILeverageRouter {
 
         morpho.flashLoan(
             address(leverageManager.getLeverageTokenDebtAsset(leverageToken)),
-            debt,
+            flashLoanAmount,
             abi.encode(MorphoCallbackData({action: ExternalAction.Mint, data: depositData}))
         );
     }
@@ -231,14 +240,7 @@ contract LeverageRouter is ILeverageRouter {
             params.swapContext
         );
 
-        // Preview the amount of collateral required to get the flash loaned debt amount from a LM deposit.
-        uint256 collateralRequired =
-            leverageManager.convertDebtToCollateral(params.leverageToken, debtLoan, Math.Rounding.Ceil);
-
         uint256 totalCollateral = collateralFromSwap + params.collateralFromSender;
-        if (totalCollateral < collateralRequired) {
-            revert InsufficientCollateralForDeposit(totalCollateral, collateralRequired);
-        }
 
         // Use the collateral from the swap and the collateral from the sender for the deposit into the LeverageToken
         SafeERC20.forceApprove(collateralAsset, address(leverageManager), totalCollateral);
@@ -255,6 +257,8 @@ contract LeverageRouter is ILeverageRouter {
         SafeERC20.safeTransfer(params.leverageToken, params.sender, actionData.shares);
 
         // Approve morpho to transfer debt assets to repay the flash loan
+        // Note: if insufficient debt is available to repay the flash loan, the transaction will revert when Morpho
+        // attempts to transfer the debt assets to repay the flash loan
         SafeERC20.forceApprove(debtAsset, address(morpho), debtLoan);
     }
 

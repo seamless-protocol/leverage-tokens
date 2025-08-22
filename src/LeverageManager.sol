@@ -150,7 +150,19 @@ contract LeverageManager is
         uint256 totalCollateral = lendingAdapter.getCollateral();
         uint256 totalDebt = lendingAdapter.getDebt();
 
-        return _convertDebtToCollateral(token, lendingAdapter, debt, totalCollateral, totalDebt, rounding);
+        if (totalDebt == 0) {
+            if (totalCollateral == 0) {
+                // Initial state: no collateral or debt, use initial collateral ratio
+                uint256 initialCollateralRatio = getLeverageTokenInitialCollateralRatio(token);
+                return lendingAdapter.convertDebtToCollateralAsset(
+                    Math.mulDiv(debt, initialCollateralRatio, BASE_RATIO, rounding)
+                );
+            }
+            // Liquidated state: no debt but collateral exists, cannot convert
+            return 0;
+        }
+
+        return Math.mulDiv(debt, totalCollateral, totalDebt, rounding);
     }
 
     /// @inheritdoc ILeverageManager

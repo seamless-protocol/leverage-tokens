@@ -78,9 +78,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
         return _getFeeManagerStorage().defaultManagementFeeAtCreation;
     }
 
-    /// @notice Function that returns the total supply of the LeverageToken adjusted for any accrued management fees
-    /// @param token LeverageToken to get fee adjusted total supply for
-    /// @return totalSupply Fee adjusted total supply of the LeverageToken
+    /// @inheritdoc IFeeManager
     function getFeeAdjustedTotalSupply(ILeverageToken token) public view returns (uint256) {
         uint256 totalSupply = token.totalSupply();
         uint256 accruedManagementFee = _getAccruedManagementFee(token);

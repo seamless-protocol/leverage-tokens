@@ -28,8 +28,9 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         IERC20 debtAsset;
         uint256 userBalanceOfCollateralAsset;
         uint256 collateralFromSender;
-        uint256 debt;
+        uint256 flashLoanAmount;
         uint256 minShares;
+        uint256 collateralRequired;
         uint256 collateralReceivedFromDebtSwap;
     }
 
@@ -74,7 +75,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         uint256 collateralFromSender = 1 ether;
         uint256 collateralToAdd = 2 * collateralFromSender;
         uint256 userBalanceOfCollateralAsset = 4 ether; // User has more than enough assets for the mint of equity
-        uint256 debt = 3392.292471e6; // 3392.292471 USDC
+        uint256 flashLoanAmount = 3392.292471e6; // 3392.292471 USDC
         uint256 minShares = 1 ether * 0.99e18 / 1e18; // 1% slippage
         uint256 collateralReceivedFromDebtSwap = 0.997140594716559346 ether; // Swap of 3392.292471 USDC
 
@@ -82,7 +83,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             // Sanity check that LR preview deposit matches test params
             ActionDataV2 memory leverageRouterPreview =
                 leverageRouter.previewDeposit(leverageToken, collateralFromSender);
-            assertEq(leverageRouterPreview.debt, debt);
+            assertEq(leverageRouterPreview.debt, flashLoanAmount);
             assertEq(leverageRouterPreview.shares, 1 ether);
             assertEq(leverageRouterPreview.collateral, collateralToAdd);
             assertEq(leverageRouterPreview.tokenFee, 0);
@@ -93,8 +94,8 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         // needs to be reduced. We reduce it by the percentage delta between the required collateral and the collateral received from the swap
         uint256 deltaPercentage = collateralReceivedFromDebtSwap * 1e18 / (collateralToAdd - collateralFromSender);
         assertEq(deltaPercentage, 0.997140594716559346e18);
-        uint256 debtReduced = debt * deltaPercentage / 1e18;
-        assertEq(debtReduced, 3382.592531e6);
+        uint256 flashLoanAmountReduced = flashLoanAmount * deltaPercentage / 1e18;
+        assertEq(flashLoanAmountReduced, 3382.592531e6);
 
         // Updated collateral received from the debt swap for lower debt amount
         collateralReceivedFromDebtSwap = 0.994290732650270211 ether;
@@ -103,7 +104,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
         assertEq(totalCollateral, 1.994290732650270211 ether);
         ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, totalCollateral);
-        assertGe(previewData.debt, debtReduced);
+        assertGe(previewData.debt, flashLoanAmountReduced);
         assertEq(previewData.debt, 3382.608719e6);
 
         // More than minShares (1% slippage) will be minted
@@ -131,14 +132,20 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         });
 
         _dealAndDeposit(
-            WETH, USDC, userBalanceOfCollateralAsset, collateralFromSender, debtReduced, minShares, swapContext
+            WETH,
+            USDC,
+            userBalanceOfCollateralAsset,
+            collateralFromSender,
+            flashLoanAmountReduced,
+            minShares,
+            swapContext
         );
 
         // Collateral is taken from the user for the deposit. All of the collateral should be used
         assertEq(WETH.balanceOf(user), userBalanceOfCollateralAsset - collateralFromSender);
 
         // Any additional debt that is not used to repay the flash loan is given to the user
-        uint256 excessDebt = previewData.debt - debtReduced;
+        uint256 excessDebt = previewData.debt - flashLoanAmountReduced;
         assertEq(USDC.balanceOf(user), excessDebt);
         assertEq(USDC.balanceOf(user), 0.016188e6);
 
@@ -153,7 +160,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         // Params from testFork_deposit_UniswapV2_FirstDeposit
         uint256 userBalanceOfCollateralAsset = 4 ether;
         uint256 collateralFromSender = 1 ether;
-        uint256 debt = 3382.592531e6;
+        uint256 flashLoanAmount = 3382.592531e6;
         uint256 minShares = 0.99 ether;
 
         address[] memory path = new address[](2);
@@ -176,7 +183,9 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             additionalData: new bytes(0)
         });
 
-        _dealAndDeposit(WETH, USDC, userBalanceOfCollateralAsset, collateralFromSender, debt, minShares, swapContext);
+        _dealAndDeposit(
+            WETH, USDC, userBalanceOfCollateralAsset, collateralFromSender, flashLoanAmount, minShares, swapContext
+        );
 
         uint256 expectedUserDebtBalance = 0.016188e6;
         assertEq(USDC.balanceOf(user), expectedUserDebtBalance);
@@ -191,8 +200,8 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             uint256 deltaPercentage =
                 collateralReceivedFromDebtSwap * 1e18 / (previewDataFullDeposit.collateral - collateralFromSender);
             assertEq(deltaPercentage, 0.993336131402504508e18);
-            uint256 debtReduced = previewDataFullDeposit.debt * deltaPercentage / 1e18;
-            assertEq(debtReduced, 3369.686681e6);
+            uint256 flashLoanAmountReduced = previewDataFullDeposit.debt * deltaPercentage / 1e18;
+            assertEq(flashLoanAmountReduced, 3369.686681e6);
 
             // Update for debtReduced
             collateralReceivedFromDebtSwap = 0.989547994451029601 ether;
@@ -202,7 +211,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             assertEq(totalCollateral, 1.989547994451029601 ether);
             ActionDataV2 memory previewDataReducedDeposit =
                 leverageManager.previewDeposit(leverageToken, totalCollateral);
-            assertGe(previewDataReducedDeposit.debt, debtReduced);
+            assertGe(previewDataReducedDeposit.debt, flashLoanAmountReduced);
             assertEq(previewDataReducedDeposit.debt, 3374.564342e6);
 
             // More than minShares (1% slippage) will be minted
@@ -215,13 +224,13 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
                 USDC,
                 userBalanceOfCollateralAsset,
                 collateralFromSender,
-                debtReduced,
+                flashLoanAmountReduced,
                 previewDataReducedDeposit.shares,
                 swapContext
             );
 
             // Any additional debt that is not used to repay the flash loan is given to the user
-            uint256 surplusDebtFromDeposit = previewDataReducedDeposit.debt - debtReduced;
+            uint256 surplusDebtFromDeposit = previewDataReducedDeposit.debt - flashLoanAmountReduced;
             assertEq(surplusDebtFromDeposit, 4.877661e6);
             expectedUserDebtBalance += surplusDebtFromDeposit;
             assertEq(USDC.balanceOf(user), expectedUserDebtBalance);
@@ -237,8 +246,8 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             uint256 deltaPercentage =
                 collateralReceivedFromDebtSwap * 1e18 / (previewDataFullDeposit.collateral - collateralFromSender);
             assertEq(deltaPercentage, 0.995230945787895318e18);
-            uint256 debtReduced = previewDataFullDeposit.debt * deltaPercentage / 1e18;
-            assertEq(debtReduced, 3376.114445e6);
+            uint256 flashLoanAmountReduced = previewDataFullDeposit.debt * deltaPercentage / 1e18;
+            assertEq(flashLoanAmountReduced, 3376.114445e6);
 
             // Update for debtReduced
             collateralReceivedFromDebtSwap = 0.9904869053653832 ether;
@@ -248,7 +257,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             assertEq(totalCollateral, 1.9904869053653832 ether);
             ActionDataV2 memory previewDataReducedDeposit =
                 leverageManager.previewDeposit(leverageToken, totalCollateral);
-            assertGe(previewDataReducedDeposit.debt, debtReduced);
+            assertGe(previewDataReducedDeposit.debt, flashLoanAmountReduced);
             assertEq(previewDataReducedDeposit.debt, 3376.156872e6);
 
             // More than minShares (1% slippage) will be minted
@@ -260,13 +269,13 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
                 USDC,
                 userBalanceOfCollateralAsset,
                 collateralFromSender,
-                debtReduced,
+                flashLoanAmountReduced,
                 previewDataReducedDeposit.shares,
                 swapContext
             );
 
             // Any additional debt that is not used to repay the flash loan is given to the user
-            uint256 surplusDebtFromDeposit = previewDataReducedDeposit.debt - debtReduced;
+            uint256 surplusDebtFromDeposit = previewDataReducedDeposit.debt - flashLoanAmountReduced;
             assertEq(surplusDebtFromDeposit, 0.042427e6);
             expectedUserDebtBalance += surplusDebtFromDeposit;
             assertEq(USDC.balanceOf(user), expectedUserDebtBalance);
@@ -282,8 +291,8 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             uint256 deltaPercentage =
                 collateralReceivedFromDebtSwap * 1e18 / (previewDataFullDeposit.collateral - collateralFromSender);
             assertEq(deltaPercentage, 0.994278186196095526e18);
-            uint256 debtReduced = previewDataFullDeposit.debt * deltaPercentage / 1e18;
-            assertEq(debtReduced, 3372.882406e6);
+            uint256 flashLoanAmountReduced = previewDataFullDeposit.debt * deltaPercentage / 1e18;
+            assertEq(flashLoanAmountReduced, 3372.882406e6);
 
             // Update for debtReduced
             collateralReceivedFromDebtSwap = 0.988591828264731799 ether;
@@ -293,7 +302,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             assertEq(totalCollateral, 1.988591828264731799 ether);
             ActionDataV2 memory previewDataReducedDeposit =
                 leverageManager.previewDeposit(leverageToken, totalCollateral);
-            assertGe(previewDataReducedDeposit.debt, debtReduced);
+            assertGe(previewDataReducedDeposit.debt, flashLoanAmountReduced);
             assertEq(previewDataReducedDeposit.debt, 3372.942544e6);
 
             // More than minShares (1% slippage) will be minted
@@ -305,13 +314,13 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
                 USDC,
                 userBalanceOfCollateralAsset,
                 collateralFromSender,
-                debtReduced,
+                flashLoanAmountReduced,
                 previewDataReducedDeposit.shares,
                 swapContext
             );
 
             // Any additional debt that is not used to repay the flash loan is given to the user
-            uint256 surplusDebtFromDeposit = previewDataReducedDeposit.debt - debtReduced;
+            uint256 surplusDebtFromDeposit = previewDataReducedDeposit.debt - flashLoanAmountReduced;
             assertEq(surplusDebtFromDeposit, 0.060138e6);
             expectedUserDebtBalance += surplusDebtFromDeposit;
             assertEq(USDC.balanceOf(user), expectedUserDebtBalance);
@@ -345,8 +354,9 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
                 debtAsset: USDC,
                 userBalanceOfCollateralAsset: collateralFromSenderA,
                 collateralFromSender: collateralFromSenderA,
-                debt: previewData.debt,
+                flashLoanAmount: previewData.debt,
                 minShares: 0,
+                collateralRequired: previewData.collateral,
                 collateralReceivedFromDebtSwap: collateralReceivedFromDebtSwapA
             })
         );
@@ -363,8 +373,9 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
                 debtAsset: USDC,
                 userBalanceOfCollateralAsset: collateralFromSenderB,
                 collateralFromSender: collateralFromSenderB,
-                debt: previewData.debt,
+                flashLoanAmount: previewData.debt,
                 minShares: 0,
+                collateralRequired: previewData.collateral,
                 collateralReceivedFromDebtSwap: collateralReceivedFromDebtSwapB
             })
         );
@@ -381,8 +392,9 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
                 debtAsset: USDC,
                 userBalanceOfCollateralAsset: collateralFromSenderC,
                 collateralFromSender: collateralFromSenderC,
-                debt: previewData.debt,
+                flashLoanAmount: previewData.debt,
                 minShares: 0,
+                collateralRequired: previewData.collateral,
                 collateralReceivedFromDebtSwap: collateralReceivedFromDebtSwapC
             })
         );
@@ -415,8 +427,9 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
                 debtAsset: WETH,
                 userBalanceOfCollateralAsset: collateralFromSenderA,
                 collateralFromSender: collateralFromSenderA,
-                debt: previewData.debt,
+                flashLoanAmount: previewData.debt,
                 minShares: 0,
+                collateralRequired: previewData.collateral,
                 collateralReceivedFromDebtSwap: collateralReceivedFromDebtSwapA
             })
         );
@@ -433,8 +446,9 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
                 debtAsset: WETH,
                 userBalanceOfCollateralAsset: collateralFromSenderB,
                 collateralFromSender: collateralFromSenderB,
-                debt: previewData.debt,
+                flashLoanAmount: previewData.debt,
                 minShares: 0,
+                collateralRequired: previewData.collateral,
                 collateralReceivedFromDebtSwap: collateralReceivedFromDebtSwapB
             })
         );
@@ -451,8 +465,9 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
                 debtAsset: WETH,
                 userBalanceOfCollateralAsset: collateralFromSenderC,
                 collateralFromSender: collateralFromSenderC,
-                debt: previewData.debt,
+                flashLoanAmount: previewData.debt,
                 minShares: 0,
+                collateralRequired: previewData.collateral,
                 collateralReceivedFromDebtSwap: collateralReceivedFromDebtSwapC
             })
         );
@@ -463,7 +478,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         uint256 collateralFromSender = 1 ether;
         uint256 collateralToAdd = 2 * collateralFromSender;
         uint256 userBalanceOfCollateralAsset = 4 ether; // User has more than enough assets for the mint of equity
-        uint256 debt = 3392.292471e6; // 3392.292471 USDC
+        uint256 flashLoanAmount = 3392.292471e6; // 3392.292471 USDC
         uint256 sharesFromDeposit = 1 ether;
         uint256 minShares = sharesFromDeposit * 0.99715e18 / 1e18; // 0.285% slippage
         uint256 collateralReceivedFromDebtSwap = 0.997140594716559346 ether; // Swap of 3392.292471 USDC
@@ -472,7 +487,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             // Sanity check that LR preview deposit matches test params
             ActionDataV2 memory previewDataFullDeposit =
                 leverageRouter.previewDeposit(leverageToken, collateralFromSender);
-            assertEq(previewDataFullDeposit.debt, debt);
+            assertEq(previewDataFullDeposit.debt, flashLoanAmount);
             assertEq(previewDataFullDeposit.shares, sharesFromDeposit);
             assertEq(previewDataFullDeposit.collateral, collateralToAdd);
             assertEq(previewDataFullDeposit.tokenFee, 0);
@@ -483,8 +498,8 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         // needs to be reduced. We reduce it by the percentage delta between the required collateral and the collateral received from the swap
         uint256 deltaPercentage = collateralReceivedFromDebtSwap * 1e18 / (collateralToAdd - collateralFromSender);
         assertEq(deltaPercentage, 0.997140594716559346e18);
-        uint256 debtReduced = debt * deltaPercentage / 1e18;
-        assertEq(debtReduced, 3382.592531e6);
+        uint256 flashLoanAmountReduced = flashLoanAmount * deltaPercentage / 1e18;
+        assertEq(flashLoanAmountReduced, 3382.592531e6);
 
         // Updated collateral received from the debt swap for lower debt amount
         collateralReceivedFromDebtSwap = 0.994290732650270211 ether;
@@ -493,7 +508,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
         assertEq(totalCollateral, 1.994290732650270211 ether);
         ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, totalCollateral);
-        assertGe(previewData.debt, debtReduced);
+        assertGe(previewData.debt, flashLoanAmountReduced);
         assertEq(previewData.debt, 3382.608719e6);
 
         // More than minShares (0.285% slippage) will be minted
@@ -527,22 +542,18 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         vm.expectRevert(
             abi.encodeWithSelector(ILeverageManager.SlippageTooHigh.selector, 0.997145366325135105 ether, 0.99715 ether)
         );
-        leverageRouter.deposit(leverageToken, collateralFromSender, debtReduced, minShares, swapContext);
+        leverageRouter.deposit(leverageToken, collateralFromSender, flashLoanAmountReduced, minShares, swapContext);
         vm.stopPrank();
     }
 
     /// @dev In this block price on oracle 3392.292471591441746049801068
-    function testFork_deposit_InsufficientCollateralForDeposit() public {
+    function testFork_deposit_InsufficientDebtFromDepositToRepayFlashLoan() public {
         uint256 collateralFromSender = 0.01 ether;
 
         // 2x collateral ratio
         ActionDataV2 memory previewData = leverageRouter.previewDeposit(leverageToken, collateralFromSender);
         assertEq(previewData.collateral, collateralFromSender * 2);
         assertEq(previewData.debt, 33.922924e6);
-
-        uint256 collateralRequired =
-            leverageManager.convertDebtToCollateral(leverageToken, previewData.debt, Math.Rounding.Ceil);
-        assertEq(collateralRequired, 0.019999999577917044 ether);
 
         address[] memory path = new address[](2);
         path[0] = address(USDC);
@@ -569,18 +580,15 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
 
         // The collateral from the swap + the collateral from the sender is less than the collateral required
         uint256 totalCollateral = collateralReceivedFromDebtSwap + collateralFromSender;
-        assertLt(totalCollateral, collateralRequired);
+        assertLt(totalCollateral, previewData.collateral);
 
         deal(address(WETH), user, collateralFromSender);
         vm.startPrank(user);
         WETH.approve(address(leverageRouter), collateralFromSender);
 
-        // Reverts due to insufficient collateral from swap + user for the deposit
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                ILeverageRouter.InsufficientCollateralForDeposit.selector, totalCollateral, collateralRequired
-            )
-        );
+        // Reverts when morpho attempts to pull assets to repay the flash loan. The debt amount returned from the deposit is too
+        // low because the collateral from the swap + the collateral from the sender is less than the collateral required.
+        vm.expectRevert("transferFrom reverted"); // Thrown by morpho
         leverageRouter.deposit(leverageToken, collateralFromSender, previewData.debt, 0, swapContext);
         vm.stopPrank();
     }
@@ -589,7 +597,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
     function testFork_deposit_UniswapV3() public {
         uint256 collateralFromSender = 1 ether;
         uint256 collateralToAdd = 2 * collateralFromSender;
-        uint256 debt = 3392.292471e6; // 3392.292471 USDC
+        uint256 flashLoanAmount = 3392.292471e6; // 3392.292471 USDC
         uint256 minShares = 1 ether * 0.99e18 / 1e18; // 1% slippage
         uint256 collateralReceivedFromDebtSwap = 0.999899417781964728 ether; // Swap of 3392.292471 USDC
 
@@ -597,7 +605,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             // Sanity check that LR preview deposit matches test params
             ActionDataV2 memory previewDataFullDeposit =
                 leverageRouter.previewDeposit(leverageToken, collateralFromSender);
-            assertEq(previewDataFullDeposit.debt, debt);
+            assertEq(previewDataFullDeposit.debt, flashLoanAmount);
             assertEq(previewDataFullDeposit.shares, 1 ether);
             assertEq(previewDataFullDeposit.collateral, collateralToAdd);
             assertEq(previewDataFullDeposit.tokenFee, 0);
@@ -608,8 +616,8 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         // needs to be reduced. We reduce it by the percentage delta between the required collateral and the collateral received from the swap
         uint256 deltaPercentage = collateralReceivedFromDebtSwap * 1e18 / (collateralToAdd - collateralFromSender);
         assertEq(deltaPercentage, 0.999899417781964728e18);
-        uint256 debtReduced = debt * deltaPercentage / 1e18;
-        assertEq(debtReduced, 3391.951266e6);
+        uint256 flashLoanAmountReduced = flashLoanAmount * deltaPercentage / 1e18;
+        assertEq(flashLoanAmountReduced, 3391.951266e6);
 
         // Updated collateral received from the debt swap for lower debt amount
         collateralReceivedFromDebtSwap = 0.999798847238411671 ether;
@@ -618,7 +626,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
         assertEq(totalCollateral, 1.999798847238411671 ether);
         ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, totalCollateral);
-        assertGe(previewData.debt, debtReduced);
+        assertGe(previewData.debt, flashLoanAmountReduced);
         assertEq(previewData.debt, 3391.951287e6);
 
         // More than minShares (1% slippage) will be minted
@@ -648,13 +656,15 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             additionalData: new bytes(0)
         });
 
-        _dealAndDeposit(WETH, USDC, collateralFromSender, collateralFromSender, debtReduced, minShares, swapContext);
+        _dealAndDeposit(
+            WETH, USDC, collateralFromSender, collateralFromSender, flashLoanAmountReduced, minShares, swapContext
+        );
 
         // Collateral is taken from the user for the deposit. All of the collateral should be used
         assertEq(WETH.balanceOf(user), 0);
 
         // Any additional debt that is not used to repay the flash loan is given to the user
-        uint256 excessDebt = previewData.debt - debtReduced;
+        uint256 excessDebt = previewData.debt - flashLoanAmountReduced;
         assertEq(USDC.balanceOf(user), excessDebt);
         assertEq(USDC.balanceOf(user), 0.000021e6);
 
@@ -668,7 +678,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
     function testFork_deposit_Aerodrome() public {
         uint256 collateralFromSender = 1 ether;
         uint256 collateralToAdd = 2 * collateralFromSender;
-        uint256 debt = 3392.292471e6; // 3392.292471 USDC
+        uint256 flashLoanAmount = 3392.292471e6; // 3392.292471 USDC
         uint256 minShares = 1 ether * 0.99e18 / 1e18; // 1% slippage
         uint256 collateralReceivedFromDebtSwap = 0.99780113268167845 ether; // Swap of 3392.292471 USDC
 
@@ -676,7 +686,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             // Sanity check that LR preview deposit matches test params
             ActionDataV2 memory previewDataFullDeposit =
                 leverageRouter.previewDeposit(leverageToken, collateralFromSender);
-            assertEq(previewDataFullDeposit.debt, debt);
+            assertEq(previewDataFullDeposit.debt, flashLoanAmount);
             assertEq(previewDataFullDeposit.shares, 1 ether);
             assertEq(previewDataFullDeposit.collateral, collateralToAdd);
             assertEq(previewDataFullDeposit.tokenFee, 0);
@@ -687,8 +697,8 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         // needs to be reduced. We reduce it by the percentage delta between the required collateral and the collateral received from the swap
         uint256 deltaPercentage = collateralReceivedFromDebtSwap * 1e18 / (collateralToAdd - collateralFromSender);
         assertEq(deltaPercentage, 0.99780113268167845e18);
-        uint256 debtReduced = debt * deltaPercentage / 1e18;
-        assertEq(debtReduced, 3384.833269e6);
+        uint256 flashLoanAmountReduced = flashLoanAmount * deltaPercentage / 1e18;
+        assertEq(flashLoanAmountReduced, 3384.833269e6);
 
         // Updated collateral received from the debt swap for lower debt amount
         collateralReceivedFromDebtSwap = 0.995607717905650985 ether;
@@ -697,7 +707,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
         assertEq(totalCollateral, 1.995607717905650985 ether);
         ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, totalCollateral);
-        assertGe(previewData.debt, debtReduced);
+        assertGe(previewData.debt, flashLoanAmountReduced);
         assertEq(previewData.debt, 3384.842518e6);
 
         // More than minShares (1% slippage) will be minted
@@ -724,13 +734,15 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             additionalData: new bytes(0)
         });
 
-        _dealAndDeposit(WETH, USDC, collateralFromSender, collateralFromSender, debtReduced, minShares, swapContext);
+        _dealAndDeposit(
+            WETH, USDC, collateralFromSender, collateralFromSender, flashLoanAmountReduced, minShares, swapContext
+        );
 
         // Collateral is taken from the user for the deposit. All of the collateral should be used
         assertEq(WETH.balanceOf(user), 0);
 
         // Any additional debt that is not used to repay the flash loan is given to the user
-        uint256 excessDebt = previewData.debt - debtReduced;
+        uint256 excessDebt = previewData.debt - flashLoanAmountReduced;
         assertEq(USDC.balanceOf(user), excessDebt);
         assertEq(USDC.balanceOf(user), 0.009249e6);
 
@@ -744,21 +756,19 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
     function testFork_deposit_AerodromeSlipstream() public {
         uint256 collateralFromSender = 1 ether;
         uint256 collateralToAdd = 2 * collateralFromSender;
-        uint256 debt = 3392.292471e6; // 3392.292471 USDC
+        uint256 flashLoanAmount = 3392.292471e6; // 3392.292471 USDC
         uint256 minShares = 1 ether * 0.99e18 / 1e18; // 1% slippage
 
         // Swap is favorable with slipstream, results in more than required collateral
         uint256 collateralReceivedFromDebtSwap = 1.00009355883189593 ether; // Swap of 3392.292471 USDC
 
-        uint256 collateralRequired = leverageManager.convertDebtToCollateral(leverageToken, debt, Math.Rounding.Ceil);
         uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
-        assertGt(totalCollateral, collateralRequired);
 
         {
             // Sanity check that LR preview deposit matches test params
             ActionDataV2 memory previewDataFullDeposit =
                 leverageRouter.previewDeposit(leverageToken, collateralFromSender);
-            assertEq(previewDataFullDeposit.debt, debt);
+            assertEq(previewDataFullDeposit.debt, flashLoanAmount);
             assertEq(previewDataFullDeposit.shares, 1 ether);
             assertEq(previewDataFullDeposit.collateral, collateralToAdd);
             assertEq(previewDataFullDeposit.tokenFee, 0);
@@ -768,7 +778,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         // Preview again using the total collateral. This is used by the LM deposit logic
         assertEq(totalCollateral, 2.00009355883189593 ether);
         ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, totalCollateral);
-        assertGe(previewData.debt, debt);
+        assertGe(previewData.debt, flashLoanAmount);
         assertEq(previewData.debt, 3392.451161e6);
 
         address[] memory path = new address[](2);
@@ -794,13 +804,13 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             additionalData: new bytes(0)
         });
 
-        _dealAndDeposit(WETH, USDC, collateralFromSender, collateralFromSender, debt, minShares, swapContext);
+        _dealAndDeposit(WETH, USDC, collateralFromSender, collateralFromSender, flashLoanAmount, minShares, swapContext);
 
         // Collateral is taken from the user for the deposit. All of the collateral should be used
         assertEq(WETH.balanceOf(user), 0);
 
         // Any additional debt that is not used to repay the flash loan is given to the user
-        uint256 excessDebt = previewData.debt - debt;
+        uint256 excessDebt = previewData.debt - flashLoanAmount;
         assertEq(USDC.balanceOf(user), excessDebt);
         assertEq(USDC.balanceOf(user), 0.15869e6);
 
@@ -815,7 +825,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         uint256 collateralFromSender = 1 ether;
         uint256 collateralToAdd = 2 * collateralFromSender;
         uint256 userBalanceOfCollateralAsset = 4 ether; // User has more than enough assets for the mint of equity
-        uint256 debt = 3392.292471e6; // 3392.292471 USDC
+        uint256 flashLoanAmount = 3392.292471e6; // 3392.292471 USDC
         uint256 minShares = 1 ether * 0.99e18 / 1e18; // 1% slippage
         uint256 collateralReceivedFromDebtSwap = 0.003436017464761568 ether; // Swap of 3392.292471 USDC
 
@@ -823,7 +833,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             // Sanity check that LR preview deposit matches test params
             ActionDataV2 memory previewDataFullDeposit =
                 leverageRouter.previewDeposit(leverageToken, collateralFromSender);
-            assertEq(previewDataFullDeposit.debt, debt);
+            assertEq(previewDataFullDeposit.debt, flashLoanAmount);
             assertEq(previewDataFullDeposit.shares, 1 ether);
             assertEq(previewDataFullDeposit.collateral, collateralToAdd);
             assertEq(previewDataFullDeposit.tokenFee, 0);
@@ -834,8 +844,8 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         // needs to be reduced. We reduce it by the percentage delta between the required collateral and the collateral received from the swap
         uint256 deltaPercentage = collateralReceivedFromDebtSwap * 1e18 / (collateralToAdd - collateralFromSender);
         assertEq(deltaPercentage, 0.003436017464761568e18);
-        uint256 debtReduced = debt * deltaPercentage / 1e18;
-        assertEq(debtReduced, 11.655976e6);
+        uint256 flashLoanAmountReduced = flashLoanAmount * deltaPercentage / 1e18;
+        assertEq(flashLoanAmountReduced, 11.655976e6);
 
         // Updated collateral received from the debt swap for lower debt amount
         collateralReceivedFromDebtSwap = 0.001720627030031886 ether;
@@ -844,7 +854,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
         assertEq(totalCollateral, 1.001720627030031886 ether);
         ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, totalCollateral);
-        assertGe(previewData.debt, debtReduced);
+        assertGe(previewData.debt, flashLoanAmountReduced);
         assertEq(previewData.debt, 1699.06467e6);
 
         // Less than minShares (1% slippage) will be minted
@@ -879,17 +889,19 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         vm.expectRevert(
             abi.encodeWithSelector(ILeverageManager.SlippageTooHigh.selector, 0.500860313515015943 ether, minShares)
         );
-        leverageRouter.deposit(leverageToken, collateralFromSender, debtReduced, minShares, swapContext);
+        leverageRouter.deposit(leverageToken, collateralFromSender, flashLoanAmountReduced, minShares, swapContext);
 
         // If we update minShares, successful
-        leverageRouter.deposit(leverageToken, collateralFromSender, debtReduced, previewData.shares, swapContext);
+        leverageRouter.deposit(
+            leverageToken, collateralFromSender, flashLoanAmountReduced, previewData.shares, swapContext
+        );
         vm.stopPrank();
 
         // Collateral is taken from the user for the deposit. All of the collateral should be used
         assertEq(WETH.balanceOf(user), userBalanceOfCollateralAsset - collateralFromSender);
 
         // Any additional debt that is not used to repay the flash loan is given to the user
-        uint256 excessDebt = previewData.debt - debtReduced;
+        uint256 excessDebt = previewData.debt - flashLoanAmountReduced;
         assertEq(USDC.balanceOf(user), excessDebt);
         assertEq(USDC.balanceOf(user), 1687.408694e6);
 
@@ -903,7 +915,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
     function testFork_deposit_UniswapV3_MultiHop() public {
         uint256 collateralFromSender = 1 ether;
         uint256 collateralToAdd = 2 * collateralFromSender;
-        uint256 debt = 3392.292471e6; // 3392.292471 USDC
+        uint256 flashLoanAmount = 3392.292471e6; // 3392.292471 USDC
         uint256 minShares = 1 ether * 0.85e18 / 1e18; // 15% slippage
         uint256 collateralReceivedFromDebtSwap = 0.730785046551638276 ether; // Swap of 3392.292471 USDC
 
@@ -911,7 +923,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             // Sanity check that LR preview deposit matches test params
             ActionDataV2 memory previewDataFullDeposit =
                 leverageRouter.previewDeposit(leverageToken, collateralFromSender);
-            assertEq(previewDataFullDeposit.debt, debt);
+            assertEq(previewDataFullDeposit.debt, flashLoanAmount);
             assertEq(previewDataFullDeposit.shares, 1 ether);
             assertEq(previewDataFullDeposit.collateral, collateralToAdd);
             assertEq(previewDataFullDeposit.tokenFee, 0);
@@ -922,8 +934,8 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         // needs to be reduced. We reduce it by the percentage delta between the required collateral and the collateral received from the swap
         uint256 deltaPercentage = collateralReceivedFromDebtSwap * 1e18 / (collateralToAdd - collateralFromSender);
         assertEq(deltaPercentage, 0.730785046551638276e18);
-        uint256 debtReduced = debt * deltaPercentage / 1e18;
-        assertEq(debtReduced, 2479.036611e6);
+        uint256 flashLoanAmountReduced = flashLoanAmount * deltaPercentage / 1e18;
+        assertEq(flashLoanAmountReduced, 2479.036611e6);
 
         // Updated collateral received from the debt swap for lower debt amount
         collateralReceivedFromDebtSwap = 0.719360769453766291 ether;
@@ -932,7 +944,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
         assertEq(totalCollateral, 1.719360769453766291 ether);
         ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, totalCollateral);
-        assertGe(previewData.debt, debtReduced);
+        assertGe(previewData.debt, flashLoanAmountReduced);
         assertEq(previewData.debt, 2916.287297e6);
 
         // Greater than minShares (15% slippage) will be minted
@@ -964,13 +976,15 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             additionalData: new bytes(0)
         });
 
-        _dealAndDeposit(WETH, USDC, collateralFromSender, collateralFromSender, debtReduced, minShares, swapContext);
+        _dealAndDeposit(
+            WETH, USDC, collateralFromSender, collateralFromSender, flashLoanAmountReduced, minShares, swapContext
+        );
 
         // Collateral is taken from the user for the deposit. All of the collateral should be used
         assertEq(WETH.balanceOf(user), 0);
 
         // Any additional debt that is not used to repay the flash loan is given to the user
-        uint256 excessDebt = previewData.debt - debtReduced;
+        uint256 excessDebt = previewData.debt - flashLoanAmountReduced;
         assertEq(USDC.balanceOf(user), excessDebt);
         assertEq(USDC.balanceOf(user), 437.250686e6);
 
@@ -984,7 +998,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
     function testFork_deposit_Aerodrome_MultiHop() public {
         uint256 collateralFromSender = 1 ether;
         uint256 collateralToAdd = 2 * collateralFromSender;
-        uint256 debt = 3392.292471e6; // 3392.292471 USDC
+        uint256 flashLoanAmount = 3392.292471e6; // 3392.292471 USDC
         uint256 minShares = 1 ether * 0.99e18 / 1e18; // 1% slippage
         uint256 collateralReceivedFromDebtSwap = 0.001479490022113963 ether; // Swap of 3392.292471 USDC
 
@@ -992,7 +1006,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             // Sanity check that LR preview deposit matches test params
             ActionDataV2 memory previewDataFullDeposit =
                 leverageRouter.previewDeposit(leverageToken, collateralFromSender);
-            assertEq(previewDataFullDeposit.debt, debt);
+            assertEq(previewDataFullDeposit.debt, flashLoanAmount);
             assertEq(previewDataFullDeposit.shares, 1 ether);
             assertEq(previewDataFullDeposit.collateral, collateralToAdd);
             assertEq(previewDataFullDeposit.tokenFee, 0);
@@ -1003,8 +1017,8 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         // needs to be reduced. We reduce it by the percentage delta between the required collateral and the collateral received from the swap
         uint256 deltaPercentage = collateralReceivedFromDebtSwap * 1e18 / (collateralToAdd - collateralFromSender);
         assertEq(deltaPercentage, 0.001479490022113963e18);
-        uint256 debtReduced = debt * deltaPercentage / 1e18;
-        assertEq(debtReduced, 5.018862e6);
+        uint256 flashLoanAmountReduced = flashLoanAmount * deltaPercentage / 1e18;
+        assertEq(flashLoanAmountReduced, 5.018862e6);
 
         // Updated collateral received from the debt swap for lower debt amount
         collateralReceivedFromDebtSwap = 0.000737563974906262 ether;
@@ -1013,7 +1027,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
         assertEq(totalCollateral, 1.000737563974906262 ether);
         ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, totalCollateral);
-        assertGe(previewData.debt, debtReduced);
+        assertGe(previewData.debt, flashLoanAmountReduced);
         assertEq(previewData.debt, 1697.397252e6);
 
         // Less than minShares (1% slippage) will be minted
@@ -1048,17 +1062,19 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         vm.expectRevert(
             abi.encodeWithSelector(ILeverageManager.SlippageTooHigh.selector, 0.500368781987453131 ether, minShares)
         );
-        leverageRouter.deposit(leverageToken, collateralFromSender, debtReduced, minShares, swapContext);
+        leverageRouter.deposit(leverageToken, collateralFromSender, flashLoanAmountReduced, minShares, swapContext);
 
         // If we update minShares, successful
-        leverageRouter.deposit(leverageToken, collateralFromSender, debtReduced, previewData.shares, swapContext);
+        leverageRouter.deposit(
+            leverageToken, collateralFromSender, flashLoanAmountReduced, previewData.shares, swapContext
+        );
         vm.stopPrank();
 
         // Collateral is taken from the user for the deposit. All of the collateral should be used
         assertEq(WETH.balanceOf(user), 0);
 
         // Any additional debt that is not used to repay the flash loan is given to the user
-        uint256 excessDebt = previewData.debt - debtReduced;
+        uint256 excessDebt = previewData.debt - flashLoanAmountReduced;
         assertEq(USDC.balanceOf(user), excessDebt);
         assertEq(USDC.balanceOf(user), 1692.37839e6);
 
@@ -1072,7 +1088,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
     function testFork_deposit_AerodromeSlipstream_MultiHop() public {
         uint256 collateralFromSender = 1 ether;
         uint256 collateralToAdd = 2 * collateralFromSender;
-        uint256 debt = 3392.292471e6; // 3392.292471 USDC
+        uint256 flashLoanAmount = 3392.292471e6; // 3392.292471 USDC
         uint256 minShares = 1 ether * 0.99e18 / 1e18; // 1% slippage
         uint256 collateralReceivedFromDebtSwap = 0.999075127525769712 ether; // Swap of 3392.292471 USDC
 
@@ -1080,7 +1096,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             // Sanity check that LR preview deposit matches test params
             ActionDataV2 memory previewDataFullDeposit =
                 leverageRouter.previewDeposit(leverageToken, collateralFromSender);
-            assertEq(previewDataFullDeposit.debt, debt);
+            assertEq(previewDataFullDeposit.debt, flashLoanAmount);
             assertEq(previewDataFullDeposit.shares, 1 ether);
             assertEq(previewDataFullDeposit.collateral, collateralToAdd);
             assertEq(previewDataFullDeposit.tokenFee, 0);
@@ -1091,8 +1107,8 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         // needs to be reduced. We reduce it by the percentage delta between the required collateral and the collateral received from the swap
         uint256 deltaPercentage = collateralReceivedFromDebtSwap * 1e18 / (collateralToAdd - collateralFromSender);
         assertEq(deltaPercentage, 0.999075127525769712e18);
-        uint256 debtReduced = debt * deltaPercentage / 1e18;
-        assertEq(debtReduced, 3389.155033e6);
+        uint256 flashLoanAmountReduced = flashLoanAmount * deltaPercentage / 1e18;
+        assertEq(flashLoanAmountReduced, 3389.155033e6);
 
         // Updated collateral received from the debt swap for lower debt amount
         collateralReceivedFromDebtSwap = 0.998151321850066641 ether;
@@ -1101,7 +1117,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
         assertEq(totalCollateral, 1.998151321850066641 ether);
         ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, totalCollateral);
-        assertGe(previewData.debt, debtReduced);
+        assertGe(previewData.debt, flashLoanAmountReduced);
         assertEq(previewData.debt, 3389.156843e6);
 
         // Greater than minShares (1% slippage) will be minted
@@ -1133,13 +1149,15 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             additionalData: new bytes(0)
         });
 
-        _dealAndDeposit(WETH, USDC, collateralFromSender, collateralFromSender, debtReduced, minShares, swapContext);
+        _dealAndDeposit(
+            WETH, USDC, collateralFromSender, collateralFromSender, flashLoanAmountReduced, minShares, swapContext
+        );
 
         // Collateral is taken from the user for the deposit. All of the collateral should be used
         assertEq(WETH.balanceOf(user), 0);
 
         // Any additional debt that is not used to repay the flash loan is given to the user
-        uint256 excessDebt = previewData.debt - debtReduced;
+        uint256 excessDebt = previewData.debt - flashLoanAmountReduced;
         assertEq(USDC.balanceOf(user), excessDebt);
         assertEq(USDC.balanceOf(user), 0.00181e6);
 
@@ -1149,69 +1167,27 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         assertEq(morphoLendingAdapter.getDebt(), previewData.debt + 1); // + 1 because of rounding up by MorphoBalancesLib.expectedBorrowAssets
     }
 
-    function test_convertEquivalence_DebtFromCollateralGreaterThanInitialDebt() public pure {
-        uint256 debt = 1000;
-        uint256 totalDebt = 33333;
-        uint256 totalCollateral = 10000;
-
-        // Used to get collateral amount to deposit for debt flash loaned in LR deposit logic
-        uint256 collateralFromDebt = Math.mulDiv(debt, totalCollateral, totalDebt, Math.Rounding.Ceil);
-
-        // Used to get debt required for deposit in LM.previewDeposit, used by LM.deposit
-        uint256 debtFromCollateral = Math.mulDiv(collateralFromDebt, totalDebt, totalCollateral, Math.Rounding.Floor);
-
-        assertFalse(debtFromCollateral == debt);
-        assertEq(debtFromCollateral, 1003);
-    }
-
-    function testFuzz_convertEquivalence_DebtFromCollateralGreaterThanOrEqualToInitialDebt(
-        uint256 debt,
-        uint256 totalDebt,
-        uint256 totalCollateral
-    ) public pure {
-        totalCollateral = bound(totalCollateral, 1, type(uint128).max);
-        debt = bound(debt, 1, type(uint256).max / totalCollateral);
-        totalDebt = bound(totalDebt, 1, type(uint256).max / (debt * totalCollateral));
-
-        // Used to get collateral amount to deposit for debt flash loaned in LR deposit logic
-        uint256 collateralFromDebt = Math.mulDiv(debt, totalCollateral, totalDebt, Math.Rounding.Ceil);
-
-        // Used to get debt required for deposit in LM.previewDeposit, used by LM.deposit
-        uint256 debtFromCollateral = Math.mulDiv(collateralFromDebt, totalDebt, totalCollateral, Math.Rounding.Floor);
-
-        assertGe(debtFromCollateral, debt, "debtFromCollateral should be greater than or equal to debt");
-    }
-
     function _depositWithMockedSwap(DepositWithMockedSwapParams memory params) internal {
         uint256 collateralToAdd =
             leverageRouter.previewDeposit(params.leverageToken, params.collateralFromSender).collateral;
 
-        uint256 debtReduced = params.debt;
+        uint256 flashLoanAmountReduced = params.flashLoanAmount;
         if (params.collateralReceivedFromDebtSwap < collateralToAdd - params.collateralFromSender) {
             // The swap results in less collateral than required to get the flash loaned debt amount from a LM deposit, so the debt amount flash loaned
             // needs to be reduced. We reduce it by the percentage delta between the required collateral and the collateral received from the swap
             uint256 deltaPercentage =
                 params.collateralReceivedFromDebtSwap * 1e18 / (collateralToAdd - params.collateralFromSender);
-            debtReduced = params.debt * deltaPercentage / 1e18;
+            flashLoanAmountReduced = params.flashLoanAmount * deltaPercentage / 1e18;
         }
 
-        if (debtReduced == 0) {
+        if (flashLoanAmountReduced == 0) {
             return;
         }
 
-        uint256 collateralRequired =
-            leverageManager.convertDebtToCollateral(params.leverageToken, debtReduced, Math.Rounding.Ceil);
-
-        // When the total supply of the LT is zero, we need to add the buffer applied onto the required collateral to accommodate for rounding asymmetry
-        ILendingAdapter _lendingAdapter = leverageManager.getLeverageTokenLendingAdapter(params.leverageToken);
-        if (_lendingAdapter.getCollateral() == 0 && _lendingAdapter.getDebt() == 0) {
-            collateralRequired += _lendingAdapter.convertDebtToCollateralAsset(1);
-        }
-
-        // assertGe(leverageManager.previewDeposit(params.leverageToken, collateralRequired).debt, debtReduced);
         // Mock the swap of the debt asset to the collateral asset to be the required amount
-        uint256 collateralReceivedFromReducedDebtSwap =
-            collateralRequired > params.collateralFromSender ? collateralRequired - params.collateralFromSender : 0;
+        uint256 collateralReceivedFromReducedDebtSwap = params.collateralRequired > params.collateralFromSender
+            ? params.collateralRequired - params.collateralFromSender
+            : 0;
 
         // The entire amount of collateral is used for the deposit
         uint256 collateralUsedForDeposit = params.collateralFromSender + collateralReceivedFromReducedDebtSwap;
@@ -1247,7 +1223,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             vm.startPrank(user);
             params.collateralAsset.approve(address(leverageRouterWithMockSwapAdapter), params.collateralFromSender);
             leverageRouterWithMockSwapAdapter.deposit(
-                params.leverageToken, params.collateralFromSender, debtReduced, params.minShares, swapContext
+                params.leverageToken, params.collateralFromSender, flashLoanAmountReduced, params.minShares, swapContext
             );
             vm.stopPrank();
         }
@@ -1260,7 +1236,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         assertEq(params.collateralAsset.balanceOf(user), 0);
 
         // Any additional debt that is not used to repay the flash loan is given to the user
-        uint256 excessDebt = debtFromDeposit - debtReduced;
+        uint256 excessDebt = debtFromDeposit - flashLoanAmountReduced;
         assertEq(params.debtAsset.balanceOf(user), excessDebt);
         // Transfer any excess debt away for multiple uses/iterations of the user debt balance assertion above within a single test
         if (excessDebt > 0) {

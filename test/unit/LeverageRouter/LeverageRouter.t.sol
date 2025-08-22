@@ -114,11 +114,6 @@ contract LeverageRouterTest is Test {
             MockLeverageManager.DepositParams({leverageToken: leverageToken, collateral: collateral, minShares: shares}),
             MockLeverageManager.MockDepositData({collateral: collateral, debt: debt, shares: shares, isExecuted: false})
         );
-
-        // Mock the convert debt to collateral
-        leverageManager.setMockConvertDebtToCollateralData(
-            MockLeverageManager.ConvertDebtToCollateralParams({leverageToken: leverageToken, debt: debt}), collateral
-        );
     }
 
     function _mockLeverageManagerRedeem(
