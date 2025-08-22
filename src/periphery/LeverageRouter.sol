@@ -93,10 +93,7 @@ contract LeverageRouter is ILeverageRouter {
         uint256 flashLoanAmount,
         uint256 minShares,
         Call[] calldata swapCalls
-    )
-        // ISwapAdapter.SwapContext memory swapContext
-        external
-    {
+    ) external {
         bytes memory depositData = abi.encode(
             DepositParams({
                 sender: msg.sender,
@@ -174,7 +171,7 @@ contract LeverageRouter is ILeverageRouter {
         // slither-disable-next-line arbitrary-send-erc20
         SafeERC20.safeTransferFrom(collateralAsset, params.sender, address(this), params.collateralFromSender);
 
-        // Swap the debt asset received from the flash loan to the collateral asset, used to deposit
+        // Swap the debt asset received from the flash loan to the collateral asset, used to deposit into the LeverageToken
         for (uint256 i = 0; i < params.swapCalls.length; i++) {
             SafeERC20.forceApprove(debtAsset, params.swapCalls[i].target, debtLoan);
             Address.functionCallWithValue(
