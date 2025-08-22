@@ -79,25 +79,6 @@ interface ILeverageRouter {
         ISwapAdapter.SwapContext memory swapContext
     ) external;
 
-    /// @notice Execute an arbitrary external swap call. All outputToken is sent to the recipient. Any leftover inputToken is sent to the sender.
-    /// Note: If the inputToken is the same as the outputToken, any leftover inputToken is sent to the recipient instead of the sender.
-    /// @param approval The approval to set before the call (set token=address(0) to skip). e.g. approving a DEX to pull the inputToken from the SwapAdapter.
-    /// @param call External call to perform (DEX/router).
-    /// @param inputToken Input token for the swap (address(0) = ETH).
-    /// @param outputToken Output token for the swap (address(0) = ETH).
-    /// @param inputAmount Amount of input token for the swap, which is tranferred from the sender to the SwapAdapter.
-    /// Note: If the sender transferred the required amount of input token to this contract already, this can be set to zero.
-    /// @param recipient Where to send the outputToken.
-    /// @return result Return data of the external call.
-    function executeSwap(
-        Call calldata call,
-        Approval calldata approval,
-        address inputToken,
-        address outputToken,
-        uint256 inputAmount,
-        address payable recipient
-    ) external payable returns (bytes memory result);
-
     /// @notice Redeems equity of a LeverageToken by repaying debt and burning shares
     /// @param token LeverageToken to redeem
     /// @param equityInCollateralAsset The amount of equity to receive by redeeming LeverageToken. Denominated in the collateral

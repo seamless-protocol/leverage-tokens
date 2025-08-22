@@ -91,48 +91,6 @@ contract LeverageRouter is ILeverageRouter {
     }
 
     /// @inheritdoc ILeverageRouter
-    function executeSwap(
-        Call calldata call,
-        Approval calldata approval,
-        address inputToken,
-        address outputToken,
-        uint256 inputAmount,
-        address payable recipient
-    ) public payable returns (bytes memory result) {
-        // 1) Transfer input token to this contract. (skip if inputAmount == 0)
-        if (inputAmount != 0) {
-            SafeERC20.safeTransferFrom(IERC20(inputToken), msg.sender, address(this), inputAmount);
-        }
-
-        // 2) Execute the approval and external call
-        result = _execute(call, approval);
-
-        // 3) Send any balance of outputToken to the recipient
-        bool isOutputTokenETH = outputToken == address(0);
-        if (!isOutputTokenETH) {
-            uint256 amountOutReceivedBySwapAdapter = IERC20(outputToken).balanceOf(address(this));
-            SafeERC20.safeTransfer(IERC20(outputToken), recipient, amountOutReceivedBySwapAdapter);
-        } else {
-            uint256 amountOutReceivedBySwapAdapter = address(this).balance;
-            // slither-disable-next-line reentrancy-events
-            Address.sendValue(recipient, amountOutReceivedBySwapAdapter);
-        }
-
-        // 4) Send any leftover input token to the sender, if there is any remaining.
-        // Note: If the input token is the same as the output token, any surplus was already sent to the recipient
-        // instead of the sender
-        bool isInputTokenETH = inputToken == address(0);
-        if (!isInputTokenETH) {
-            uint256 leftover = IERC20(inputToken).balanceOf(address(this));
-            if (leftover > 0) SafeERC20.safeTransfer(IERC20(inputToken), msg.sender, leftover);
-        } else {
-            uint256 leftover = address(this).balance;
-            // slither-disable-next-line reentrancy-events
-            if (leftover > 0) Address.sendValue(payable(msg.sender), leftover);
-        }
-    }
-
-    /// @inheritdoc ILeverageRouter
     function previewDeposit(ILeverageToken token, uint256 equityInCollateralAsset)
         external
         view

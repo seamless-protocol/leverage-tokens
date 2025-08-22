@@ -98,7 +98,7 @@ contract ExecuteTest is LeverageRouterTest {
             ILeverageRouter.Approval({token: address(0), spender: address(0), amount: 0});
 
         vm.expectRevert("test revert message");
-        leverageRouter.executeSwap(call, approval, address(0), address(0), 0, payable(address(0)));
+        leverageRouter.exposed_execute(call, approval);
 
         call = ILeverageRouter.Call({
             target: address(testRevertContract),
@@ -107,7 +107,7 @@ contract ExecuteTest is LeverageRouterTest {
         });
 
         vm.expectRevert(abi.encodeWithSelector(TestRevertContract.TestError.selector, 12345, address(0xBEEF)));
-        leverageRouter.executeSwap(call, approval, address(0), address(0), 0, payable(address(0)));
+        leverageRouter.exposed_execute(call, approval);
     }
 }
 
