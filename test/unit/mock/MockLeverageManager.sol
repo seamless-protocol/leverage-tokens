@@ -88,8 +88,6 @@ contract MockLeverageManager is Test {
 
     mapping(bytes32 => MockPreviewRedeemData) public mockPreviewRedeemData;
 
-    mapping(bytes32 => uint256) public mockConvertDebtToCollateralData;
-
     mapping(ILeverageToken => address) public leverageTokenRebalanceAdapter;
 
     mapping(ILeverageToken => uint256) public leverageTokenInitialCollateralRatio;
