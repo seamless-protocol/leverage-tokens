@@ -18,27 +18,36 @@ contract OnMorphoFlashLoanTest is LeverageRouterTest {
 
         _mockLeverageManagerDeposit(requiredCollateral, requiredDebt, collateralReceivedFromDebtSwap, shares);
 
+        ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
+            path: new address[](0),
+            encodedPath: new bytes(0),
+            fees: new uint24[](0),
+            tickSpacing: new int24[](0),
+            exchange: ISwapAdapter.Exchange.AERODROME,
+            exchangeAddresses: ISwapAdapter.ExchangeAddresses({
+                aerodromeRouter: address(0),
+                aerodromePoolFactory: address(0),
+                aerodromeSlipstreamRouter: address(0),
+                uniswapSwapRouter02: address(0),
+                uniswapV2Router02: address(0)
+            }),
+            additionalData: new bytes(0)
+        });
+
+        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](1);
+        calls[0] = ILeverageRouter.Call({
+            target: address(swapper),
+            data: abi.encodeWithSelector(ISwapAdapter.swapExactInput.selector, debtToken, requiredDebt, 0, swapContext),
+            value: 0
+        });
+
         bytes memory depositData = abi.encode(
             LeverageRouter.DepositParams({
                 leverageToken: leverageToken,
                 collateralFromSender: collateralFromSender,
                 minShares: shares,
                 sender: address(this),
-                swapContext: ISwapAdapter.SwapContext({
-                    path: new address[](0),
-                    encodedPath: new bytes(0),
-                    fees: new uint24[](0),
-                    tickSpacing: new int24[](0),
-                    exchange: ISwapAdapter.Exchange.AERODROME,
-                    exchangeAddresses: ISwapAdapter.ExchangeAddresses({
-                        aerodromeRouter: address(0),
-                        aerodromePoolFactory: address(0),
-                        aerodromeSlipstreamRouter: address(0),
-                        uniswapSwapRouter02: address(0),
-                        uniswapV2Router02: address(0)
-                    }),
-                    additionalData: new bytes(0)
-                })
+                swapCalls: calls
             })
         );
 

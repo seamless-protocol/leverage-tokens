@@ -80,13 +80,14 @@ interface ILeverageRouter {
     /// @param collateralFromSender Collateral asset amount from the sender to deposit
     /// @param flashLoanAmount Amount of debt to flash loan, which is swapped to collateral and used to deposit into the LeverageToken
     /// @param minShares Minimum number of shares expected to be received by the sender
-    /// @param swapContext Swap context to use for the swap (which DEX to use, the route, tick spacing, etc.)
+    /// @param swapCalls External calls to execute for the swap of flash loaned debt to collateral for the LeverageToken deposit
+    /// @dev Before each external call, the target contract is approved to spend flashLoanAmount of the debt asset
     function deposit(
         ILeverageToken leverageToken,
         uint256 collateralFromSender,
         uint256 flashLoanAmount,
         uint256 minShares,
-        ISwapAdapter.SwapContext memory swapContext
+        Call[] calldata swapCalls
     ) external;
 
     /// @notice Redeems equity of a LeverageToken by repaying debt and burning shares

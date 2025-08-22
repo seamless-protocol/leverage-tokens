@@ -44,20 +44,39 @@ contract LeverageRouterTest is IntegrationTestBase {
         assertEq(address(leverageRouter.swapper()), address(swapAdapter));
     }
 
+    function _dealAndDepositWithSwapAdapter(
+        IERC20 collateralAsset,
+        IERC20 debtAsset,
+        uint256 dealAmount,
+        uint256 collateralFromSender,
+        uint256 flashLoanAmount,
+        uint256 minShares,
+        ISwapAdapter.SwapContext memory swapContext
+    ) internal {
+        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](1);
+        calls[0] = ILeverageRouter.Call({
+            target: address(swapAdapter),
+            data: abi.encodeWithSelector(ISwapAdapter.swapExactInput.selector, debtAsset, flashLoanAmount, 0, swapContext),
+            value: 0
+        });
+
+        _dealAndDeposit(collateralAsset, debtAsset, dealAmount, collateralFromSender, flashLoanAmount, minShares, calls);
+    }
+
     function _dealAndDeposit(
         IERC20 collateralAsset,
         IERC20 debtAsset,
         uint256 dealAmount,
         uint256 collateralFromSender,
-        uint256 debt,
+        uint256 flashLoanAmount,
         uint256 minShares,
-        ISwapAdapter.SwapContext memory swapContext
+        ILeverageRouter.Call[] memory calls
     ) internal {
         deal(address(collateralAsset), user, dealAmount);
 
         vm.startPrank(user);
         collateralAsset.approve(address(leverageRouter), collateralFromSender);
-        leverageRouter.deposit(leverageToken, collateralFromSender, debt, minShares, swapContext);
+        leverageRouter.deposit(leverageToken, collateralFromSender, flashLoanAmount, minShares, calls);
         vm.stopPrank();
 
         // No leftover assets in the LeverageRouter or the SwapAdapter

@@ -13,8 +13,8 @@ import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
+import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
 import {LeverageRouter} from "src/periphery/LeverageRouter.sol";
-import {LeverageRouterHarness} from "./LeverageRouterHarness.t.sol";
 import {ExternalAction} from "src/types/DataTypes.sol";
 import {MockERC20} from "../mock/MockERC20.sol";
 import {MockLendingAdapter} from "../mock/MockLendingAdapter.sol";
@@ -45,7 +45,7 @@ contract LeverageRouterTest is Test {
 
     MockLeverageManager public leverageManager;
 
-    LeverageRouterHarness public leverageRouter;
+    LeverageRouter public leverageRouter;
 
     function setUp() public virtual {
         // Setup mocked contracts
@@ -65,7 +65,7 @@ contract LeverageRouterTest is Test {
         swapper = new MockSwapper();
 
         // Setup the leverage router
-        leverageRouter = new LeverageRouterHarness(
+        leverageRouter = new LeverageRouter(
             ILeverageManager(address(leverageManager)), IMorpho(address(morpho)), ISwapAdapter(address(swapper))
         );
 
@@ -166,27 +166,36 @@ contract LeverageRouterTest is Test {
     ) internal {
         _mockLeverageManagerDeposit(requiredCollateral, requiredDebt, collateralReceivedFromDebtSwap, shares);
 
+        ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
+            path: new address[](0),
+            encodedPath: new bytes(0),
+            fees: new uint24[](0),
+            tickSpacing: new int24[](0),
+            exchange: ISwapAdapter.Exchange.AERODROME,
+            exchangeAddresses: ISwapAdapter.ExchangeAddresses({
+                aerodromeRouter: address(0),
+                aerodromePoolFactory: address(0),
+                aerodromeSlipstreamRouter: address(0),
+                uniswapSwapRouter02: address(0),
+                uniswapV2Router02: address(0)
+            }),
+            additionalData: new bytes(0)
+        });
+
+        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](1);
+        calls[0] = ILeverageRouter.Call({
+            target: address(swapper),
+            data: abi.encodeWithSelector(ISwapAdapter.swapExactInput.selector, debtToken, requiredDebt, 0, swapContext),
+            value: 0
+        });
+
         bytes memory depositData = abi.encode(
             LeverageRouter.DepositParams({
                 sender: address(this),
                 leverageToken: leverageToken,
                 collateralFromSender: collateralFromSender,
                 minShares: shares,
-                swapContext: ISwapAdapter.SwapContext({
-                    path: new address[](0),
-                    encodedPath: new bytes(0),
-                    fees: new uint24[](0),
-                    tickSpacing: new int24[](0),
-                    exchange: ISwapAdapter.Exchange.AERODROME,
-                    exchangeAddresses: ISwapAdapter.ExchangeAddresses({
-                        aerodromeRouter: address(0),
-                        aerodromePoolFactory: address(0),
-                        aerodromeSlipstreamRouter: address(0),
-                        uniswapSwapRouter02: address(0),
-                        uniswapV2Router02: address(0)
-                    }),
-                    additionalData: new bytes(0)
-                })
+                swapCalls: calls
             })
         );
 

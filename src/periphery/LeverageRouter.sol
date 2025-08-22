@@ -42,8 +42,8 @@ contract LeverageRouter is ILeverageRouter {
         uint256 collateralFromSender;
         // Minimum amount of shares (LeverageTokens) to receive
         uint256 minShares;
-        // Swap context for the swap of flash loaned debt to collateral
-        ISwapAdapter.SwapContext swapContext;
+        // External calls to execute for the swap of flash loaned debt to collateral
+        Call[] swapCalls;
     }
 
     /// @notice Redeem related parameters to pass to the Morpho flash loan callback handler for redeems
@@ -131,15 +131,18 @@ contract LeverageRouter is ILeverageRouter {
         uint256 collateralFromSender,
         uint256 flashLoanAmount,
         uint256 minShares,
-        ISwapAdapter.SwapContext memory swapContext
-    ) external {
+        Call[] calldata swapCalls
+    )
+        // ISwapAdapter.SwapContext memory swapContext
+        external
+    {
         bytes memory depositData = abi.encode(
             DepositParams({
                 sender: msg.sender,
                 leverageToken: leverageToken,
                 collateralFromSender: collateralFromSender,
                 minShares: minShares,
-                swapContext: swapContext
+                swapCalls: swapCalls
             })
         );
 
@@ -197,26 +200,6 @@ contract LeverageRouter is ILeverageRouter {
         }
     }
 
-    /// @notice Executes an arbitrary external call and optionally executes a token approval before the call
-    /// @param call The call to execute
-    /// @param approval The approval to set before the call (set token=address(0) to skip)
-    /// @return result Return data of the external call
-    function _execute(Call calldata call, Approval calldata approval) internal returns (bytes memory result) {
-        // 1) Approval (skip if approval.token == address(0))
-        bool approvalRequired = approval.token != address(0);
-        if (approval.token != address(0)) {
-            SafeERC20.forceApprove(IERC20(approval.token), approval.spender, approval.amount);
-        }
-
-        // 2) Perform the external call
-        result = Address.functionCallWithValue(call.target, call.data, call.value);
-
-        // 3) Reset approval to zero
-        if (approvalRequired) {
-            SafeERC20.forceApprove(IERC20(approval.token), approval.spender, 0);
-        }
-    }
-
     /// @notice Executes the deposit into a LeverageToken by flash loaning the debt asset, swapping it to collateral,
     /// depositing into the LeverageToken with the sender's collateral, and using the resulting debt to repay the flash loan.
     /// Any surplus debt assets after repaying the flash loan are given to the sender.
@@ -231,16 +214,15 @@ contract LeverageRouter is ILeverageRouter {
         SafeERC20.safeTransferFrom(collateralAsset, params.sender, address(this), params.collateralFromSender);
 
         // Swap the debt asset received from the flash loan to the collateral asset, used to deposit
-        SafeERC20.forceApprove(debtAsset, address(swapper), debtLoan);
+        for (uint256 i = 0; i < params.swapCalls.length; i++) {
+            SafeERC20.forceApprove(debtAsset, params.swapCalls[i].target, debtLoan);
+            Address.functionCallWithValue(
+                params.swapCalls[i].target, params.swapCalls[i].data, params.swapCalls[i].value
+            );
+        }
 
-        uint256 collateralFromSwap = swapper.swapExactInput(
-            debtAsset,
-            debtLoan,
-            0, // Set to zero because collateral from the sender is used to help with the deposit
-            params.swapContext
-        );
-
-        uint256 totalCollateral = collateralFromSwap + params.collateralFromSender;
+        // The sum of the collateral from the swap and the collateral from the sender
+        uint256 totalCollateral = IERC20(collateralAsset).balanceOf(address(this));
 
         // Use the collateral from the swap and the collateral from the sender for the deposit into the LeverageToken
         SafeERC20.forceApprove(collateralAsset, address(leverageManager), totalCollateral);

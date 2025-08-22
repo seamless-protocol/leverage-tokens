@@ -16,6 +16,7 @@ import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
+import {IUniswapV2Router02} from "src/interfaces/periphery/IUniswapV2Router02.sol";
 import {ActionDataV2, LeverageTokenConfig} from "src/types/DataTypes.sol";
 import {LeverageRouterTest} from "./LeverageRouter.t.sol";
 import {SwapPathLib} from "../../utils/SwapPathLib.sol";
@@ -115,6 +116,83 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         path[0] = address(USDC);
         path[1] = address(WETH);
 
+        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](1);
+        calls[0] = ILeverageRouter.Call({
+            target: UNISWAP_V2_ROUTER02,
+            data: abi.encodeWithSelector(
+                IUniswapV2Router02.swapExactTokensForTokens.selector,
+                flashLoanAmountReduced,
+                0,
+                path,
+                address(leverageRouter),
+                block.timestamp
+            ),
+            value: 0
+        });
+
+        _dealAndDeposit(
+            WETH, USDC, userBalanceOfCollateralAsset, collateralFromSender, flashLoanAmountReduced, minShares, calls
+        );
+
+        // Collateral is taken from the user for the deposit. All of the collateral should be used
+        assertEq(WETH.balanceOf(user), userBalanceOfCollateralAsset - collateralFromSender);
+
+        // Any additional debt that is not used to repay the flash loan is given to the user
+        uint256 excessDebt = previewData.debt - flashLoanAmountReduced;
+        assertEq(USDC.balanceOf(user), excessDebt);
+        assertEq(USDC.balanceOf(user), 0.016188e6);
+
+        assertGe(leverageToken.balanceOf(user), minShares);
+
+        assertEq(morphoLendingAdapter.getCollateral(), totalCollateral);
+        assertEq(morphoLendingAdapter.getDebt(), previewData.debt + 1); // + 1 because of rounding up by MorphoBalancesLib.expectedBorrowAssets
+    }
+
+    /// @dev In this block price on oracle 3392.292471591441746049801068
+    function testFork_deposit_UniswapV2_WithSwapAdapter_FirstDeposit() public {
+        uint256 collateralFromSender = 1 ether;
+        uint256 collateralToAdd = 2 * collateralFromSender;
+        uint256 userBalanceOfCollateralAsset = 4 ether; // User has more than enough assets for the mint of equity
+        uint256 flashLoanAmount = 3392.292471e6; // 3392.292471 USDC
+        uint256 minShares = 1 ether * 0.99e18 / 1e18; // 1% slippage
+        uint256 collateralReceivedFromDebtSwap = 0.997140594716559346 ether; // Swap of 3392.292471 USDC
+
+        {
+            // Sanity check that LR preview deposit matches test params
+            ActionDataV2 memory leverageRouterPreview =
+                leverageRouter.previewDeposit(leverageToken, collateralFromSender);
+            assertEq(leverageRouterPreview.debt, flashLoanAmount);
+            assertEq(leverageRouterPreview.shares, 1 ether);
+            assertEq(leverageRouterPreview.collateral, collateralToAdd);
+            assertEq(leverageRouterPreview.tokenFee, 0);
+            assertEq(leverageRouterPreview.treasuryFee, 0);
+        }
+
+        // The swap results in less collateral than required to get the flash loaned debt amount from a LM deposit, so the debt amount flash loaned
+        // needs to be reduced. We reduce it by the percentage delta between the required collateral and the collateral received from the swap
+        uint256 deltaPercentage = collateralReceivedFromDebtSwap * 1e18 / (collateralToAdd - collateralFromSender);
+        assertEq(deltaPercentage, 0.997140594716559346e18);
+        uint256 flashLoanAmountReduced = flashLoanAmount * deltaPercentage / 1e18;
+        assertEq(flashLoanAmountReduced, 3382.592531e6);
+
+        // Updated collateral received from the debt swap for lower debt amount
+        collateralReceivedFromDebtSwap = 0.994290732650270211 ether;
+
+        // Preview again using the total collateral. This is used by the LM deposit logic
+        uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
+        assertEq(totalCollateral, 1.994290732650270211 ether);
+        ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, totalCollateral);
+        assertGe(previewData.debt, flashLoanAmountReduced);
+        assertEq(previewData.debt, 3382.608719e6);
+
+        // More than minShares (1% slippage) will be minted
+        assertGe(previewData.shares, minShares);
+        assertEq(previewData.shares, 0.997145366325135105 ether);
+
+        address[] memory path = new address[](2);
+        path[0] = address(USDC);
+        path[1] = address(WETH);
+
         ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
             exchange: ISwapAdapter.Exchange.UNISWAP_V2,
             encodedPath: new bytes(0),
@@ -131,7 +209,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             additionalData: new bytes(0)
         });
 
-        _dealAndDeposit(
+        _dealAndDepositWithSwapAdapter(
             WETH,
             USDC,
             userBalanceOfCollateralAsset,
@@ -167,6 +245,215 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         path[0] = address(USDC);
         path[1] = address(WETH);
 
+        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](1);
+        calls[0] = ILeverageRouter.Call({
+            target: UNISWAP_V2_ROUTER02,
+            data: abi.encodeWithSelector(
+                IUniswapV2Router02.swapExactTokensForTokens.selector,
+                flashLoanAmount,
+                0,
+                path,
+                address(leverageRouter),
+                block.timestamp
+            ),
+            value: 0
+        });
+
+        _dealAndDeposit(
+            WETH, USDC, userBalanceOfCollateralAsset, collateralFromSender, flashLoanAmount, minShares, calls
+        );
+
+        uint256 expectedUserDebtBalance = 0.016188e6;
+        assertEq(USDC.balanceOf(user), expectedUserDebtBalance);
+
+        {
+            ActionDataV2 memory previewDataFullDeposit =
+                leverageRouter.previewDeposit(leverageToken, collateralFromSender);
+            uint256 collateralReceivedFromDebtSwap = 0.993336131989824069 ether;
+
+            // The swap results in less collateral than required to get the flash loaned debt amount from a LM deposit, so the debt amount flash loaned
+            // needs to be reduced. We reduce it by the percentage delta between the required collateral and the collateral received from the swap
+            uint256 deltaPercentage =
+                collateralReceivedFromDebtSwap * 1e18 / (previewDataFullDeposit.collateral - collateralFromSender);
+            assertEq(deltaPercentage, 0.993336131402504508e18);
+            uint256 flashLoanAmountReduced = previewDataFullDeposit.debt * deltaPercentage / 1e18;
+            assertEq(flashLoanAmountReduced, 3369.686681e6);
+
+            // Update for debtReduced
+            collateralReceivedFromDebtSwap = 0.989547994451029601 ether;
+
+            // Preview again using the total collateral. This is used by the LR deposit logic
+            uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
+            assertEq(totalCollateral, 1.989547994451029601 ether);
+            ActionDataV2 memory previewDataReducedDeposit =
+                leverageManager.previewDeposit(leverageToken, totalCollateral);
+            assertGe(previewDataReducedDeposit.debt, flashLoanAmountReduced);
+            assertEq(previewDataReducedDeposit.debt, 3374.564342e6);
+
+            // More than minShares (1% slippage) will be minted
+            assertGe(previewDataReducedDeposit.shares, minShares);
+            assertEq(previewDataReducedDeposit.shares, 0.9947739972255148 ether);
+
+            calls[0] = ILeverageRouter.Call({
+                target: UNISWAP_V2_ROUTER02,
+                data: abi.encodeWithSelector(
+                    IUniswapV2Router02.swapExactTokensForTokens.selector,
+                    flashLoanAmountReduced,
+                    0,
+                    path,
+                    address(leverageRouter),
+                    block.timestamp
+                ),
+                value: 0
+            });
+
+            // Reverts due to 1 debt asset left over in the LR.
+            _dealAndDeposit(
+                WETH,
+                USDC,
+                userBalanceOfCollateralAsset,
+                collateralFromSender,
+                flashLoanAmountReduced,
+                previewDataReducedDeposit.shares,
+                calls
+            );
+
+            // Any additional debt that is not used to repay the flash loan is given to the user
+            uint256 surplusDebtFromDeposit = previewDataReducedDeposit.debt - flashLoanAmountReduced;
+            assertEq(surplusDebtFromDeposit, 4.877661e6);
+            expectedUserDebtBalance += surplusDebtFromDeposit;
+            assertEq(USDC.balanceOf(user), expectedUserDebtBalance);
+        }
+
+        {
+            ActionDataV2 memory previewDataFullDeposit =
+                leverageRouter.previewDeposit(leverageToken, collateralFromSender);
+            uint256 collateralReceivedFromDebtSwap = 0.995230946229750636 ether;
+
+            // The swap results in less collateral than required to get the flash loaned debt amount from a LM deposit, so the debt amount flash loaned
+            // needs to be reduced. We reduce it by the percentage delta between the required collateral and the collateral received from the swap
+            uint256 deltaPercentage =
+                collateralReceivedFromDebtSwap * 1e18 / (previewDataFullDeposit.collateral - collateralFromSender);
+            assertEq(deltaPercentage, 0.995230945787895318e18);
+            uint256 flashLoanAmountReduced = previewDataFullDeposit.debt * deltaPercentage / 1e18;
+            assertEq(flashLoanAmountReduced, 3376.114445e6);
+
+            // Update for debtReduced
+            collateralReceivedFromDebtSwap = 0.9904869053653832 ether;
+
+            // Preview again using the total collateral. This is used by the LR deposit logic
+            uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
+            assertEq(totalCollateral, 1.9904869053653832 ether);
+            ActionDataV2 memory previewDataReducedDeposit =
+                leverageManager.previewDeposit(leverageToken, totalCollateral);
+            assertGe(previewDataReducedDeposit.debt, flashLoanAmountReduced);
+            assertEq(previewDataReducedDeposit.debt, 3376.156872e6);
+
+            // More than minShares (1% slippage) will be minted
+            assertGe(previewDataReducedDeposit.shares, minShares);
+            assertEq(previewDataReducedDeposit.shares, 0.995243452682691599 ether);
+
+            calls[0] = ILeverageRouter.Call({
+                target: UNISWAP_V2_ROUTER02,
+                data: abi.encodeWithSelector(
+                    IUniswapV2Router02.swapExactTokensForTokens.selector,
+                    flashLoanAmountReduced,
+                    0,
+                    path,
+                    address(leverageRouter),
+                    block.timestamp
+                ),
+                value: 0
+            });
+
+            _dealAndDeposit(
+                WETH,
+                USDC,
+                userBalanceOfCollateralAsset,
+                collateralFromSender,
+                flashLoanAmountReduced,
+                previewDataReducedDeposit.shares,
+                calls
+            );
+
+            // Any additional debt that is not used to repay the flash loan is given to the user
+            uint256 surplusDebtFromDeposit = previewDataReducedDeposit.debt - flashLoanAmountReduced;
+            assertEq(surplusDebtFromDeposit, 0.042427e6);
+            expectedUserDebtBalance += surplusDebtFromDeposit;
+            assertEq(USDC.balanceOf(user), expectedUserDebtBalance);
+        }
+
+        {
+            ActionDataV2 memory previewDataFullDeposit =
+                leverageRouter.previewDeposit(leverageToken, collateralFromSender);
+            uint256 collateralReceivedFromDebtSwap = 0.9942781864904543 ether;
+
+            // The swap results in less collateral than required to get the flash loaned debt amount from a LM deposit, so the debt amount flash loaned
+            // needs to be reduced. We reduce it by the percentage delta between the required collateral and the collateral received from the swap
+            uint256 deltaPercentage =
+                collateralReceivedFromDebtSwap * 1e18 / (previewDataFullDeposit.collateral - collateralFromSender);
+            assertEq(deltaPercentage, 0.994278186196095526e18);
+            uint256 flashLoanAmountReduced = previewDataFullDeposit.debt * deltaPercentage / 1e18;
+            assertEq(flashLoanAmountReduced, 3372.882406e6);
+
+            // Update for debtReduced
+            collateralReceivedFromDebtSwap = 0.988591828264731799 ether;
+
+            // Preview again using the total collateral. This is used by the LR deposit logic
+            uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
+            assertEq(totalCollateral, 1.988591828264731799 ether);
+            ActionDataV2 memory previewDataReducedDeposit =
+                leverageManager.previewDeposit(leverageToken, totalCollateral);
+            assertGe(previewDataReducedDeposit.debt, flashLoanAmountReduced);
+            assertEq(previewDataReducedDeposit.debt, 3372.942544e6);
+
+            // More than minShares (1% slippage) will be minted
+            assertGe(previewDataReducedDeposit.shares, minShares);
+            assertEq(previewDataReducedDeposit.shares, 0.994295914132365898 ether);
+
+            calls[0] = ILeverageRouter.Call({
+                target: UNISWAP_V2_ROUTER02,
+                data: abi.encodeWithSelector(
+                    IUniswapV2Router02.swapExactTokensForTokens.selector,
+                    flashLoanAmountReduced,
+                    0,
+                    path,
+                    address(leverageRouter),
+                    block.timestamp
+                ),
+                value: 0
+            });
+
+            _dealAndDeposit(
+                WETH,
+                USDC,
+                userBalanceOfCollateralAsset,
+                collateralFromSender,
+                flashLoanAmountReduced,
+                previewDataReducedDeposit.shares,
+                calls
+            );
+
+            // Any additional debt that is not used to repay the flash loan is given to the user
+            uint256 surplusDebtFromDeposit = previewDataReducedDeposit.debt - flashLoanAmountReduced;
+            assertEq(surplusDebtFromDeposit, 0.060138e6);
+            expectedUserDebtBalance += surplusDebtFromDeposit;
+            assertEq(USDC.balanceOf(user), expectedUserDebtBalance);
+        }
+    }
+
+    /// @dev In this block price on oracle 3392.292471591441746049801068
+    function testFork_deposit_UniswapV2_WithSwapAdapter_MultipleDeposits() public {
+        // Params from testFork_deposit_UniswapV2_FirstDeposit
+        uint256 userBalanceOfCollateralAsset = 4 ether;
+        uint256 collateralFromSender = 1 ether;
+        uint256 flashLoanAmount = 3382.592531e6;
+        uint256 minShares = 0.99 ether;
+
+        address[] memory path = new address[](2);
+        path[0] = address(USDC);
+        path[1] = address(WETH);
+
         ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
             exchange: ISwapAdapter.Exchange.UNISWAP_V2,
             encodedPath: new bytes(0),
@@ -183,7 +470,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             additionalData: new bytes(0)
         });
 
-        _dealAndDeposit(
+        _dealAndDepositWithSwapAdapter(
             WETH, USDC, userBalanceOfCollateralAsset, collateralFromSender, flashLoanAmount, minShares, swapContext
         );
 
@@ -219,7 +506,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             assertEq(previewDataReducedDeposit.shares, 0.9947739972255148 ether);
 
             // Reverts due to 1 debt asset left over in the LR.
-            _dealAndDeposit(
+            _dealAndDepositWithSwapAdapter(
                 WETH,
                 USDC,
                 userBalanceOfCollateralAsset,
@@ -264,7 +551,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             assertGe(previewDataReducedDeposit.shares, minShares);
             assertEq(previewDataReducedDeposit.shares, 0.995243452682691599 ether);
 
-            _dealAndDeposit(
+            _dealAndDepositWithSwapAdapter(
                 WETH,
                 USDC,
                 userBalanceOfCollateralAsset,
@@ -309,7 +596,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             assertGe(previewDataReducedDeposit.shares, minShares);
             assertEq(previewDataReducedDeposit.shares, 0.994295914132365898 ether);
 
-            _dealAndDeposit(
+            _dealAndDepositWithSwapAdapter(
                 WETH,
                 USDC,
                 userBalanceOfCollateralAsset,
@@ -519,21 +806,32 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         path[0] = address(USDC);
         path[1] = address(WETH);
 
-        ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
-            exchange: ISwapAdapter.Exchange.UNISWAP_V2,
-            encodedPath: new bytes(0),
-            path: path,
-            fees: new uint24[](0),
-            tickSpacing: new int24[](0),
-            exchangeAddresses: ISwapAdapter.ExchangeAddresses({
-                aerodromeRouter: address(0),
-                aerodromePoolFactory: address(0),
-                aerodromeSlipstreamRouter: address(0),
-                uniswapSwapRouter02: address(0),
-                uniswapV2Router02: UNISWAP_V2_ROUTER02
-            }),
-            additionalData: new bytes(0)
-        });
+        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](1);
+
+        {
+            ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
+                exchange: ISwapAdapter.Exchange.UNISWAP_V2,
+                encodedPath: new bytes(0),
+                path: path,
+                fees: new uint24[](0),
+                tickSpacing: new int24[](0),
+                exchangeAddresses: ISwapAdapter.ExchangeAddresses({
+                    aerodromeRouter: address(0),
+                    aerodromePoolFactory: address(0),
+                    aerodromeSlipstreamRouter: address(0),
+                    uniswapSwapRouter02: address(0),
+                    uniswapV2Router02: UNISWAP_V2_ROUTER02
+                }),
+                additionalData: new bytes(0)
+            });
+            calls[0] = ILeverageRouter.Call({
+                target: address(swapAdapter),
+                data: abi.encodeWithSelector(
+                    ISwapAdapter.swapExactInput.selector, USDC, flashLoanAmountReduced, 0, swapContext
+                ),
+                value: 0
+            });
+        }
 
         deal(address(WETH), user, userBalanceOfCollateralAsset);
         vm.startPrank(user);
@@ -542,7 +840,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         vm.expectRevert(
             abi.encodeWithSelector(ILeverageManager.SlippageTooHigh.selector, 0.997145366325135105 ether, 0.99715 ether)
         );
-        leverageRouter.deposit(leverageToken, collateralFromSender, flashLoanAmountReduced, minShares, swapContext);
+        leverageRouter.deposit(leverageToken, collateralFromSender, flashLoanAmountReduced, minShares, calls);
         vm.stopPrank();
     }
 
@@ -559,21 +857,30 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         path[0] = address(USDC);
         path[1] = address(WETH);
 
-        ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
-            exchange: ISwapAdapter.Exchange.UNISWAP_V2,
-            encodedPath: new bytes(0),
-            path: path,
-            fees: new uint24[](0),
-            tickSpacing: new int24[](0),
-            exchangeAddresses: ISwapAdapter.ExchangeAddresses({
-                aerodromeRouter: address(0),
-                aerodromePoolFactory: address(0),
-                aerodromeSlipstreamRouter: address(0),
-                uniswapSwapRouter02: address(0),
-                uniswapV2Router02: UNISWAP_V2_ROUTER02
-            }),
-            additionalData: new bytes(0)
-        });
+        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](1);
+
+        {
+            ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
+                exchange: ISwapAdapter.Exchange.UNISWAP_V2,
+                encodedPath: new bytes(0),
+                path: path,
+                fees: new uint24[](0),
+                tickSpacing: new int24[](0),
+                exchangeAddresses: ISwapAdapter.ExchangeAddresses({
+                    aerodromeRouter: address(0),
+                    aerodromePoolFactory: address(0),
+                    aerodromeSlipstreamRouter: address(0),
+                    uniswapSwapRouter02: address(0),
+                    uniswapV2Router02: UNISWAP_V2_ROUTER02
+                }),
+                additionalData: new bytes(0)
+            });
+            calls[0] = ILeverageRouter.Call({
+                target: address(swapAdapter),
+                data: abi.encodeWithSelector(ISwapAdapter.swapExactInput.selector, USDC, previewData.debt, 0, swapContext),
+                value: 0
+            });
+        }
 
         // The collateral received from swapping 33.922924e6 USDC is 0.009976155542446272 WETH in this block using Uniswap V2
         uint256 collateralReceivedFromDebtSwap = 0.009976155542446272 ether;
@@ -589,12 +896,12 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         // Reverts when morpho attempts to pull assets to repay the flash loan. The debt amount returned from the deposit is too
         // low because the collateral from the swap + the collateral from the sender is less than the collateral required.
         vm.expectRevert("transferFrom reverted"); // Thrown by morpho
-        leverageRouter.deposit(leverageToken, collateralFromSender, previewData.debt, 0, swapContext);
+        leverageRouter.deposit(leverageToken, collateralFromSender, previewData.debt, 0, calls);
         vm.stopPrank();
     }
 
     /// @dev In this block price on oracle 3392.292471591441746049801068
-    function testFork_deposit_UniswapV3() public {
+    function testFork_deposit_UniswapV3_WithSwapAdapter() public {
         uint256 collateralFromSender = 1 ether;
         uint256 collateralToAdd = 2 * collateralFromSender;
         uint256 flashLoanAmount = 3392.292471e6; // 3392.292471 USDC
@@ -656,7 +963,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             additionalData: new bytes(0)
         });
 
-        _dealAndDeposit(
+        _dealAndDepositWithSwapAdapter(
             WETH, USDC, collateralFromSender, collateralFromSender, flashLoanAmountReduced, minShares, swapContext
         );
 
@@ -675,7 +982,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
     }
 
     /// @dev In this block price on oracle 3392.292471591441746049801068
-    function testFork_deposit_Aerodrome() public {
+    function testFork_deposit_Aerodrome_WithSwapAdapter() public {
         uint256 collateralFromSender = 1 ether;
         uint256 collateralToAdd = 2 * collateralFromSender;
         uint256 flashLoanAmount = 3392.292471e6; // 3392.292471 USDC
@@ -734,7 +1041,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             additionalData: new bytes(0)
         });
 
-        _dealAndDeposit(
+        _dealAndDepositWithSwapAdapter(
             WETH, USDC, collateralFromSender, collateralFromSender, flashLoanAmountReduced, minShares, swapContext
         );
 
@@ -753,7 +1060,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
     }
 
     /// @dev In this block price on oracle 3392.292471591441746049801068
-    function testFork_deposit_AerodromeSlipstream() public {
+    function testFork_deposit_AerodromeSlipstream_WithSwapAdapter() public {
         uint256 collateralFromSender = 1 ether;
         uint256 collateralToAdd = 2 * collateralFromSender;
         uint256 flashLoanAmount = 3392.292471e6; // 3392.292471 USDC
@@ -804,7 +1111,9 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             additionalData: new bytes(0)
         });
 
-        _dealAndDeposit(WETH, USDC, collateralFromSender, collateralFromSender, flashLoanAmount, minShares, swapContext);
+        _dealAndDepositWithSwapAdapter(
+            WETH, USDC, collateralFromSender, collateralFromSender, flashLoanAmount, minShares, swapContext
+        );
 
         // Collateral is taken from the user for the deposit. All of the collateral should be used
         assertEq(WETH.balanceOf(user), 0);
@@ -866,21 +1175,32 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         path[1] = address(DAI);
         path[2] = address(WETH);
 
-        ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
-            exchange: ISwapAdapter.Exchange.UNISWAP_V2,
-            encodedPath: new bytes(0),
-            path: path,
-            fees: new uint24[](0),
-            tickSpacing: new int24[](0),
-            exchangeAddresses: ISwapAdapter.ExchangeAddresses({
-                aerodromeRouter: address(0),
-                aerodromePoolFactory: address(0),
-                aerodromeSlipstreamRouter: address(0),
-                uniswapSwapRouter02: address(0),
-                uniswapV2Router02: UNISWAP_V2_ROUTER02
-            }),
-            additionalData: new bytes(0)
-        });
+        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](1);
+
+        {
+            ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
+                exchange: ISwapAdapter.Exchange.UNISWAP_V2,
+                encodedPath: new bytes(0),
+                path: path,
+                fees: new uint24[](0),
+                tickSpacing: new int24[](0),
+                exchangeAddresses: ISwapAdapter.ExchangeAddresses({
+                    aerodromeRouter: address(0),
+                    aerodromePoolFactory: address(0),
+                    aerodromeSlipstreamRouter: address(0),
+                    uniswapSwapRouter02: address(0),
+                    uniswapV2Router02: UNISWAP_V2_ROUTER02
+                }),
+                additionalData: new bytes(0)
+            });
+            calls[0] = ILeverageRouter.Call({
+                target: address(swapAdapter),
+                data: abi.encodeWithSelector(
+                    ISwapAdapter.swapExactInput.selector, USDC, flashLoanAmountReduced, 0, swapContext
+                ),
+                value: 0
+            });
+        }
 
         deal(address(WETH), user, userBalanceOfCollateralAsset);
         vm.startPrank(user);
@@ -889,12 +1209,10 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         vm.expectRevert(
             abi.encodeWithSelector(ILeverageManager.SlippageTooHigh.selector, 0.500860313515015943 ether, minShares)
         );
-        leverageRouter.deposit(leverageToken, collateralFromSender, flashLoanAmountReduced, minShares, swapContext);
+        leverageRouter.deposit(leverageToken, collateralFromSender, flashLoanAmountReduced, minShares, calls);
 
         // If we update minShares, successful
-        leverageRouter.deposit(
-            leverageToken, collateralFromSender, flashLoanAmountReduced, previewData.shares, swapContext
-        );
+        leverageRouter.deposit(leverageToken, collateralFromSender, flashLoanAmountReduced, previewData.shares, calls);
         vm.stopPrank();
 
         // Collateral is taken from the user for the deposit. All of the collateral should be used
@@ -912,7 +1230,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
     }
 
     /// @dev In this block price on oracle 3392.292471591441746049801068
-    function testFork_deposit_UniswapV3_MultiHop() public {
+    function testFork_deposit_UniswapV3_WithSwapAdapter_MultiHop() public {
         uint256 collateralFromSender = 1 ether;
         uint256 collateralToAdd = 2 * collateralFromSender;
         uint256 flashLoanAmount = 3392.292471e6; // 3392.292471 USDC
@@ -976,7 +1294,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             additionalData: new bytes(0)
         });
 
-        _dealAndDeposit(
+        _dealAndDepositWithSwapAdapter(
             WETH, USDC, collateralFromSender, collateralFromSender, flashLoanAmountReduced, minShares, swapContext
         );
 
@@ -995,7 +1313,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
     }
 
     /// @dev In this block price on oracle 3392.292471591441746049801068
-    function testFork_deposit_Aerodrome_MultiHop() public {
+    function testFork_deposit_Aerodrome_WithSwapAdapter_MultiHop() public {
         uint256 collateralFromSender = 1 ether;
         uint256 collateralToAdd = 2 * collateralFromSender;
         uint256 flashLoanAmount = 3392.292471e6; // 3392.292471 USDC
@@ -1039,21 +1357,32 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         path[1] = address(DAI);
         path[2] = address(WETH);
 
-        ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
-            exchange: ISwapAdapter.Exchange.AERODROME,
-            encodedPath: new bytes(0),
-            path: path,
-            fees: new uint24[](0),
-            tickSpacing: new int24[](0),
-            exchangeAddresses: ISwapAdapter.ExchangeAddresses({
-                aerodromeRouter: AERODROME_ROUTER,
-                aerodromePoolFactory: AERODROME_POOL_FACTORY,
-                aerodromeSlipstreamRouter: address(0),
-                uniswapSwapRouter02: address(0),
-                uniswapV2Router02: address(0)
-            }),
-            additionalData: new bytes(0)
-        });
+        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](1);
+
+        {
+            ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
+                exchange: ISwapAdapter.Exchange.AERODROME,
+                encodedPath: new bytes(0),
+                path: path,
+                fees: new uint24[](0),
+                tickSpacing: new int24[](0),
+                exchangeAddresses: ISwapAdapter.ExchangeAddresses({
+                    aerodromeRouter: AERODROME_ROUTER,
+                    aerodromePoolFactory: AERODROME_POOL_FACTORY,
+                    aerodromeSlipstreamRouter: address(0),
+                    uniswapSwapRouter02: address(0),
+                    uniswapV2Router02: address(0)
+                }),
+                additionalData: new bytes(0)
+            });
+            calls[0] = ILeverageRouter.Call({
+                target: address(swapAdapter),
+                data: abi.encodeWithSelector(
+                    ISwapAdapter.swapExactInput.selector, USDC, flashLoanAmountReduced, 0, swapContext
+                ),
+                value: 0
+            });
+        }
 
         deal(address(WETH), user, collateralFromSender);
         vm.startPrank(user);
@@ -1062,12 +1391,10 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         vm.expectRevert(
             abi.encodeWithSelector(ILeverageManager.SlippageTooHigh.selector, 0.500368781987453131 ether, minShares)
         );
-        leverageRouter.deposit(leverageToken, collateralFromSender, flashLoanAmountReduced, minShares, swapContext);
+        leverageRouter.deposit(leverageToken, collateralFromSender, flashLoanAmountReduced, minShares, calls);
 
         // If we update minShares, successful
-        leverageRouter.deposit(
-            leverageToken, collateralFromSender, flashLoanAmountReduced, previewData.shares, swapContext
-        );
+        leverageRouter.deposit(leverageToken, collateralFromSender, flashLoanAmountReduced, previewData.shares, calls);
         vm.stopPrank();
 
         // Collateral is taken from the user for the deposit. All of the collateral should be used
@@ -1085,7 +1412,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
     }
 
     /// @dev In this block price on oracle 3392.292471591441746049801068
-    function testFork_deposit_AerodromeSlipstream_MultiHop() public {
+    function testFork_deposit_AerodromeSlipstream_WithSwapAdapter_MultiHop() public {
         uint256 collateralFromSender = 1 ether;
         uint256 collateralToAdd = 2 * collateralFromSender;
         uint256 flashLoanAmount = 3392.292471e6; // 3392.292471 USDC
@@ -1149,7 +1476,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             additionalData: new bytes(0)
         });
 
-        _dealAndDeposit(
+        _dealAndDepositWithSwapAdapter(
             WETH, USDC, collateralFromSender, collateralFromSender, flashLoanAmountReduced, minShares, swapContext
         );
 
@@ -1218,12 +1545,21 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
                 additionalData: new bytes(0)
             });
 
+            ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](1);
+            calls[0] = ILeverageRouter.Call({
+                target: address(mockSwapper),
+                data: abi.encodeWithSelector(
+                    ISwapAdapter.swapExactInput.selector, params.debtAsset, flashLoanAmountReduced, 0, swapContext
+                ),
+                value: 0
+            });
+
             deal(address(params.collateralAsset), user, params.userBalanceOfCollateralAsset);
 
             vm.startPrank(user);
             params.collateralAsset.approve(address(leverageRouterWithMockSwapAdapter), params.collateralFromSender);
             leverageRouterWithMockSwapAdapter.deposit(
-                params.leverageToken, params.collateralFromSender, flashLoanAmountReduced, params.minShares, swapContext
+                params.leverageToken, params.collateralFromSender, flashLoanAmountReduced, params.minShares, calls
             );
             vm.stopPrank();
         }

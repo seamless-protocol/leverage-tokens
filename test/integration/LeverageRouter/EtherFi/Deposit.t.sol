@@ -9,8 +9,10 @@ import {Id} from "@morpho-blue/interfaces/IMorpho.sol";
 import {MorphoLendingAdapter} from "src/lending/MorphoLendingAdapter.sol";
 import {RebalanceAdapter} from "src/rebalance/RebalanceAdapter.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
+import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
 import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
+import {IWETH9} from "src/interfaces/periphery/IWETH9.sol";
 import {IEtherFiL2ModeSyncPool} from "src/interfaces/periphery/IEtherFiL2ModeSyncPool.sol";
 import {IEtherFiL2ExchangeRateProvider} from "src/interfaces/periphery/IEtherFiL2ExchangeRateProvider.sol";
 import {ActionDataV2, LeverageTokenConfig} from "src/types/DataTypes.sol";
@@ -67,7 +69,27 @@ contract LeverageRouterDepositEtherFiTest is LeverageRouterTest {
         uint256 userBalanceOfCollateralAsset = 4 ether; // User has more than enough assets for the mint of equity
         uint256 debt = leverageRouter.previewDeposit(leverageToken, collateralFromSender).debt;
 
-        _dealAndDeposit(WEETH, userBalanceOfCollateralAsset, collateralFromSender, debt);
+        deal(address(WEETH), user, userBalanceOfCollateralAsset);
+
+        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
+
+        // Withdraw WETH to get ETH in the LeverageRouter
+        calls[0] = ILeverageRouter.Call({
+            target: address(WETH),
+            data: abi.encodeWithSelector(IWETH9.withdraw.selector, debt),
+            value: 0
+        });
+        // Deposit ETH into the EtherFi L2 Mode Sync Pool to get WEETH
+        calls[1] = ILeverageRouter.Call({
+            target: address(etherFiL2ModeSyncPool),
+            data: abi.encodeWithSelector(IEtherFiL2ModeSyncPool.deposit.selector, ETH_ADDRESS, debt, 0, address(0)),
+            value: debt
+        });
+
+        vm.startPrank(user);
+        WEETH.approve(address(leverageRouter), collateralFromSender);
+        leverageRouter.deposit(leverageToken, collateralFromSender, debt, 0, calls);
+        vm.stopPrank();
 
         // Initial mint results in 1:1 shares to equity
         assertEq(leverageToken.balanceOf(user), collateralFromSender);
@@ -84,7 +106,30 @@ contract LeverageRouterDepositEtherFiTest is LeverageRouterTest {
         assertEq(address(leverageRouter).balance, 0);
     }
 
-    function testFuzzFork_Deposit(uint256 collateralFromSender) public {
+    function testFork_Deposit_WithSwapAdapter() public {
+        uint256 collateralFromSender = 1 ether;
+        uint256 collateralToAdd = 2 * collateralFromSender;
+        uint256 userBalanceOfCollateralAsset = 4 ether; // User has more than enough assets for the mint of equity
+        uint256 debt = leverageRouter.previewDeposit(leverageToken, collateralFromSender).debt;
+
+        _dealAndDepositWithSwapAdapter(WEETH, userBalanceOfCollateralAsset, collateralFromSender, debt);
+
+        // Initial mint results in 1:1 shares to equity
+        assertEq(leverageToken.balanceOf(user), collateralFromSender);
+        // Collateral is taken from the user for the mint
+        assertEq(WEETH.balanceOf(user), userBalanceOfCollateralAsset - collateralFromSender);
+
+        assertEq(morphoLendingAdapter.getCollateral(), collateralToAdd);
+        // 1.058332450654038384 WETH (WEETH to WETH is not 1:1)
+        assertEq(morphoLendingAdapter.getDebt(), 1_058332450654038384);
+
+        // No leftover assets in the LeverageRouter
+        assertEq(WEETH.balanceOf(address(leverageRouter)), 0);
+        assertEq(WETH.balanceOf(address(leverageRouter)), 0);
+        assertEq(address(leverageRouter).balance, 0);
+    }
+
+    function testFuzzFork_Deposit_WithSwapAdapter(uint256 collateralFromSender) public {
         collateralFromSender = bound(collateralFromSender, 1 ether, 500 ether);
 
         ActionDataV2 memory previewData = leverageRouter.previewDeposit(leverageToken, collateralFromSender);
@@ -99,7 +144,7 @@ contract LeverageRouterDepositEtherFiTest is LeverageRouterTest {
         ActionDataV2 memory previewDataFullDeposit =
             leverageManager.previewDeposit(leverageToken, collateralFromSender + expectedWeEthFromDebtSwap);
 
-        _dealAndDeposit(WEETH, collateralFromSender, collateralFromSender, previewData.debt);
+        _dealAndDepositWithSwapAdapter(WEETH, collateralFromSender, collateralFromSender, previewData.debt);
 
         // All collateral is used for the deposit
         assertEq(WEETH.balanceOf(user), 0);
@@ -111,9 +156,12 @@ contract LeverageRouterDepositEtherFiTest is LeverageRouterTest {
         assertEq(WETH.balanceOf(address(leverageRouter)), 0);
     }
 
-    function _dealAndDeposit(IERC20 collateralAsset, uint256 dealAmount, uint256 collateralFromSender, uint256 debt)
-        internal
-    {
+    function _dealAndDepositWithSwapAdapter(
+        IERC20 collateralAsset,
+        uint256 dealAmount,
+        uint256 collateralFromSender,
+        uint256 debt
+    ) internal {
         deal(address(collateralAsset), user, dealAmount);
 
         ISwapAdapter.EtherFiSwapContext memory etherFiSwapContext = ISwapAdapter.EtherFiSwapContext({
@@ -139,9 +187,16 @@ contract LeverageRouterDepositEtherFiTest is LeverageRouterTest {
             additionalData: abi.encode(etherFiSwapContext)
         });
 
+        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](1);
+        calls[0] = ILeverageRouter.Call({
+            target: address(swapAdapter),
+            data: abi.encodeWithSelector(ISwapAdapter.swapExactInput.selector, WETH, debt, 0, swapContext),
+            value: 0
+        });
+
         vm.startPrank(user);
         collateralAsset.approve(address(leverageRouter), collateralFromSender);
-        leverageRouter.deposit(leverageToken, collateralFromSender, debt, 0, swapContext);
+        leverageRouter.deposit(leverageToken, collateralFromSender, debt, 0, calls);
         vm.stopPrank();
 
         // No leftover assets in the LeverageRouter

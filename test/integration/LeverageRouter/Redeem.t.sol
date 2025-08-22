@@ -477,7 +477,7 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
             additionalData: new bytes(0)
         });
 
-        _dealAndDeposit(
+        _dealAndDepositWithSwapAdapter(
             WETH,
             USDC,
             userBalanceOfCollateralAssetBefore,
