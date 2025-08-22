@@ -108,8 +108,8 @@ contract DepositTest is LeverageManagerTest {
 
         _prepareLeverageManagerStateForAction(beforeState);
 
-        uint256 collateralToDeposit = 2 ether; // 2x target CR
-        uint256 expectedDebtToBorrow = 1 ether;
+        uint256 collateralToDeposit = 2 ether;
+        uint256 expectedDebtToBorrow = 0.666666666666666666 ether; // 3x CR
         uint256 expectedShares = 1 ether;
 
         deal(address(collateralToken), address(this), collateralToDeposit);
@@ -125,7 +125,7 @@ contract DepositTest is LeverageManagerTest {
 
         LeverageTokenState memory afterState = leverageManager.getLeverageTokenState(leverageToken);
         assertEq(afterState.collateralInDebtAsset, collateralToDeposit + beforeState.collateral);
-        assertEq(afterState.debt, expectedDebtToBorrow + beforeState.debt); // 1:1 collateral to debt exchange rate, 2x target CR
+        assertEq(afterState.debt, expectedDebtToBorrow + beforeState.debt); // 1:1 collateral to debt exchange rate, ~3x target CR
         assertEq(
             afterState.collateralRatio,
             Math.mulDiv(
@@ -194,7 +194,7 @@ contract DepositTest is LeverageManagerTest {
 
         LeverageTokenState memory beforeState = leverageManager.getLeverageTokenState(leverageToken);
         uint256 beforeSharesTotalSupply = leverageToken.totalSupply();
-        uint256 beforeSharesFeeAdjustedTotalSupply = leverageManager.exposed_getFeeAdjustedTotalSupply(leverageToken);
+        uint256 beforeSharesFeeAdjustedTotalSupply = leverageManager.getFeeAdjustedTotalSupply(leverageToken);
 
         // The assertion for collateral ratio before and after the deposit in this helper only makes sense to use
         // if the leverage token has totalSupply > 0 before deposit, as a deposit of collateral into a leverage token with totalSupply = 0

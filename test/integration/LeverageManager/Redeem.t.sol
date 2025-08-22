@@ -236,7 +236,7 @@ contract LeverageManagerRedeemTest is LeverageManagerTest {
             // 1.1 * 1.1 = 1.21
             Math.mulDiv(leverageToken.balanceOf(user), 1e18, 1.21e18, Math.Rounding.Floor),
             morphoLendingAdapter.getEquityInCollateralAsset(),
-            LeverageManagerHarness(address(leverageManager)).exposed_getFeeAdjustedTotalSupply(leverageToken),
+            leverageManager.getFeeAdjustedTotalSupply(leverageToken),
             Math.Rounding.Floor
         );
         // The share value is less than half of the initial equity minted due to the share dilution from the fees,

@@ -13,7 +13,7 @@ contract GetFeeAdjustedTotalSupplyTest is FeeManagerTest {
         leverageToken.mint(address(this), totalSupply);
 
         // No time has passed yet, so no management fee should be accrued
-        uint256 feeAdjustedTotalSupply = feeManager.exposed_getFeeAdjustedTotalSupply(leverageToken);
+        uint256 feeAdjustedTotalSupply = feeManager.getFeeAdjustedTotalSupply(leverageToken);
         assertEq(feeAdjustedTotalSupply, totalSupply);
 
         skip(SECONDS_ONE_YEAR); // One year passes
@@ -22,12 +22,12 @@ contract GetFeeAdjustedTotalSupplyTest is FeeManagerTest {
         assertEq(accruedManagementFee, 100);
 
         // 10% of total supply should be included in the fee adjusted total supply as the accrued management fee
-        feeAdjustedTotalSupply = feeManager.exposed_getFeeAdjustedTotalSupply(leverageToken);
+        feeAdjustedTotalSupply = feeManager.getFeeAdjustedTotalSupply(leverageToken);
         assertEq(feeAdjustedTotalSupply, totalSupply + accruedManagementFee);
 
         // Charging the management fee should not affect the fee adjusted total supply if no time has passed
         feeManager.chargeManagementFee(leverageToken);
-        feeAdjustedTotalSupply = feeManager.exposed_getFeeAdjustedTotalSupply(leverageToken);
+        feeAdjustedTotalSupply = feeManager.getFeeAdjustedTotalSupply(leverageToken);
         assertEq(feeAdjustedTotalSupply, totalSupply + accruedManagementFee);
     }
 
@@ -39,7 +39,7 @@ contract GetFeeAdjustedTotalSupplyTest is FeeManagerTest {
         leverageToken.mint(address(this), totalSupply);
 
         // No time has passed yet, so no management fee should be accrued
-        uint256 feeAdjustedTotalSupply = feeManager.exposed_getFeeAdjustedTotalSupply(leverageToken);
+        uint256 feeAdjustedTotalSupply = feeManager.getFeeAdjustedTotalSupply(leverageToken);
         assertEq(feeAdjustedTotalSupply, totalSupply);
 
         skip(SECONDS_ONE_YEAR); // One year passes
@@ -48,7 +48,7 @@ contract GetFeeAdjustedTotalSupplyTest is FeeManagerTest {
         assertEq(accruedManagementFee, 100);
 
         // 10% of total supply should be included in the fee adjusted total supply as the accrued management fee
-        feeAdjustedTotalSupply = feeManager.exposed_getFeeAdjustedTotalSupply(leverageToken);
+        feeAdjustedTotalSupply = feeManager.getFeeAdjustedTotalSupply(leverageToken);
         assertEq(feeAdjustedTotalSupply, totalSupply + accruedManagementFee);
 
         skip(SECONDS_ONE_YEAR); // Another year passes
@@ -56,7 +56,7 @@ contract GetFeeAdjustedTotalSupplyTest is FeeManagerTest {
         accruedManagementFee = feeManager.exposed_getAccruedManagementFee(leverageToken);
         assertEq(accruedManagementFee, 200);
 
-        feeAdjustedTotalSupply = feeManager.exposed_getFeeAdjustedTotalSupply(leverageToken);
+        feeAdjustedTotalSupply = feeManager.getFeeAdjustedTotalSupply(leverageToken);
         assertEq(feeAdjustedTotalSupply, totalSupply + accruedManagementFee);
     }
 }
