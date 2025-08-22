@@ -40,15 +40,7 @@ contract SwapAdapter is ISwapAdapter {
         }
 
         // 3) Perform the external call.
-        // slither-disable-next-line arbitrary-send-eth,reentrancy-events
-        (bool ok, bytes memory ret) = call.target.call{value: call.value}(call.data);
-        if (!ok) {
-            // Bubble up the error / revert reason
-            assembly {
-                revert(add(ret, 0x20), mload(ret))
-            }
-        }
-        result = ret;
+        result = Address.functionCallWithValue(call.target, call.data, call.value);
 
         // 4) Send any balance of outputToken to the recipient
         bool isOutputTokenETH = outputToken == address(0);
