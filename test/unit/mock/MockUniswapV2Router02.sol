@@ -24,51 +24,6 @@ contract MockUniswapV2Router02 is Test {
         v2Swaps.push(swap);
     }
 
-    function swapETHForExactTokens(
-        uint256, /* amountOut */
-        address[] calldata path,
-        address to,
-        uint256 /* deadline */
-    ) external payable returns (uint256[] memory amounts) {
-        for (uint256 i = 0; i < v2Swaps.length; i++) {
-            MockV2Swap memory swap = v2Swaps[i];
-            bytes32 encodedPath = keccak256(abi.encode(path));
-            if (!swap.isExecuted && swap.encodedPath == encodedPath) {
-                _executeV2SwapETHForExactTokens(swap, to, i);
-                amounts = new uint256[](path.length);
-                amounts[0] = swap.fromAmount;
-                amounts[path.length - 1] = swap.toAmount;
-                return amounts;
-            }
-        }
-
-        revert("MockUniswapV2Router02: No mocked v2 swap set");
-    }
-
-    function swapExactTokensForETH(
-        uint256, /* amountIn */
-        uint256 amountOutMin,
-        address[] calldata path,
-        address to,
-        uint256 /*deadline*/
-    ) external payable returns (uint256[] memory amounts) {
-        for (uint256 i = 0; i < v2Swaps.length; i++) {
-            MockV2Swap memory swap = v2Swaps[i];
-            bytes32 encodedPath = keccak256(abi.encode(path));
-            if (!swap.isExecuted && swap.encodedPath == encodedPath) {
-                require(swap.toAmount >= amountOutMin, "MockUniswapV2Router02: INSUFFICIENT_OUTPUT_AMOUNT");
-
-                _executeV2SwapForETH(swap, to, i);
-                amounts = new uint256[](path.length);
-                amounts[0] = swap.fromAmount;
-                amounts[path.length - 1] = swap.toAmount;
-                return amounts;
-            }
-        }
-
-        revert("MockUniswapV2Router02: No mocked v2 swap set");
-    }
-
     function swapExactTokensForTokens(
         uint256, /* amountIn */
         uint256 amountOutMin,
@@ -124,32 +79,6 @@ contract MockUniswapV2Router02 is Test {
         // Transfer out the toToken
         deal(address(swap.toToken), address(this), swap.toAmount);
         IERC20(swap.toToken).transfer(recipient, swap.toAmount);
-
-        v2Swaps[v2SwapIndex].isExecuted = true;
-    }
-
-    function _executeV2SwapForETH(MockV2Swap memory swap, address recipient, uint256 v2SwapIndex) internal {
-        // Transfer in the fromToken
-        IERC20(swap.fromToken).transferFrom(msg.sender, address(this), swap.fromAmount);
-
-        // Transfer out the eth
-        deal(address(this), swap.toAmount);
-        (bool success,) = recipient.call{value: swap.toAmount}("");
-        require(success, "MockUniswapV2Router02: ETH_TRANSFER_FAILED");
-
-        v2Swaps[v2SwapIndex].isExecuted = true;
-    }
-
-    function _executeV2SwapETHForExactTokens(MockV2Swap memory swap, address recipient, uint256 v2SwapIndex) internal {
-        require(address(this).balance >= swap.fromAmount, "MockUniswapV2Router02: INSUFFICIENT_INPUT_AMOUNT");
-
-        // Transfer out the toToken
-        deal(address(swap.toToken), address(this), swap.toAmount);
-        IERC20(swap.toToken).transfer(recipient, swap.toAmount);
-
-        // Send any remaining ETH to the recipient
-        (bool success,) = recipient.call{value: address(this).balance - swap.fromAmount}("");
-        require(success, "MockUniswapV2Router02: ETH_TRANSFER_FAILED");
 
         v2Swaps[v2SwapIndex].isExecuted = true;
     }
