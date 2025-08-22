@@ -18,7 +18,6 @@ import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
-import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {MorphoLendingAdapter} from "src/lending/MorphoLendingAdapter.sol";
 import {BeaconProxyFactory} from "src/BeaconProxyFactory.sol";
 import {LeverageManager} from "src/LeverageManager.sol";
@@ -27,7 +26,6 @@ import {LeverageTokenConfig} from "src/types/DataTypes.sol";
 import {LeverageManagerHarness} from "test/unit/harness/LeverageManagerHarness.t.sol";
 import {MorphoLendingAdapterFactory} from "src/lending/MorphoLendingAdapterFactory.sol";
 import {RebalanceAdapter} from "src/rebalance/RebalanceAdapter.sol";
-import {SwapAdapter} from "src/periphery/SwapAdapter.sol";
 
 contract IntegrationTestBase is Test {
     uint256 public constant FORK_BLOCK_NUMBER = 25473904;
