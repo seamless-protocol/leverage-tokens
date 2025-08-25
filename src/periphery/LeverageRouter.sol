@@ -216,9 +216,8 @@ contract LeverageRouter is ILeverageRouter {
             })
         );
 
-        // Flash loan the debt asset required to redeem, and pass the required data to the Morpho flash loan callback handler for the redeem.
         morpho.flashLoan(
-            address(leverageManager.getLeverageTokenDebtAsset(token)),
+            address(leverageManager.getLeverageTokenCollateralAsset(token)),
             actionData.collateral,
             abi.encode(MorphoCallbackData({action: ExternalAction.Redeem, data: redeemData}))
         );
