@@ -6,19 +6,59 @@ import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.so
 
 // Internal imports
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
-import {ActionData} from "src/types/DataTypes.sol";
+import {ActionData, ActionDataV2} from "src/types/DataTypes.sol";
 import {LeverageRouterTest} from "./LeverageRouter.t.sol";
 import {SwapPathLib} from "test/utils/SwapPathLib.sol";
 
+import {console2} from "forge-std/console2.sol";
+
 contract LeverageRouterRedeemTest is LeverageRouterTest {
+    // 1. preview redemption of shares
+    // 2. calculate equity value of shares
+    // 3. calculate collateral to flash loan by fetching swap quotes for preview collateral - equity in collateral -> debt asset
+    // 4. calculate additional collateral required for the swap of the flash loaned collateral to the required debt if the swap is unfavorable.
+    //    in reality, some additional buffer would be added to accommodate for any price impact between off chain and on chain execution
+    // 5. calculate min collateral for sender by subtracting the additional collateral required from the equity value of shares
     function testFork_redeem_UniswapV2_FullRedeem() public {
-        uint256 equityInCollateralAsset = _deposit();
+        uint256 shares = _deposit();
 
-        uint256 collateralUsedForDebtSwap = 1.003150469473258488 ether; // Swap to 3392.292472 USDC requires 1.003150469473258488 WETH
+        // 1) Preview the redemption of shares
+        ActionDataV2 memory previewData = leverageManager.previewRedeemV2(leverageToken, shares);
 
-        uint256 collateralToRemove = leverageManager.previewRedeem(leverageToken, equityInCollateralAsset).collateral;
-        uint256 additionalCollateralRequired =
-            equityInCollateralAsset - (collateralToRemove - collateralUsedForDebtSwap);
+        // ~3392 USDC required for the redeem
+        assertEq(previewData.debt, 3392.292472e6);
+
+        // 2) Calculate the equity / amount of collateral user should receive for their shares
+        uint256 equityForSharesInCollateralAsset = (
+            shares * leverageManager.getLeverageTokenLendingAdapter(leverageToken).getEquityInCollateralAsset()
+        ) / leverageManager.getFeeAdjustedTotalSupply(leverageToken);
+        assertEq(equityForSharesInCollateralAsset, 0.999999999879562786 ether);
+
+        // 3) Calculate collateral to flash loan by fetching swap quotes for preview collateral - equity in collateral -> debt asset
+        // Collateral to flash loan is the total collateral minus the share value (equity). Some additional collateral is added to account for
+        // additional collateral required for the swap of the flash loaned collateral to the required debt
+        // Note: The total collateral to flash loan must be <= the previewed collateral on the redeem, otherwise there will always be insufficient
+        // collateral after redeeming the shares to repay the flash loan since the full flash loan is swapped to the debt asset.
+        // e.g. If we flash loan the full collateral amount (previewData.collateral), the sender will receive no collateral, but probably debt instead.
+        uint256 additionalCollateralRequired = 0.0032 ether;
+        uint256 collateralToFlashLoan =
+            previewData.collateral - equityForSharesInCollateralAsset + additionalCollateralRequired;
+        assertEq(collateralToFlashLoan, 1.003200000120437214 ether);
+
+        // The additional collateral required for the swap is taken from the sender's expected collateral / equity to receive from the redeem
+        uint256 minCollateralForSender = equityForSharesInCollateralAsset - additionalCollateralRequired;
+        assertEq(minCollateralForSender, 0.996799999879562786 ether);
+
+        // The slippage percentage is approx ~0.0032% for the amount of collateral received by the sender
+        uint256 slippage = 1e18 - (minCollateralForSender * 1e18 / equityForSharesInCollateralAsset);
+        assertEq(slippage, 0.0032000000003854e18);
+
+        // Swap of collateral asset flash loan to debt asset in this block results in ~3392 USDC
+        uint256 debtFromSwap = 3392.459885e6;
+
+        // Min debt for sender is the debt from the swap minus the debt required for the redeem
+        uint256 minDebtForSender = debtFromSwap - previewData.debt;
+        assertEq(minDebtForSender, 0.167413e6);
 
         address[] memory path = new address[](2);
         path[0] = address(WETH);
@@ -40,7 +80,7 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
             additionalData: new bytes(0)
         });
 
-        _redeemAndAssertBalances(equityInCollateralAsset, additionalCollateralRequired, swapContext);
+        _redeemAndAssertBalances(shares, collateralToFlashLoan, minCollateralForSender, minDebtForSender, swapContext);
     }
 
     function testFork_redeem_UniswapV2_PartialRedeem() public {
@@ -74,7 +114,7 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
             additionalData: new bytes(0)
         });
 
-        _redeemAndAssertBalances(equityInCollateralAssetToRedeem, additionalCollateralRequired, swapContext);
+        _redeemAndAssertBalances(equityInCollateralAssetToRedeem, additionalCollateralRequired, 0, 0, swapContext);
     }
 
     function testFork_redeem_UniswapV3_FullRedeem() public {
@@ -111,7 +151,7 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
             additionalData: new bytes(0)
         });
 
-        _redeemAndAssertBalances(equityInCollateralAsset, additionalCollateralRequired, swapContext);
+        _redeemAndAssertBalances(equityInCollateralAsset, additionalCollateralRequired, 0, 0, swapContext);
     }
 
     function testFork_redeem_UniswapV3_PartialRedeem() public {
@@ -150,7 +190,7 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
             additionalData: new bytes(0)
         });
 
-        _redeemAndAssertBalances(equityInCollateralAssetToRedeem, additionalCollateralRequired, swapContext);
+        _redeemAndAssertBalances(equityInCollateralAssetToRedeem, additionalCollateralRequired, 0, 0, swapContext);
     }
 
     function testFork_redeem_Aerodrome_FullRedeem() public {
@@ -182,7 +222,7 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
             additionalData: new bytes(0)
         });
 
-        _redeemAndAssertBalances(equityInCollateralAsset, additionalCollateralRequired, swapContext);
+        _redeemAndAssertBalances(equityInCollateralAsset, additionalCollateralRequired, 0, 0, swapContext);
     }
 
     function testFork_redeem_Aerodrome_PartialRedeem() public {
@@ -216,7 +256,7 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
             additionalData: new bytes(0)
         });
 
-        _redeemAndAssertBalances(equityInCollateralAssetToRedeem, additionalCollateralRequired, swapContext);
+        _redeemAndAssertBalances(equityInCollateralAssetToRedeem, additionalCollateralRequired, 0, 0, swapContext);
     }
 
     function testFork_redeem_AerodromeSlipstream_FullRedeem() public {
@@ -253,7 +293,7 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
             additionalData: new bytes(0)
         });
 
-        _redeemAndAssertBalances(equityInCollateralAsset, additionalCollateralRequired, swapContext);
+        _redeemAndAssertBalances(equityInCollateralAsset, additionalCollateralRequired, 0, 0, swapContext);
     }
 
     function testFork_redeem_AerodromeSlipstream_PartialRedeem() public {
@@ -292,7 +332,7 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
             additionalData: new bytes(0)
         });
 
-        _redeemAndAssertBalances(equityInCollateralAssetToRedeem, additionalCollateralRequired, swapContext);
+        _redeemAndAssertBalances(equityInCollateralAssetToRedeem, additionalCollateralRequired, 0, 0, swapContext);
     }
 
     function testFork_redeem_UniswapV3_MultiHop() public {
@@ -331,7 +371,7 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
             additionalData: new bytes(0)
         });
 
-        _redeemAndAssertBalances(equityInCollateralAsset, additionalCollateralRequired, swapContext);
+        _redeemAndAssertBalances(equityInCollateralAsset, additionalCollateralRequired, 0, 0, swapContext);
     }
 
     function testFork_redeem_Aerodrome_MultiHop() public {
@@ -364,7 +404,7 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
             additionalData: new bytes(0)
         });
 
-        _redeemAndAssertBalances(equityInCollateralAsset, additionalCollateralRequired, swapContext);
+        _redeemAndAssertBalances(equityInCollateralAsset, additionalCollateralRequired, 0, 0, swapContext);
     }
 
     function testFork_redeem_AerodromeSlipstream_MultiHop() public {
@@ -403,7 +443,7 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
             additionalData: new bytes(0)
         });
 
-        _redeemAndAssertBalances(equityInCollateralAsset, additionalCollateralRequired, swapContext);
+        _redeemAndAssertBalances(equityInCollateralAsset, additionalCollateralRequired, 0, 0, swapContext);
     }
 
     function testFork_redeem_RevertIf_InsufficientSenderShares() public {
@@ -445,7 +485,7 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
         vm.stopPrank();
     }
 
-    function _deposit() internal returns (uint256 shareValueInCollateralAsset) {
+    function _deposit() internal returns (uint256 shares) {
         uint256 collateralFromSender = 1 ether;
         uint256 collateralToAdd = 2 * collateralFromSender;
         uint256 debt = 3392.292471e6;
@@ -488,27 +528,27 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
         );
 
         uint256 sharesAfter = leverageToken.balanceOf(user) - sharesBefore;
-        shareValueInCollateralAsset = _convertToAssets(sharesAfter);
 
-        return shareValueInCollateralAsset;
+        return sharesAfter;
     }
 
     function _redeemAndAssertBalances(
-        uint256 equityInCollateralAsset,
-        uint256 additionalCollateralRequired,
+        uint256 shares,
+        uint256 collateralFlashLoanAmount,
+        uint256 minCollateralForSender,
+        uint256 minDebtForSender,
         ISwapAdapter.SwapContext memory swapContext
     ) internal {
         uint256 collateralBeforeRedeem = morphoLendingAdapter.getCollateral();
         uint256 debtBeforeRedeem = morphoLendingAdapter.getDebt();
         uint256 userBalanceOfCollateralAssetBeforeRedeem = WETH.balanceOf(user);
+        uint256 userBalanceOfDebtAssetBeforeRedeem = USDC.balanceOf(user);
 
-        ActionData memory previewData = leverageManager.previewRedeem(leverageToken, equityInCollateralAsset);
+        ActionDataV2 memory previewData = leverageManager.previewRedeemV2(leverageToken, shares);
 
         vm.startPrank(user);
-        leverageToken.approve(address(leverageRouter), previewData.shares);
-        leverageRouter.redeem(
-            leverageToken, equityInCollateralAsset, previewData.shares, additionalCollateralRequired, swapContext
-        );
+        leverageToken.approve(address(leverageRouter), shares);
+        leverageRouter.redeemV2(leverageToken, shares, collateralFlashLoanAmount, minCollateralForSender, swapContext);
         vm.stopPrank();
 
         // Check that the periphery contracts don't hold any assets
@@ -521,10 +561,8 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
         assertEq(morphoLendingAdapter.getCollateral(), collateralBeforeRedeem - previewData.collateral);
         assertEq(morphoLendingAdapter.getDebt(), debtBeforeRedeem - previewData.debt);
 
-        // The user receives back the equity, minus the additional collateral required for the swap to repay the flash loan
-        assertEq(
-            WETH.balanceOf(user),
-            userBalanceOfCollateralAssetBeforeRedeem + equityInCollateralAsset - additionalCollateralRequired
-        );
+        // The user receives back at least the min collateral and debt
+        assertGe(WETH.balanceOf(user), userBalanceOfCollateralAssetBeforeRedeem + minCollateralForSender);
+        assertGe(USDC.balanceOf(user), userBalanceOfDebtAssetBeforeRedeem + minDebtForSender);
     }
 }

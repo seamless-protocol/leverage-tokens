@@ -90,4 +90,12 @@ interface ILeverageRouter {
         uint256 maxSwapCostInCollateralAsset,
         ISwapAdapter.SwapContext memory swapContext
     ) external;
+
+    function redeemV2(
+        ILeverageToken token,
+        uint256 shares,
+        uint256 flashLoanAmount,
+        uint256 minCollateralForSender,
+        ISwapAdapter.SwapContext memory swapContext
+    ) external;
 }

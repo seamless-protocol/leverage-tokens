@@ -15,6 +15,8 @@ import {ISwapAdapter} from "../interfaces/periphery/ISwapAdapter.sol";
 import {ILeverageRouter} from "../interfaces/periphery/ILeverageRouter.sol";
 import {ActionData, ActionDataV2, ExternalAction} from "../types/DataTypes.sol";
 
+import {console2} from "forge-std/console2.sol";
+
 /**
  * @dev The LeverageRouter contract is an immutable periphery contract that facilitates the use of flash loans and a swap adapter
  * to deposit and redeem equity from LeverageTokens.
@@ -201,11 +203,10 @@ contract LeverageRouter is ILeverageRouter {
     function redeemV2(
         ILeverageToken token,
         uint256 shares,
+        uint256 flashLoanAmount,
         uint256 minCollateralForSender,
         ISwapAdapter.SwapContext memory swapContext
     ) external {
-        ActionDataV2 memory actionData = leverageManager.previewRedeemV2(token, shares);
-
         bytes memory redeemData = abi.encode(
             RedeemParamsV2({
                 sender: msg.sender,
@@ -218,7 +219,7 @@ contract LeverageRouter is ILeverageRouter {
 
         morpho.flashLoan(
             address(leverageManager.getLeverageTokenCollateralAsset(token)),
-            actionData.collateral,
+            flashLoanAmount,
             abi.encode(MorphoCallbackData({action: ExternalAction.Redeem, data: redeemData}))
         );
     }
@@ -301,55 +302,27 @@ contract LeverageRouter is ILeverageRouter {
 
         uint256 debtFromSwap = swapper.swapExactInput(collateralAsset, collateralLoan, 0, params.swapContext);
 
+        console2.log("debtFromSwap", debtFromSwap);
+
         // Use the debt from the flash loan to redeem the shares from the sender
         SafeERC20.forceApprove(debtAsset, address(leverageManager), debtFromSwap);
         ActionDataV2 memory actionData =
             leverageManager.redeemV2(params.leverageToken, params.shares, params.minCollateralForSender);
 
         // Transfer any surplus debt assets to the sender
+        console2.log("actionData.debt", actionData.debt);
         if (debtFromSwap > actionData.debt) {
+            console2.log("debtFromSwap - actionData.debt", debtFromSwap - actionData.debt);
             SafeERC20.safeTransfer(debtAsset, params.sender, debtFromSwap - actionData.debt);
         }
 
         // Transfer collateral to the sender and check slippage
         uint256 collateralForSender =
             actionData.collateral > collateralLoan ? actionData.collateral - collateralLoan : 0;
-        if (collateralForSender < params.minCollateralForSender) {
-            revert MinCollateralSlippageTooHigh(collateralForSender, params.minCollateralForSender);
-        }
-        SafeERC20.safeTransfer(collateralAsset, params.sender, collateralForSender);
 
-        // Approve morpho to transfer collateral assets to repay the flash loan
-        // Note: if insufficient collateral is available to repay the flash loan, the transaction will revert when Morpho
-        // attempts to transfer the collateral assets to repay the flash loan
-        SafeERC20.forceApprove(collateralAsset, address(morpho), collateralLoan);
-    }
-
-    // exact output swap, with preview
-    function _redeemV2AndRepayMorphoFlashLoan2(RedeemParamsV2 memory params, uint256 collateralLoan) internal {
-        IERC20 collateralAsset = leverageManager.getLeverageTokenCollateralAsset(params.leverageToken);
-        IERC20 debtAsset = leverageManager.getLeverageTokenDebtAsset(params.leverageToken);
-
-        // Transfer the shares from the sender
-        // slither-disable-next-line arbitrary-send-erc20
-        SafeERC20.safeTransferFrom(params.leverageToken, params.sender, address(this), params.shares);
-
-        // Preview the amount of debt required to redeem the shares
-        uint256 debtRequired = leverageManager.previewRedeemV2(params.leverageToken, params.shares).debt;
-
-        // Swap the collateral asset received from the flash loan to the debt asset, used to redeem
-        SafeERC20.forceApprove(collateralAsset, address(swapper), collateralLoan);
-        uint256 debtFromSwap =
-            swapper.swapExactOutput(collateralAsset, debtRequired, collateralLoan, params.swapContext);
-
-        // Use the debt from the flash loan to redeem the shares from the sender
-        SafeERC20.forceApprove(debtAsset, address(leverageManager), debtFromSwap);
-        ActionDataV2 memory actionData =
-            leverageManager.redeemV2(params.leverageToken, params.shares, params.minCollateralForSender);
-
-        // Transfer collateral to the sender and check slippage
-        uint256 collateralForSender =
-            actionData.collateral > collateralLoan ? actionData.collateral - collateralLoan : 0;
+        console2.log("actionData.collateral", actionData.collateral);
+        console2.log("collateralLoan", collateralLoan);
+        console2.log("collateralForSender", collateralForSender);
         if (collateralForSender < params.minCollateralForSender) {
             revert MinCollateralSlippageTooHigh(collateralForSender, params.minCollateralForSender);
         }
