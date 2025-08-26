@@ -12,8 +12,11 @@ import {ISwapAdapter} from "./ISwapAdapter.sol";
 import {ActionDataV2, ExternalAction} from "src/types/DataTypes.sol";
 
 interface ILeverageRouter {
+    /// @notice Struct containing the token and spender for an approval.
     struct Approval {
+        // Token to approve
         IERC20 token;
+        // Spender to approve the token to
         address spender;
     }
 
