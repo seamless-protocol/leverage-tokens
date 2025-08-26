@@ -8,8 +8,10 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 // Internal imports
 import {LeverageRouter} from "src/periphery/LeverageRouter.sol";
 import {SwapAdapter} from "src/periphery/SwapAdapter.sol";
+import {VeloraAdapter} from "src/periphery/VeloraAdapter.sol";
 import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
+import {IVeloraAdapter} from "src/interfaces/periphery/IVeloraAdapter.sol";
 import {IntegrationTestBase} from "../IntegrationTestBase.t.sol";
 
 contract LeverageRouterTest is IntegrationTestBase {

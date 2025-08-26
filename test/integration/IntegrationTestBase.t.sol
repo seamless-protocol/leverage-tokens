@@ -18,6 +18,7 @@ import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
+import {IVeloraAdapter} from "src/interfaces/periphery/IVeloraAdapter.sol";
 import {MorphoLendingAdapter} from "src/lending/MorphoLendingAdapter.sol";
 import {BeaconProxyFactory} from "src/BeaconProxyFactory.sol";
 import {LeverageManager} from "src/LeverageManager.sol";
@@ -26,6 +27,7 @@ import {LeverageTokenConfig} from "src/types/DataTypes.sol";
 import {LeverageManagerHarness} from "test/unit/harness/LeverageManagerHarness.t.sol";
 import {MorphoLendingAdapterFactory} from "src/lending/MorphoLendingAdapterFactory.sol";
 import {RebalanceAdapter} from "src/rebalance/RebalanceAdapter.sol";
+import {VeloraAdapter} from "src/periphery/VeloraAdapter.sol";
 
 contract IntegrationTestBase is Test {
     uint256 public constant FORK_BLOCK_NUMBER = 25473904;
@@ -38,6 +40,9 @@ contract IntegrationTestBase is Test {
     Id public constant WETH_USDC_MARKET_ID = Id.wrap(0x8793cf302b8ffd655ab97bd1c695dbd967807e8367a65cb2f4edaf1380ba1bda);
     Id public constant USDC_WETH_MARKET_ID = Id.wrap(0x3b3769cfca57be2eaed03fcc5299c25691b77781a1e124e7a8d520eb9a7eabb5);
 
+    address public constant AUGUSTUS_REGISTRY = 0x7E31B336F9E8bA52ba3c4ac861b033Ba90900bb3;
+    address public constant AUGUSTUS_V6_2 = 0x6A000F20005980200259B80c5102003040001068;
+
     address public user = makeAddr("user");
     address public treasury = makeAddr("treasury");
 
@@ -46,6 +51,7 @@ contract IntegrationTestBase is Test {
     ILeverageToken public leverageToken;
     IMorphoLendingAdapterFactory public morphoLendingAdapterFactory;
     ILeverageManager public leverageManager = ILeverageManager(makeAddr("leverageManager"));
+    IVeloraAdapter public veloraAdapter;
     MorphoLendingAdapter public morphoLendingAdapter;
     RebalanceAdapter public rebalanceAdapter;
 
@@ -78,6 +84,8 @@ contract IntegrationTestBase is Test {
 
         rebalanceAdapterImplementation = new RebalanceAdapter();
         rebalanceAdapter = _deployRebalanceAdapter(1.5e18, 2e18, 2.5e18, 7 minutes, 1.2e18, 0.9e18, 1.2e18, 40_00);
+
+        veloraAdapter = new VeloraAdapter(AUGUSTUS_REGISTRY);
 
         leverageToken = leverageManager.createNewLeverageToken(
             LeverageTokenConfig({
