@@ -173,10 +173,22 @@ contract LeverageRouter is ILeverageRouter {
 
         // Swap the debt asset received from the flash loan to the collateral asset, used to deposit into the LeverageToken
         for (uint256 i = 0; i < params.swapCalls.length; i++) {
-            SafeERC20.forceApprove(debtAsset, params.swapCalls[i].target, debtLoan);
+            bool requiresApproval = address(params.swapCalls[i].approval.token) != address(0)
+                && params.swapCalls[i].approval.spender != address(0);
+            if (requiresApproval) {
+                SafeERC20.forceApprove(
+                    params.swapCalls[i].approval.token, params.swapCalls[i].approval.spender, type(uint256).max
+                );
+            }
+
             Address.functionCallWithValue(
                 params.swapCalls[i].target, params.swapCalls[i].data, params.swapCalls[i].value
             );
+
+            // Reset the approval to 0 after the the call
+            if (requiresApproval) {
+                SafeERC20.forceApprove(params.swapCalls[i].approval.token, params.swapCalls[i].approval.spender, 0);
+            }
         }
 
         // The sum of the collateral from the swap and the collateral from the sender

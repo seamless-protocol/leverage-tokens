@@ -2,6 +2,7 @@
 pragma solidity ^0.8.26;
 
 // Dependency imports
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 
 // Internal imports
@@ -11,11 +12,17 @@ import {ISwapAdapter} from "./ISwapAdapter.sol";
 import {ActionDataV2, ExternalAction} from "src/types/DataTypes.sol";
 
 interface ILeverageRouter {
+    struct Approval {
+        IERC20 token;
+        address spender;
+    }
+
     /// @notice Struct containing the target, value, and data for a single external call.
     struct Call {
         address target; // Call target
         uint256 value; // ETH value to send
         bytes data; // Calldata you ABI-encode off-chain
+        Approval approval; // Optional approval to use for the call. Approves type(uint256).max of the token to the spender. After the call, the allowance is reset to 0.
     }
 
     /// @notice Deposit related parameters to pass to the Morpho flash loan callback handler for deposits

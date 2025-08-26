@@ -54,10 +54,13 @@ contract LeverageRouterTest is IntegrationTestBase {
         ISwapAdapter.SwapContext memory swapContext
     ) internal {
         ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](1);
+        ILeverageRouter.Approval memory approval =
+            ILeverageRouter.Approval({token: debtAsset, spender: address(swapAdapter)});
         calls[0] = ILeverageRouter.Call({
             target: address(swapAdapter),
             data: abi.encodeWithSelector(ISwapAdapter.swapExactInput.selector, debtAsset, flashLoanAmount, 0, swapContext),
-            value: 0
+            value: 0,
+            approval: approval
         });
 
         _dealAndDeposit(collateralAsset, debtAsset, dealAmount, collateralFromSender, flashLoanAmount, minShares, calls);

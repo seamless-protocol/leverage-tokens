@@ -182,11 +182,15 @@ contract LeverageRouterTest is Test {
             additionalData: new bytes(0)
         });
 
+        ILeverageRouter.Approval memory approval =
+            ILeverageRouter.Approval({token: debtToken, spender: address(swapper)});
+
         ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](1);
         calls[0] = ILeverageRouter.Call({
             target: address(swapper),
             data: abi.encodeWithSelector(ISwapAdapter.swapExactInput.selector, debtToken, requiredDebt, 0, swapContext),
-            value: 0
+            value: 0,
+            approval: approval
         });
 
         bytes memory depositData = abi.encode(

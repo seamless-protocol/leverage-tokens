@@ -53,11 +53,15 @@ contract DepositTest is LeverageRouterTest {
             additionalData: new bytes(0)
         });
 
+        ILeverageRouter.Approval memory approval =
+            ILeverageRouter.Approval({token: debtToken, spender: address(swapper)});
+
         ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](1);
         calls[0] = ILeverageRouter.Call({
             target: address(swapper),
             data: abi.encodeWithSelector(ISwapAdapter.swapExactInput.selector, debtToken, debtFlashLoan, 0, swapContext),
-            value: 0
+            value: 0,
+            approval: approval
         });
 
         // Execute the deposit
@@ -122,11 +126,15 @@ contract DepositTest is LeverageRouterTest {
             additionalData: new bytes(0)
         });
 
+        ILeverageRouter.Approval memory approval =
+            ILeverageRouter.Approval({token: debtToken, spender: address(swapper)});
+
         ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](1);
         calls[0] = ILeverageRouter.Call({
             target: address(swapper),
             data: abi.encodeWithSelector(ISwapAdapter.swapExactInput.selector, debtToken, debtFlashLoan, 0, swapContext),
-            value: 0
+            value: 0,
+            approval: approval
         });
 
         // Execute the deposit
@@ -204,11 +212,15 @@ contract DepositTest is LeverageRouterTest {
             additionalData: new bytes(0)
         });
 
+        ILeverageRouter.Approval memory approval =
+            ILeverageRouter.Approval({token: debtToken, spender: address(swapper)});
+
         ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](1);
         calls[0] = ILeverageRouter.Call({
             target: address(swapper),
             data: abi.encodeWithSelector(ISwapAdapter.swapExactInput.selector, debtToken, debtFlashLoan, 0, swapContext),
-            value: 0
+            value: 0,
+            approval: approval
         });
 
         leverageRouter.deposit(leverageToken, collateralFromSender, debtFlashLoan, shares, calls);

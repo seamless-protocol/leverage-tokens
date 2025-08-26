@@ -72,18 +72,22 @@ contract LeverageRouterDepositEtherFiTest is LeverageRouterTest {
         deal(address(WEETH), user, userBalanceOfCollateralAsset);
 
         ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
+        ILeverageRouter.Approval memory approval =
+            ILeverageRouter.Approval({token: IERC20(address(0)), spender: address(0)});
 
         // Withdraw WETH to get ETH in the LeverageRouter
         calls[0] = ILeverageRouter.Call({
             target: address(WETH),
             data: abi.encodeWithSelector(IWETH9.withdraw.selector, debt),
-            value: 0
+            value: 0,
+            approval: approval
         });
         // Deposit ETH into the EtherFi L2 Mode Sync Pool to get WEETH
         calls[1] = ILeverageRouter.Call({
             target: address(etherFiL2ModeSyncPool),
             data: abi.encodeWithSelector(IEtherFiL2ModeSyncPool.deposit.selector, ETH_ADDRESS, debt, 0, address(0)),
-            value: debt
+            value: debt,
+            approval: approval
         });
 
         vm.startPrank(user);
@@ -187,11 +191,15 @@ contract LeverageRouterDepositEtherFiTest is LeverageRouterTest {
             additionalData: abi.encode(etherFiSwapContext)
         });
 
+        ILeverageRouter.Approval memory approval =
+            ILeverageRouter.Approval({token: WETH, spender: address(swapAdapter)});
+
         ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](1);
         calls[0] = ILeverageRouter.Call({
             target: address(swapAdapter),
             data: abi.encodeWithSelector(ISwapAdapter.swapExactInput.selector, WETH, debt, 0, swapContext),
-            value: 0
+            value: 0,
+            approval: approval
         });
 
         vm.startPrank(user);

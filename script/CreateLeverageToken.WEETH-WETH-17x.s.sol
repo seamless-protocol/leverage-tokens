@@ -9,6 +9,7 @@ import {Id, MarketParams} from "@morpho-blue/interfaces/IMorpho.sol";
 import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {IEtherFiL2ModeSyncPool} from "src/interfaces/periphery/IEtherFiL2ModeSyncPool.sol";
 import {IPreLiquidationRebalanceAdapter} from "src/interfaces/IPreLiquidationRebalanceAdapter.sol";
@@ -167,12 +168,16 @@ contract CreateLeverageToken is Script {
 
         ActionDataV2 memory previewData = leverageRouter.previewDeposit(leverageToken, INITIAL_EQUITY_DEPOSIT);
 
+        ILeverageRouter.Approval memory approval =
+            ILeverageRouter.Approval({token: IERC20(address(0)), spender: address(0)});
+
         ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
         // Withdraw WETH to get ETH in the LeverageRouter
         calls[0] = ILeverageRouter.Call({
             target: address(DeployConstants.WETH),
             data: abi.encodeWithSelector(IWETH9.withdraw.selector, previewData.debt),
-            value: 0
+            value: 0,
+            approval: approval
         });
         // Deposit ETH into the EtherFi L2 Mode Sync Pool to get WEETH in the LeverageRouter
         calls[1] = ILeverageRouter.Call({
@@ -184,7 +189,8 @@ contract CreateLeverageToken is Script {
                 0,
                 address(0)
             ),
-            value: previewData.debt
+            value: previewData.debt,
+            approval: approval
         });
 
         collateralToken.approve(address(leverageRouter), INITIAL_EQUITY_DEPOSIT + INITIAL_EQUITY_DEPOSIT_MAX_SWAP_COST);
