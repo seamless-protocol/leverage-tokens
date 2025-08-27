@@ -7,6 +7,7 @@ import {Test} from "forge-std/Test.sol";
 // Dependency imports
 import {Id, MarketParams, IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 import {MarketParamsLib} from "@morpho-blue/libraries/MarketParamsLib.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
@@ -182,15 +183,16 @@ contract LeverageRouterTest is Test {
             additionalData: new bytes(0)
         });
 
-        ILeverageRouter.Approval memory approval =
-            ILeverageRouter.Approval({token: debtToken, spender: address(swapper)});
-
-        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](1);
+        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
         calls[0] = ILeverageRouter.Call({
+            target: address(debtToken),
+            data: abi.encodeWithSelector(IERC20.approve.selector, address(swapper), requiredDebt),
+            value: 0
+        });
+        calls[1] = ILeverageRouter.Call({
             target: address(swapper),
             data: abi.encodeWithSelector(ISwapAdapter.swapExactInput.selector, debtToken, requiredDebt, 0, swapContext),
-            value: 0,
-            approval: approval
+            value: 0
         });
 
         bytes memory depositData = abi.encode(

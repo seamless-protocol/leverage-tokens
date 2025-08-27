@@ -116,8 +116,15 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         path[0] = address(USDC);
         path[1] = address(WETH);
 
-        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](1);
+        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
+        // Approve UniswapV2 to spend the USDC for the swap
         calls[0] = ILeverageRouter.Call({
+            target: address(USDC),
+            data: abi.encodeWithSelector(IERC20.approve.selector, address(UNISWAP_V2_ROUTER02), flashLoanAmountReduced),
+            value: 0
+        });
+        // Swap USDC to WETH
+        calls[1] = ILeverageRouter.Call({
             target: UNISWAP_V2_ROUTER02,
             data: abi.encodeWithSelector(
                 IUniswapV2Router02.swapExactTokensForTokens.selector,
@@ -127,8 +134,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
                 address(leverageRouter),
                 block.timestamp
             ),
-            value: 0,
-            approval: ILeverageRouter.Approval({token: USDC, spender: address(UNISWAP_V2_ROUTER02)})
+            value: 0
         });
 
         _dealAndDeposit(
@@ -246,10 +252,15 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         path[0] = address(USDC);
         path[1] = address(WETH);
 
-        // ILeverageRouter.Approval memory approval = ILeverageRouter.Approval({token: USDC, spender: UNISWAP_V2_ROUTER02});
-
-        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](1);
+        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
+        // Approve UniswapV2 to spend the USDC for the swap
         calls[0] = ILeverageRouter.Call({
+            target: address(USDC),
+            data: abi.encodeWithSelector(IERC20.approve.selector, address(UNISWAP_V2_ROUTER02), flashLoanAmount),
+            value: 0
+        });
+        // Swap USDC to WETH
+        calls[1] = ILeverageRouter.Call({
             target: UNISWAP_V2_ROUTER02,
             data: abi.encodeWithSelector(
                 IUniswapV2Router02.swapExactTokensForTokens.selector,
@@ -259,8 +270,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
                 address(leverageRouter),
                 block.timestamp
             ),
-            value: 0,
-            approval: ILeverageRouter.Approval({token: USDC, spender: UNISWAP_V2_ROUTER02})
+            value: 0
         });
 
         _dealAndDeposit(
@@ -299,6 +309,11 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             assertEq(previewDataReducedDeposit.shares, 0.9947739972255148 ether);
 
             calls[0] = ILeverageRouter.Call({
+                target: address(USDC),
+                data: abi.encodeWithSelector(IERC20.approve.selector, address(UNISWAP_V2_ROUTER02), flashLoanAmountReduced),
+                value: 0
+            });
+            calls[1] = ILeverageRouter.Call({
                 target: UNISWAP_V2_ROUTER02,
                 data: abi.encodeWithSelector(
                     IUniswapV2Router02.swapExactTokensForTokens.selector,
@@ -308,8 +323,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
                     address(leverageRouter),
                     block.timestamp
                 ),
-                value: 0,
-                approval: ILeverageRouter.Approval({token: USDC, spender: UNISWAP_V2_ROUTER02})
+                value: 0
             });
 
             // Reverts due to 1 debt asset left over in the LR.
@@ -359,6 +373,11 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             assertEq(previewDataReducedDeposit.shares, 0.995243452682691599 ether);
 
             calls[0] = ILeverageRouter.Call({
+                target: address(USDC),
+                data: abi.encodeWithSelector(IERC20.approve.selector, address(UNISWAP_V2_ROUTER02), flashLoanAmountReduced),
+                value: 0
+            });
+            calls[1] = ILeverageRouter.Call({
                 target: UNISWAP_V2_ROUTER02,
                 data: abi.encodeWithSelector(
                     IUniswapV2Router02.swapExactTokensForTokens.selector,
@@ -368,8 +387,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
                     address(leverageRouter),
                     block.timestamp
                 ),
-                value: 0,
-                approval: ILeverageRouter.Approval({token: USDC, spender: UNISWAP_V2_ROUTER02})
+                value: 0
             });
 
             _dealAndDeposit(
@@ -418,6 +436,11 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             assertEq(previewDataReducedDeposit.shares, 0.994295914132365898 ether);
 
             calls[0] = ILeverageRouter.Call({
+                target: address(USDC),
+                data: abi.encodeWithSelector(IERC20.approve.selector, address(UNISWAP_V2_ROUTER02), flashLoanAmountReduced),
+                value: 0
+            });
+            calls[1] = ILeverageRouter.Call({
                 target: UNISWAP_V2_ROUTER02,
                 data: abi.encodeWithSelector(
                     IUniswapV2Router02.swapExactTokensForTokens.selector,
@@ -427,8 +450,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
                     address(leverageRouter),
                     block.timestamp
                 ),
-                value: 0,
-                approval: ILeverageRouter.Approval({token: USDC, spender: UNISWAP_V2_ROUTER02})
+                value: 0
             });
 
             _dealAndDeposit(
@@ -813,7 +835,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         path[0] = address(USDC);
         path[1] = address(WETH);
 
-        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](1);
+        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
 
         {
             ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
@@ -831,15 +853,17 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
                 }),
                 additionalData: new bytes(0)
             });
-            ILeverageRouter.Approval memory approval =
-                ILeverageRouter.Approval({token: USDC, spender: address(swapAdapter)});
             calls[0] = ILeverageRouter.Call({
+                target: address(USDC),
+                data: abi.encodeWithSelector(IERC20.approve.selector, address(swapAdapter), flashLoanAmountReduced),
+                value: 0
+            });
+            calls[1] = ILeverageRouter.Call({
                 target: address(swapAdapter),
                 data: abi.encodeWithSelector(
                     ISwapAdapter.swapExactInput.selector, USDC, flashLoanAmountReduced, 0, swapContext
                 ),
-                value: 0,
-                approval: approval
+                value: 0
             });
         }
 
@@ -867,7 +891,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         path[0] = address(USDC);
         path[1] = address(WETH);
 
-        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](1);
+        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
 
         {
             ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
@@ -885,13 +909,15 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
                 }),
                 additionalData: new bytes(0)
             });
-            ILeverageRouter.Approval memory approval =
-                ILeverageRouter.Approval({token: USDC, spender: address(swapAdapter)});
             calls[0] = ILeverageRouter.Call({
+                target: address(USDC),
+                data: abi.encodeWithSelector(IERC20.approve.selector, address(swapAdapter), previewData.debt),
+                value: 0
+            });
+            calls[1] = ILeverageRouter.Call({
                 target: address(swapAdapter),
                 data: abi.encodeWithSelector(ISwapAdapter.swapExactInput.selector, USDC, previewData.debt, 0, swapContext),
-                value: 0,
-                approval: approval
+                value: 0
             });
         }
 
@@ -1188,7 +1214,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         path[1] = address(DAI);
         path[2] = address(WETH);
 
-        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](1);
+        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
 
         {
             ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
@@ -1206,15 +1232,17 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
                 }),
                 additionalData: new bytes(0)
             });
-            ILeverageRouter.Approval memory approval =
-                ILeverageRouter.Approval({token: USDC, spender: address(swapAdapter)});
             calls[0] = ILeverageRouter.Call({
+                target: address(USDC),
+                data: abi.encodeWithSelector(IERC20.approve.selector, address(swapAdapter), flashLoanAmountReduced),
+                value: 0
+            });
+            calls[1] = ILeverageRouter.Call({
                 target: address(swapAdapter),
                 data: abi.encodeWithSelector(
                     ISwapAdapter.swapExactInput.selector, USDC, flashLoanAmountReduced, 0, swapContext
                 ),
-                value: 0,
-                approval: approval
+                value: 0
             });
         }
 
@@ -1373,7 +1401,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         path[1] = address(DAI);
         path[2] = address(WETH);
 
-        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](1);
+        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
 
         {
             ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
@@ -1391,16 +1419,17 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
                 }),
                 additionalData: new bytes(0)
             });
-            ILeverageRouter.Approval memory approval =
-                ILeverageRouter.Approval({token: USDC, spender: address(swapAdapter)});
-
             calls[0] = ILeverageRouter.Call({
+                target: address(USDC),
+                data: abi.encodeWithSelector(IERC20.approve.selector, address(swapAdapter), flashLoanAmountReduced),
+                value: 0
+            });
+            calls[1] = ILeverageRouter.Call({
                 target: address(swapAdapter),
                 data: abi.encodeWithSelector(
                     ISwapAdapter.swapExactInput.selector, USDC, flashLoanAmountReduced, 0, swapContext
                 ),
-                value: 0,
-                approval: approval
+                value: 0
             });
         }
 
@@ -1565,17 +1594,18 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
                 additionalData: new bytes(0)
             });
 
-            ILeverageRouter.Approval memory approval =
-                ILeverageRouter.Approval({token: params.debtAsset, spender: address(mockSwapper)});
-
-            ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](1);
+            ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
             calls[0] = ILeverageRouter.Call({
+                target: address(params.debtAsset),
+                data: abi.encodeWithSelector(IERC20.approve.selector, address(mockSwapper), flashLoanAmountReduced),
+                value: 0
+            });
+            calls[1] = ILeverageRouter.Call({
                 target: address(mockSwapper),
                 data: abi.encodeWithSelector(
                     ISwapAdapter.swapExactInput.selector, params.debtAsset, flashLoanAmountReduced, 0, swapContext
                 ),
-                value: 0,
-                approval: approval
+                value: 0
             });
 
             deal(address(params.collateralAsset), user, params.userBalanceOfCollateralAsset);

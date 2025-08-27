@@ -168,16 +168,12 @@ contract CreateLeverageToken is Script {
 
         ActionDataV2 memory previewData = leverageRouter.previewDeposit(leverageToken, INITIAL_EQUITY_DEPOSIT);
 
-        ILeverageRouter.Approval memory approval =
-            ILeverageRouter.Approval({token: IERC20(address(0)), spender: address(0)});
-
         ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
         // Withdraw WETH to get ETH in the LeverageRouter
         calls[0] = ILeverageRouter.Call({
             target: address(DeployConstants.WETH),
             data: abi.encodeWithSelector(IWETH9.withdraw.selector, previewData.debt),
-            value: 0,
-            approval: approval
+            value: 0
         });
         // Deposit ETH into the EtherFi L2 Mode Sync Pool to get WEETH in the LeverageRouter
         calls[1] = ILeverageRouter.Call({
@@ -189,8 +185,7 @@ contract CreateLeverageToken is Script {
                 0,
                 address(0)
             ),
-            value: previewData.debt,
-            approval: approval
+            value: previewData.debt
         });
 
         collateralToken.approve(address(leverageRouter), INITIAL_EQUITY_DEPOSIT + INITIAL_EQUITY_DEPOSIT_MAX_SWAP_COST);

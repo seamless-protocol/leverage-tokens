@@ -3,6 +3,7 @@ pragma solidity ^0.8.26;
 
 // Dependency imports
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
 import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
@@ -53,15 +54,16 @@ contract DepositTest is LeverageRouterTest {
             additionalData: new bytes(0)
         });
 
-        ILeverageRouter.Approval memory approval =
-            ILeverageRouter.Approval({token: debtToken, spender: address(swapper)});
-
-        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](1);
+        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
         calls[0] = ILeverageRouter.Call({
+            target: address(debtToken),
+            data: abi.encodeWithSelector(IERC20.approve.selector, address(swapper), debtFlashLoan),
+            value: 0
+        });
+        calls[1] = ILeverageRouter.Call({
             target: address(swapper),
             data: abi.encodeWithSelector(ISwapAdapter.swapExactInput.selector, debtToken, debtFlashLoan, 0, swapContext),
-            value: 0,
-            approval: approval
+            value: 0
         });
 
         // Execute the deposit
@@ -126,15 +128,16 @@ contract DepositTest is LeverageRouterTest {
             additionalData: new bytes(0)
         });
 
-        ILeverageRouter.Approval memory approval =
-            ILeverageRouter.Approval({token: debtToken, spender: address(swapper)});
-
-        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](1);
+        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
         calls[0] = ILeverageRouter.Call({
+            target: address(debtToken),
+            data: abi.encodeWithSelector(IERC20.approve.selector, address(swapper), debtFlashLoan),
+            value: 0
+        });
+        calls[1] = ILeverageRouter.Call({
             target: address(swapper),
             data: abi.encodeWithSelector(ISwapAdapter.swapExactInput.selector, debtToken, debtFlashLoan, 0, swapContext),
-            value: 0,
-            approval: approval
+            value: 0
         });
 
         // Execute the deposit
@@ -212,15 +215,16 @@ contract DepositTest is LeverageRouterTest {
             additionalData: new bytes(0)
         });
 
-        ILeverageRouter.Approval memory approval =
-            ILeverageRouter.Approval({token: debtToken, spender: address(swapper)});
-
-        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](1);
+        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
         calls[0] = ILeverageRouter.Call({
+            target: address(debtToken),
+            data: abi.encodeWithSelector(IERC20.approve.selector, address(swapper), debtFlashLoan),
+            value: 0
+        });
+        calls[1] = ILeverageRouter.Call({
             target: address(swapper),
             data: abi.encodeWithSelector(ISwapAdapter.swapExactInput.selector, debtToken, debtFlashLoan, 0, swapContext),
-            value: 0,
-            approval: approval
+            value: 0
         });
 
         leverageRouter.deposit(leverageToken, collateralFromSender, debtFlashLoan, shares, calls);

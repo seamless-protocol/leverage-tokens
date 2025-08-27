@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
+// Dependency imports
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 // Internal imports
 import {LeverageRouter} from "src/periphery/LeverageRouter.sol";
 import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
@@ -34,15 +37,16 @@ contract OnMorphoFlashLoanTest is LeverageRouterTest {
             additionalData: new bytes(0)
         });
 
-        ILeverageRouter.Approval memory approval =
-            ILeverageRouter.Approval({token: debtToken, spender: address(swapper)});
-
-        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](1);
+        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
         calls[0] = ILeverageRouter.Call({
+            target: address(debtToken),
+            data: abi.encodeWithSelector(IERC20.approve.selector, address(swapper), requiredDebt),
+            value: 0
+        });
+        calls[1] = ILeverageRouter.Call({
             target: address(swapper),
             data: abi.encodeWithSelector(ISwapAdapter.swapExactInput.selector, debtToken, requiredDebt, 0, swapContext),
-            value: 0,
-            approval: approval
+            value: 0
         });
 
         bytes memory depositData = abi.encode(
