@@ -398,9 +398,6 @@ contract LeverageManager is
         // - the token fee shares are burned to increase share value
         uint256 shares =
             _convertCollateralToShares(token, lendingAdapter, collateral, feeAdjustedTotalSupply, Math.Rounding.Ceil);
-        // uint256 debt = _convertSharesToDebt(
-        //     token, lendingAdapter, shares, lendingAdapter.getDebt(), feeAdjustedTotalSupply, Math.Rounding.Ceil
-        // );
         uint256 debt = _convertCollateralToDebt(
             token,
             lendingAdapter,
