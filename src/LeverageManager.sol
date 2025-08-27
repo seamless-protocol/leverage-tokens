@@ -142,7 +142,7 @@ contract LeverageManager is
 
     /// @inheritdoc ILeverageManager
     function convertDebtToCollateral(ILeverageToken token, uint256 debt, Math.Rounding rounding)
-        external
+        public
         view
         returns (uint256 collateral)
     {
@@ -398,8 +398,16 @@ contract LeverageManager is
         // - the token fee shares are burned to increase share value
         uint256 shares =
             _convertCollateralToShares(token, lendingAdapter, collateral, feeAdjustedTotalSupply, Math.Rounding.Ceil);
-        uint256 debt = _convertSharesToDebt(
-            token, lendingAdapter, shares, lendingAdapter.getDebt(), feeAdjustedTotalSupply, Math.Rounding.Ceil
+        // uint256 debt = _convertSharesToDebt(
+        //     token, lendingAdapter, shares, lendingAdapter.getDebt(), feeAdjustedTotalSupply, Math.Rounding.Ceil
+        // );
+        uint256 debt = _convertCollateralToDebt(
+            token,
+            lendingAdapter,
+            collateral,
+            lendingAdapter.getCollateral(),
+            lendingAdapter.getDebt(),
+            Math.Rounding.Ceil
         );
 
         (uint256 sharesAfterFees, uint256 sharesFee, uint256 treasuryFee) =

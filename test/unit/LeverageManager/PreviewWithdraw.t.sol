@@ -128,8 +128,15 @@ contract PreviewWithdrawTest is LeverageManagerTest {
         uint256 collateral = collateralToWithdraw;
         ActionDataV2 memory previewData = leverageManager.previewWithdraw(leverageToken, collateral);
 
+        // The initial collateral ratio is used to determine the debt amount in the preview when there is no collateral
+        // and no debt.
+        uint256 initialCollateralRatio = leverageManager.getLeverageTokenInitialCollateralRatio(leverageToken);
+        uint256 expectedDebt = lendingAdapter.convertCollateralToDebtAsset(
+            Math.mulDiv(collateral, _BASE_RATIO(), initialCollateralRatio, Math.Rounding.Ceil)
+        );
+
         assertEq(previewData.collateral, collateralToWithdraw);
-        assertEq(previewData.debt, 0);
+        assertEq(previewData.debt, expectedDebt);
         assertEq(previewData.shares, 0);
         assertEq(previewData.tokenFee, 0);
         assertEq(previewData.treasuryFee, 0);
@@ -198,18 +205,26 @@ contract PreviewWithdrawTest is LeverageManagerTest {
         uint256 collateral = 200 ether;
         ActionDataV2 memory previewData = leverageManager.previewWithdraw(leverageToken, collateral);
 
-        assertEq(previewData.collateral, 200 ether);
-        assertEq(previewData.debt, 100 ether);
-        assertEq(previewData.shares, 100 ether);
-        assertEq(previewData.tokenFee, 0);
-        assertEq(previewData.treasuryFee, 0);
-
-        previewData = leverageManager.previewRedeemV2(leverageToken, 0);
-        assertEq(previewData.collateral, 0);
-        assertEq(previewData.debt, 0);
-        assertEq(previewData.shares, 0);
-        assertEq(previewData.tokenFee, 0);
-        assertEq(previewData.treasuryFee, 0);
+        if (initialCollateral == 0 && initialDebt == 0) {
+            assertEq(previewData.collateral, 200 ether);
+            assertEq(previewData.debt, 100 ether);
+            assertEq(previewData.shares, 100 ether);
+            assertEq(previewData.tokenFee, 0);
+            assertEq(previewData.treasuryFee, 0);
+        } else if (initialCollateral == 0 && initialDebt > 0) {
+            assertEq(previewData.collateral, 200 ether);
+            assertEq(previewData.debt, 0);
+            // Shares are calculated from the collateral amount and the initial collateral ratio
+            assertEq(previewData.shares, 100 ether);
+            assertEq(previewData.tokenFee, 0);
+            assertEq(previewData.treasuryFee, 0);
+        } else {
+            assertEq(previewData.collateral, 200 ether);
+            assertEq(previewData.debt, Math.mulDiv(collateral, initialDebt, initialCollateral, Math.Rounding.Ceil));
+            assertEq(previewData.shares, 100 ether);
+            assertEq(previewData.tokenFee, 0);
+            assertEq(previewData.treasuryFee, 0);
+        }
     }
 
     function testFuzz_previewWithdraw_WithFuzzedExchangeRate(uint256 exchangeRate) public {
@@ -299,7 +314,8 @@ contract PreviewWithdrawTest is LeverageManagerTest {
         {
             uint256 shares =
                 leverageManager.convertCollateralToShares(leverageToken, collateralToWithdraw, Math.Rounding.Ceil);
-            uint256 debt = leverageManager.convertSharesToDebt(leverageToken, shares, Math.Rounding.Ceil);
+            uint256 debt =
+                leverageManager.convertCollateralToDebt(leverageToken, collateralToWithdraw, Math.Rounding.Ceil);
             (uint256 sharesAfterFees, uint256 tokenFee, uint256 treasuryFee) =
                 leverageManager.exposed_computeFeesForNetShares(leverageToken, shares, ExternalAction.Redeem);
 
