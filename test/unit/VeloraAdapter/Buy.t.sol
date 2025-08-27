@@ -9,7 +9,7 @@ contract BuyTest is VeloraAdapterTest {
     function test_buy_RevertIf_InvalidAugustus(address _augustus) public {
         augustusRegistry.setValid(_augustus, false);
 
-        vm.expectRevert("INVALID_AUGUSTUS");
+        vm.expectRevert(abi.encodeWithSelector(IVeloraAdapter.InvalidAugustus.selector, _augustus));
         veloraAdapter.buy(
             _augustus,
             new bytes(32),
@@ -22,7 +22,7 @@ contract BuyTest is VeloraAdapterTest {
     }
 
     function test_buy_RevertIf_ZeroMinDestAmount() public {
-        vm.expectRevert("ZERO_MIN_DEST_AMOUNT");
+        vm.expectRevert(abi.encodeWithSelector(IVeloraAdapter.InvalidMinDestAmount.selector, 0));
         veloraAdapter.buy(
             address(augustus),
             new bytes(32),
@@ -35,7 +35,7 @@ contract BuyTest is VeloraAdapterTest {
     }
 
     function test_buy_RevertIf_ZeroReceiver() public {
-        vm.expectRevert("ZERO_ADDRESS");
+        vm.expectRevert(abi.encodeWithSelector(IVeloraAdapter.InvalidReceiver.selector, address(0)));
         veloraAdapter.buy(
             address(augustus),
             new bytes(32),
@@ -80,7 +80,7 @@ contract BuyTest is VeloraAdapterTest {
         deal(address(collateralToken), address(veloraAdapter), amount);
 
         augustus.setToGive(subAmount);
-        vm.expectRevert("BUY_AMOUNT_TOO_LOW");
+        vm.expectRevert(abi.encodeWithSelector(IVeloraAdapter.DestTokenSlippageTooHigh.selector, subAmount, amount));
         _buy(address(collateralToken), address(debtToken), amount, amount, 0, address(0xBEEF));
     }
 
@@ -174,7 +174,7 @@ contract BuyTest is VeloraAdapterTest {
             quotedOffset = 0;
         }
 
-        vm.expectRevert("BUY_AMOUNT_TOO_LOW");
+        vm.expectRevert(abi.encodeWithSelector(IVeloraAdapter.DestTokenSlippageTooHigh.selector, 0, adjustedExact));
         vm.expectCall(address(_augustus), _swapCalldata(offset, adjustedExact, adjustedLimit, adjustedQuoted));
         veloraAdapter.buy(
             _augustus,

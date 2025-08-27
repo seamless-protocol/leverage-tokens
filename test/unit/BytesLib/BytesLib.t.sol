@@ -5,11 +5,14 @@ import {Test} from "forge-std/Test.sol";
 import {BytesLib} from "src/libraries/BytesLib.sol";
 
 contract BytesLibTest is Test {
+    // Can't import errors from libraries, so we redefine the error here
+    error InvalidOffset(uint256 offset);
+
     /// forge-config: default.allow_internal_expect_revert = true
     function testFuzz_get_RevertIf_InvalidOffset(bytes memory data, uint256 offset) public {
         vm.assume(data.length >= 32);
         vm.assume(offset > data.length - 32);
-        vm.expectRevert("INVALID_OFFSET");
+        vm.expectRevert(abi.encodeWithSelector(InvalidOffset.selector, offset));
         BytesLib.get(data, offset);
     }
 
@@ -17,7 +20,7 @@ contract BytesLibTest is Test {
     function testFuzz_set_RevertIf_InvalidOffset(bytes memory data, uint256 offset) public {
         vm.assume(data.length >= 32);
         vm.assume(offset > data.length - 32);
-        vm.expectRevert("INVALID_OFFSET");
+        vm.expectRevert(abi.encodeWithSelector(InvalidOffset.selector, offset));
         BytesLib.set(data, offset, 0);
     }
 

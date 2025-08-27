@@ -16,9 +16,6 @@ import {BytesLib} from "../libraries/BytesLib.sol";
 /// @dev This adapter was modified from the original version implemented by Morpho
 /// https://github.com/morpho-org/bundler3/blob/4887f33299ba6e60b54a51237b16e7392dceeb97/src/adapters/ParaswapAdapter.sol
 contract VeloraAdapter is IVeloraAdapter {
-    using Math for uint256;
-    using BytesLib for bytes;
-
     /* IMMUTABLES */
 
     /// @notice The address of the Augustus registry.
@@ -33,20 +30,7 @@ contract VeloraAdapter is IVeloraAdapter {
 
     /* SWAP ACTIONS */
 
-    /// @notice Buys an exact amount. Uses the entire balance of the srcToken in the adapter as the maximum input amount.
-    /// @notice Compatibility with Augustus versions different from 6.2 is not guaranteed.
-    /// @notice This function should be used immediately after sending tokens to the adapter, and any tokens remaining
-    /// in the adapter after a swap should be transferred out immediately.
-    /// @param augustus Address of the swapping contract. Must be in Velora's Augustus registry.
-    /// @param callData Swap data to call `augustus`. Contains routing information.
-    /// @param srcToken Token to sell.
-    /// @param destToken Token to buy.
-    /// @param newDestAmount Adjusted amount to buy. Will be used to update callData before sent to Augustus contract.
-    /// @param offsets Offsets in callData of the exact buy amount (`exactAmount`), maximum sell amount (`limitAmount`)
-    /// and quoted sell amount (`quotedAmount`).
-    /// @dev The quoted sell amount will change only if its offset is not zero.
-    /// @param receiver Address to which bought assets will be sent. Any leftover `srcToken` should be skimmed
-    /// separately.
+    /// @inheritdoc IVeloraAdapter
     function buy(
         address augustus,
         bytes memory callData,
@@ -61,14 +45,14 @@ contract VeloraAdapter is IVeloraAdapter {
         }
 
         // The maximum sell amount is set to the entire balance of the srcToken in the adapter
-        callData.set(offsets.limitAmount, IERC20(srcToken).balanceOf(address(this)));
+        BytesLib.set(callData, offsets.limitAmount, IERC20(srcToken).balanceOf(address(this)));
 
-        swap({
+        _swap({
             augustus: augustus,
             callData: callData,
             srcToken: srcToken,
             destToken: destToken,
-            minDestAmount: callData.get(offsets.exactAmount),
+            minDestAmount: BytesLib.get(callData, offsets.exactAmount),
             receiver: receiver
         });
 
@@ -89,7 +73,7 @@ contract VeloraAdapter is IVeloraAdapter {
     /// @param minDestAmount Minimum amount of `destToken` to buy.
     /// @param receiver Address to which bought assets will be sent. Any leftover `src` tokens should be skimmed
     /// separately.
-    function swap(
+    function _swap(
         address augustus,
         bytes memory callData,
         address srcToken,
@@ -97,11 +81,15 @@ contract VeloraAdapter is IVeloraAdapter {
         uint256 minDestAmount,
         address receiver
     ) internal {
-        require(AUGUSTUS_REGISTRY.isValidAugustus(augustus), "INVALID_AUGUSTUS");
-        require(receiver != address(0), "ZERO_ADDRESS");
-        require(minDestAmount != 0, "ZERO_MIN_DEST_AMOUNT");
-
-        uint256 destInitial = IERC20(destToken).balanceOf(address(this));
+        if (!AUGUSTUS_REGISTRY.isValidAugustus(augustus)) {
+            revert InvalidAugustus(augustus);
+        }
+        if (receiver == address(0)) {
+            revert InvalidReceiver(receiver);
+        }
+        if (minDestAmount == 0) {
+            revert InvalidMinDestAmount(minDestAmount);
+        }
 
         SafeERC20.forceApprove(IERC20(srcToken), augustus, type(uint256).max);
 
@@ -110,11 +98,11 @@ contract VeloraAdapter is IVeloraAdapter {
 
         SafeERC20.forceApprove(IERC20(srcToken), augustus, 0);
 
-        uint256 destFinal = IERC20(destToken).balanceOf(address(this));
+        uint256 destAmount = IERC20(destToken).balanceOf(address(this));
 
-        uint256 destAmount = destFinal - destInitial;
-
-        require(destAmount >= minDestAmount, "BUY_AMOUNT_TOO_LOW");
+        if (destAmount < minDestAmount) {
+            revert DestTokenSlippageTooHigh(destAmount, minDestAmount);
+        }
 
         if (receiver != address(this)) {
             SafeERC20.safeTransfer(IERC20(destToken), receiver, destAmount);
@@ -129,12 +117,13 @@ contract VeloraAdapter is IVeloraAdapter {
         uint256 exactAmount,
         Math.Rounding rounding
     ) internal pure {
-        uint256 oldExactAmount = callData.get(offsets.exactAmount);
-        callData.set(offsets.exactAmount, exactAmount);
+        uint256 oldExactAmount = BytesLib.get(callData, offsets.exactAmount);
+        BytesLib.set(callData, offsets.exactAmount, exactAmount);
 
         if (offsets.quotedAmount > 0) {
-            uint256 quotedAmount = callData.get(offsets.quotedAmount).mulDiv(exactAmount, oldExactAmount, rounding);
-            callData.set(offsets.quotedAmount, quotedAmount);
+            uint256 quotedAmount =
+                Math.mulDiv(BytesLib.get(callData, offsets.quotedAmount), exactAmount, oldExactAmount, rounding);
+            BytesLib.set(callData, offsets.quotedAmount, quotedAmount);
         }
     }
 }
