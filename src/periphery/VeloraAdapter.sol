@@ -41,7 +41,7 @@ contract VeloraAdapter is IVeloraAdapter {
         address receiver
     ) public returns (uint256) {
         if (newOutputAmount != 0) {
-            updateExactandQuotedAmounts(callData, offsets, newOutputAmount, Math.Rounding.Floor);
+            _updateExactandQuotedAmounts(callData, offsets, newOutputAmount, Math.Rounding.Floor);
         }
 
         // The maximum sell amount is set to the entire balance of the srcToken in the adapter
@@ -111,7 +111,7 @@ contract VeloraAdapter is IVeloraAdapter {
 
     /// @notice Sets exact amount in `callData` to `exactAmount`.
     /// @notice If `offsets.quotedAmount` is not zero, proportionally scale quoted amount in `callData`.
-    function updateExactandQuotedAmounts(
+    function _updateExactandQuotedAmounts(
         bytes memory callData,
         Offsets calldata offsets,
         uint256 exactAmount,
