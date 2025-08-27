@@ -234,7 +234,14 @@ contract LeverageManager is
 
     /// @inheritdoc ILeverageManager
     function getLeverageTokenInitialCollateralRatio(ILeverageToken token) public view returns (uint256 ratio) {
-        return getLeverageTokenRebalanceAdapter(token).getLeverageTokenInitialCollateralRatio(token);
+        uint256 initialCollateralRatio =
+            getLeverageTokenRebalanceAdapter(token).getLeverageTokenInitialCollateralRatio(token);
+
+        if (initialCollateralRatio <= BASE_RATIO) {
+            revert InvalidLeverageTokenInitialCollateralRatio(initialCollateralRatio);
+        }
+
+        return initialCollateralRatio;
     }
 
     /// @inheritdoc ILeverageManager
