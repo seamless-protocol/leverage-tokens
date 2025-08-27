@@ -38,10 +38,11 @@ contract VeloraAdapterForkTest is IntegrationTestBase {
             IVeloraAdapter.Offsets(destAmountOffset, maxSrcAmountOffset, 0),
             user
         );
-        veloraAdapter.erc20Transfer(address(USDC), user, type(uint256).max);
 
-        uint256 sold = initialBalance - IERC20(USDC).balanceOf(user);
+        // Sender receives excess srcToken
+        uint256 sold = initialBalance - IERC20(USDC).balanceOf(address(this));
         assertEq(sold, expectedSrcAmount, "sold");
+
         assertEq(IERC20(WETH).balanceOf(user), destAmount, "bought");
     }
 
@@ -61,11 +62,11 @@ contract VeloraAdapterForkTest is IntegrationTestBase {
             IVeloraAdapter.Offsets(destAmountOffset, maxSrcAmountOffset, 0),
             user
         );
-        veloraAdapter.erc20Transfer(address(USDC), user, type(uint256).max);
 
         assertEq(IERC20(WETH).balanceOf(user), newDestAmount, "bought");
 
-        uint256 sold = initialBalance - IERC20(USDC).balanceOf(user);
+        // Sender receives excess srcToken
+        uint256 sold = initialBalance - IERC20(USDC).balanceOf(address(this));
         assertEq(sold, 5038.378251e6, "sold");
     }
 }

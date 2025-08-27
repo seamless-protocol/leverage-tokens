@@ -31,26 +31,6 @@ contract VeloraAdapter is IVeloraAdapter {
         AUGUSTUS_REGISTRY = IAugustusRegistry(augustusRegistry);
     }
 
-    /* TOKEN TRANSFER */
-
-    /// @notice Transfers ERC20 tokens.
-    /// @param token The address of the ERC20 token to transfer.
-    /// @param receiver The address that will receive the tokens.
-    /// @param amount The amount of token to transfer. Pass `type(uint).max` to transfer the adapter's balance (this
-    /// allows 0 value transfers).
-    function erc20Transfer(address token, address receiver, uint256 amount) external {
-        require(receiver != address(0), "ZERO_ADDRESS_RECEIVER");
-        require(receiver != address(this), "ADAPTER_ADDRESS_RECEIVER");
-
-        if (amount == type(uint256).max) {
-            amount = IERC20(token).balanceOf(address(this));
-        } else {
-            require(amount != 0, "ZERO_AMOUNT");
-        }
-
-        if (amount > 0) SafeERC20.safeTransfer(IERC20(token), receiver, amount);
-    }
-
     /* SWAP ACTIONS */
 
     /// @notice Buys an exact amount. Uses the entire balance of the srcToken in the adapter as the maximum input amount.
@@ -75,7 +55,7 @@ contract VeloraAdapter is IVeloraAdapter {
         uint256 newDestAmount,
         Offsets calldata offsets,
         address receiver
-    ) public {
+    ) public returns (uint256) {
         if (newDestAmount != 0) {
             updateExactandQuotedAmounts(callData, offsets, newDestAmount, Math.Rounding.Floor);
         }
@@ -91,6 +71,12 @@ contract VeloraAdapter is IVeloraAdapter {
             minDestAmount: callData.get(offsets.exactAmount),
             receiver: receiver
         });
+
+        // Return any leftover srcToken to the sender
+        uint256 excessSrcAmount = IERC20(srcToken).balanceOf(address(this));
+        SafeERC20.safeTransfer(IERC20(srcToken), msg.sender, excessSrcAmount);
+
+        return excessSrcAmount;
     }
 
     /* INTERNAL FUNCTIONS */

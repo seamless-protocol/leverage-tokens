@@ -92,7 +92,6 @@ contract BuyTest is VeloraAdapterTest {
 
         deal(address(collateralToken), address(veloraAdapter), amount + extra);
         _buy(address(collateralToken), address(debtToken), amount, amount, 0, receiver);
-        veloraAdapter.erc20Transfer(address(collateralToken), address(this), type(uint256).max);
 
         assertEq(collateralToken.balanceOf(address(this)), extra, "receiver collateral");
         assertEq(debtToken.balanceOf(receiver), amount, "receiver loan token");
@@ -111,7 +110,6 @@ contract BuyTest is VeloraAdapterTest {
         deal(address(collateralToken), address(veloraAdapter), actualDestAmount);
 
         _buy(address(collateralToken), address(debtToken), destAmount, destAmount, actualDestAmount, receiver);
-        veloraAdapter.erc20Transfer(address(collateralToken), address(this), type(uint256).max);
 
         assertEq(collateralToken.balanceOf(receiver), 0, "receiver collateral");
         assertEq(debtToken.balanceOf(receiver), actualDestAmount, "receiver loan token");

@@ -127,7 +127,6 @@ contract LeverageRouterTest is Test {
         uint256 minCollateral
     ) internal {
         veloraAdapter.mockNextBuy(address(collateralToken), requiredCollateralForSwap);
-        veloraAdapter.mockNextTransfer(address(collateralToken), requiredCollateral - requiredCollateralForSwap);
 
         vm.mockCall(
             address(leverageManager),

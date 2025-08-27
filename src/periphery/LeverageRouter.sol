@@ -290,10 +290,11 @@ contract LeverageRouter is ILeverageRouter {
         uint256 collateralWithdrawn =
             leverageManager.redeemV2(params.leverageToken, params.shares, params.minCollateralForSender).collateral;
 
-        // Use the VeloraAdapter to swap the collateral asset received from the redeem to the debt asset, used to repay the flash loan
-        // slither-disable-next-line unchecked-transfer
-        collateralAsset.transfer(address(params.veloraAdapter), collateralWithdrawn);
-        params.veloraAdapter.buy(
+        // Use the VeloraAdapter to swap the collateral asset received from the redeem to the debt asset, used to repay the flash loan.
+        // The excess collateral asset sent back to this LeverageRouter is for the sender of the redeem
+        // slither-disable-next-line arbitrary-send-erc20
+        SafeERC20.safeTransfer(collateralAsset, address(params.veloraAdapter), collateralWithdrawn);
+        uint256 collateralForSender = params.veloraAdapter.buy(
             params.augustus,
             params.swapData,
             address(collateralAsset),
@@ -302,11 +303,6 @@ contract LeverageRouter is ILeverageRouter {
             params.offsets,
             address(this)
         );
-
-        // Transfer the remaining collateral asset in the adapter back to the LeverageRouter
-        params.veloraAdapter.erc20Transfer(address(collateralAsset), address(this), type(uint256).max);
-
-        uint256 collateralForSender = collateralAsset.balanceOf(address(this));
 
         // Check slippage
         if (collateralForSender < params.minCollateralForSender) {

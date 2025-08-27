@@ -24,7 +24,5 @@ interface IVeloraAdapter {
         uint256 newDestAmount,
         Offsets calldata offsets,
         address receiver
-    ) external;
-
-    function erc20Transfer(address token, address receiver, uint256 amount) external;
+    ) external returns (uint256 excessSrcAmount);
 }
