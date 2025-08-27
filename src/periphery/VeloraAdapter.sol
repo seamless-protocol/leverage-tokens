@@ -119,6 +119,7 @@ contract VeloraAdapter is IVeloraAdapter {
 
         SafeERC20.forceApprove(IERC20(srcToken), augustus, type(uint256).max);
 
+        // slither-disable-next-line unused-return
         Address.functionCall(augustus, callData);
 
         SafeERC20.forceApprove(IERC20(srcToken), augustus, 0);

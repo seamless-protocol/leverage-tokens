@@ -291,6 +291,7 @@ contract LeverageRouter is ILeverageRouter {
             leverageManager.redeemV2(params.leverageToken, params.shares, params.minCollateralForSender).collateral;
 
         // Use the VeloraAdapter to swap the collateral asset received from the redeem to the debt asset, used to repay the flash loan
+        // slither-disable-next-line unchecked-transfer
         collateralAsset.transfer(address(params.veloraAdapter), collateralWithdrawn);
         params.veloraAdapter.buy(
             params.augustus,
