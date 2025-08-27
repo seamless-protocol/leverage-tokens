@@ -48,25 +48,6 @@ contract LeverageRouter is ILeverageRouter {
     }
 
     /// @notice Redeem related parameters to pass to the Morpho flash loan callback handler for redeems
-    struct RedeemParams {
-        // LeverageToken to redeem from
-        ILeverageToken token;
-        // Amount of equity to receive by redeeming, denominated in the collateral asset
-        uint256 equityInCollateralAsset;
-        // Amount of LeverageToken shares to redeem for the equity
-        uint256 shares;
-        // Maximum amount of shares (LeverageTokens) to be burned during the redeem
-        uint256 maxShares;
-        // Maximum cost to the sender for the swap of debt to collateral during the redeem to repay the flash loan,
-        // denominated in the collateral asset. This cost is applied to the equity being received
-        uint256 maxSwapCostInCollateralAsset;
-        // Address of the sender of the redeem, whose shares will be burned and the equity will be transferred to
-        address sender;
-        // Swap context for the debt swap
-        ISwapAdapter.SwapContext swapContext;
-    }
-
-    /// @notice Redeem related parameters to pass to the Morpho flash loan callback handler for redeems
     struct RedeemWithVeloraParams {
         // Address of the sender of the redeem, whose shares will be burned and the collateral asset will be transferred to
         address sender;
