@@ -47,6 +47,7 @@ contract VeloraAdapterForkTest is IntegrationTestBase {
 
     function testFork_buy_WithAdjustment() public {
         uint256 initialBalance = 1_000_000_000e6;
+        uint256 newDestAmount = 1.1 ether;
 
         deal(address(USDC), address(this), initialBalance);
         USDC.transfer(address(veloraAdapter), initialBalance);
@@ -56,14 +57,15 @@ contract VeloraAdapterForkTest is IntegrationTestBase {
             buyCalldata,
             address(USDC),
             address(WETH),
-            destAmount,
+            newDestAmount,
             IVeloraAdapter.Offsets(destAmountOffset, maxSrcAmountOffset, 0),
             user
         );
         veloraAdapter.erc20Transfer(address(USDC), user, type(uint256).max);
 
+        assertEq(IERC20(WETH).balanceOf(user), newDestAmount, "bought");
+
         uint256 sold = initialBalance - IERC20(USDC).balanceOf(user);
-        assertEq(sold, expectedSrcAmount, "sold");
-        assertEq(IERC20(WETH).balanceOf(user), destAmount, "bought");
+        assertEq(sold, 5038.378251e6, "sold");
     }
 }

@@ -53,7 +53,7 @@ contract VeloraAdapter is IVeloraAdapter {
 
     /* SWAP ACTIONS */
 
-    /// @notice Buys an exact amount. Can check for a maximum sold amount.
+    /// @notice Buys an exact amount. Uses the entire balance of the srcToken in the adapter as the maximum input amount.
     /// @notice Compatibility with Augustus versions different from 6.2 is not guaranteed.
     /// @notice This function should be used immediately after sending tokens to the adapter, and any tokens remaining
     /// in the adapter after a swap should be transferred out immediately.
@@ -67,8 +67,6 @@ contract VeloraAdapter is IVeloraAdapter {
     /// @dev The quoted sell amount will change only if its offset is not zero.
     /// @param receiver Address to which bought assets will be sent. Any leftover `srcToken` should be skimmed
     /// separately.
-    /// @dev The total balance of srcToken in the adapter is set as the maximum input amount for the swap. It is the
-    /// responsibility of the caller to transfer out any remaining srcToken after the swap.
     function buy(
         address augustus,
         bytes memory callData,
@@ -82,7 +80,7 @@ contract VeloraAdapter is IVeloraAdapter {
             updateExactandQuotedAmounts(callData, offsets, newDestAmount, Math.Rounding.Floor);
         }
 
-        // The entire balance of the srcToken can be used to buy the destToken.
+        // The maximum sell amount is set to the entire balance of the srcToken in the adapter
         callData.set(offsets.limitAmount, IERC20(srcToken).balanceOf(address(this)));
 
         swap({
@@ -98,8 +96,6 @@ contract VeloraAdapter is IVeloraAdapter {
     /* INTERNAL FUNCTIONS */
 
     /// @dev Executes the swap specified by `callData` with `augustus`.
-    /// @dev Even if this adapter holds no approval, swaps are restricted to Bundler3 here as in all adapters in
-    /// order to simplify the security model.
     /// @param augustus Address of the swapping contract. Must be in Velora's Augustus registry.
     /// @param callData Swap data to call `augustus`. Contains routing information.
     /// @param srcToken Token to sell.
@@ -139,7 +135,6 @@ contract VeloraAdapter is IVeloraAdapter {
     }
 
     /// @notice Sets exact amount in `callData` to `exactAmount`.
-    /// @notice Proportionally scale limit amount in `callData`.
     /// @notice If `offsets.quotedAmount` is not zero, proportionally scale quoted amount in `callData`.
     function updateExactandQuotedAmounts(
         bytes memory callData,
