@@ -21,8 +21,8 @@ contract BuyTest is VeloraAdapterTest {
         );
     }
 
-    function test_buy_RevertIf_ZeroMinDestAmount() public {
-        vm.expectRevert(abi.encodeWithSelector(IVeloraAdapter.InvalidMinDestAmount.selector, 0));
+    function test_buy_RevertIf_ZeroMinOutputAmount() public {
+        vm.expectRevert(abi.encodeWithSelector(IVeloraAdapter.InvalidMinOutputAmount.selector, 0));
         veloraAdapter.buy(
             address(augustus),
             new bytes(32),
@@ -80,7 +80,7 @@ contract BuyTest is VeloraAdapterTest {
         deal(address(collateralToken), address(veloraAdapter), amount);
 
         augustus.setToGive(subAmount);
-        vm.expectRevert(abi.encodeWithSelector(IVeloraAdapter.DestTokenSlippageTooHigh.selector, subAmount, amount));
+        vm.expectRevert(abi.encodeWithSelector(IVeloraAdapter.OutputTokenSlippageTooHigh.selector, subAmount, amount));
         _buy(address(collateralToken), address(debtToken), amount, amount, 0, address(0xBEEF));
     }
 
@@ -100,30 +100,30 @@ contract BuyTest is VeloraAdapterTest {
         assertEq(collateralToken.allowance(address(veloraAdapter), address(augustus)), 0, "augustus has no allowance");
     }
 
-    function test_buy_WithAdjustment(uint256 destAmount, uint256 percent, address receiver) public {
+    function test_buy_WithAdjustment(uint256 outputAmount, uint256 percent, address receiver) public {
         _receiver(receiver);
 
         percent = bound(percent, 1, 1000);
-        destAmount = bound(destAmount, 1, type(uint64).max);
-        uint256 actualDestAmount = Math.mulDiv(destAmount, percent, 100, Math.Rounding.Ceil);
+        outputAmount = bound(outputAmount, 1, type(uint64).max);
+        uint256 actualOutputAmount = Math.mulDiv(outputAmount, percent, 100, Math.Rounding.Ceil);
 
-        deal(address(collateralToken), address(veloraAdapter), actualDestAmount);
+        deal(address(collateralToken), address(veloraAdapter), actualOutputAmount);
 
-        _buy(address(collateralToken), address(debtToken), destAmount, destAmount, actualDestAmount, receiver);
+        _buy(address(collateralToken), address(debtToken), outputAmount, outputAmount, actualOutputAmount, receiver);
 
         assertEq(collateralToken.balanceOf(address(this)), 0, "sender received excess input token");
-        assertEq(debtToken.balanceOf(receiver), actualDestAmount, "receiver received output token");
+        assertEq(debtToken.balanceOf(receiver), actualOutputAmount, "receiver received output token");
         assertEq(collateralToken.balanceOf(address(veloraAdapter)), 0, "velora adapter has no input token");
         assertEq(debtToken.balanceOf(address(veloraAdapter)), 0, "velora adapter has no output token");
         assertEq(collateralToken.allowance(address(veloraAdapter), address(augustus)), 0, "augustus has no allowance");
     }
 
     function _buy(
-        address srcToken,
-        address destToken,
-        uint256 maxSrcAmount,
-        uint256 destAmount,
-        uint256 newDestAmount,
+        address inputToken,
+        address outputToken,
+        uint256 maxInputAmount,
+        uint256 outputAmount,
+        uint256 newOutputAmount,
         address receiver
     ) internal {
         uint256 fromAmountOffset = 4 + 32 + 32;
@@ -131,10 +131,10 @@ contract BuyTest is VeloraAdapterTest {
 
         veloraAdapter.buy(
             address(augustus),
-            abi.encodeCall(augustus.mockBuy, (srcToken, destToken, maxSrcAmount, destAmount)),
-            srcToken,
-            destToken,
-            newDestAmount,
+            abi.encodeCall(augustus.mockBuy, (inputToken, outputToken, maxInputAmount, outputAmount)),
+            inputToken,
+            outputToken,
+            newOutputAmount,
             IVeloraAdapter.Offsets({exactAmount: toAmountOffset, limitAmount: fromAmountOffset, quotedAmount: 0}),
             receiver
         );
@@ -174,7 +174,7 @@ contract BuyTest is VeloraAdapterTest {
             quotedOffset = 0;
         }
 
-        vm.expectRevert(abi.encodeWithSelector(IVeloraAdapter.DestTokenSlippageTooHigh.selector, 0, adjustedExact));
+        vm.expectRevert(abi.encodeWithSelector(IVeloraAdapter.OutputTokenSlippageTooHigh.selector, 0, adjustedExact));
         vm.expectCall(address(_augustus), _swapCalldata(offset, adjustedExact, adjustedLimit, adjustedQuoted));
         veloraAdapter.buy(
             _augustus,

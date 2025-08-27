@@ -96,9 +96,7 @@ contract RedeemTest is LeverageRouterTest {
         leverageToken.approve(address(leverageRouter), redeemShares);
 
         vm.expectRevert(
-            abi.encodeWithSelector(
-                LeverageRouter.MinCollateralSlippageTooHigh.selector, minCollateral - 1, minCollateral
-            )
+            abi.encodeWithSelector(LeverageRouter.CollateralSlippageTooHigh.selector, minCollateral - 1, minCollateral)
         );
         leverageRouter.redeemWithVelora(
             leverageToken,

@@ -34,33 +34,33 @@ contract VeloraAdapter is IVeloraAdapter {
     function buy(
         address augustus,
         bytes memory callData,
-        address srcToken,
-        address destToken,
-        uint256 newDestAmount,
+        address inputToken,
+        address outputToken,
+        uint256 newOutputAmount,
         Offsets calldata offsets,
         address receiver
     ) public returns (uint256) {
-        if (newDestAmount != 0) {
-            updateExactandQuotedAmounts(callData, offsets, newDestAmount, Math.Rounding.Floor);
+        if (newOutputAmount != 0) {
+            updateExactandQuotedAmounts(callData, offsets, newOutputAmount, Math.Rounding.Floor);
         }
 
         // The maximum sell amount is set to the entire balance of the srcToken in the adapter
-        BytesLib.set(callData, offsets.limitAmount, IERC20(srcToken).balanceOf(address(this)));
+        BytesLib.set(callData, offsets.limitAmount, IERC20(inputToken).balanceOf(address(this)));
 
-        _swap({
+        _exactOutputSwap({
             augustus: augustus,
             callData: callData,
-            srcToken: srcToken,
-            destToken: destToken,
-            minDestAmount: BytesLib.get(callData, offsets.exactAmount),
+            inputToken: inputToken,
+            outputToken: outputToken,
+            minOutputAmount: BytesLib.get(callData, offsets.exactAmount),
             receiver: receiver
         });
 
         // Return any leftover srcToken to the sender
-        uint256 excessSrcAmount = IERC20(srcToken).balanceOf(address(this));
-        SafeERC20.safeTransfer(IERC20(srcToken), msg.sender, excessSrcAmount);
+        uint256 excessInputAmount = IERC20(inputToken).balanceOf(address(this));
+        SafeERC20.safeTransfer(IERC20(inputToken), msg.sender, excessInputAmount);
 
-        return excessSrcAmount;
+        return excessInputAmount;
     }
 
     /* INTERNAL FUNCTIONS */
@@ -68,17 +68,17 @@ contract VeloraAdapter is IVeloraAdapter {
     /// @dev Executes the swap specified by `callData` with `augustus`.
     /// @param augustus Address of the swapping contract. Must be in Velora's Augustus registry.
     /// @param callData Swap data to call `augustus`. Contains routing information.
-    /// @param srcToken Token to sell.
-    /// @param destToken Token to buy.
-    /// @param minDestAmount Minimum amount of `destToken` to buy.
-    /// @param receiver Address to which bought assets will be sent. Any leftover `src` tokens should be skimmed
+    /// @param inputToken Token to sell.
+    /// @param outputToken Token to buy.
+    /// @param minOutputAmount Minimum amount of `outputToken` to buy.
+    /// @param receiver Address to which bought assets will be sent. Any leftover `inputToken` tokens should be skimmed
     /// separately.
-    function _swap(
+    function _exactOutputSwap(
         address augustus,
         bytes memory callData,
-        address srcToken,
-        address destToken,
-        uint256 minDestAmount,
+        address inputToken,
+        address outputToken,
+        uint256 minOutputAmount,
         address receiver
     ) internal {
         if (!AUGUSTUS_REGISTRY.isValidAugustus(augustus)) {
@@ -87,25 +87,25 @@ contract VeloraAdapter is IVeloraAdapter {
         if (receiver == address(0)) {
             revert InvalidReceiver(receiver);
         }
-        if (minDestAmount == 0) {
-            revert InvalidMinDestAmount(minDestAmount);
+        if (minOutputAmount == 0) {
+            revert InvalidMinOutputAmount(minOutputAmount);
         }
 
-        SafeERC20.forceApprove(IERC20(srcToken), augustus, type(uint256).max);
+        SafeERC20.forceApprove(IERC20(inputToken), augustus, type(uint256).max);
 
         // slither-disable-next-line unused-return
         Address.functionCall(augustus, callData);
 
-        SafeERC20.forceApprove(IERC20(srcToken), augustus, 0);
+        SafeERC20.forceApprove(IERC20(inputToken), augustus, 0);
 
-        uint256 destAmount = IERC20(destToken).balanceOf(address(this));
+        uint256 outputAmount = IERC20(outputToken).balanceOf(address(this));
 
-        if (destAmount < minDestAmount) {
-            revert DestTokenSlippageTooHigh(destAmount, minDestAmount);
+        if (outputAmount < minOutputAmount) {
+            revert OutputTokenSlippageTooHigh(outputAmount, minOutputAmount);
         }
 
         if (receiver != address(this)) {
-            SafeERC20.safeTransfer(IERC20(destToken), receiver, destAmount);
+            SafeERC20.safeTransfer(IERC20(outputToken), receiver, outputAmount);
         }
     }
 

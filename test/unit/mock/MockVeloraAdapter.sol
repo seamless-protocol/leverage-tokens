@@ -9,34 +9,34 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IVeloraAdapter} from "src/interfaces/periphery/IVeloraAdapter.sol";
 
 contract MockVeloraAdapter is Test {
-    mapping(address srcToken => uint256 mockedSrcAmount) public mockedBuy;
+    mapping(address inputToken => uint256 mockedInputAmount) public mockedBuy;
 
-    function mockNextBuy(address srcToken, uint256 mockedSrcAmount) public {
-        mockedBuy[srcToken] = mockedSrcAmount;
+    function mockNextBuy(address inputToken, uint256 mockedInputAmount) public {
+        mockedBuy[inputToken] = mockedInputAmount;
     }
 
     function buy(
         address, /* augustus */
         bytes memory, /* callData */
-        address srcToken,
-        address destToken,
-        uint256 newDestAmount,
+        address inputToken,
+        address outputToken,
+        uint256 newOutputAmount,
         IVeloraAdapter.Offsets calldata, /* offsets */
         address receiver
     ) public returns (uint256) {
-        uint256 requiredSrcAmount = mockedBuy[srcToken];
-        uint256 balance = IERC20(srcToken).balanceOf(address(this));
+        uint256 requiredInputAmount = mockedBuy[inputToken];
+        uint256 balance = IERC20(inputToken).balanceOf(address(this));
 
-        if (balance < requiredSrcAmount) {
+        if (balance < requiredInputAmount) {
             revert("MockVeloraAdapter: Insufficient balance for buy");
         }
 
-        deal(destToken, address(this), newDestAmount);
-        IERC20(destToken).transfer(receiver, newDestAmount);
+        deal(outputToken, address(this), newOutputAmount);
+        IERC20(outputToken).transfer(receiver, newOutputAmount);
 
-        uint256 excessSrcAmount = balance - requiredSrcAmount;
-        IERC20(srcToken).transfer(msg.sender, excessSrcAmount);
+        uint256 excessInputAmount = balance - requiredInputAmount;
+        IERC20(inputToken).transfer(msg.sender, excessInputAmount);
 
-        return excessSrcAmount;
+        return excessInputAmount;
     }
 }

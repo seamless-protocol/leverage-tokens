@@ -18,25 +18,25 @@ contract MockAugustus is Test {
         toTake = amount;
     }
 
-    function mockBuy(address srcToken, address destToken, uint256, uint256 toAmount) external {
-        if (toGive != type(uint256).max) toAmount = toGive;
-        uint256 fromAmount = toTake != type(uint256).max ? toTake : toAmount;
+    function mockBuy(address inputToken, address outputToken, uint256, uint256 outputAmount) external {
+        if (toGive != type(uint256).max) outputAmount = toGive;
+        uint256 inputAmount = toTake != type(uint256).max ? toTake : outputAmount;
 
-        IERC20(srcToken).transferFrom(msg.sender, address(this), fromAmount);
-        deal(address(destToken), address(this), toAmount);
-        IERC20(destToken).transfer(msg.sender, toAmount);
+        IERC20(inputToken).transferFrom(msg.sender, address(this), inputAmount);
+        deal(address(outputToken), address(this), outputAmount);
+        IERC20(outputToken).transfer(msg.sender, outputAmount);
 
         toGive = type(uint256).max;
         toTake = type(uint256).max;
     }
 
-    function mockSell(address srcToken, address destToken, uint256 fromAmount, uint256) external {
-        if (toTake != type(uint256).max) fromAmount = toTake;
-        uint256 toAmount = toGive != type(uint256).max ? toGive : fromAmount;
+    function mockSell(address inputToken, address outputToken, uint256 inputAmount, uint256) external {
+        if (toTake != type(uint256).max) inputAmount = toTake;
+        uint256 outputAmount = toGive != type(uint256).max ? toGive : inputAmount;
 
-        IERC20(srcToken).transferFrom(msg.sender, address(this), fromAmount);
-        deal(address(destToken), address(this), toAmount);
-        IERC20(destToken).transfer(msg.sender, toAmount);
+        IERC20(inputToken).transferFrom(msg.sender, address(this), inputAmount);
+        deal(address(outputToken), address(this), outputAmount);
+        IERC20(outputToken).transfer(msg.sender, outputAmount);
 
         toGive = type(uint256).max;
         toTake = type(uint256).max;

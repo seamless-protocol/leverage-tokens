@@ -95,7 +95,7 @@ contract LeverageRouter is ILeverageRouter {
     /// @notice Error thrown when the remaining collateral is less than the minimum collateral for the sender to receive
     /// @param remainingCollateral The remaining collateral after the swap
     /// @param minCollateralForSender The minimum collateral for the sender to receive
-    error MinCollateralSlippageTooHigh(uint256 remainingCollateral, uint256 minCollateralForSender);
+    error CollateralSlippageTooHigh(uint256 remainingCollateral, uint256 minCollateralForSender);
 
     /// @inheritdoc ILeverageRouter
     ILeverageManager public immutable leverageManager;
@@ -306,7 +306,7 @@ contract LeverageRouter is ILeverageRouter {
 
         // Check slippage
         if (collateralForSender < params.minCollateralForSender) {
-            revert MinCollateralSlippageTooHigh(collateralForSender, params.minCollateralForSender);
+            revert CollateralSlippageTooHigh(collateralForSender, params.minCollateralForSender);
         }
 
         // Transfer remaining collateral to the sender
