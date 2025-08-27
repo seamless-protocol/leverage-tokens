@@ -233,7 +233,7 @@ contract LeverageManager is
     }
 
     /// @inheritdoc ILeverageManager
-    function getLeverageTokenInitialCollateralRatio(ILeverageToken token) public view returns (uint256 ratio) {
+    function getLeverageTokenInitialCollateralRatio(ILeverageToken token) public view returns (uint256) {
         uint256 initialCollateralRatio =
             getLeverageTokenRebalanceAdapter(token).getLeverageTokenInitialCollateralRatio(token);
 
