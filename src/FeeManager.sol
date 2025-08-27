@@ -148,8 +148,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
         uint256 sharesFee = _getAccruedManagementFee(token);
         _getFeeManagerStorage().lastManagementFeeAccrualTimestamp[token] = uint120(block.timestamp);
 
-        // slither-disable-next-line reentrancy-events
-        token.mint(getTreasury(), sharesFee);
+        _chargeTreasuryFee(token, sharesFee);
         emit ManagementFeeCharged(token, sharesFee);
     }
 
@@ -158,7 +157,9 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     /// @param shares Shares to mint
     /// @dev This contract must be authorized to mint shares for the LeverageToken
     function _chargeTreasuryFee(ILeverageToken token, uint256 shares) internal {
-        token.mint(getTreasury(), shares);
+        if (shares != 0) {
+            token.mint(getTreasury(), shares);
+        }
     }
 
     /// @notice Computes the token action fee for a given action
