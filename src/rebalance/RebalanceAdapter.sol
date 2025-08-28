@@ -68,7 +68,7 @@ contract RebalanceAdapter is
         ILeverageManager leverageManager;
         /// @notice The minimum collateral ratio for the rebalance adapter
         uint256 minCollateralRatio;
-        /// @notice The target collateral ratio for the rebalance adapter
+        /// @notice The target collateral ratio for the rebalance adapter. Must be > `LeverageManager.BASE_RATIO()`
         uint256 targetCollateralRatio;
         /// @notice The maximum collateral ratio for the rebalance adapter
         uint256 maxCollateralRatio;
@@ -85,6 +85,10 @@ contract RebalanceAdapter is
     }
 
     function initialize(RebalanceAdapterInitParams memory params) external initializer {
+        if (params.targetCollateralRatio <= params.leverageManager.BASE_RATIO()) {
+            revert InvalidTargetCollateralRatio(params.targetCollateralRatio);
+        }
+
         __DutchAuctionRebalanceAdapter_init_unchained(
             params.auctionDuration, params.initialPriceMultiplier, params.minPriceMultiplier
         );

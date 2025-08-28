@@ -8,7 +8,7 @@ import {LeverageTokenState} from "src/types/DataTypes.sol";
 /// @notice Interface for the base RebalanceAdapter
 /// @dev This is minimal interface required for the RebalanceAdapter to be used by the LeverageManager
 interface IRebalanceAdapterBase {
-    /// @notice Returns the initial collateral ratio for a LeverageToken
+    /// @notice Returns the initial collateral ratio for a LeverageToken. Must be > `LeverageManager.BASE_RATIO()`
     /// @param token LeverageToken to get initial collateral ratio for
     /// @return initialCollateralRatio Initial collateral ratio for the LeverageToken
     /// @dev Initial collateral ratio is followed when the LeverageToken has no shares and on mints when debt is 0.

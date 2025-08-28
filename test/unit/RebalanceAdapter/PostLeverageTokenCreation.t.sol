@@ -8,14 +8,17 @@ import {IDutchAuctionRebalanceAdapter} from "src/interfaces/IDutchAuctionRebalan
 import {RebalanceAdapter} from "src/rebalance/RebalanceAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
+import {LeverageManager} from "src/LeverageManager.sol";
 
 contract PostLeverageTokenCreation is Test {
-    ILeverageManager public leverageManager = ILeverageManager(makeAddr("leverageManager"));
+    ILeverageManager public leverageManager;
     address public authorizedCreator = makeAddr("authorizedCreator");
 
     RebalanceAdapter public rebalanceAdapter;
 
     function setUp() public {
+        leverageManager = new LeverageManager();
+
         rebalanceAdapter = new RebalanceAdapter();
         rebalanceAdapter.initialize(
             RebalanceAdapter.RebalanceAdapterInitParams({
