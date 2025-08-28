@@ -44,7 +44,7 @@ contract VeloraAdapter is IVeloraAdapter {
             _updateExactandQuotedAmounts(callData, offsets, newOutputAmount, Math.Rounding.Floor);
         }
 
-        // The maximum sell amount is set to the entire balance of the srcToken in the adapter
+        // The maximum sell amount is set to the entire balance of the inputToken in the adapter
         BytesLib.set(callData, offsets.limitAmount, IERC20(inputToken).balanceOf(address(this)));
 
         _exactOutputSwap({
@@ -52,13 +52,12 @@ contract VeloraAdapter is IVeloraAdapter {
             callData: callData,
             inputToken: inputToken,
             outputToken: outputToken,
-            minOutputAmount: BytesLib.get(callData, offsets.exactAmount),
             receiver: receiver
         });
 
-        // Return any leftover srcToken to the sender
+        // Transfer any leftover inputToken to the receiver
         uint256 excessInputAmount = IERC20(inputToken).balanceOf(address(this));
-        SafeERC20.safeTransfer(IERC20(inputToken), msg.sender, excessInputAmount);
+        SafeERC20.safeTransfer(IERC20(inputToken), receiver, excessInputAmount);
 
         return excessInputAmount;
     }
@@ -70,25 +69,20 @@ contract VeloraAdapter is IVeloraAdapter {
     /// @param callData Swap data to call `augustus`. Contains routing information.
     /// @param inputToken Token to sell.
     /// @param outputToken Token to buy.
-    /// @param minOutputAmount Minimum amount of `outputToken` to buy.
-    /// @param receiver Address to which bought assets will be sent. Any leftover `inputToken` tokens should be skimmed
-    /// separately.
+    /// @param receiver Address to which leftover `outputToken` assets in the VeloraAdapter will be sent. This can occur
+    /// if the receiver on the `callData` is set to the VeloraAdapter.
     function _exactOutputSwap(
         address augustus,
         bytes memory callData,
         address inputToken,
         address outputToken,
-        uint256 minOutputAmount,
         address receiver
     ) internal {
         if (!AUGUSTUS_REGISTRY.isValidAugustus(augustus)) {
             revert InvalidAugustus(augustus);
         }
-        if (receiver == address(0)) {
+        if (receiver == address(0) || receiver == address(this)) {
             revert InvalidReceiver(receiver);
-        }
-        if (minOutputAmount == 0) {
-            revert InvalidMinOutputAmount(minOutputAmount);
         }
 
         SafeERC20.forceApprove(IERC20(inputToken), augustus, type(uint256).max);
@@ -98,14 +92,10 @@ contract VeloraAdapter is IVeloraAdapter {
 
         SafeERC20.forceApprove(IERC20(inputToken), augustus, 0);
 
-        uint256 outputAmount = IERC20(outputToken).balanceOf(address(this));
-
-        if (outputAmount < minOutputAmount) {
-            revert OutputTokenSlippageTooHigh(outputAmount, minOutputAmount);
-        }
-
-        if (receiver != address(this)) {
-            SafeERC20.safeTransfer(IERC20(outputToken), receiver, outputAmount);
+        // Transfer any outputToken assets to the receiver.
+        uint256 outputBalance = IERC20(outputToken).balanceOf(address(this));
+        if (outputBalance > 0) {
+            SafeERC20.safeTransfer(IERC20(outputToken), receiver, outputBalance);
         }
     }
 
