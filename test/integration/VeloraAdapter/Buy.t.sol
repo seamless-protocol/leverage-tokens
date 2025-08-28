@@ -16,9 +16,11 @@ contract VeloraAdapterForkTest is IntegrationTestBase {
     uint256 quotedInputAmountOffset = 164;
     uint256 expectedInputAmount = 4580.32128e6;
 
+    uint256 DEFAULT_BLOCK_NUMBER = 34727190;
+
     function setUp() public override {
-        super.setUp();
-        vm.rollFork(34727190);
+        vm.createSelectFork(vm.envString("BASE_RPC_URL"), DEFAULT_BLOCK_NUMBER);
+        _deployIntegrationTestContracts();
     }
 
     function testFork_buy_NoAdjustment() public {
@@ -29,6 +31,10 @@ contract VeloraAdapterForkTest is IntegrationTestBase {
         deal(address(USDC), address(this), initialBalance);
         USDC.transfer(address(veloraAdapter), initialBalance);
 
+        // Since the receiver on the calldata is the velora adapter, expect the outputToken to be transfered
+        // from the adapter to the user
+        vm.expectEmit(true, true, true, true);
+        emit IERC20.Transfer(address(veloraAdapter), user, outputAmount);
         veloraAdapter.buy(
             AUGUSTUS_V6_2,
             buyCalldata,
@@ -48,7 +54,43 @@ contract VeloraAdapterForkTest is IntegrationTestBase {
 
     function testFork_buy_WithAdjustment() public {
         uint256 initialBalance = 1_000_000_000e6;
-        uint256 newInputAmount = 1.1 ether;
+        uint256 newOutputAmount = 1.1 ether;
+
+        deal(address(USDC), address(this), initialBalance);
+        USDC.transfer(address(veloraAdapter), initialBalance);
+
+        // Since the receiver on the calldata is the velora adapter, expect the outputToken to be transfered
+        // from the adapter to the user
+        vm.expectEmit(true, true, true, true);
+        emit IERC20.Transfer(address(veloraAdapter), user, newOutputAmount);
+        veloraAdapter.buy(
+            AUGUSTUS_V6_2,
+            buyCalldata,
+            address(USDC),
+            address(WETH),
+            newOutputAmount,
+            IVeloraAdapter.Offsets(outputAmountOffset, maxInputAmountOffset, quotedInputAmountOffset),
+            user
+        );
+
+        // Receiver receives excess inputToken
+        uint256 sold = initialBalance - IERC20(USDC).balanceOf(user);
+        assertEq(sold, 5038.378251e6, "sold");
+
+        assertEq(IERC20(WETH).balanceOf(user), newOutputAmount, "bought");
+    }
+
+    function testFork_buy_CallDataReceiverIsNotVeloraAdapter() public {
+        // Receiver on calldata is not the VeloraAdapter
+        buyCalldata =
+            hex"7f4576750000000000000000000000000e5891850bb3f03090f03010000806f080040100000000000000000000000000833589fcd6edb6e08f4c7c32d4f71b54bda029130000000000000000000000004200000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000010d2c88800000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000010d2c8880e84a0e6de891413eb7e8b2d33cd22dcd000000000000000000000000021310f70000000000000000000000006ca6d1e2d5347bfab1d91e883f1915560e09129d000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000001600000000000000000000000000000000000000000000000000000000000000180000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004c0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004e00000016000000000000000000000008c000000000000006c00000000000000c876578ecf9a141296ec657847fb45b0585bcda3a601400064012500440000000b0000000000000000000000000000000000000000000000000000000094e86ef8000000000000000000000000f0b95abb49055cf3204b2d5ffe97df570c47cea6000000000000000000000000833589fcd6edb6e08f4c7c32d4f71b54bda02913000000000000000000000000420000000000000000000000000000000000000600000000000000000000000000000000000000000000000000470de4df820000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000016000000000000000000000008c000000000000006c000000000000019076578ecf9a141296ec657847fb45b0585bcda3a601400064012500440000000b0000000000000000000000000000000000000000000000000000000094e86ef800000000000000000000000088c044fb203b58b12252be7242926b1eeb113b4a000000000000000000000000833589fcd6edb6e08f4c7c32d4f71b54bda029130000000000000000000000004200000000000000000000000000000000000006000000000000000000000000000000000000000000000000008e1bc9bf040000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000160000000000000000000000120000000000000013700000000000024b81b81d678ffb9c0263b24a97847620c99d213eb140140008400a400d80000000b00000000000000000000000000000000000000000000000000000000f28c0498000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000e5891850bb3f03090f03010000806f0800401000000000000000000000000000000000000000000000000000000000068b9b9520000000000000000000000000000000000000000000000000d0b8d0508de000000000000000000000000000000000000000000000000000000000000fd06389b000000000000000000000000000000000000000000000000000000000000002b4200000000000000000000000000000000000006000064833589fcd6edb6e08f4c7c32d4f71b54bda02913000000000000000000000000000000000000000000";
+
+        // vm.rollFork does not work here, we run into reverts on the buy.
+        vm.createSelectFork(vm.envString("BASE_RPC_URL"), 34803707);
+        _deployIntegrationTestContracts();
+
+        uint256 initialBalance = 1_000_000_000e6;
+        uint256 newInputAmount = 1.0001 ether;
 
         deal(address(USDC), address(this), initialBalance);
         USDC.transfer(address(veloraAdapter), initialBalance);
@@ -59,13 +101,13 @@ contract VeloraAdapterForkTest is IntegrationTestBase {
             address(USDC),
             address(WETH),
             newInputAmount,
-            IVeloraAdapter.Offsets(outputAmountOffset, maxInputAmountOffset, 0),
+            IVeloraAdapter.Offsets(outputAmountOffset, maxInputAmountOffset, quotedInputAmountOffset),
             user
         );
 
         // Receiver receives excess inputToken
         uint256 sold = initialBalance - IERC20(USDC).balanceOf(user);
-        assertEq(sold, 5038.378251e6, "sold");
+        assertEq(sold, 4516.44123e6, "sold");
 
         assertEq(IERC20(WETH).balanceOf(user), newInputAmount, "bought");
     }
