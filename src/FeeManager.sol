@@ -157,7 +157,9 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     /// @param shares Shares to mint
     /// @dev This contract must be authorized to mint shares for the LeverageToken
     function _chargeTreasuryFee(ILeverageToken token, uint256 shares) internal {
+        // slither-disable-next-line timestamp
         if (shares != 0) {
+            // slither-disable-next-line reentrancy-events
             token.mint(getTreasury(), shares);
         }
     }
