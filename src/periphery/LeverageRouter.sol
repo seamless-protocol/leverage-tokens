@@ -184,16 +184,16 @@ contract LeverageRouter is ILeverageRouter {
         // Use the collateral from the swap and the collateral from the sender for the deposit into the LeverageToken
         SafeERC20.forceApprove(collateralAsset, address(leverageManager), totalCollateral);
 
-        ActionDataV2 memory actionData =
-            leverageManager.deposit(params.leverageToken, totalCollateral, params.minShares);
+        uint256 shares = leverageManager.deposit(params.leverageToken, totalCollateral, params.minShares).shares;
 
         // Transfer any surplus debt assets to the sender
-        if (debtLoan < actionData.debt) {
-            SafeERC20.safeTransfer(debtAsset, params.sender, actionData.debt - debtLoan);
+        uint256 debtBalance = debtAsset.balanceOf(address(this));
+        if (debtLoan < debtBalance) {
+            SafeERC20.safeTransfer(debtAsset, params.sender, debtBalance - debtLoan);
         }
 
         // Transfer shares received from the deposit to the deposit sender
-        SafeERC20.safeTransfer(params.leverageToken, params.sender, actionData.shares);
+        SafeERC20.safeTransfer(params.leverageToken, params.sender, shares);
 
         // Approve morpho to transfer debt assets to repay the flash loan
         // Note: if insufficient debt is available to repay the flash loan, the transaction will revert when Morpho
