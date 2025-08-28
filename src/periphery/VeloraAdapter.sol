@@ -41,11 +41,11 @@ contract VeloraAdapter is IVeloraAdapter {
         address receiver
     ) public returns (uint256) {
         if (newOutputAmount != 0) {
-            _updateExactandQuotedAmounts(callData, offsets, newOutputAmount, Math.Rounding.Floor);
+            // The maximum sell amount is set to the entire balance of the inputToken in the adapter
+            _updateAmounts(
+                callData, offsets, newOutputAmount, IERC20(inputToken).balanceOf(address(this)), Math.Rounding.Floor
+            );
         }
-
-        // The maximum sell amount is set to the entire balance of the inputToken in the adapter
-        BytesLib.set(callData, offsets.limitAmount, IERC20(inputToken).balanceOf(address(this)));
 
         _exactOutputSwap({
             augustus: augustus,
@@ -101,14 +101,17 @@ contract VeloraAdapter is IVeloraAdapter {
 
     /// @notice Sets exact amount in `callData` to `exactAmount`.
     /// @notice If `offsets.quotedAmount` is not zero, proportionally scale quoted amount in `callData`.
-    function _updateExactandQuotedAmounts(
+    function _updateAmounts(
         bytes memory callData,
         Offsets calldata offsets,
         uint256 exactAmount,
+        uint256 limitAmount,
         Math.Rounding rounding
     ) internal pure {
         uint256 oldExactAmount = BytesLib.get(callData, offsets.exactAmount);
         BytesLib.set(callData, offsets.exactAmount, exactAmount);
+
+        BytesLib.set(callData, offsets.limitAmount, limitAmount);
 
         if (offsets.quotedAmount > 0) {
             uint256 quotedAmount =
