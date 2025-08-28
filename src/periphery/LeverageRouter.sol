@@ -172,6 +172,7 @@ contract LeverageRouter is ILeverageRouter {
 
         // Swap the debt asset received from the flash loan to the collateral asset, used to deposit into the LeverageToken
         for (uint256 i = 0; i < params.swapCalls.length; i++) {
+            // slither-disable-next-line unused-return
             Address.functionCallWithValue(
                 params.swapCalls[i].target, params.swapCalls[i].data, params.swapCalls[i].value
             );
