@@ -57,7 +57,9 @@ contract VeloraAdapter is IVeloraAdapter {
 
         // Transfer any leftover inputToken to the receiver
         uint256 excessInputAmount = IERC20(inputToken).balanceOf(address(this));
-        SafeERC20.safeTransfer(IERC20(inputToken), receiver, excessInputAmount);
+        if (excessInputAmount > 0) {
+            SafeERC20.safeTransfer(IERC20(inputToken), receiver, excessInputAmount);
+        }
 
         return excessInputAmount;
     }
@@ -89,8 +91,6 @@ contract VeloraAdapter is IVeloraAdapter {
 
         // slither-disable-next-line unused-return
         Address.functionCall(augustus, callData);
-
-        SafeERC20.forceApprove(IERC20(inputToken), augustus, 0);
 
         // Transfer any outputToken assets to the receiver.
         uint256 outputBalance = IERC20(outputToken).balanceOf(address(this));
