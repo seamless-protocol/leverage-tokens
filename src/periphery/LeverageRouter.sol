@@ -18,13 +18,14 @@ import {IVeloraAdapter} from "../interfaces/periphery/IVeloraAdapter.sol";
 import {ActionData, ActionDataV2, ExternalAction} from "../types/DataTypes.sol";
 
 /**
- * @dev The LeverageRouter contract is an immutable periphery contract that facilitates the use of flash loans and a swap adapter
+ * @dev The LeverageRouter contract is an immutable periphery contract that facilitates the use of flash loans and a swaps
  * to deposit and redeem equity from LeverageTokens.
  *
  * The high-level deposit flow is as follows:
  *   1. The sender calls `deposit` with the amount of collateral from the sender to deposit, the amount of debt to flash loan
- *      (which will be swapped to collateral), the minimum amount of shares to receive, and the swap context
- *   2. The LeverageRouter will flash loan the debt asset amount and swap it to collateral
+ *      (which will be swapped to collateral), the minimum amount of shares to receive, and the calldata to execute for
+ *      the swap of the flash loaned debt to collateral
+ *   2. The LeverageRouter will flash loan the debt asset amount and execute the calldata to swap it to collateral
  *   3. The LeverageRouter will use the collateral from the swapped debt and the collateral from the sender for the deposit
  *      into the LeverageToken, receiving LeverageToken shares and debt in return
  *   4. The LeverageRouter will use the debt received from the deposit to repay the flash loan
@@ -39,17 +40,12 @@ contract LeverageRouter is ILeverageRouter {
     /// @inheritdoc ILeverageRouter
     IMorpho public immutable morpho;
 
-    /// @inheritdoc ILeverageRouter
-    ISwapAdapter public immutable swapper;
-
     /// @notice Creates a new LeverageRouter
     /// @param _leverageManager The LeverageManager contract
     /// @param _morpho The Morpho core protocol contract
-    /// @param _swapper The Swapper contract
-    constructor(ILeverageManager _leverageManager, IMorpho _morpho, ISwapAdapter _swapper) {
+    constructor(ILeverageManager _leverageManager, IMorpho _morpho) {
         leverageManager = _leverageManager;
         morpho = _morpho;
-        swapper = _swapper;
     }
 
     /// @inheritdoc ILeverageRouter

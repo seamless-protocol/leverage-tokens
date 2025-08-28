@@ -56,8 +56,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             address(morphoLendingAdapterFactory.deployAdapter(USDC_WETH_MARKET_ID, address(this), bytes32(uint256(1))))
         );
 
-        leverageRouterWithMockSwapAdapter =
-            new LeverageRouter(leverageManager, MORPHO, ISwapAdapter(address(mockSwapper)));
+        leverageRouterWithMockSwapAdapter = new LeverageRouter(leverageManager, MORPHO);
 
         ethShortLeverageToken = leverageManager.createNewLeverageToken(
             LeverageTokenConfig({

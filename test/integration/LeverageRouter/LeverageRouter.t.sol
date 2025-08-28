@@ -29,7 +29,7 @@ contract LeverageRouterTest is IntegrationTestBase {
         super.setUp();
 
         swapAdapter = new SwapAdapter();
-        leverageRouter = new LeverageRouter(leverageManager, MORPHO, swapAdapter);
+        leverageRouter = new LeverageRouter(leverageManager, MORPHO);
 
         vm.label(address(leverageRouter), "leverageRouter");
         vm.label(address(swapAdapter), "swapAdapter");
@@ -41,7 +41,6 @@ contract LeverageRouterTest is IntegrationTestBase {
 
         assertEq(address(leverageRouter.leverageManager()), address(leverageManager));
         assertEq(address(leverageRouter.morpho()), address(MORPHO));
-        assertEq(address(leverageRouter.swapper()), address(swapAdapter));
     }
 
     function _dealAndDepositWithSwapAdapter(

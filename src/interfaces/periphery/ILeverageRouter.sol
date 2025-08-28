@@ -110,10 +110,6 @@ interface ILeverageRouter {
         view
         returns (ActionDataV2 memory);
 
-    /// @notice The swap adapter contract used to facilitate swaps
-    /// @return _swapper The swap adapter contract
-    function swapper() external view returns (ISwapAdapter _swapper);
-
     /// @notice Deposits collateral into a LeverageToken and mints shares to the sender. Any surplus debt received from
     /// the deposit of (collateralFromSender + debt swapped to collateral) is given to the sender.
     /// @param leverageToken LeverageToken to deposit into

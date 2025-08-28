@@ -70,9 +70,7 @@ contract LeverageRouterTest is Test {
         veloraAdapter = new MockVeloraAdapter();
 
         // Setup the leverage router
-        leverageRouter = new LeverageRouter(
-            ILeverageManager(address(leverageManager)), IMorpho(address(morpho)), ISwapAdapter(address(swapper))
-        );
+        leverageRouter = new LeverageRouter(ILeverageManager(address(leverageManager)), IMorpho(address(morpho)));
 
         // Setup the mock tokens
         collateralToken.mockSetDecimals(18);
@@ -86,7 +84,6 @@ contract LeverageRouterTest is Test {
     function test_setUp() public view {
         assertEq(address(leverageRouter.leverageManager()), address(leverageManager));
         assertEq(address(leverageRouter.morpho()), address(morpho));
-        assertEq(address(leverageRouter.swapper()), address(swapper));
     }
 
     function _BASE_RATIO() internal view returns (uint256) {

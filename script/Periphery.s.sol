@@ -34,11 +34,8 @@ contract PeripheryDeploy is Script {
         VeloraAdapter veloraAdapter = new VeloraAdapter(DeployConstants.AUGUSTUS_REGISTRY);
         console.log("VeloraAdapter deployed at: ", address(veloraAdapter));
 
-        LeverageRouter leverageRouter = new LeverageRouter(
-            ILeverageManager(DeployConstants.LEVERAGE_MANAGER),
-            IMorpho(DeployConstants.MORPHO),
-            ISwapAdapter(swapAdapter)
-        );
+        LeverageRouter leverageRouter =
+            new LeverageRouter(ILeverageManager(DeployConstants.LEVERAGE_MANAGER), IMorpho(DeployConstants.MORPHO));
         console.log("LeverageRouter deployed at: ", address(leverageRouter));
 
         vm.stopBroadcast();
