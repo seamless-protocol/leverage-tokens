@@ -6,9 +6,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
 import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
-import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {IVeloraAdapter} from "src/interfaces/periphery/IVeloraAdapter.sol";
-import {LeverageRouter} from "src/periphery/LeverageRouter.sol";
 import {LeverageRouterTest} from "./LeverageRouter.t.sol";
 
 contract RedeemTest is LeverageRouterTest {
@@ -96,7 +94,7 @@ contract RedeemTest is LeverageRouterTest {
         leverageToken.approve(address(leverageRouter), redeemShares);
 
         vm.expectRevert(
-            abi.encodeWithSelector(LeverageRouter.CollateralSlippageTooHigh.selector, minCollateral - 1, minCollateral)
+            abi.encodeWithSelector(ILeverageRouter.CollateralSlippageTooHigh.selector, minCollateral - 1, minCollateral)
         );
         leverageRouter.redeemWithVelora(
             leverageToken,
