@@ -14,6 +14,7 @@ import {ILeverageManager} from "../interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "../interfaces/ILeverageToken.sol";
 import {ISwapAdapter} from "../interfaces/periphery/ISwapAdapter.sol";
 import {ILeverageRouter} from "../interfaces/periphery/ILeverageRouter.sol";
+import {IVeloraAdapter} from "../interfaces/periphery/IVeloraAdapter.sol";
 import {ActionData, ActionDataV2, ExternalAction} from "../types/DataTypes.sol";
 
 /**
@@ -112,31 +113,33 @@ contract LeverageRouter is ILeverageRouter {
     }
 
     /// @inheritdoc ILeverageRouter
-    function redeem(
+    function redeemWithVelora(
         ILeverageToken token,
-        uint256 equityInCollateralAsset,
-        uint256 maxShares,
-        uint256 maxSwapCostInCollateralAsset,
-        ISwapAdapter.SwapContext memory swapContext
+        uint256 shares,
+        uint256 minCollateralForSender,
+        IVeloraAdapter veloraAdapter,
+        address augustus,
+        IVeloraAdapter.Offsets calldata offsets,
+        bytes calldata swapData
     ) external {
-        ActionData memory actionData = leverageManager.previewRedeem(token, equityInCollateralAsset);
+        uint256 debtRequired = leverageManager.previewRedeemV2(token, shares).debt;
 
         bytes memory redeemData = abi.encode(
-            RedeemParams({
-                token: token,
-                equityInCollateralAsset: equityInCollateralAsset,
-                shares: actionData.shares,
-                maxShares: maxShares,
-                maxSwapCostInCollateralAsset: maxSwapCostInCollateralAsset,
+            RedeemWithVeloraParams({
                 sender: msg.sender,
-                swapContext: swapContext
+                leverageToken: token,
+                shares: shares,
+                minCollateralForSender: minCollateralForSender,
+                veloraAdapter: veloraAdapter,
+                augustus: augustus,
+                offsets: offsets,
+                swapData: swapData
             })
         );
 
-        // Flash loan the debt asset required to repay the flash loan, and pass the required data to the Morpho flash loan callback handler for the redeem.
         morpho.flashLoan(
             address(leverageManager.getLeverageTokenDebtAsset(token)),
-            actionData.debt,
+            debtRequired,
             abi.encode(MorphoCallbackData({action: ExternalAction.Redeem, data: redeemData}))
         );
     }
@@ -153,8 +156,8 @@ contract LeverageRouter is ILeverageRouter {
             DepositParams memory params = abi.decode(callbackData.data, (DepositParams));
             _depositAndRepayMorphoFlashLoan(params, loanAmount);
         } else if (callbackData.action == ExternalAction.Redeem) {
-            RedeemParams memory params = abi.decode(callbackData.data, (RedeemParams));
-            _redeemAndRepayMorphoFlashLoan(params, loanAmount);
+            RedeemWithVeloraParams memory params = abi.decode(callbackData.data, (RedeemWithVeloraParams));
+            _redeemWithVeloraAndRepayMorphoFlashLoan(params, loanAmount);
         }
     }
 
@@ -201,39 +204,51 @@ contract LeverageRouter is ILeverageRouter {
         SafeERC20.forceApprove(debtAsset, address(morpho), debtLoan);
     }
 
-    /// @notice Executes redeem on a LeverageToken to receive equity and the swap of collateral assets to the debt asset
-    /// to repay the flash loan from Morpho
-    /// @param params Params for the redeem of equity from a LeverageToken
+    /// @notice Executes the redeem from a LeverageToken by flash loaning the debt asset, swapping the collateral asset
+    /// to the debt asset using Velora, using the resulting debt to repay the flash loan, and transferring the remaining
+    /// collateral asset to the sender
+    /// @param params Params for the redeem from a LeverageToken using Velora
     /// @param debtLoanAmount Amount of debt asset flash loaned
-    function _redeemAndRepayMorphoFlashLoan(RedeemParams memory params, uint256 debtLoanAmount) internal {
-        IERC20 collateralAsset = leverageManager.getLeverageTokenCollateralAsset(params.token);
-        IERC20 debtAsset = leverageManager.getLeverageTokenDebtAsset(params.token);
+    function _redeemWithVeloraAndRepayMorphoFlashLoan(RedeemWithVeloraParams memory params, uint256 debtLoanAmount)
+        internal
+    {
+        IERC20 collateralAsset = leverageManager.getLeverageTokenCollateralAsset(params.leverageToken);
+        IERC20 debtAsset = leverageManager.getLeverageTokenDebtAsset(params.leverageToken);
 
         // Transfer the shares from the sender
         // slither-disable-next-line arbitrary-send-erc20
-        SafeERC20.safeTransferFrom(params.token, params.sender, address(this), params.shares);
+        SafeERC20.safeTransferFrom(params.leverageToken, params.sender, address(this), params.shares);
 
-        // Redeem the equity from the leverage token
+        // Use the debt from the flash loan to redeem the shares from the sender
         SafeERC20.forceApprove(debtAsset, address(leverageManager), debtLoanAmount);
         uint256 collateralWithdrawn =
-            leverageManager.redeem(params.token, params.equityInCollateralAsset, params.maxShares).collateral;
+            leverageManager.redeemV2(params.leverageToken, params.shares, params.minCollateralForSender).collateral;
 
-        // Swap the collateral asset received from the redeem to the debt asset, used to repay the flash loan
-        SafeERC20.forceApprove(collateralAsset, address(swapper), collateralWithdrawn);
-        uint256 collateralAmountSwapped =
-            swapper.swapExactOutput(collateralAsset, debtLoanAmount, collateralWithdrawn, params.swapContext);
+        // Use the VeloraAdapter to swap the collateral asset received from the redeem to the debt asset, used to repay the flash loan.
+        // The excess collateral asset sent back to this LeverageRouter is for the sender of the redeem
+        // slither-disable-next-line arbitrary-send-erc20
+        SafeERC20.safeTransfer(collateralAsset, address(params.veloraAdapter), collateralWithdrawn);
+        uint256 collateralForSender = params.veloraAdapter.buy(
+            params.augustus,
+            params.swapData,
+            address(collateralAsset),
+            address(debtAsset),
+            debtLoanAmount,
+            params.offsets,
+            address(this)
+        );
 
-        // Check if the amount of collateral swapped to repay the flash loan is greater than the allowed cost
-        uint256 remainingCollateral = collateralWithdrawn - collateralAmountSwapped;
-        if (remainingCollateral < params.equityInCollateralAsset - params.maxSwapCostInCollateralAsset) {
-            revert MaxSwapCostExceeded(
-                params.equityInCollateralAsset - remainingCollateral, params.maxSwapCostInCollateralAsset
-            );
-        } else if (remainingCollateral > 0) {
-            SafeERC20.safeTransfer(collateralAsset, params.sender, remainingCollateral);
+        // Check slippage
+        if (collateralForSender < params.minCollateralForSender) {
+            revert CollateralSlippageTooHigh(collateralForSender, params.minCollateralForSender);
         }
 
-        // Approve morpho to transfer assets to repay the flash loan
+        // Transfer remaining collateral to the sender
+        if (collateralForSender > 0) {
+            SafeERC20.safeTransfer(collateralAsset, params.sender, collateralForSender);
+        }
+
+        // Approve Morpho to spend the debt asset to repay the flash loan
         SafeERC20.forceApprove(debtAsset, address(morpho), debtLoanAmount);
     }
 

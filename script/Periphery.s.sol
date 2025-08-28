@@ -7,6 +7,7 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 
 import {SwapAdapter} from "src/periphery/SwapAdapter.sol";
+import {VeloraAdapter} from "src/periphery/VeloraAdapter.sol";
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {LeverageRouter} from "src/periphery/LeverageRouter.sol";
 import {MorphoLendingAdapter} from "src/lending/MorphoLendingAdapter.sol";
@@ -29,6 +30,9 @@ contract PeripheryDeploy is Script {
 
         SwapAdapter swapAdapter = new SwapAdapter();
         console.log("SwapAdapter deployed at: ", address(swapAdapter));
+
+        VeloraAdapter veloraAdapter = new VeloraAdapter(DeployConstants.AUGUSTUS_REGISTRY);
+        console.log("VeloraAdapter deployed at: ", address(veloraAdapter));
 
         LeverageRouter leverageRouter = new LeverageRouter(
             ILeverageManager(DeployConstants.LEVERAGE_MANAGER),

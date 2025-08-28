@@ -16,12 +16,13 @@ import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
 import {LeverageRouter} from "src/periphery/LeverageRouter.sol";
-import {ExternalAction} from "src/types/DataTypes.sol";
+import {ActionDataV2, ExternalAction} from "src/types/DataTypes.sol";
 import {MockERC20} from "../mock/MockERC20.sol";
 import {MockLendingAdapter} from "../mock/MockLendingAdapter.sol";
 import {MockLeverageManager} from "../mock/MockLeverageManager.sol";
 import {MockMorpho} from "../mock/MockMorpho.sol";
 import {MockSwapper} from "../mock/MockSwapper.sol";
+import {MockVeloraAdapter} from "../mock/MockVeloraAdapter.sol";
 
 contract LeverageRouterTest is Test {
     MockERC20 public collateralToken = new MockERC20();
@@ -39,6 +40,8 @@ contract LeverageRouterTest is Test {
         irm: makeAddr("mockMorphoIRM"), // doesn't matter for these tests as calls to morpho should be mocked
         lltv: 1e18 // 100%, doesn't matter for these tests as calls to morpho should be mocked
     });
+
+    MockVeloraAdapter public veloraAdapter;
 
     MockSwapper public swapper;
 
@@ -64,6 +67,7 @@ contract LeverageRouterTest is Test {
             })
         );
         swapper = new MockSwapper();
+        veloraAdapter = new MockVeloraAdapter();
 
         // Setup the leverage router
         leverageRouter = new LeverageRouter(
@@ -119,35 +123,32 @@ contract LeverageRouterTest is Test {
 
     function _mockLeverageManagerRedeem(
         uint256 requiredCollateral,
-        uint256 equityInCollateralAsset,
         uint256 requiredDebt,
         uint256 requiredCollateralForSwap,
         uint256 shares,
-        uint256 maxShares
+        uint256 minCollateral
     ) internal {
-        swapper.mockNextExactOutputSwap(collateralToken, debtToken, requiredCollateralForSwap);
+        veloraAdapter.mockNextBuy(address(collateralToken), requiredCollateralForSwap);
 
-        // Mock the redeem preview
-        leverageManager.setMockPreviewRedeemData(
-            MockLeverageManager.PreviewParams({
-                leverageToken: leverageToken,
-                equityInCollateralAsset: equityInCollateralAsset
-            }),
-            MockLeverageManager.MockPreviewRedeemData({
-                collateralToRemove: requiredCollateral,
-                debtToRepay: requiredDebt,
-                shares: shares,
-                tokenFee: 0,
-                treasuryFee: 0
-            })
+        vm.mockCall(
+            address(leverageManager),
+            abi.encodeWithSelector(ILeverageManager.previewRedeemV2.selector, leverageToken, shares),
+            abi.encode(
+                ActionDataV2({
+                    collateral: requiredCollateral,
+                    debt: requiredDebt,
+                    shares: shares,
+                    tokenFee: 0,
+                    treasuryFee: 0
+                })
+            )
         );
 
-        // Mock the LeverageManager redeem
-        leverageManager.setMockRedeemData(
-            MockLeverageManager.RedeemParams({
+        leverageManager.setMockRedeemV2Data(
+            MockLeverageManager.RedeemV2Params({
                 leverageToken: leverageToken,
-                equityInCollateralAsset: equityInCollateralAsset,
-                maxShares: maxShares
+                shares: shares,
+                minCollateral: minCollateral
             }),
             MockLeverageManager.MockRedeemData({
                 collateral: requiredCollateral,

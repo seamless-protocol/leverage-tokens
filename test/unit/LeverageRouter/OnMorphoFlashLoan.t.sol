@@ -5,9 +5,9 @@ pragma solidity ^0.8.26;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
-import {LeverageRouter} from "src/periphery/LeverageRouter.sol";
 import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
+import {IVeloraAdapter} from "src/interfaces/periphery/IVeloraAdapter.sol";
 import {ExternalAction} from "src/types/DataTypes.sol";
 import {LeverageRouterTest} from "./LeverageRouter.t.sol";
 
@@ -78,45 +78,32 @@ contract OnMorphoFlashLoanTest is LeverageRouterTest {
 
     function test_onMorphoFlashLoan_Redeem() public {
         uint256 requiredCollateral = 10 ether;
-        uint256 equityInCollateralAsset = 5 ether;
+        uint256 collateralFromSender = 5 ether;
         uint256 collateralReceivedFromDebtSwap = 5 ether;
         uint256 shares = 10 ether;
         uint256 requiredDebt = 100e6;
 
-        _deposit(equityInCollateralAsset, requiredCollateral, requiredDebt, collateralReceivedFromDebtSwap, shares);
+        _deposit(collateralFromSender, requiredCollateral, requiredDebt, collateralReceivedFromDebtSwap, shares);
 
+        uint256 requiredCollateralForSwap = requiredCollateral - collateralFromSender;
         _mockLeverageManagerRedeem(
             requiredCollateral,
-            equityInCollateralAsset,
             requiredDebt,
-            requiredCollateral - equityInCollateralAsset,
+            requiredCollateralForSwap,
             shares,
-            shares
+            requiredCollateral - requiredCollateralForSwap
         );
 
-        bytes memory redeemData = abi.encode(
-            ILeverageRouter.RedeemParams({
-                token: leverageToken,
-                equityInCollateralAsset: equityInCollateralAsset,
+        bytes memory redeemWithVeloraData = abi.encode(
+            ILeverageRouter.RedeemWithVeloraParams({
+                leverageToken: leverageToken,
                 shares: shares,
-                maxShares: shares,
-                maxSwapCostInCollateralAsset: 0,
+                minCollateralForSender: requiredCollateral - requiredCollateralForSwap,
                 sender: address(this),
-                swapContext: ISwapAdapter.SwapContext({
-                    path: new address[](0),
-                    encodedPath: new bytes(0),
-                    fees: new uint24[](0),
-                    tickSpacing: new int24[](0),
-                    exchange: ISwapAdapter.Exchange.AERODROME,
-                    exchangeAddresses: ISwapAdapter.ExchangeAddresses({
-                        aerodromeRouter: address(0),
-                        aerodromePoolFactory: address(0),
-                        aerodromeSlipstreamRouter: address(0),
-                        uniswapSwapRouter02: address(0),
-                        uniswapV2Router02: address(0)
-                    }),
-                    additionalData: new bytes(0)
-                })
+                veloraAdapter: IVeloraAdapter(address(veloraAdapter)),
+                augustus: address(0),
+                offsets: IVeloraAdapter.Offsets(0, 0, 0),
+                swapData: new bytes(0)
             })
         );
 
@@ -129,10 +116,10 @@ contract OnMorphoFlashLoanTest is LeverageRouterTest {
         vm.prank(address(morpho));
         leverageRouter.onMorphoFlashLoan(
             flashLoanAmount,
-            abi.encode(ILeverageRouter.MorphoCallbackData({action: ExternalAction.Redeem, data: redeemData}))
+            abi.encode(ILeverageRouter.MorphoCallbackData({action: ExternalAction.Redeem, data: redeemWithVeloraData}))
         );
         assertEq(leverageToken.balanceOf(address(this)), 0);
-        assertEq(collateralToken.balanceOf(address(this)), equityInCollateralAsset);
+        assertEq(collateralToken.balanceOf(address(this)), requiredCollateral - requiredCollateralForSwap);
     }
 
     /// forge-config: default.fuzz.runs = 1
