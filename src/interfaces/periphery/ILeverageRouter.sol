@@ -10,9 +10,61 @@ import {ILeverageManager} from "../ILeverageManager.sol";
 import {ILeverageToken} from "../ILeverageToken.sol";
 import {ISwapAdapter} from "./ISwapAdapter.sol";
 import {IVeloraAdapter} from "./IVeloraAdapter.sol";
-import {ActionDataV2} from "src/types/DataTypes.sol";
+import {ActionDataV2, ExternalAction} from "src/types/DataTypes.sol";
 
 interface ILeverageRouter {
+    /// @notice Struct containing the target, value, and data for a single external call.
+    struct Call {
+        address target; // Call target
+        uint256 value; // ETH value to send
+        bytes data; // Calldata you ABI-encode off-chain
+    }
+
+    /// @notice Deposit related parameters to pass to the Morpho flash loan callback handler for deposits
+    struct DepositParams {
+        // Address of the sender of the deposit
+        address sender;
+        // LeverageToken to deposit into
+        ILeverageToken leverageToken;
+        // Amount of collateral from the sender to deposit
+        uint256 collateralFromSender;
+        // Minimum amount of shares (LeverageTokens) to receive
+        uint256 minShares;
+        // External calls to execute for the swap of flash loaned debt to collateral
+        Call[] swapCalls;
+    }
+
+    /// @notice Morpho flash loan callback data to pass to the Morpho flash loan callback handler
+    struct MorphoCallbackData {
+        ExternalAction action;
+        bytes data;
+    }
+
+    /// @notice Redeem related parameters to pass to the Morpho flash loan callback handler for redeems
+    struct RedeemWithVeloraParams {
+        // Address of the sender of the redeem, whose shares will be burned and the collateral asset will be transferred to
+        address sender;
+        // LeverageToken to redeem from
+        ILeverageToken leverageToken;
+        // Amount of shares to redeem
+        uint256 shares;
+        // Minimum amount of collateral for the sender to receive
+        uint256 minCollateralForSender;
+        // Velora adapter to use for the swap
+        IVeloraAdapter veloraAdapter;
+        // Velora Augustus contract to use for the swap
+        address augustus;
+        // Offsets for the Velora swap
+        IVeloraAdapter.Offsets offsets;
+        // Calldata for the Velora swap
+        bytes swapData;
+    }
+
+    /// @notice Error thrown when the remaining collateral is less than the minimum collateral for the sender to receive
+    /// @param remainingCollateral The remaining collateral after the swap
+    /// @param minCollateralForSender The minimum collateral for the sender to receive
+    error CollateralSlippageTooHigh(uint256 remainingCollateral, uint256 minCollateralForSender);
+
     /// @notice Error thrown when the collateral from the swap + the collateral from the sender is less than the collateral required for the deposit
     /// @param available The collateral from the swap + the collateral from the sender, available for the deposit
     /// @param required The collateral required for the deposit
@@ -58,23 +110,20 @@ interface ILeverageRouter {
         view
         returns (ActionDataV2 memory);
 
-    /// @notice The swap adapter contract used to facilitate swaps
-    /// @return _swapper The swap adapter contract
-    function swapper() external view returns (ISwapAdapter _swapper);
-
     /// @notice Deposits collateral into a LeverageToken and mints shares to the sender. Any surplus debt received from
     /// the deposit of (collateralFromSender + debt swapped to collateral) is given to the sender.
     /// @param leverageToken LeverageToken to deposit into
     /// @param collateralFromSender Collateral asset amount from the sender to deposit
     /// @param flashLoanAmount Amount of debt to flash loan, which is swapped to collateral and used to deposit into the LeverageToken
     /// @param minShares Minimum number of shares expected to be received by the sender
-    /// @param swapContext Swap context to use for the swap (which DEX to use, the route, tick spacing, etc.)
+    /// @param swapCalls External calls to execute for the swap of flash loaned debt to collateral for the LeverageToken deposit
+    /// @dev Before each external call, the target contract is approved to spend flashLoanAmount of the debt asset
     function deposit(
         ILeverageToken leverageToken,
         uint256 collateralFromSender,
         uint256 flashLoanAmount,
         uint256 minShares,
-        ISwapAdapter.SwapContext memory swapContext
+        Call[] calldata swapCalls
     ) external;
 
     /// @notice Redeems an amount of shares of a LeverageToken and transfers collateral asset to the sender, using Velora

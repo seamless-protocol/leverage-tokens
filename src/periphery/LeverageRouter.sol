@@ -18,13 +18,14 @@ import {IVeloraAdapter} from "../interfaces/periphery/IVeloraAdapter.sol";
 import {ActionData, ActionDataV2, ExternalAction} from "../types/DataTypes.sol";
 
 /**
- * @dev The LeverageRouter contract is an immutable periphery contract that facilitates the use of flash loans and a swap adapter
+ * @dev The LeverageRouter contract is an immutable periphery contract that facilitates the use of flash loans and a swaps
  * to deposit and redeem equity from LeverageTokens.
  *
  * The high-level deposit flow is as follows:
  *   1. The sender calls `deposit` with the amount of collateral from the sender to deposit, the amount of debt to flash loan
- *      (which will be swapped to collateral), the minimum amount of shares to receive, and the swap context
- *   2. The LeverageRouter will flash loan the debt asset amount and swap it to collateral
+ *      (which will be swapped to collateral), the minimum amount of shares to receive, and the calldata to execute for
+ *      the swap of the flash loaned debt to collateral
+ *   2. The LeverageRouter will flash loan the debt asset amount and execute the calldata to swap it to collateral
  *   3. The LeverageRouter will use the collateral from the swapped debt and the collateral from the sender for the deposit
  *      into the LeverageToken, receiving LeverageToken shares and debt in return
  *   4. The LeverageRouter will use the debt received from the deposit to repay the flash loan
@@ -33,68 +34,18 @@ import {ActionData, ActionDataV2, ExternalAction} from "../types/DataTypes.sol";
  * The high-level redeem flow is the same as the deposit flow, but in reverse.
  */
 contract LeverageRouter is ILeverageRouter {
-    /// @notice Deposit related parameters to pass to the Morpho flash loan callback handler for deposits
-    struct DepositParams {
-        // Address of the sender of the deposit
-        address sender;
-        // LeverageToken to deposit into
-        ILeverageToken leverageToken;
-        // Amount of collateral from the sender to deposit
-        uint256 collateralFromSender;
-        // Minimum amount of shares (LeverageTokens) to receive
-        uint256 minShares;
-        // Swap context for the swap of flash loaned debt to collateral
-        ISwapAdapter.SwapContext swapContext;
-    }
-
-    /// @notice Redeem related parameters to pass to the Morpho flash loan callback handler for redeems
-    struct RedeemWithVeloraParams {
-        // Address of the sender of the redeem, whose shares will be burned and the collateral asset will be transferred to
-        address sender;
-        // LeverageToken to redeem from
-        ILeverageToken leverageToken;
-        // Amount of shares to redeem
-        uint256 shares;
-        // Minimum amount of collateral for the sender to receive
-        uint256 minCollateralForSender;
-        // Velora adapter to use for the swap
-        IVeloraAdapter veloraAdapter;
-        // Velora Augustus contract to use for the swap
-        address augustus;
-        // Offsets for the Velora swap
-        IVeloraAdapter.Offsets offsets;
-        // Calldata for the Velora swap
-        bytes swapData;
-    }
-
-    /// @notice Morpho flash loan callback data to pass to the Morpho flash loan callback handler
-    struct MorphoCallbackData {
-        ExternalAction action;
-        bytes data;
-    }
-
-    /// @notice Error thrown when the remaining collateral is less than the minimum collateral for the sender to receive
-    /// @param remainingCollateral The remaining collateral after the swap
-    /// @param minCollateralForSender The minimum collateral for the sender to receive
-    error CollateralSlippageTooHigh(uint256 remainingCollateral, uint256 minCollateralForSender);
-
     /// @inheritdoc ILeverageRouter
     ILeverageManager public immutable leverageManager;
 
     /// @inheritdoc ILeverageRouter
     IMorpho public immutable morpho;
 
-    /// @inheritdoc ILeverageRouter
-    ISwapAdapter public immutable swapper;
-
     /// @notice Creates a new LeverageRouter
     /// @param _leverageManager The LeverageManager contract
     /// @param _morpho The Morpho core protocol contract
-    /// @param _swapper The Swapper contract
-    constructor(ILeverageManager _leverageManager, IMorpho _morpho, ISwapAdapter _swapper) {
+    constructor(ILeverageManager _leverageManager, IMorpho _morpho) {
         leverageManager = _leverageManager;
         morpho = _morpho;
-        swapper = _swapper;
     }
 
     /// @inheritdoc ILeverageRouter
@@ -138,7 +89,7 @@ contract LeverageRouter is ILeverageRouter {
         uint256 collateralFromSender,
         uint256 flashLoanAmount,
         uint256 minShares,
-        ISwapAdapter.SwapContext memory swapContext
+        Call[] calldata swapCalls
     ) external {
         bytes memory depositData = abi.encode(
             DepositParams({
@@ -146,7 +97,7 @@ contract LeverageRouter is ILeverageRouter {
                 leverageToken: leverageToken,
                 collateralFromSender: collateralFromSender,
                 minShares: minShares,
-                swapContext: swapContext
+                swapCalls: swapCalls
             })
         );
 
@@ -219,31 +170,30 @@ contract LeverageRouter is ILeverageRouter {
         // slither-disable-next-line arbitrary-send-erc20
         SafeERC20.safeTransferFrom(collateralAsset, params.sender, address(this), params.collateralFromSender);
 
-        // Swap the debt asset received from the flash loan to the collateral asset, used to deposit
-        SafeERC20.forceApprove(debtAsset, address(swapper), debtLoan);
+        // Swap the debt asset received from the flash loan to the collateral asset, used to deposit into the LeverageToken
+        for (uint256 i = 0; i < params.swapCalls.length; i++) {
+            // slither-disable-next-line unused-return
+            Address.functionCallWithValue(
+                params.swapCalls[i].target, params.swapCalls[i].data, params.swapCalls[i].value
+            );
+        }
 
-        uint256 collateralFromSwap = swapper.swapExactInput(
-            debtAsset,
-            debtLoan,
-            0, // Set to zero because collateral from the sender is used to help with the deposit
-            params.swapContext
-        );
-
-        uint256 totalCollateral = collateralFromSwap + params.collateralFromSender;
+        // The sum of the collateral from the swap and the collateral from the sender
+        uint256 totalCollateral = IERC20(collateralAsset).balanceOf(address(this));
 
         // Use the collateral from the swap and the collateral from the sender for the deposit into the LeverageToken
         SafeERC20.forceApprove(collateralAsset, address(leverageManager), totalCollateral);
 
-        ActionDataV2 memory actionData =
-            leverageManager.deposit(params.leverageToken, totalCollateral, params.minShares);
+        uint256 shares = leverageManager.deposit(params.leverageToken, totalCollateral, params.minShares).shares;
 
         // Transfer any surplus debt assets to the sender
-        if (debtLoan < actionData.debt) {
-            SafeERC20.safeTransfer(debtAsset, params.sender, actionData.debt - debtLoan);
+        uint256 debtBalance = debtAsset.balanceOf(address(this));
+        if (debtLoan < debtBalance) {
+            SafeERC20.safeTransfer(debtAsset, params.sender, debtBalance - debtLoan);
         }
 
         // Transfer shares received from the deposit to the deposit sender
-        SafeERC20.safeTransfer(params.leverageToken, params.sender, actionData.shares);
+        SafeERC20.safeTransfer(params.leverageToken, params.sender, shares);
 
         // Approve morpho to transfer debt assets to repay the flash loan
         // Note: if insufficient debt is available to repay the flash loan, the transaction will revert when Morpho
@@ -298,4 +248,6 @@ contract LeverageRouter is ILeverageRouter {
         // Approve Morpho to spend the debt asset to repay the flash loan
         SafeERC20.forceApprove(debtAsset, address(morpho), debtLoanAmount);
     }
+
+    receive() external payable {}
 }

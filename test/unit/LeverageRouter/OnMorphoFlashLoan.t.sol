@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
+// Dependency imports
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 // Internal imports
-import {LeverageRouter} from "src/periphery/LeverageRouter.sol";
 import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {IVeloraAdapter} from "src/interfaces/periphery/IVeloraAdapter.sol";
@@ -19,27 +21,41 @@ contract OnMorphoFlashLoanTest is LeverageRouterTest {
 
         _mockLeverageManagerDeposit(requiredCollateral, requiredDebt, collateralReceivedFromDebtSwap, shares);
 
+        ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
+            path: new address[](0),
+            encodedPath: new bytes(0),
+            fees: new uint24[](0),
+            tickSpacing: new int24[](0),
+            exchange: ISwapAdapter.Exchange.AERODROME,
+            exchangeAddresses: ISwapAdapter.ExchangeAddresses({
+                aerodromeRouter: address(0),
+                aerodromePoolFactory: address(0),
+                aerodromeSlipstreamRouter: address(0),
+                uniswapSwapRouter02: address(0),
+                uniswapV2Router02: address(0)
+            }),
+            additionalData: new bytes(0)
+        });
+
+        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
+        calls[0] = ILeverageRouter.Call({
+            target: address(debtToken),
+            data: abi.encodeWithSelector(IERC20.approve.selector, address(swapper), requiredDebt),
+            value: 0
+        });
+        calls[1] = ILeverageRouter.Call({
+            target: address(swapper),
+            data: abi.encodeWithSelector(ISwapAdapter.swapExactInput.selector, debtToken, requiredDebt, 0, swapContext),
+            value: 0
+        });
+
         bytes memory depositData = abi.encode(
-            LeverageRouter.DepositParams({
+            ILeverageRouter.DepositParams({
                 leverageToken: leverageToken,
                 collateralFromSender: collateralFromSender,
                 minShares: shares,
                 sender: address(this),
-                swapContext: ISwapAdapter.SwapContext({
-                    path: new address[](0),
-                    encodedPath: new bytes(0),
-                    fees: new uint24[](0),
-                    tickSpacing: new int24[](0),
-                    exchange: ISwapAdapter.Exchange.AERODROME,
-                    exchangeAddresses: ISwapAdapter.ExchangeAddresses({
-                        aerodromeRouter: address(0),
-                        aerodromePoolFactory: address(0),
-                        aerodromeSlipstreamRouter: address(0),
-                        uniswapSwapRouter02: address(0),
-                        uniswapV2Router02: address(0)
-                    }),
-                    additionalData: new bytes(0)
-                })
+                swapCalls: calls
             })
         );
 
@@ -53,7 +69,7 @@ contract OnMorphoFlashLoanTest is LeverageRouterTest {
         vm.prank(address(morpho));
         leverageRouter.onMorphoFlashLoan(
             flashLoanAmount,
-            abi.encode(LeverageRouter.MorphoCallbackData({action: ExternalAction.Mint, data: depositData}))
+            abi.encode(ILeverageRouter.MorphoCallbackData({action: ExternalAction.Mint, data: depositData}))
         );
         assertEq(leverageToken.balanceOf(address(this)), shares);
         assertEq(debtToken.balanceOf(address(leverageRouter)), requiredDebt);
@@ -79,7 +95,7 @@ contract OnMorphoFlashLoanTest is LeverageRouterTest {
         );
 
         bytes memory redeemWithVeloraData = abi.encode(
-            LeverageRouter.RedeemWithVeloraParams({
+            ILeverageRouter.RedeemWithVeloraParams({
                 leverageToken: leverageToken,
                 shares: shares,
                 minCollateralForSender: requiredCollateral - requiredCollateralForSwap,
@@ -100,7 +116,7 @@ contract OnMorphoFlashLoanTest is LeverageRouterTest {
         vm.prank(address(morpho));
         leverageRouter.onMorphoFlashLoan(
             flashLoanAmount,
-            abi.encode(LeverageRouter.MorphoCallbackData({action: ExternalAction.Redeem, data: redeemWithVeloraData}))
+            abi.encode(ILeverageRouter.MorphoCallbackData({action: ExternalAction.Redeem, data: redeemWithVeloraData}))
         );
         assertEq(leverageToken.balanceOf(address(this)), 0);
         assertEq(collateralToken.balanceOf(address(this)), requiredCollateral - requiredCollateralForSwap);
@@ -110,6 +126,6 @@ contract OnMorphoFlashLoanTest is LeverageRouterTest {
     function testFuzz_onMorphoFlashLoan_RevertIf_Unauthorized(address caller) public {
         vm.assume(caller != address(morpho));
         vm.expectRevert(ILeverageRouter.Unauthorized.selector);
-        LeverageRouter(address(leverageRouter)).onMorphoFlashLoan(0, "");
+        leverageRouter.onMorphoFlashLoan(0, "");
     }
 }

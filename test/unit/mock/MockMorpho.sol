@@ -85,7 +85,7 @@ contract MockMorpho is Test {
 
     function flashLoan(address token, uint256 assets, bytes calldata data) external {
         deal(token, msg.sender, IERC20(token).balanceOf(msg.sender) + assets);
-        LeverageRouter(msg.sender).onMorphoFlashLoan(assets, data);
+        LeverageRouter(payable(msg.sender)).onMorphoFlashLoan(assets, data);
 
         require(
             IERC20(token).allowance(msg.sender, address(this)) >= assets,
