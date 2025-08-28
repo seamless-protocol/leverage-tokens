@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
+// Dependency imports
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+
+// Internal imports
 import {VeloraAdapterTest} from "./VeloraAdapter.t.sol";
 import {IVeloraAdapter} from "src/interfaces/periphery/IVeloraAdapter.sol";
 
@@ -78,7 +82,7 @@ contract BuyTest is VeloraAdapterTest {
         extra = bound(extra, 0, type(uint128).max);
 
         deal(address(collateralToken), address(veloraAdapter), amount + extra);
-        _buy(address(collateralToken), address(debtToken), amount, amount, 0, receiver);
+        _buy(address(collateralToken), address(debtToken), amount, amount, 0, receiver, receiver);
 
         assertEq(collateralToken.balanceOf(receiver), extra, "receiver received excess input token");
         assertEq(debtToken.balanceOf(receiver), amount, "receiver received output token");
@@ -95,11 +99,39 @@ contract BuyTest is VeloraAdapterTest {
         uint256 actualOutputAmount = Math.mulDiv(outputAmount, percent, 100, Math.Rounding.Ceil);
 
         deal(address(collateralToken), address(veloraAdapter), actualOutputAmount);
-
-        _buy(address(collateralToken), address(debtToken), outputAmount, outputAmount, actualOutputAmount, receiver);
+        _buy(
+            address(collateralToken),
+            address(debtToken),
+            outputAmount,
+            outputAmount,
+            actualOutputAmount,
+            receiver,
+            receiver
+        );
 
         assertEq(collateralToken.balanceOf(address(this)), 0, "sender received excess input token");
         assertEq(debtToken.balanceOf(receiver), actualOutputAmount, "receiver received output token");
+        assertEq(collateralToken.balanceOf(address(veloraAdapter)), 0, "velora adapter has no input token");
+        assertEq(debtToken.balanceOf(address(veloraAdapter)), 0, "velora adapter has no output token");
+        assertEq(collateralToken.allowance(address(veloraAdapter), address(augustus)), 0, "augustus has no allowance");
+    }
+
+    // Case where the receiver on the calldata is the VeloraAdapter
+    function test_buy_AugustusReceiverAsVeloraAdapter(uint256 amount, uint256 extra, address receiver) public {
+        _receiver(receiver);
+
+        amount = bound(amount, 1, type(uint128).max);
+        extra = bound(extra, 0, type(uint128).max);
+
+        deal(address(collateralToken), address(veloraAdapter), amount + extra);
+
+        // Expect the transfer of the output token to the receiver from the VeloraAdapter
+        vm.expectEmit(true, true, true, true);
+        emit IERC20.Transfer(address(veloraAdapter), receiver, amount);
+        _buy(address(collateralToken), address(debtToken), amount, amount, 0, address(veloraAdapter), receiver);
+
+        assertEq(collateralToken.balanceOf(receiver), extra, "receiver received excess input token");
+        assertEq(debtToken.balanceOf(receiver), amount, "receiver received output token");
         assertEq(collateralToken.balanceOf(address(veloraAdapter)), 0, "velora adapter has no input token");
         assertEq(debtToken.balanceOf(address(veloraAdapter)), 0, "velora adapter has no output token");
         assertEq(collateralToken.allowance(address(veloraAdapter), address(augustus)), 0, "augustus has no allowance");
@@ -111,6 +143,7 @@ contract BuyTest is VeloraAdapterTest {
         uint256 maxInputAmount,
         uint256 outputAmount,
         uint256 newOutputAmount,
+        address augustusReceiver,
         address receiver
     ) internal {
         uint256 fromAmountOffset = 4 + 32 + 32;
@@ -118,7 +151,7 @@ contract BuyTest is VeloraAdapterTest {
 
         veloraAdapter.buy(
             address(augustus),
-            abi.encodeCall(augustus.mockBuy, (inputToken, outputToken, maxInputAmount, outputAmount)),
+            abi.encodeCall(augustus.mockBuy, (inputToken, outputToken, maxInputAmount, outputAmount, augustusReceiver)),
             inputToken,
             outputToken,
             newOutputAmount,
