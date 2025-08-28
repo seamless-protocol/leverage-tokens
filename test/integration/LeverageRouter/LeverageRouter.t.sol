@@ -84,9 +84,19 @@ contract LeverageRouterTest is IntegrationTestBase {
         vm.stopPrank();
 
         // No leftover assets in the LeverageRouter or the SwapAdapter
-        assertEq(collateralAsset.balanceOf(address(leverageRouter)), 0);
-        assertEq(collateralAsset.balanceOf(address(swapAdapter)), 0);
-        assertEq(debtAsset.balanceOf(address(leverageRouter)), 0);
-        assertEq(debtAsset.balanceOf(address(swapAdapter)), 0);
+        assertEq(collateralAsset.balanceOf(address(leverageRouter)), 0, "no collateral left in LeverageRouter");
+        assertEq(collateralAsset.balanceOf(address(swapAdapter)), 0, "no collateral left in SwapAdapter");
+        assertEq(debtAsset.balanceOf(address(leverageRouter)), 0, "no debt left in LeverageRouter");
+        assertEq(debtAsset.balanceOf(address(swapAdapter)), 0, "no debt left in SwapAdapter");
+    }
+
+    function _deployLeverageRouterIntegrationTestContracts() internal {
+        _deployIntegrationTestContracts();
+
+        swapAdapter = new SwapAdapter();
+        leverageRouter = new LeverageRouter(leverageManager, MORPHO);
+
+        vm.label(address(leverageRouter), "leverageRouter");
+        vm.label(address(swapAdapter), "swapAdapter");
     }
 }
