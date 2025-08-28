@@ -22,7 +22,8 @@ interface IVeloraAdapter {
     /// @notice Thrown when the receiver is invalid
     error InvalidReceiver(address receiver);
 
-    /// @notice Buys an exact amount. Uses the entire balance of the inputToken in the adapter as the maximum input amount.
+    /// @notice Buys an exact amount. Uses the entire balance of the inputToken in the adapter as the maximum input amount if
+    /// the amount to buy is adjusted.
     /// @notice Compatibility with Augustus versions different from 6.2 is not guaranteed.
     /// @notice This function should be used immediately after sending the inputToken to the adapter, in the same transaction.
     /// @notice Any tokens remaining in the adapter (inputToken and outputToken) after a swap are transferred to the receiver

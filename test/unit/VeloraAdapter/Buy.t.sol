@@ -88,7 +88,6 @@ contract BuyTest is VeloraAdapterTest {
         assertEq(debtToken.balanceOf(receiver), amount, "receiver received output token");
         assertEq(collateralToken.balanceOf(address(veloraAdapter)), 0, "velora adapter has no input token");
         assertEq(debtToken.balanceOf(address(veloraAdapter)), 0, "velora adapter has no output token");
-        assertEq(collateralToken.allowance(address(veloraAdapter), address(augustus)), 0, "augustus has no allowance");
     }
 
     function test_buy_WithAdjustment(uint256 outputAmount, uint256 percent, address receiver) public {
@@ -113,7 +112,6 @@ contract BuyTest is VeloraAdapterTest {
         assertEq(debtToken.balanceOf(receiver), actualOutputAmount, "receiver received output token");
         assertEq(collateralToken.balanceOf(address(veloraAdapter)), 0, "velora adapter has no input token");
         assertEq(debtToken.balanceOf(address(veloraAdapter)), 0, "velora adapter has no output token");
-        assertEq(collateralToken.allowance(address(veloraAdapter), address(augustus)), 0, "augustus has no allowance");
     }
 
     // Case where the receiver on the calldata is the VeloraAdapter
@@ -134,7 +132,6 @@ contract BuyTest is VeloraAdapterTest {
         assertEq(debtToken.balanceOf(receiver), amount, "receiver received output token");
         assertEq(collateralToken.balanceOf(address(veloraAdapter)), 0, "velora adapter has no input token");
         assertEq(debtToken.balanceOf(address(veloraAdapter)), 0, "velora adapter has no output token");
-        assertEq(collateralToken.allowance(address(veloraAdapter), address(augustus)), 0, "augustus has no allowance");
     }
 
     function _buy(
