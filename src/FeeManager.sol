@@ -63,7 +63,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
         }
     }
 
-    function __FeeManager_init(address defaultAdmin, address treasury) public onlyInitializing {
+    function __FeeManager_init(address defaultAdmin, address treasury) internal onlyInitializing {
         __AccessControl_init_unchained();
         __FeeManager_init_unchained(defaultAdmin, treasury);
     }

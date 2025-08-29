@@ -16,6 +16,10 @@ contract FeeManagerHarness is FeeManager {
         __FeeManager_init(defaultAdmin, treasury);
     }
 
+    function exposed_FeeManager_init(address defaultAdmin, address treasury) external {
+        __FeeManager_init(defaultAdmin, treasury);
+    }
+
     function exposed_getFeeManagerStorageSlot() external pure returns (bytes32 slot) {
         FeeManager.FeeManagerStorage storage $ = _getFeeManagerStorage();
 
