@@ -45,11 +45,11 @@ contract LeverageManagerTest is IntegrationTestBase {
         return mintData;
     }
 
-    function _redeem(address caller, uint256 shares, uint256 debtToRepay) internal {
+    function _redeem(address caller, uint256 shares, uint256 minCollateral, uint256 debtToRepay) internal {
         deal(address(USDC), caller, debtToRepay);
         vm.startPrank(caller);
         USDC.approve(address(leverageManager), debtToRepay);
-        leverageManager.redeem(leverageToken, shares, type(uint256).max);
+        leverageManager.redeem(leverageToken, shares, minCollateral);
         vm.stopPrank();
     }
 
