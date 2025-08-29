@@ -5,6 +5,9 @@ import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 
 interface IRebalanceAdapter is IRebalanceAdapterBase {
+    /// @notice Error thrown when the target collateral ratio is not greater than the base ratio
+    error InvalidTargetCollateralRatio(uint256 targetCollateralRatio);
+
     /// @notice Error thrown when the caller is not the authorized creator of the RebalanceAdapter
     error Unauthorized();
 
