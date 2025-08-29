@@ -7,9 +7,9 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
 import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
-import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {LeverageRouterTest} from "./LeverageRouter.t.sol";
 import {MockLeverageManager} from "../mock/MockLeverageManager.sol";
+import {MockSwapper} from "../mock/MockSwapper.sol";
 
 contract DepositTest is LeverageRouterTest {
     function testFuzz_Deposit_DebtSwapResultGteRequiredCollateralForDeposit(
@@ -38,22 +38,6 @@ contract DepositTest is LeverageRouterTest {
         uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
         _mockLeverageManagerDeposit(totalCollateral, debtFromDeposit, collateralReceivedFromDebtSwap, shares);
 
-        ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
-            path: new address[](0),
-            encodedPath: new bytes(0),
-            fees: new uint24[](0),
-            tickSpacing: new int24[](0),
-            exchange: ISwapAdapter.Exchange.AERODROME,
-            exchangeAddresses: ISwapAdapter.ExchangeAddresses({
-                aerodromeRouter: address(0),
-                aerodromePoolFactory: address(0),
-                aerodromeSlipstreamRouter: address(0),
-                uniswapSwapRouter02: address(0),
-                uniswapV2Router02: address(0)
-            }),
-            additionalData: new bytes(0)
-        });
-
         ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
         calls[0] = ILeverageRouter.Call({
             target: address(debtToken),
@@ -62,7 +46,7 @@ contract DepositTest is LeverageRouterTest {
         });
         calls[1] = ILeverageRouter.Call({
             target: address(swapper),
-            data: abi.encodeWithSelector(ISwapAdapter.swapExactInput.selector, debtToken, debtFlashLoan, 0, swapContext),
+            data: abi.encodeWithSelector(MockSwapper.swapExactInput.selector, debtToken, debtFlashLoan),
             value: 0
         });
 
@@ -112,22 +96,6 @@ contract DepositTest is LeverageRouterTest {
         uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
         _mockLeverageManagerDeposit(totalCollateral, debtFromDeposit, collateralReceivedFromDebtSwap, shares);
 
-        ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
-            path: new address[](0),
-            encodedPath: new bytes(0),
-            fees: new uint24[](0),
-            tickSpacing: new int24[](0),
-            exchange: ISwapAdapter.Exchange.AERODROME,
-            exchangeAddresses: ISwapAdapter.ExchangeAddresses({
-                aerodromeRouter: address(0),
-                aerodromePoolFactory: address(0),
-                aerodromeSlipstreamRouter: address(0),
-                uniswapSwapRouter02: address(0),
-                uniswapV2Router02: address(0)
-            }),
-            additionalData: new bytes(0)
-        });
-
         ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
         calls[0] = ILeverageRouter.Call({
             target: address(debtToken),
@@ -136,7 +104,7 @@ contract DepositTest is LeverageRouterTest {
         });
         calls[1] = ILeverageRouter.Call({
             target: address(swapper),
-            data: abi.encodeWithSelector(ISwapAdapter.swapExactInput.selector, debtToken, debtFlashLoan, 0, swapContext),
+            data: abi.encodeWithSelector(MockSwapper.swapExactInput.selector, debtToken, debtFlashLoan),
             value: 0
         });
 
@@ -199,22 +167,6 @@ contract DepositTest is LeverageRouterTest {
 
         _mockLeverageManagerDeposit(totalCollateral, debtFromDeposit, collateralReceivedFromDebtSwap, shares);
 
-        ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
-            path: new address[](0),
-            encodedPath: new bytes(0),
-            fees: new uint24[](0),
-            tickSpacing: new int24[](0),
-            exchange: ISwapAdapter.Exchange.AERODROME,
-            exchangeAddresses: ISwapAdapter.ExchangeAddresses({
-                aerodromeRouter: address(0),
-                aerodromePoolFactory: address(0),
-                aerodromeSlipstreamRouter: address(0),
-                uniswapSwapRouter02: address(0),
-                uniswapV2Router02: address(0)
-            }),
-            additionalData: new bytes(0)
-        });
-
         ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
         calls[0] = ILeverageRouter.Call({
             target: address(debtToken),
@@ -223,7 +175,7 @@ contract DepositTest is LeverageRouterTest {
         });
         calls[1] = ILeverageRouter.Call({
             target: address(swapper),
-            data: abi.encodeWithSelector(ISwapAdapter.swapExactInput.selector, debtToken, debtFlashLoan, 0, swapContext),
+            data: abi.encodeWithSelector(MockSwapper.swapExactInput.selector, debtToken, debtFlashLoan),
             value: 0
         });
 
