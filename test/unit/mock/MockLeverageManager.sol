@@ -12,7 +12,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
-import {LeverageTokenState, ActionData, RebalanceAction, ActionDataV2} from "src/types/DataTypes.sol";
+import {LeverageTokenState, ActionData, RebalanceAction} from "src/types/DataTypes.sol";
 
 contract MockLeverageManager is Test {
     uint256 public BASE_RATIO = 1e18;
@@ -32,19 +32,8 @@ contract MockLeverageManager is Test {
 
     struct RedeemParams {
         ILeverageToken leverageToken;
-        uint256 equityInCollateralAsset;
-        uint256 maxShares;
-    }
-
-    struct RedeemV2Params {
-        ILeverageToken leverageToken;
         uint256 shares;
         uint256 minCollateral;
-    }
-
-    struct PreviewParams {
-        ILeverageToken leverageToken;
-        uint256 equityInCollateralAsset;
     }
 
     struct PreviewDepositParams {
@@ -151,15 +140,6 @@ contract MockLeverageManager is Test {
         mockPreviewDepositData[mockPreviewDepositDataKey] = _mockPreviewDepositData;
     }
 
-    function setMockPreviewRedeemData(
-        PreviewParams memory _previewRedeemParams,
-        MockPreviewRedeemData memory _mockPreviewRedeemData
-    ) external {
-        bytes32 mockPreviewRedeemDataKey =
-            keccak256(abi.encode(_previewRedeemParams.leverageToken, _previewRedeemParams.equityInCollateralAsset));
-        mockPreviewRedeemData[mockPreviewRedeemDataKey] = _mockPreviewRedeemData;
-    }
-
     function setMockDepositData(DepositParams memory _depositParams, MockDepositData memory _mockDepositData)
         external
     {
@@ -169,27 +149,18 @@ contract MockLeverageManager is Test {
     }
 
     function setMockRedeemData(RedeemParams memory _redeemParams, MockRedeemData memory _mockRedeemData) external {
-        bytes32 mockRedeemDataKey = keccak256(
-            abi.encode(_redeemParams.leverageToken, _redeemParams.equityInCollateralAsset, _redeemParams.maxShares)
-        );
-        mockRedeemData[mockRedeemDataKey].push(_mockRedeemData);
-    }
-
-    function setMockRedeemV2Data(RedeemV2Params memory _redeemV2Params, MockRedeemData memory _mockRedeemData)
-        external
-    {
         bytes32 mockRedeemDataKey =
-            keccak256(abi.encode(_redeemV2Params.leverageToken, _redeemV2Params.shares, _redeemV2Params.minCollateral));
+            keccak256(abi.encode(_redeemParams.leverageToken, _redeemParams.shares, _redeemParams.minCollateral));
         mockRedeemData[mockRedeemDataKey].push(_mockRedeemData);
     }
 
     function previewDeposit(ILeverageToken leverageToken, uint256 collateral)
         external
         view
-        returns (ActionDataV2 memory)
+        returns (ActionData memory)
     {
         bytes32 mockPreviewDepositDataKey = keccak256(abi.encode(leverageToken, collateral));
-        return ActionDataV2({
+        return ActionData({
             collateral: mockPreviewDepositData[mockPreviewDepositDataKey].collateral,
             debt: mockPreviewDepositData[mockPreviewDepositDataKey].debt,
             shares: mockPreviewDepositData[mockPreviewDepositDataKey].shares,
@@ -198,25 +169,9 @@ contract MockLeverageManager is Test {
         });
     }
 
-    function previewRedeem(ILeverageToken leverageToken, uint256 equityInCollateralAsset)
-        external
-        view
-        returns (ActionData memory)
-    {
-        bytes32 mockPreviewRedeemDataKey = keccak256(abi.encode(leverageToken, equityInCollateralAsset));
-        return ActionData({
-            collateral: mockPreviewRedeemData[mockPreviewRedeemDataKey].collateralToRemove,
-            debt: mockPreviewRedeemData[mockPreviewRedeemDataKey].debtToRepay,
-            equity: equityInCollateralAsset,
-            shares: mockPreviewRedeemData[mockPreviewRedeemDataKey].shares,
-            tokenFee: mockPreviewRedeemData[mockPreviewRedeemDataKey].tokenFee,
-            treasuryFee: mockPreviewRedeemData[mockPreviewRedeemDataKey].treasuryFee
-        });
-    }
-
     function deposit(ILeverageToken leverageToken, uint256 collateral, uint256 minShares)
         external
-        returns (ActionDataV2 memory)
+        returns (ActionData memory)
     {
         LeverageTokenData storage leverageTokenData = leverageTokens[leverageToken];
 
@@ -242,7 +197,7 @@ contract MockLeverageManager is Test {
 
                 // Set the mock deposit data to executed and return the shares minted
                 mockDepositData[mockDepositDataKey][i].isExecuted = true;
-                return ActionDataV2({
+                return ActionData({
                     collateral: _mockDepositData.collateral,
                     debt: _mockDepositData.debt,
                     shares: _mockDepositData.shares,
@@ -256,49 +211,9 @@ contract MockLeverageManager is Test {
         revert("No mock deposit data found for MockLeverageManager.deposit");
     }
 
-    function redeem(ILeverageToken leverageToken, uint256 equityInCollateralAsset, uint256 maxShares)
+    function redeem(ILeverageToken leverageToken, uint256 shares, uint256 minCollateral)
         external
         returns (ActionData memory)
-    {
-        LeverageTokenData storage leverageTokenData = leverageTokens[leverageToken];
-
-        bytes32 mockRedeemDataKey = keccak256(abi.encode(leverageToken, equityInCollateralAsset, maxShares));
-        MockRedeemData[] memory mockRedeemDataArray = mockRedeemData[mockRedeemDataKey];
-
-        // Find the first unexecuted mock mint data
-        for (uint256 i = 0; i < mockRedeemDataArray.length; i++) {
-            MockRedeemData memory _mockRedeemData = mockRedeemDataArray[i];
-            if (!_mockRedeemData.isExecuted) {
-                // Transfer the required debt to the LeverageManager
-                SafeERC20.safeTransferFrom(leverageTokenData.debtAsset, msg.sender, address(this), _mockRedeemData.debt);
-
-                // Give the sender the required collateral
-                deal(address(leverageTokenData.collateralAsset), address(this), _mockRedeemData.collateral);
-                leverageTokenData.collateralAsset.transfer(msg.sender, _mockRedeemData.collateral);
-
-                // Burn the sender's shares
-                leverageTokenData.leverageToken.burn(msg.sender, _mockRedeemData.shares);
-
-                // Set the mock redeem data to executed
-                mockRedeemData[mockRedeemDataKey][i].isExecuted = true;
-                return ActionData({
-                    equity: equityInCollateralAsset,
-                    collateral: _mockRedeemData.collateral,
-                    debt: _mockRedeemData.debt,
-                    shares: _mockRedeemData.shares,
-                    tokenFee: 0,
-                    treasuryFee: 0
-                });
-            }
-        }
-
-        // If no mock redeem data is found, revert
-        revert("No mock redeem data found for MockLeverageManager.redeem");
-    }
-
-    function redeemV2(ILeverageToken leverageToken, uint256 shares, uint256 minCollateral)
-        external
-        returns (ActionDataV2 memory)
     {
         LeverageTokenData storage leverageTokenData = leverageTokens[leverageToken];
 
@@ -321,7 +236,7 @@ contract MockLeverageManager is Test {
 
                 // Set the mock redeem data to executed
                 mockRedeemData[mockRedeemDataKey][i].isExecuted = true;
-                return ActionDataV2({
+                return ActionData({
                     collateral: _mockRedeemData.collateral,
                     debt: _mockRedeemData.debt,
                     shares: _mockRedeemData.shares,

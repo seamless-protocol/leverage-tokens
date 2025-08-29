@@ -16,7 +16,7 @@ import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
 import {LeverageRouter} from "src/periphery/LeverageRouter.sol";
-import {ActionDataV2, ExternalAction} from "src/types/DataTypes.sol";
+import {ActionData, ExternalAction} from "src/types/DataTypes.sol";
 import {MockERC20} from "../mock/MockERC20.sol";
 import {MockLendingAdapter} from "../mock/MockLendingAdapter.sol";
 import {MockLeverageManager} from "../mock/MockLeverageManager.sol";
@@ -129,9 +129,9 @@ contract LeverageRouterTest is Test {
 
         vm.mockCall(
             address(leverageManager),
-            abi.encodeWithSelector(ILeverageManager.previewRedeemV2.selector, leverageToken, shares),
+            abi.encodeWithSelector(ILeverageManager.previewRedeem.selector, leverageToken, shares),
             abi.encode(
-                ActionDataV2({
+                ActionData({
                     collateral: requiredCollateral,
                     debt: requiredDebt,
                     shares: shares,
@@ -141,8 +141,8 @@ contract LeverageRouterTest is Test {
             )
         );
 
-        leverageManager.setMockRedeemV2Data(
-            MockLeverageManager.RedeemV2Params({
+        leverageManager.setMockRedeemData(
+            MockLeverageManager.RedeemParams({
                 leverageToken: leverageToken,
                 shares: shares,
                 minCollateral: minCollateral

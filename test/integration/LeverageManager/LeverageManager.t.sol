@@ -14,7 +14,7 @@ import {MorphoLendingAdapterTest} from "../MorphoLendingAdapter.t.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IntegrationTestBase} from "../IntegrationTestBase.t.sol";
-import {LeverageTokenState, ActionData, ActionDataV2} from "src/types/DataTypes.sol";
+import {LeverageTokenState, ActionData} from "src/types/DataTypes.sol";
 
 contract LeverageManagerTest is IntegrationTestBase {
     function testFork_setUp() public view virtual override {
@@ -24,51 +24,33 @@ contract LeverageManagerTest is IntegrationTestBase {
 
     function _deposit(address caller, uint256 collateralToDeposit, uint256 minShares)
         internal
-        returns (ActionDataV2 memory)
+        returns (ActionData memory)
     {
         deal(address(WETH), caller, collateralToDeposit);
         vm.startPrank(caller);
         WETH.approve(address(leverageManager), collateralToDeposit);
-        ActionDataV2 memory depositData = leverageManager.deposit(leverageToken, collateralToDeposit, minShares);
+        ActionData memory depositData = leverageManager.deposit(leverageToken, collateralToDeposit, minShares);
         vm.stopPrank();
 
         return depositData;
     }
 
-    function _mint(address caller, uint256 equityInCollateralAsset, uint256 collateralToAdd)
-        internal
-        returns (uint256)
-    {
-        deal(address(WETH), caller, collateralToAdd);
-        vm.startPrank(caller);
-        WETH.approve(address(leverageManager), collateralToAdd);
-        uint256 shares = leverageManager.mint(leverageToken, equityInCollateralAsset, 0).shares;
-        vm.stopPrank();
-
-        return shares;
-    }
-
-    function _mintV2(address caller, uint256 sharesToMint, uint256 maxCollateral)
-        internal
-        returns (ActionDataV2 memory)
-    {
+    function _mint(address caller, uint256 sharesToMint, uint256 maxCollateral) internal returns (ActionData memory) {
         deal(address(WETH), caller, maxCollateral);
         vm.startPrank(caller);
         WETH.approve(address(leverageManager), maxCollateral);
-        ActionDataV2 memory mintData = leverageManager.mintV2(leverageToken, sharesToMint, maxCollateral);
+        ActionData memory mintData = leverageManager.mint(leverageToken, sharesToMint, maxCollateral);
         vm.stopPrank();
 
         return mintData;
     }
 
-    function _redeem(address caller, uint256 equityInCollateralAsset, uint256 debtToRepay) internal returns (uint256) {
+    function _redeem(address caller, uint256 shares, uint256 debtToRepay) internal {
         deal(address(USDC), caller, debtToRepay);
         vm.startPrank(caller);
         USDC.approve(address(leverageManager), debtToRepay);
-        uint256 shares = leverageManager.redeem(leverageToken, equityInCollateralAsset, type(uint256).max).shares;
+        leverageManager.redeem(leverageToken, shares, type(uint256).max);
         vm.stopPrank();
-
-        return shares;
     }
 
     function getLeverageTokenState() internal view returns (LeverageTokenState memory) {
