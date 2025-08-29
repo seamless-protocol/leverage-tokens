@@ -52,7 +52,7 @@ contract FeeManagerTest is Test {
 
     function test_feeManagerInit_RevertsIfNotInitializer() public {
         vm.expectRevert(Initializable.NotInitializing.selector);
-        feeManager.__FeeManager_init(address(this), treasury);
+        feeManager.exposed_FeeManager_init(address(this), treasury);
     }
 
     function test_feeManagerInit_RevertsIfTreasuryIsZeroAddress() public {
