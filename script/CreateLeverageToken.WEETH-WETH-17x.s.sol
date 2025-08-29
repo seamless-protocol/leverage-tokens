@@ -23,6 +23,7 @@ import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
+import {IWETH9} from "src/interfaces/periphery/IWETH9.sol";
 import {DeployConstants} from "./DeployConstants.sol";
 
 contract CreateLeverageToken is Script {
@@ -164,30 +165,27 @@ contract CreateLeverageToken is Script {
             "Min collateral ratio is less than pre-liquidation collateral ratio threshold"
         );
 
-        ISwapAdapter.EtherFiSwapContext memory etherFiSwapContext = ISwapAdapter.EtherFiSwapContext({
-            etherFiL2ModeSyncPool: IEtherFiL2ModeSyncPool(DeployConstants.ETHERFI_L2_MODE_SYNC_POOL),
-            tokenIn: DeployConstants.ETHERFI_ETH_IDENTIFIER,
-            weETH: DeployConstants.WEETH,
-            referral: address(0)
-        });
-
-        ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
-            path: new address[](0),
-            encodedPath: new bytes(0),
-            fees: new uint24[](0),
-            tickSpacing: new int24[](0),
-            exchange: ISwapAdapter.Exchange.ETHERFI,
-            exchangeAddresses: ISwapAdapter.ExchangeAddresses({
-                aerodromeRouter: address(0),
-                aerodromePoolFactory: address(0),
-                aerodromeSlipstreamRouter: address(0),
-                uniswapSwapRouter02: address(0),
-                uniswapV2Router02: address(0)
-            }),
-            additionalData: abi.encode(etherFiSwapContext)
-        });
-
         ActionDataV2 memory previewData = leverageRouter.previewDeposit(leverageToken, INITIAL_EQUITY_DEPOSIT);
+
+        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
+        // Withdraw WETH to get ETH in the LeverageRouter
+        calls[0] = ILeverageRouter.Call({
+            target: address(DeployConstants.WETH),
+            data: abi.encodeWithSelector(IWETH9.withdraw.selector, previewData.debt),
+            value: 0
+        });
+        // Deposit ETH into the EtherFi L2 Mode Sync Pool to get WEETH in the LeverageRouter
+        calls[1] = ILeverageRouter.Call({
+            target: address(DeployConstants.ETHERFI_L2_MODE_SYNC_POOL),
+            data: abi.encodeWithSelector(
+                IEtherFiL2ModeSyncPool.deposit.selector,
+                DeployConstants.ETHERFI_ETH_IDENTIFIER,
+                previewData.debt,
+                0,
+                address(0)
+            ),
+            value: previewData.debt
+        });
 
         collateralToken.approve(address(leverageRouter), INITIAL_EQUITY_DEPOSIT + INITIAL_EQUITY_DEPOSIT_MAX_SWAP_COST);
         leverageRouter.deposit(
@@ -195,7 +193,7 @@ contract CreateLeverageToken is Script {
             INITIAL_EQUITY_DEPOSIT + INITIAL_EQUITY_DEPOSIT_MAX_SWAP_COST,
             previewData.debt,
             previewData.shares,
-            swapContext
+            calls
         );
 
         console.log("Performed initial mint to leverage token");
