@@ -10,7 +10,7 @@ import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 import {ActionData, ExternalAction, LeverageTokenConfig, LeverageTokenState} from "src/types/DataTypes.sol";
 import {LeverageManagerTest} from "../LeverageManager/LeverageManager.t.sol";
 
-contract previewMintTest is LeverageManagerTest {
+contract PreviewMintTest is LeverageManagerTest {
     struct FuzzPreviewDepositParams {
         uint128 initialCollateral;
         uint128 initialDebt;
