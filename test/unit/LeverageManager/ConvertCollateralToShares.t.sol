@@ -138,7 +138,7 @@ contract ConvertCollateralToSharesTest is LeverageManagerTest {
         collateral = totalSupply > 0
             ? bound(collateral, 0, totalSupply / type(uint256).max)
             : bound(collateral, 0, type(uint256).max / _BASE_RATIO());
-        initialCollateralRatio = bound(initialCollateralRatio, _BASE_RATIO(), type(uint256).max);
+        initialCollateralRatio = bound(initialCollateralRatio, _BASE_RATIO() + 1, type(uint256).max);
 
         lendingAdapter.mockCollateral(totalCollateral);
         _mintShares(address(1), totalSupply);

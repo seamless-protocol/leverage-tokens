@@ -7,7 +7,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
-import {ActionDataV2, ExternalAction, LeverageTokenConfig, LeverageTokenState} from "src/types/DataTypes.sol";
+import {ActionData, ExternalAction, LeverageTokenConfig, LeverageTokenState} from "src/types/DataTypes.sol";
 import {LeverageManagerTest} from "../LeverageManager/LeverageManager.t.sol";
 
 contract PreviewDepositTest is LeverageManagerTest {
@@ -60,7 +60,7 @@ contract PreviewDepositTest is LeverageManagerTest {
         _prepareLeverageManagerStateForAction(beforeState);
 
         uint256 collateral = 20 ether;
-        ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, collateral);
+        ActionData memory previewData = leverageManager.previewDeposit(leverageToken, collateral);
 
         assertEq(previewData.collateral, collateral);
         assertEq(previewData.debt, 20 ether); // 1:2 exchange rate, 2x CR
@@ -86,7 +86,7 @@ contract PreviewDepositTest is LeverageManagerTest {
         _prepareLeverageManagerStateForAction(beforeState);
 
         uint256 collateral = 20 ether;
-        ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, collateral);
+        ActionData memory previewData = leverageManager.previewDeposit(leverageToken, collateral);
 
         assertEq(previewData.collateral, collateral);
         assertEq(previewData.debt, 10 ether);
@@ -113,7 +113,7 @@ contract PreviewDepositTest is LeverageManagerTest {
         _prepareLeverageManagerStateForAction(beforeState);
 
         uint256 collateral = 0;
-        ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, collateral);
+        ActionData memory previewData = leverageManager.previewDeposit(leverageToken, collateral);
 
         assertEq(previewData.collateral, collateral);
         assertEq(previewData.debt, 0);
@@ -131,7 +131,7 @@ contract PreviewDepositTest is LeverageManagerTest {
 
         uint256 collateral = 2 ether;
         uint256 expectedDebt = initialDebt == 0 ? 1 ether : 0;
-        ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, collateral);
+        ActionData memory previewData = leverageManager.previewDeposit(leverageToken, collateral);
 
         assertEq(previewData.collateral, collateral);
         assertEq(previewData.debt, expectedDebt);
@@ -152,7 +152,7 @@ contract PreviewDepositTest is LeverageManagerTest {
 
         uint256 collateral = 2 ether;
         uint256 expectedDebt = initialCollateral == 0 ? 1 ether : 0;
-        ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, collateral);
+        ActionData memory previewData = leverageManager.previewDeposit(leverageToken, collateral);
 
         assertEq(previewData.collateral, collateral);
         assertEq(previewData.debt, expectedDebt);
@@ -173,7 +173,7 @@ contract PreviewDepositTest is LeverageManagerTest {
 
         uint256 collateral = 2 ether;
         uint256 expectedDebt = leverageManager.convertCollateralToDebt(leverageToken, collateral, Math.Rounding.Floor);
-        ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, collateral);
+        ActionData memory previewData = leverageManager.previewDeposit(leverageToken, collateral);
 
         assertEq(previewData.collateral, 2 ether);
         assertEq(previewData.debt, expectedDebt);
@@ -235,7 +235,7 @@ contract PreviewDepositTest is LeverageManagerTest {
 
         LeverageTokenState memory prevState = leverageManager.getLeverageTokenState(leverageToken);
 
-        ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, params.collateral);
+        ActionData memory previewData = leverageManager.previewDeposit(leverageToken, params.collateral);
 
         // Calculate state after action
         uint256 newCollateralRatio = _computeLeverageTokenCRAfterAction(
@@ -245,9 +245,8 @@ contract PreviewDepositTest is LeverageManagerTest {
         {
             uint256 shares =
                 leverageManager.convertCollateralToShares(leverageToken, params.collateral, Math.Rounding.Floor);
-            (uint256 sharesAfterFee, uint256 tokenFee) =
-                leverageManager.exposed_computeTokenFee(leverageToken, shares, ExternalAction.Mint);
-            uint256 treasuryFee = leverageManager.exposed_computeTreasuryFee(ExternalAction.Mint, sharesAfterFee);
+            (uint256 sharesAfterFee, uint256 tokenFee, uint256 treasuryFee) =
+                leverageManager.exposed_computeFeesForGrossShares(leverageToken, shares, ExternalAction.Mint);
             uint256 debt =
                 leverageManager.convertCollateralToDebt(leverageToken, params.collateral, Math.Rounding.Floor);
 

@@ -59,19 +59,19 @@ contract DutchAuctionTest is RebalanceTest {
     }
 
     function _prepareOverCollateralizedState() internal {
-        // Mint 10 WETH following target ratio
-        uint256 equityToMint = 10 * 1e18;
-        uint256 collateralToAdd = leverageManager.previewMint(ethLong2x, equityToMint).collateral;
-        _mint(ethLong2x, user, equityToMint, collateralToAdd);
+        // Mint 10 ether shares following target ratio
+        uint256 shareToMint = 10 * 1e18;
+        uint256 collateralToAdd = leverageManager.previewMint(ethLong2x, shareToMint).collateral;
+        _mint(ethLong2x, user, shareToMint, collateralToAdd);
 
         _moveEthPrice(20_00); // 20% up price movement. Collateral ratio should be 2.4x
     }
 
     function _prepareUnderCollateralizedState() internal {
-        // Mint 10 WETH following target ratio
-        uint256 equityToMint = 10 * 1e18;
-        uint256 collateralToAdd = leverageManager.previewMint(ethLong2x, equityToMint).collateral;
-        _mint(ethLong2x, user, equityToMint, collateralToAdd);
+        // Mint 10 ether shares following target ratio
+        uint256 shareToMint = 10 * 1e18;
+        uint256 collateralToAdd = leverageManager.previewMint(ethLong2x, shareToMint).collateral;
+        _mint(ethLong2x, user, shareToMint, collateralToAdd);
 
         _moveEthPrice(-20_00); // 20% down price movement. Collateral ratio should be 1.6x
     }

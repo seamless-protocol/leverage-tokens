@@ -9,7 +9,7 @@ import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.so
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
-import {ActionDataV2, ExternalAction, LeverageTokenConfig, LeverageTokenState} from "src/types/DataTypes.sol";
+import {ActionData, ExternalAction, LeverageTokenConfig, LeverageTokenState} from "src/types/DataTypes.sol";
 import {LeverageManagerTest} from "../LeverageManager/LeverageManager.t.sol";
 
 contract WithdrawTest is LeverageManagerTest {
@@ -84,7 +84,7 @@ contract WithdrawTest is LeverageManagerTest {
 
         collateral = uint256(bound(collateral, 1, 200 ether));
 
-        ActionDataV2 memory previewData = leverageManager.previewWithdraw(leverageToken, collateral);
+        ActionData memory previewData = leverageManager.previewWithdraw(leverageToken, collateral);
         vm.assume(previewData.shares > 0);
 
         slippageDelta = uint256(bound(slippageDelta, 1, previewData.shares));
@@ -173,7 +173,7 @@ contract WithdrawTest is LeverageManagerTest {
 
     function _testWithdraw(uint256 collateral, uint256 maxShares) internal {
         // First preview the redemption of shares
-        ActionDataV2 memory previewData = leverageManager.previewWithdraw(leverageToken, collateral);
+        ActionData memory previewData = leverageManager.previewWithdraw(leverageToken, collateral);
 
         uint256 shareTotalSupplyBefore = leverageToken.totalSupply();
 
@@ -199,7 +199,7 @@ contract WithdrawTest is LeverageManagerTest {
                 abi.encodeWithSelector(ILeverageManager.SlippageTooHigh.selector, previewData.shares, maxShares)
             );
         }
-        ActionDataV2 memory withdrawData = leverageManager.withdraw(leverageToken, collateral, maxShares);
+        ActionData memory withdrawData = leverageManager.withdraw(leverageToken, collateral, maxShares);
 
         if (expectRevertDueToSlippage) {
             return;

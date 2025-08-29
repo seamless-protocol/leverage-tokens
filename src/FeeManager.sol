@@ -152,7 +152,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
         emit ManagementFeeCharged(token, sharesFee);
     }
 
-    /// @notice Function that mints shares to the treasury for the treasury action fee, if the treasury is set
+    /// @notice Function that mints shares to the treasury, if the treasury is set
     /// @param token LeverageToken to mint shares to treasury for
     /// @param shares Shares to mint
     /// @dev This contract must be authorized to mint shares for the LeverageToken
@@ -162,29 +162,6 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
             // slither-disable-next-line reentrancy-events
             token.mint(getTreasury(), shares);
         }
-    }
-
-    /// @notice Computes the token action fee for a given action
-    /// @param token LeverageToken to compute token action fee for
-    /// @param shares Amount of shares to compute token action fee for
-    /// @param action Action to compute token action fee for, Mint or Redeem
-    /// @return sharesAfterFee Shares to mint / burn shares for the LeverageToken after token action fees
-    /// @return tokenFee LeverageToken token action fee amount in shares
-    /// @dev Fees are always rounded up.
-    function _computeTokenFee(ILeverageToken token, uint256 shares, ExternalAction action)
-        internal
-        view
-        returns (uint256, uint256)
-    {
-        uint256 sharesTokenFee =
-            Math.mulDiv(shares, getLeverageTokenActionFee(token, action), MAX_BPS, Math.Rounding.Ceil);
-
-        // To increase share value for existing users, less shares are minted on mints and more shares are burned on
-        // redeems by subtracting the token fee from the equity on mints and adding the token fee to the equity on
-        // redeems.
-        uint256 sharesAfterFee = action == ExternalAction.Mint ? shares - sharesTokenFee : shares + sharesTokenFee;
-
-        return (sharesAfterFee, sharesTokenFee);
     }
 
     /// @notice Computes the share fees for a given action and share amount

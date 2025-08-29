@@ -22,7 +22,6 @@ import {LeverageTokenState} from "src/types/DataTypes.sol";
 import {LeverageToken} from "src/LeverageToken.sol";
 import {
     ActionData,
-    ActionDataV2,
     ActionType,
     ExternalAction,
     LeverageTokenConfig,
@@ -300,7 +299,7 @@ contract LeverageManager is
     }
 
     /// @inheritdoc ILeverageManager
-    function previewDeposit(ILeverageToken token, uint256 collateral) public view returns (ActionDataV2 memory) {
+    function previewDeposit(ILeverageToken token, uint256 collateral) public view returns (ActionData memory) {
         ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
         uint256 feeAdjustedTotalSupply = getFeeAdjustedTotalSupply(token);
 
@@ -318,7 +317,7 @@ contract LeverageManager is
         (uint256 sharesAfterFee, uint256 sharesFee, uint256 treasuryFee) =
             _computeFeesForGrossShares(token, shares, ExternalAction.Mint);
 
-        return ActionDataV2({
+        return ActionData({
             collateral: collateral,
             debt: debt,
             shares: sharesAfterFee,
@@ -328,7 +327,7 @@ contract LeverageManager is
     }
 
     /// @inheritdoc ILeverageManager
-    function previewMintV2(ILeverageToken token, uint256 shares) public view returns (ActionDataV2 memory) {
+    function previewMint(ILeverageToken token, uint256 shares) public view returns (ActionData memory) {
         (uint256 grossShares, uint256 sharesFee, uint256 treasuryFee) =
             _computeFeesForNetShares(token, shares, ExternalAction.Mint);
 
@@ -351,7 +350,7 @@ contract LeverageManager is
             Math.Rounding.Floor
         );
 
-        return ActionDataV2({
+        return ActionData({
             collateral: collateral,
             debt: debt,
             shares: shares,
@@ -361,7 +360,7 @@ contract LeverageManager is
     }
 
     /// @inheritdoc ILeverageManager
-    function previewRedeemV2(ILeverageToken token, uint256 shares) public view returns (ActionDataV2 memory) {
+    function previewRedeem(ILeverageToken token, uint256 shares) public view returns (ActionData memory) {
         (uint256 sharesAfterFees, uint256 sharesFee, uint256 treasuryFee) =
             _computeFeesForGrossShares(token, shares, ExternalAction.Redeem);
 
@@ -384,7 +383,7 @@ contract LeverageManager is
             token, lendingAdapter, sharesAfterFees, lendingAdapter.getDebt(), feeAdjustedTotalSupply, Math.Rounding.Ceil
         );
 
-        return ActionDataV2({
+        return ActionData({
             collateral: collateral,
             debt: debt,
             shares: shares,
@@ -394,7 +393,7 @@ contract LeverageManager is
     }
 
     /// @inheritdoc ILeverageManager
-    function previewWithdraw(ILeverageToken token, uint256 collateral) public view returns (ActionDataV2 memory) {
+    function previewWithdraw(ILeverageToken token, uint256 collateral) public view returns (ActionData memory) {
         ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
         uint256 feeAdjustedTotalSupply = getFeeAdjustedTotalSupply(token);
 
@@ -417,7 +416,7 @@ contract LeverageManager is
         (uint256 sharesAfterFees, uint256 sharesFee, uint256 treasuryFee) =
             _computeFeesForNetShares(token, shares, ExternalAction.Redeem);
 
-        return ActionDataV2({
+        return ActionData({
             collateral: collateral,
             debt: debt,
             shares: sharesAfterFees,
@@ -427,34 +426,16 @@ contract LeverageManager is
     }
 
     /// @inheritdoc ILeverageManager
-    function previewMint(ILeverageToken token, uint256 equityInCollateralAsset)
-        public
-        view
-        returns (ActionData memory)
-    {
-        return _previewAction(token, equityInCollateralAsset, ExternalAction.Mint);
-    }
-
-    /// @inheritdoc ILeverageManager
-    function previewRedeem(ILeverageToken token, uint256 equityInCollateralAsset)
-        public
-        view
-        returns (ActionData memory)
-    {
-        return _previewAction(token, equityInCollateralAsset, ExternalAction.Redeem);
-    }
-
-    /// @inheritdoc ILeverageManager
     function deposit(ILeverageToken token, uint256 collateral, uint256 minShares)
         external
         nonReentrant
-        returns (ActionDataV2 memory actionData)
+        returns (ActionData memory actionData)
     {
         // Management fee is calculated from the total supply of the LeverageToken, so we need to charge it first
         // before total supply is updated due to the mint
         chargeManagementFee(token);
 
-        ActionDataV2 memory depositData = previewDeposit(token, collateral);
+        ActionData memory depositData = previewDeposit(token, collateral);
 
         // slither-disable-next-line timestamp
         if (depositData.shares < minShares) {
@@ -467,16 +448,16 @@ contract LeverageManager is
     }
 
     /// @inheritdoc ILeverageManager
-    function mintV2(ILeverageToken token, uint256 shares, uint256 maxCollateral)
+    function mint(ILeverageToken token, uint256 shares, uint256 maxCollateral)
         external
         nonReentrant
-        returns (ActionDataV2 memory actionData)
+        returns (ActionData memory actionData)
     {
         // Management fee is calculated from the total supply of the LeverageToken, so we need to charge it first
         // before total supply is updated due to the mint
         chargeManagementFee(token);
 
-        ActionDataV2 memory mintData = previewMintV2(token, shares);
+        ActionData memory mintData = previewMint(token, shares);
 
         // slither-disable-next-line timestamp
         if (mintData.collateral > maxCollateral) {
@@ -486,85 +467,6 @@ contract LeverageManager is
         _mint(token, mintData);
 
         return mintData;
-    }
-
-    /// @inheritdoc ILeverageManager
-    function mint(ILeverageToken token, uint256 equityInCollateralAsset, uint256 minShares)
-        external
-        nonReentrant
-        returns (ActionData memory actionData)
-    {
-        // Management fee is calculated from the total supply of the LeverageToken, so we need to claim it first
-        // before total supply is updated due to the mint
-        chargeManagementFee(token);
-
-        ActionData memory mintData = previewMint(token, equityInCollateralAsset);
-
-        // slither-disable-next-line timestamp
-        if (mintData.shares < minShares) {
-            revert SlippageTooHigh(mintData.shares, minShares);
-        }
-
-        // Take collateral asset from sender
-        IERC20 collateralAsset = getLeverageTokenCollateralAsset(token);
-        SafeERC20.safeTransferFrom(collateralAsset, msg.sender, address(this), mintData.collateral);
-
-        // Add collateral to LeverageToken
-        _executeLendingAdapterAction(token, ActionType.AddCollateral, mintData.collateral);
-
-        // Borrow and send debt assets to caller
-        _executeLendingAdapterAction(token, ActionType.Borrow, mintData.debt);
-        SafeERC20.safeTransfer(getLeverageTokenDebtAsset(token), msg.sender, mintData.debt);
-
-        // Charge treasury fee
-        _chargeTreasuryFee(token, mintData.treasuryFee);
-
-        // Mint shares to user
-        // slither-disable-next-line reentrancy-events
-        token.mint(msg.sender, mintData.shares);
-
-        // Emit event and explicit return statement
-        emit Mint(token, msg.sender, mintData);
-        return mintData;
-    }
-
-    /// @inheritdoc ILeverageManager
-    function redeem(ILeverageToken token, uint256 equityInCollateralAsset, uint256 maxShares)
-        external
-        nonReentrant
-        returns (ActionData memory actionData)
-    {
-        // Management fee is calculated from the total supply of the LeverageToken, so we need to claim it first
-        // before total supply is updated due to the redeem
-        chargeManagementFee(token);
-
-        ActionData memory redeemData = previewRedeem(token, equityInCollateralAsset);
-
-        // slither-disable-next-line timestamp
-        if (redeemData.shares > maxShares) {
-            revert SlippageTooHigh(redeemData.shares, maxShares);
-        }
-
-        // Burn shares from user and total supply
-        token.burn(msg.sender, redeemData.shares);
-
-        // Mint shares to treasury for the treasury action fee
-        _chargeTreasuryFee(token, redeemData.treasuryFee);
-
-        // Take assets from sender and repay the debt
-        SafeERC20.safeTransferFrom(getLeverageTokenDebtAsset(token), msg.sender, address(this), redeemData.debt);
-        _executeLendingAdapterAction(token, ActionType.Repay, redeemData.debt);
-
-        // Remove collateral from lending pool
-        _executeLendingAdapterAction(token, ActionType.RemoveCollateral, redeemData.collateral);
-
-        // Send collateral assets to sender
-        IERC20 collateralAsset = getLeverageTokenCollateralAsset(token);
-        SafeERC20.safeTransfer(collateralAsset, msg.sender, redeemData.collateral);
-
-        // Emit event and explicit return statement
-        emit Redeem(token, msg.sender, redeemData);
-        return redeemData;
     }
 
     /// @inheritdoc ILeverageManager
@@ -603,16 +505,16 @@ contract LeverageManager is
     }
 
     /// @inheritdoc ILeverageManager
-    function redeemV2(ILeverageToken token, uint256 shares, uint256 minCollateral)
+    function redeem(ILeverageToken token, uint256 shares, uint256 minCollateral)
         external
         nonReentrant
-        returns (ActionDataV2 memory actionData)
+        returns (ActionData memory actionData)
     {
         // Management fee is calculated from the total supply of the LeverageToken, so we need to claim it first
         // before total supply is updated due to the redeem
         chargeManagementFee(token);
 
-        ActionDataV2 memory redeemData = previewRedeemV2(token, shares);
+        ActionData memory redeemData = previewRedeem(token, shares);
 
         // slither-disable-next-line timestamp
         if (redeemData.collateral < minCollateral) {
@@ -628,13 +530,13 @@ contract LeverageManager is
     function withdraw(ILeverageToken token, uint256 collateral, uint256 maxShares)
         external
         nonReentrant
-        returns (ActionDataV2 memory actionData)
+        returns (ActionData memory actionData)
     {
         // Management fee is calculated from the total supply of the LeverageToken, so we need to claim it first
         // before total supply is updated due to the redeem
         chargeManagementFee(token);
 
-        ActionDataV2 memory withdrawData = previewWithdraw(token, collateral);
+        ActionData memory withdrawData = previewWithdraw(token, collateral);
 
         // slither-disable-next-line timestamp
         if (withdrawData.shares > maxShares) {
@@ -804,115 +706,6 @@ contract LeverageManager is
         return Math.mulDiv(shares, totalDebt, totalSupply, rounding);
     }
 
-    /// @notice Function that converts user's equity to shares
-    /// @notice Function uses OZ formula for calculating shares
-    /// @param token LeverageToken to convert equity for
-    /// @param equityInCollateralAsset Equity to convert to shares, denominated in collateral asset
-    /// @param action Action to convert equity for
-    /// @return shares Shares
-    /// @dev Function should be used to calculate how much shares user should receive for their equity
-    function _convertToShares(ILeverageToken token, uint256 equityInCollateralAsset, ExternalAction action)
-        internal
-        view
-        returns (uint256 shares)
-    {
-        ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
-
-        uint256 totalSupply = getFeeAdjustedTotalSupply(token);
-        uint256 totalEquityInCollateralAsset = lendingAdapter.getEquityInCollateralAsset();
-
-        // If leverage token is empty we mint it in 1:1 ratio with collateral asset but we align it on 18 decimals always
-        // slither-disable-next-line incorrect-equality,timestamp
-        if (totalSupply == 0 || totalEquityInCollateralAsset == 0) {
-            uint256 leverageTokenDecimals = IERC20Metadata(address(token)).decimals();
-            uint256 collateralDecimals = IERC20Metadata(address(lendingAdapter.getCollateralAsset())).decimals();
-
-            // If collateral asset has more decimals than leverage token, we scale down the equity in collateral asset
-            // Otherwise we scale up the equity in collateral asset
-            if (collateralDecimals > leverageTokenDecimals) {
-                uint256 scalingFactor = 10 ** (collateralDecimals - leverageTokenDecimals);
-                return equityInCollateralAsset / scalingFactor;
-            } else {
-                uint256 scalingFactor = 10 ** (leverageTokenDecimals - collateralDecimals);
-                return equityInCollateralAsset * scalingFactor;
-            }
-        }
-
-        Math.Rounding rounding = action == ExternalAction.Mint ? Math.Rounding.Floor : Math.Rounding.Ceil;
-        return Math.mulDiv(equityInCollateralAsset, totalSupply, totalEquityInCollateralAsset, rounding);
-    }
-
-    /// @notice Previews parameters related to a mint action
-    /// @param token LeverageToken to preview mint for
-    /// @param equityInCollateralAsset Amount of equity to give or receive, denominated in collateral asset
-    /// @param action Type of the action to preview, can be Mint or Redeem
-    /// @return data Preview data for the action
-    /// @dev If the LeverageToken has zero total supply of shares (so the LeverageToken does not hold any collateral or debt,
-    ///      or holds some leftover dust after all shares are redeemed), then the preview will use the target
-    ///      collateral ratio for determining how much collateral and debt is required instead of the current collateral ratio.
-    /// @dev If action is mint collateral will be rounded down and debt up, if action is redeem collateral will be rounded up and debt down
-    function _previewAction(ILeverageToken token, uint256 equityInCollateralAsset, ExternalAction action)
-        internal
-        view
-        returns (ActionData memory data)
-    {
-        (uint256 collateral, uint256 debt) = _computeCollateralAndDebtForAction(token, equityInCollateralAsset, action);
-
-        (uint256 equityForShares, uint256 tokenFee) = _computeTokenFee(token, equityInCollateralAsset, action);
-        uint256 shares = _convertToShares(token, equityForShares, action);
-        uint256 treasuryFee = _computeTreasuryFee(action, shares);
-
-        // On mints, some of the minted shares are for the treasury fee
-        // On redeems, additional shares are taken from the user to cover the treasury fee
-        uint256 userSharesDelta = action == ExternalAction.Mint ? shares - treasuryFee : shares + treasuryFee;
-
-        return ActionData({
-            collateral: collateral,
-            debt: debt,
-            equity: equityInCollateralAsset,
-            shares: userSharesDelta,
-            tokenFee: tokenFee,
-            treasuryFee: treasuryFee
-        });
-    }
-
-    /// @notice Function that computes collateral and debt required by the position held by a LeverageToken for a given action and an amount of equity to add / remove
-    /// @param token LeverageToken to compute collateral and debt for
-    /// @param equityInCollateralAsset Equity amount in collateral asset
-    /// @param action Action to compute collateral and debt for
-    /// @return collateral Collateral to add / remove from the LeverageToken
-    /// @return debt Debt to borrow / repay to the LeverageToken
-    function _computeCollateralAndDebtForAction(
-        ILeverageToken token,
-        uint256 equityInCollateralAsset,
-        ExternalAction action
-    ) internal view returns (uint256 collateral, uint256 debt) {
-        ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
-        uint256 totalDebt = lendingAdapter.getDebt();
-        uint256 totalShares = getFeeAdjustedTotalSupply(token);
-
-        Math.Rounding collateralRounding = action == ExternalAction.Mint ? Math.Rounding.Ceil : Math.Rounding.Floor;
-        Math.Rounding debtRounding = action == ExternalAction.Mint ? Math.Rounding.Floor : Math.Rounding.Ceil;
-
-        uint256 shares = _convertToShares(token, equityInCollateralAsset, action);
-
-        // If action is mint there might be some dust in collateral but debt can be 0. In that case we should follow target ratio
-        // slither-disable-next-line incorrect-equality,timestamp
-        bool shouldFollowInitialRatio = totalShares == 0 || (action == ExternalAction.Mint && totalDebt == 0);
-
-        if (shouldFollowInitialRatio) {
-            uint256 initialRatio = getLeverageTokenInitialCollateralRatio(token);
-            collateral =
-                Math.mulDiv(equityInCollateralAsset, initialRatio, initialRatio - BASE_RATIO, collateralRounding);
-            debt = lendingAdapter.convertCollateralToDebtAsset(collateral - equityInCollateralAsset);
-        } else {
-            collateral = Math.mulDiv(lendingAdapter.getCollateral(), shares, totalShares, collateralRounding);
-            debt = Math.mulDiv(totalDebt, shares, totalShares, debtRounding);
-        }
-
-        return (collateral, debt);
-    }
-
     /// @notice Executes actions on the LendingAdapter for a specific LeverageToken
     /// @param token LeverageToken to execute action for
     /// @param actionType Type of the action to execute
@@ -944,7 +737,7 @@ contract LeverageManager is
     /// @notice Helper function for executing a mint action on a LeverageToken
     /// @param token LeverageToken to mint shares for
     /// @param mintData Action data for the mint
-    function _mint(ILeverageToken token, ActionDataV2 memory mintData) internal {
+    function _mint(ILeverageToken token, ActionData memory mintData) internal {
         // Take collateral asset from sender
         IERC20 collateralAsset = getLeverageTokenCollateralAsset(token);
         SafeERC20.safeTransferFrom(collateralAsset, msg.sender, address(this), mintData.collateral);
@@ -964,13 +757,13 @@ contract LeverageManager is
         token.mint(msg.sender, mintData.shares);
 
         // Emit event and explicit return statement
-        emit MintV2(token, msg.sender, mintData);
+        emit Mint(token, msg.sender, mintData);
     }
 
     /// @notice Helper function for executing a redeem action on a LeverageToken
     /// @param token LeverageToken to redeem shares for
     /// @param redeemData Action data for the redeem
-    function _redeem(ILeverageToken token, ActionDataV2 memory redeemData) internal {
+    function _redeem(ILeverageToken token, ActionData memory redeemData) internal {
         // Burn shares from user and total supply
         token.burn(msg.sender, redeemData.shares);
 
@@ -988,7 +781,7 @@ contract LeverageManager is
         SafeERC20.safeTransfer(getLeverageTokenCollateralAsset(token), msg.sender, redeemData.collateral);
 
         // Emit event and explicit return statement
-        emit RedeemV2(token, msg.sender, redeemData);
+        emit Redeem(token, msg.sender, redeemData);
     }
 
     /// @notice Helper function for transferring tokens, or no-op if token is 0 address

@@ -1,7 +1,7 @@
 [profile.default]
 solc = "0.8.26"
 optimizer = true
-optimizer_runs = 1
+optimizer_runs = 32500
 via_ir = true
 evm_version = "cancun"
 src = "src"
