@@ -53,6 +53,14 @@ contract LeverageManagerTest is IntegrationTestBase {
         vm.stopPrank();
     }
 
+    function _withdraw(address caller, uint256 collateral, uint256 maxShares, uint256 debtToRepay) internal {
+        deal(address(USDC), caller, debtToRepay);
+        vm.startPrank(caller);
+        USDC.approve(address(leverageManager), debtToRepay);
+        leverageManager.withdraw(leverageToken, collateral, maxShares);
+        vm.stopPrank();
+    }
+
     function getLeverageTokenState() internal view returns (LeverageTokenState memory) {
         return LeverageManagerHarness(address(leverageManager)).getLeverageTokenState(leverageToken);
     }
