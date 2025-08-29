@@ -68,7 +68,19 @@ contract CreateNewLeverageTokenTest is LeverageManagerTest {
             address(leverageManager.getLeverageTokenRebalanceAdapter(leverageToken)), address(config.rebalanceAdapter)
         );
 
-        assertEq(leverageManager.getLeverageTokenInitialCollateralRatio(leverageToken), targetCollateralRatio);
+        // We don't revert if the initial collateral ratio is less than or equal to the base ratio on LT creation, since
+        // RebalanceAdapters can technically update the initial collateral ratio after creation anyway.
+        if (targetCollateralRatio <= _BASE_RATIO()) {
+            vm.expectRevert(
+                abi.encodeWithSelector(
+                    ILeverageManager.InvalidLeverageTokenInitialCollateralRatio.selector, targetCollateralRatio
+                )
+            );
+            leverageManager.getLeverageTokenInitialCollateralRatio(leverageToken);
+        } else {
+            assertEq(leverageManager.getLeverageTokenInitialCollateralRatio(leverageToken), targetCollateralRatio);
+        }
+
         assertEq(leverageManager.getLastManagementFeeAccrualTimestamp(leverageToken), block.timestamp);
     }
 }

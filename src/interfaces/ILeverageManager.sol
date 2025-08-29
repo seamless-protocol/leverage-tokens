@@ -32,8 +32,9 @@ interface ILeverageManager is IFeeManager {
     /// @param caller The caller of the rebalance function
     error NotRebalancer(ILeverageToken token, address caller);
 
-    /// @notice Error thrown when attempting to rebalance a LeverageToken that is not eligible for rebalance
-    error LeverageTokenNotEligibleForRebalance();
+    /// @notice Error thrown when a LeverageToken's initial collateral ratio is invalid (must be greater than the base ratio)
+    /// @param initialCollateralRatio The initial collateral ratio that is invalid
+    error InvalidLeverageTokenInitialCollateralRatio(uint256 initialCollateralRatio);
 
     /// @notice Error thrown when a LeverageToken's state after rebalance is invalid
     /// @param token The LeverageToken that has invalid state after rebalance
@@ -42,6 +43,9 @@ interface ILeverageManager is IFeeManager {
     /// @notice Event emitted when the LeverageManager is initialized
     /// @param leverageTokenFactory The factory for creating new LeverageTokens
     event LeverageManagerInitialized(IBeaconProxyFactory leverageTokenFactory);
+
+    /// @notice Error thrown when attempting to rebalance a LeverageToken that is not eligible for rebalance
+    error LeverageTokenNotEligibleForRebalance();
 
     /// @notice Event emitted when a new LeverageToken is created
     /// @param token The new LeverageToken
