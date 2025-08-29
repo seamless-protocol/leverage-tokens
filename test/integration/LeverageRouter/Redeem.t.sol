@@ -7,7 +7,7 @@ import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.so
 // Internal imports
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {IVeloraAdapter} from "src/interfaces/periphery/IVeloraAdapter.sol";
-import {ActionData, ActionDataV2} from "src/types/DataTypes.sol";
+import {ActionData} from "src/types/DataTypes.sol";
 import {LeverageRouterTest} from "./LeverageRouter.t.sol";
 import {SwapPathLib} from "test/utils/SwapPathLib.sol";
 
@@ -32,7 +32,7 @@ contract LeverageRouterRedeemWithVeloraTest is LeverageRouterTest {
         uint256 shares = _deposit();
 
         // Preview the redemption of shares
-        ActionDataV2 memory previewData = leverageManager.previewRedeemV2(leverageToken, shares);
+        ActionData memory previewData = leverageManager.previewRedeem(leverageToken, shares);
         assertEq(previewData.debt, 4549.699882e6);
         assertEq(previewData.collateral, 2 ether);
 
@@ -63,7 +63,7 @@ contract LeverageRouterRedeemWithVeloraTest is LeverageRouterTest {
         uint256 sharesToRedeem = shares / 2;
 
         // Preview the redemption of shares
-        ActionDataV2 memory previewData = leverageManager.previewRedeemV2(leverageToken, sharesToRedeem);
+        ActionData memory previewData = leverageManager.previewRedeem(leverageToken, sharesToRedeem);
         assertEq(previewData.debt, 2274.849941e6);
         assertEq(previewData.collateral, 1 ether);
 
@@ -148,7 +148,7 @@ contract LeverageRouterRedeemWithVeloraTest is LeverageRouterTest {
         uint256 debtBeforeRedeem = morphoLendingAdapter.getDebt();
         uint256 userBalanceOfCollateralAssetBeforeRedeem = WETH.balanceOf(user);
 
-        ActionDataV2 memory previewData = leverageManager.previewRedeemV2(leverageToken, shares);
+        ActionData memory previewData = leverageManager.previewRedeem(leverageToken, shares);
 
         vm.startPrank(user);
         leverageToken.approve(address(leverageRouter), shares);

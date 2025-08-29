@@ -291,33 +291,28 @@ contract RebalanceTest is LeverageManagerTest {
 
     /// @dev Performs initial mint into ETH long leverage token, amount is not important but it is important to gain some collateral and debt
     function _mintEthLong2x() internal {
-        uint256 equityToMint = 10 ether;
-        uint256 collateralToAdd = leverageManager.previewMint(ethLong2x, equityToMint).collateral;
-        _mint(ethLong2x, user, equityToMint, collateralToAdd);
+        uint256 sharesToMint = 10 ether;
+        uint256 collateralToAdd = leverageManager.previewMint(ethLong2x, sharesToMint).collateral;
+        _mint(ethLong2x, user, sharesToMint, collateralToAdd);
     }
 
     /// @dev Performs initial mint into ETH short leverage token, amount is not important but it is important to gain some collateral and debt
     function _mintEthShort2x() internal {
-        uint256 equityToMint = 30_000 * 1e6;
-        uint256 collateralToAdd = leverageManager.previewMint(ethShort2x, equityToMint).collateral;
-        _mint(ethShort2x, user, equityToMint, collateralToAdd);
+        uint256 sharesToMint = 30_000 * 1e6;
+        uint256 collateralToAdd = leverageManager.previewMint(ethShort2x, sharesToMint).collateral;
+        _mint(ethShort2x, user, sharesToMint, collateralToAdd);
     }
 
-    function _mint(
-        ILeverageToken _leverageToken,
-        address _caller,
-        uint256 _equityInCollateralAsset,
-        uint256 _collateralToAdd
-    ) internal returns (uint256) {
+    function _mint(ILeverageToken _leverageToken, address _caller, uint256 _sharesToMint, uint256 _collateralToAdd)
+        internal
+    {
         IERC20 collateralAsset = leverageManager.getLeverageTokenCollateralAsset(_leverageToken);
         deal(address(collateralAsset), _caller, _collateralToAdd);
 
         vm.startPrank(_caller);
         collateralAsset.approve(address(leverageManager), _collateralToAdd);
-        uint256 shares = leverageManager.mint(_leverageToken, _equityInCollateralAsset, 0).shares;
+        leverageManager.mint(_leverageToken, _sharesToMint, _collateralToAdd);
         vm.stopPrank();
-
-        return shares;
     }
 
     /// @dev Moves price of ETH for given percentage, if percentage is negative it moves price of ETH down

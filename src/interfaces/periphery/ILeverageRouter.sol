@@ -10,7 +10,7 @@ import {ILeverageManager} from "../ILeverageManager.sol";
 import {ILeverageToken} from "../ILeverageToken.sol";
 import {ISwapAdapter} from "./ISwapAdapter.sol";
 import {IVeloraAdapter} from "./IVeloraAdapter.sol";
-import {ActionDataV2, ExternalAction} from "src/types/DataTypes.sol";
+import {ActionData, ExternalAction} from "src/types/DataTypes.sol";
 
 interface ILeverageRouter {
     /// @notice Struct containing the target, value, and data for a single external call.
@@ -108,7 +108,7 @@ interface ILeverageRouter {
     function previewDeposit(ILeverageToken token, uint256 collateralFromSender)
         external
         view
-        returns (ActionDataV2 memory);
+        returns (ActionData memory);
 
     /// @notice Deposits collateral into a LeverageToken and mints shares to the sender. Any surplus debt received from
     /// the deposit of (collateralFromSender + debt swapped to collateral) is given to the sender.

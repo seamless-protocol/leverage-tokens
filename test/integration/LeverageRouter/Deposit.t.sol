@@ -17,7 +17,7 @@ import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {IUniswapV2Router02} from "src/interfaces/periphery/IUniswapV2Router02.sol";
-import {ActionDataV2, LeverageTokenConfig} from "src/types/DataTypes.sol";
+import {ActionData, LeverageTokenConfig} from "src/types/DataTypes.sol";
 import {LeverageRouterTest} from "./LeverageRouter.t.sol";
 import {SwapPathLib} from "../../utils/SwapPathLib.sol";
 import {MockSwapper} from "../../unit/mock/MockSwapper.sol";
@@ -83,8 +83,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
 
         {
             // Sanity check that LR preview deposit matches test params
-            ActionDataV2 memory leverageRouterPreview =
-                leverageRouter.previewDeposit(leverageToken, collateralFromSender);
+            ActionData memory leverageRouterPreview = leverageRouter.previewDeposit(leverageToken, collateralFromSender);
             assertEq(leverageRouterPreview.debt, flashLoanAmount);
             assertEq(leverageRouterPreview.shares, 1 ether);
             assertEq(leverageRouterPreview.collateral, collateralToAdd);
@@ -112,7 +111,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
 
         // Preview again using the total collateral. This is used by the LM deposit logic
         uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
-        ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, totalCollateral);
+        ActionData memory previewData = leverageManager.previewDeposit(leverageToken, totalCollateral);
         assertGe(previewData.debt, flashLoanAmountReduced);
         assertEq(previewData.debt, 4470.477825e6);
 
@@ -159,8 +158,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
 
         {
             // Sanity check that LR preview deposit matches test params
-            ActionDataV2 memory leverageRouterPreview =
-                leverageRouter.previewDeposit(leverageToken, collateralFromSender);
+            ActionData memory leverageRouterPreview = leverageRouter.previewDeposit(leverageToken, collateralFromSender);
             assertEq(leverageRouterPreview.debt, flashLoanAmount);
             assertEq(leverageRouterPreview.shares, 1 ether);
             assertEq(leverageRouterPreview.collateral, collateralToAdd);
@@ -181,7 +179,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         // Preview again using the total collateral. This is used by the LM deposit logic
         uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
         assertEq(totalCollateral, 1.994290732650270211 ether);
-        ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, totalCollateral);
+        ActionData memory previewData = leverageManager.previewDeposit(leverageToken, totalCollateral);
         assertGe(previewData.debt, flashLoanAmountReduced);
         assertEq(previewData.debt, 3382.608719e6);
 
@@ -243,8 +241,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
 
         {
             // Sanity check that LR preview deposit matches test params
-            ActionDataV2 memory leverageRouterPreview =
-                leverageRouter.previewDeposit(leverageToken, collateralFromSender);
+            ActionData memory leverageRouterPreview = leverageRouter.previewDeposit(leverageToken, collateralFromSender);
             assertEq(leverageRouterPreview.debt, flashLoanAmount);
             assertEq(leverageRouterPreview.shares, 1 ether);
             assertEq(leverageRouterPreview.collateral, collateralToAdd);
@@ -265,7 +262,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         // Preview again using the total collateral. This is used by the LM deposit logic
         uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
         assertEq(totalCollateral, 1.994290732650270211 ether);
-        ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, totalCollateral);
+        ActionData memory previewData = leverageManager.previewDeposit(leverageToken, totalCollateral);
         assertGe(previewData.debt, flashLoanAmountReduced);
         assertEq(previewData.debt, 3382.608719e6);
 
@@ -358,7 +355,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         assertEq(USDC.balanceOf(user), expectedUserDebtBalance);
 
         {
-            ActionDataV2 memory previewDataFullDeposit =
+            ActionData memory previewDataFullDeposit =
                 leverageRouter.previewDeposit(leverageToken, collateralFromSender);
             uint256 collateralReceivedFromDebtSwap = 0.993336131989824069 ether;
 
@@ -376,8 +373,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             // Preview again using the total collateral. This is used by the LR deposit logic
             uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
             assertEq(totalCollateral, 1.989547994451029601 ether);
-            ActionDataV2 memory previewDataReducedDeposit =
-                leverageManager.previewDeposit(leverageToken, totalCollateral);
+            ActionData memory previewDataReducedDeposit = leverageManager.previewDeposit(leverageToken, totalCollateral);
             assertGe(previewDataReducedDeposit.debt, flashLoanAmountReduced);
             assertEq(previewDataReducedDeposit.debt, 3374.564342e6);
 
@@ -422,7 +418,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         }
 
         {
-            ActionDataV2 memory previewDataFullDeposit =
+            ActionData memory previewDataFullDeposit =
                 leverageRouter.previewDeposit(leverageToken, collateralFromSender);
             uint256 collateralReceivedFromDebtSwap = 0.995230946229750636 ether;
 
@@ -440,8 +436,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             // Preview again using the total collateral. This is used by the LR deposit logic
             uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
             assertEq(totalCollateral, 1.9904869053653832 ether);
-            ActionDataV2 memory previewDataReducedDeposit =
-                leverageManager.previewDeposit(leverageToken, totalCollateral);
+            ActionData memory previewDataReducedDeposit = leverageManager.previewDeposit(leverageToken, totalCollateral);
             assertGe(previewDataReducedDeposit.debt, flashLoanAmountReduced);
             assertEq(previewDataReducedDeposit.debt, 3376.156872e6);
 
@@ -485,7 +480,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         }
 
         {
-            ActionDataV2 memory previewDataFullDeposit =
+            ActionData memory previewDataFullDeposit =
                 leverageRouter.previewDeposit(leverageToken, collateralFromSender);
             uint256 collateralReceivedFromDebtSwap = 0.9942781864904543 ether;
 
@@ -503,8 +498,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             // Preview again using the total collateral. This is used by the LR deposit logic
             uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
             assertEq(totalCollateral, 1.988591828264731799 ether);
-            ActionDataV2 memory previewDataReducedDeposit =
-                leverageManager.previewDeposit(leverageToken, totalCollateral);
+            ActionData memory previewDataReducedDeposit = leverageManager.previewDeposit(leverageToken, totalCollateral);
             assertGe(previewDataReducedDeposit.debt, flashLoanAmountReduced);
             assertEq(previewDataReducedDeposit.debt, 3372.942544e6);
 
@@ -584,7 +578,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         assertEq(USDC.balanceOf(user), expectedUserDebtBalance);
 
         {
-            ActionDataV2 memory previewDataFullDeposit =
+            ActionData memory previewDataFullDeposit =
                 leverageRouter.previewDeposit(leverageToken, collateralFromSender);
             uint256 collateralReceivedFromDebtSwap = 0.993336131989824069 ether;
 
@@ -602,8 +596,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             // Preview again using the total collateral. This is used by the LR deposit logic
             uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
             assertEq(totalCollateral, 1.989547994451029601 ether);
-            ActionDataV2 memory previewDataReducedDeposit =
-                leverageManager.previewDeposit(leverageToken, totalCollateral);
+            ActionData memory previewDataReducedDeposit = leverageManager.previewDeposit(leverageToken, totalCollateral);
             assertGe(previewDataReducedDeposit.debt, flashLoanAmountReduced);
             assertEq(previewDataReducedDeposit.debt, 3374.564342e6);
 
@@ -630,7 +623,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         }
 
         {
-            ActionDataV2 memory previewDataFullDeposit =
+            ActionData memory previewDataFullDeposit =
                 leverageRouter.previewDeposit(leverageToken, collateralFromSender);
             uint256 collateralReceivedFromDebtSwap = 0.995230946229750636 ether;
 
@@ -648,8 +641,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             // Preview again using the total collateral. This is used by the LR deposit logic
             uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
             assertEq(totalCollateral, 1.9904869053653832 ether);
-            ActionDataV2 memory previewDataReducedDeposit =
-                leverageManager.previewDeposit(leverageToken, totalCollateral);
+            ActionData memory previewDataReducedDeposit = leverageManager.previewDeposit(leverageToken, totalCollateral);
             assertGe(previewDataReducedDeposit.debt, flashLoanAmountReduced);
             assertEq(previewDataReducedDeposit.debt, 3376.156872e6);
 
@@ -675,7 +667,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         }
 
         {
-            ActionDataV2 memory previewDataFullDeposit =
+            ActionData memory previewDataFullDeposit =
                 leverageRouter.previewDeposit(leverageToken, collateralFromSender);
             uint256 collateralReceivedFromDebtSwap = 0.9942781864904543 ether;
 
@@ -693,8 +685,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             // Preview again using the total collateral. This is used by the LR deposit logic
             uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
             assertEq(totalCollateral, 1.988591828264731799 ether);
-            ActionDataV2 memory previewDataReducedDeposit =
-                leverageManager.previewDeposit(leverageToken, totalCollateral);
+            ActionData memory previewDataReducedDeposit = leverageManager.previewDeposit(leverageToken, totalCollateral);
             assertGe(previewDataReducedDeposit.debt, flashLoanAmountReduced);
             assertEq(previewDataReducedDeposit.debt, 3372.942544e6);
 
@@ -735,7 +726,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
 
         _supplyUSDCForETHLongLeverageToken(15000000e6);
 
-        ActionDataV2 memory previewData = leverageRouter.previewDeposit(leverageToken, collateralFromSenderA);
+        ActionData memory previewData = leverageRouter.previewDeposit(leverageToken, collateralFromSenderA);
 
         collateralReceivedFromDebtSwapA =
             bound(collateralReceivedFromDebtSwapA, 1, previewData.collateral - collateralFromSenderA);
@@ -808,7 +799,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
 
         _supplyWETHForETHShortLeverageToken(6000 ether);
 
-        ActionDataV2 memory previewData = leverageRouter.previewDeposit(ethShortLeverageToken, collateralFromSenderA);
+        ActionData memory previewData = leverageRouter.previewDeposit(ethShortLeverageToken, collateralFromSenderA);
 
         collateralReceivedFromDebtSwapA =
             bound(collateralReceivedFromDebtSwapA, 1, previewData.collateral - collateralFromSenderA);
@@ -878,7 +869,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
 
         {
             // Sanity check that LR preview deposit matches test params
-            ActionDataV2 memory previewDataFullDeposit =
+            ActionData memory previewDataFullDeposit =
                 leverageRouter.previewDeposit(leverageToken, collateralFromSender);
             assertEq(previewDataFullDeposit.debt, flashLoanAmount);
             assertEq(previewDataFullDeposit.shares, sharesFromDeposit);
@@ -900,7 +891,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         // Preview again using the total collateral. This is used by the LM deposit logic
         uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
         assertEq(totalCollateral, 1.994290732650270211 ether);
-        ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, totalCollateral);
+        ActionData memory previewData = leverageManager.previewDeposit(leverageToken, totalCollateral);
         assertGe(previewData.debt, flashLoanAmountReduced);
         assertEq(previewData.debt, 3382.608719e6);
 
@@ -960,7 +951,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         uint256 collateralFromSender = 0.01 ether;
 
         // 2x collateral ratio
-        ActionDataV2 memory previewData = leverageRouter.previewDeposit(leverageToken, collateralFromSender);
+        ActionData memory previewData = leverageRouter.previewDeposit(leverageToken, collateralFromSender);
         assertEq(previewData.collateral, collateralFromSender * 2);
         assertEq(previewData.debt, 33.922924e6);
 
@@ -1026,7 +1017,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
 
         {
             // Sanity check that LR preview deposit matches test params
-            ActionDataV2 memory previewDataFullDeposit =
+            ActionData memory previewDataFullDeposit =
                 leverageRouter.previewDeposit(leverageToken, collateralFromSender);
             assertEq(previewDataFullDeposit.debt, flashLoanAmount);
             assertEq(previewDataFullDeposit.shares, 1 ether);
@@ -1048,7 +1039,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         // Preview again using the total collateral. This is used by the LM deposit logic
         uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
         assertEq(totalCollateral, 1.999798847238411671 ether);
-        ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, totalCollateral);
+        ActionData memory previewData = leverageManager.previewDeposit(leverageToken, totalCollateral);
         assertGe(previewData.debt, flashLoanAmountReduced);
         assertEq(previewData.debt, 3391.951287e6);
 
@@ -1107,7 +1098,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
 
         {
             // Sanity check that LR preview deposit matches test params
-            ActionDataV2 memory previewDataFullDeposit =
+            ActionData memory previewDataFullDeposit =
                 leverageRouter.previewDeposit(leverageToken, collateralFromSender);
             assertEq(previewDataFullDeposit.debt, flashLoanAmount);
             assertEq(previewDataFullDeposit.shares, 1 ether);
@@ -1129,7 +1120,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         // Preview again using the total collateral. This is used by the LM deposit logic
         uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
         assertEq(totalCollateral, 1.995607717905650985 ether);
-        ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, totalCollateral);
+        ActionData memory previewData = leverageManager.previewDeposit(leverageToken, totalCollateral);
         assertGe(previewData.debt, flashLoanAmountReduced);
         assertEq(previewData.debt, 3384.842518e6);
 
@@ -1189,7 +1180,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
 
         {
             // Sanity check that LR preview deposit matches test params
-            ActionDataV2 memory previewDataFullDeposit =
+            ActionData memory previewDataFullDeposit =
                 leverageRouter.previewDeposit(leverageToken, collateralFromSender);
             assertEq(previewDataFullDeposit.debt, flashLoanAmount);
             assertEq(previewDataFullDeposit.shares, 1 ether);
@@ -1200,7 +1191,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
 
         // Preview again using the total collateral. This is used by the LM deposit logic
         assertEq(totalCollateral, 2.00009355883189593 ether);
-        ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, totalCollateral);
+        ActionData memory previewData = leverageManager.previewDeposit(leverageToken, totalCollateral);
         assertGe(previewData.debt, flashLoanAmount);
         assertEq(previewData.debt, 3392.451161e6);
 
@@ -1256,7 +1247,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
 
         {
             // Sanity check that LR preview deposit matches test params
-            ActionDataV2 memory previewDataFullDeposit =
+            ActionData memory previewDataFullDeposit =
                 leverageRouter.previewDeposit(leverageToken, collateralFromSender);
             assertEq(previewDataFullDeposit.debt, flashLoanAmount);
             assertEq(previewDataFullDeposit.shares, 1 ether);
@@ -1278,7 +1269,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         // Preview again using the total collateral. This is used by the LM deposit logic
         uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
         assertEq(totalCollateral, 1.001720627030031886 ether);
-        ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, totalCollateral);
+        ActionData memory previewData = leverageManager.previewDeposit(leverageToken, totalCollateral);
         assertGe(previewData.debt, flashLoanAmountReduced);
         assertEq(previewData.debt, 1699.06467e6);
 
@@ -1360,7 +1351,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
 
         {
             // Sanity check that LR preview deposit matches test params
-            ActionDataV2 memory previewDataFullDeposit =
+            ActionData memory previewDataFullDeposit =
                 leverageRouter.previewDeposit(leverageToken, collateralFromSender);
             assertEq(previewDataFullDeposit.debt, flashLoanAmount);
             assertEq(previewDataFullDeposit.shares, 1 ether);
@@ -1382,7 +1373,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         // Preview again using the total collateral. This is used by the LM deposit logic
         uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
         assertEq(totalCollateral, 1.719360769453766291 ether);
-        ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, totalCollateral);
+        ActionData memory previewData = leverageManager.previewDeposit(leverageToken, totalCollateral);
         assertGe(previewData.debt, flashLoanAmountReduced);
         assertEq(previewData.debt, 2916.287297e6);
 
@@ -1443,7 +1434,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
 
         {
             // Sanity check that LR preview deposit matches test params
-            ActionDataV2 memory previewDataFullDeposit =
+            ActionData memory previewDataFullDeposit =
                 leverageRouter.previewDeposit(leverageToken, collateralFromSender);
             assertEq(previewDataFullDeposit.debt, flashLoanAmount);
             assertEq(previewDataFullDeposit.shares, 1 ether);
@@ -1465,7 +1456,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         // Preview again using the total collateral. This is used by the LM deposit logic
         uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
         assertEq(totalCollateral, 1.000737563974906262 ether);
-        ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, totalCollateral);
+        ActionData memory previewData = leverageManager.previewDeposit(leverageToken, totalCollateral);
         assertGe(previewData.debt, flashLoanAmountReduced);
         assertEq(previewData.debt, 1697.397252e6);
 
@@ -1547,7 +1538,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
 
         {
             // Sanity check that LR preview deposit matches test params
-            ActionDataV2 memory previewDataFullDeposit =
+            ActionData memory previewDataFullDeposit =
                 leverageRouter.previewDeposit(leverageToken, collateralFromSender);
             assertEq(previewDataFullDeposit.debt, flashLoanAmount);
             assertEq(previewDataFullDeposit.shares, 1 ether);
@@ -1569,7 +1560,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         // Preview again using the total collateral. This is used by the LM deposit logic
         uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
         assertEq(totalCollateral, 1.998151321850066641 ether);
-        ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, totalCollateral);
+        ActionData memory previewData = leverageManager.previewDeposit(leverageToken, totalCollateral);
         assertGe(previewData.debt, flashLoanAmountReduced);
         assertEq(previewData.debt, 3389.156843e6);
 

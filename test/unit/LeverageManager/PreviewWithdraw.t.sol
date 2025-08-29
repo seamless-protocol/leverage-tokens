@@ -7,7 +7,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
-import {ActionDataV2, ExternalAction, LeverageTokenConfig, LeverageTokenState} from "src/types/DataTypes.sol";
+import {ActionData, ExternalAction, LeverageTokenConfig, LeverageTokenState} from "src/types/DataTypes.sol";
 import {LeverageManagerTest} from "../LeverageManager/LeverageManager.t.sol";
 
 contract PreviewWithdrawTest is LeverageManagerTest {
@@ -61,7 +61,7 @@ contract PreviewWithdrawTest is LeverageManagerTest {
         _prepareLeverageManagerStateForAction(beforeState);
 
         uint256 collateral = 17.1 ether;
-        ActionDataV2 memory previewData = leverageManager.previewWithdraw(leverageToken, collateral);
+        ActionData memory previewData = leverageManager.previewWithdraw(leverageToken, collateral);
 
         assertEq(previewData.collateral, 17.1 ether);
         assertEq(previewData.debt, 17.1 ether);
@@ -90,7 +90,7 @@ contract PreviewWithdrawTest is LeverageManagerTest {
         _prepareLeverageManagerStateForAction(beforeState);
 
         uint256 collateral = 50 ether;
-        ActionDataV2 memory previewData = leverageManager.previewWithdraw(leverageToken, collateral);
+        ActionData memory previewData = leverageManager.previewWithdraw(leverageToken, collateral);
 
         assertEq(previewData.collateral, 50 ether);
         assertEq(previewData.debt, 25 ether);
@@ -106,7 +106,7 @@ contract PreviewWithdrawTest is LeverageManagerTest {
         _prepareLeverageManagerStateForAction(beforeState);
 
         uint256 collateral = 150 ether;
-        ActionDataV2 memory previewData = leverageManager.previewWithdraw(leverageToken, collateral);
+        ActionData memory previewData = leverageManager.previewWithdraw(leverageToken, collateral);
 
         assertEq(previewData.collateral, 150 ether);
         assertEq(previewData.debt, 75 ether);
@@ -126,7 +126,7 @@ contract PreviewWithdrawTest is LeverageManagerTest {
         _prepareLeverageManagerStateForAction(beforeState);
 
         uint256 collateral = collateralToWithdraw;
-        ActionDataV2 memory previewData = leverageManager.previewWithdraw(leverageToken, collateral);
+        ActionData memory previewData = leverageManager.previewWithdraw(leverageToken, collateral);
 
         // The initial collateral ratio is used to determine the debt amount in the preview when there is no collateral
         // and no debt.
@@ -156,7 +156,7 @@ contract PreviewWithdrawTest is LeverageManagerTest {
         _prepareLeverageManagerStateForAction(beforeState);
 
         uint256 collateral = 0;
-        ActionDataV2 memory previewData = leverageManager.previewWithdraw(leverageToken, collateral);
+        ActionData memory previewData = leverageManager.previewWithdraw(leverageToken, collateral);
 
         assertEq(previewData.collateral, 0);
         assertEq(previewData.debt, 0);
@@ -187,7 +187,7 @@ contract PreviewWithdrawTest is LeverageManagerTest {
         _prepareLeverageManagerStateForAction(beforeState);
 
         uint256 collateral = 0;
-        ActionDataV2 memory previewData = leverageManager.previewWithdraw(leverageToken, collateral);
+        ActionData memory previewData = leverageManager.previewWithdraw(leverageToken, collateral);
 
         assertEq(previewData.collateral, 0);
         assertEq(previewData.debt, 0);
@@ -203,7 +203,7 @@ contract PreviewWithdrawTest is LeverageManagerTest {
         _prepareLeverageManagerStateForAction(beforeState);
 
         uint256 collateral = 200 ether;
-        ActionDataV2 memory previewData = leverageManager.previewWithdraw(leverageToken, collateral);
+        ActionData memory previewData = leverageManager.previewWithdraw(leverageToken, collateral);
 
         assertEq(previewData.collateral, collateral);
         assertEq(
@@ -229,7 +229,7 @@ contract PreviewWithdrawTest is LeverageManagerTest {
         _prepareLeverageManagerStateForAction(beforeState);
 
         uint256 collateralToWithdraw = 10 ether;
-        ActionDataV2 memory previewData = leverageManager.previewWithdraw(leverageToken, collateralToWithdraw);
+        ActionData memory previewData = leverageManager.previewWithdraw(leverageToken, collateralToWithdraw);
 
         assertEq(previewData.collateral, 10 ether);
         assertEq(previewData.debt, lendingAdapter.convertCollateralToDebtAsset(10 ether) / 2);
@@ -281,7 +281,7 @@ contract PreviewWithdrawTest is LeverageManagerTest {
 
         LeverageTokenState memory prevState = leverageManager.getLeverageTokenState(leverageToken);
 
-        ActionDataV2 memory previewData = leverageManager.previewWithdraw(leverageToken, collateralToWithdraw);
+        ActionData memory previewData = leverageManager.previewWithdraw(leverageToken, collateralToWithdraw);
 
         // Calculate state after action
         uint256 newCollateralRatio = _computeLeverageTokenCRAfterAction(

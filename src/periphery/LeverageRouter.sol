@@ -15,7 +15,7 @@ import {ILeverageToken} from "../interfaces/ILeverageToken.sol";
 import {ISwapAdapter} from "../interfaces/periphery/ISwapAdapter.sol";
 import {ILeverageRouter} from "../interfaces/periphery/ILeverageRouter.sol";
 import {IVeloraAdapter} from "../interfaces/periphery/IVeloraAdapter.sol";
-import {ActionData, ActionDataV2, ExternalAction} from "../types/DataTypes.sol";
+import {ActionData, ExternalAction} from "../types/DataTypes.sol";
 
 /**
  * @dev The LeverageRouter contract is an immutable periphery contract that facilitates the use of flash loans and a swaps
@@ -77,7 +77,7 @@ contract LeverageRouter is ILeverageRouter {
     function previewDeposit(ILeverageToken token, uint256 collateralFromSender)
         external
         view
-        returns (ActionDataV2 memory previewData)
+        returns (ActionData memory previewData)
     {
         uint256 collateral = convertEquityToCollateral(token, collateralFromSender);
         return leverageManager.previewDeposit(token, collateral);
@@ -118,7 +118,7 @@ contract LeverageRouter is ILeverageRouter {
         IVeloraAdapter.Offsets calldata offsets,
         bytes calldata swapData
     ) external {
-        uint256 debtRequired = leverageManager.previewRedeemV2(token, shares).debt;
+        uint256 debtRequired = leverageManager.previewRedeem(token, shares).debt;
 
         bytes memory redeemData = abi.encode(
             RedeemWithVeloraParams({
@@ -219,7 +219,7 @@ contract LeverageRouter is ILeverageRouter {
         // Use the debt from the flash loan to redeem the shares from the sender
         SafeERC20.forceApprove(debtAsset, address(leverageManager), debtLoanAmount);
         uint256 collateralWithdrawn =
-            leverageManager.redeemV2(params.leverageToken, params.shares, params.minCollateralForSender).collateral;
+            leverageManager.redeem(params.leverageToken, params.shares, params.minCollateralForSender).collateral;
 
         // Use the VeloraAdapter to swap the collateral asset received from the redeem to the debt asset, used to repay the flash loan.
         // The excess collateral asset sent back to this LeverageRouter is for the sender of the redeem

@@ -38,7 +38,7 @@ contract NonReentrantTest is LeverageManagerTest {
             "dummy symbol"
         );
 
-        uint256 equityToAddInCollateralAsset = 10 ether;
+        uint256 sharesToMint = 10 ether;
 
         deal(address(reentrancyToken), address(this), type(uint256).max);
         deal(address(debtToken), address(this), type(uint256).max);
@@ -52,7 +52,7 @@ contract NonReentrantTest is LeverageManagerTest {
         vm.expectRevert(
             abi.encodeWithSelector(ReentrancyGuardTransientUpgradeable.ReentrancyGuardReentrantCall.selector)
         );
-        leverageManager.mint(leverageToken, equityToAddInCollateralAsset, 0);
+        leverageManager.mint(leverageToken, sharesToMint, type(uint256).max);
 
         // Transient storage slot is reset to false
         assertEq(LeverageManagerHarness(address(leverageManager)).exposed_getReentrancyGuardTransientStorage(), false);
@@ -62,7 +62,7 @@ contract NonReentrantTest is LeverageManagerTest {
         vm.expectRevert(
             abi.encodeWithSelector(ReentrancyGuardTransientUpgradeable.ReentrancyGuardReentrantCall.selector)
         );
-        leverageManager.mint(leverageToken, equityToAddInCollateralAsset, 0);
+        leverageManager.mint(leverageToken, sharesToMint, type(uint256).max);
 
         // Transient storage slot is reset to false
         assertEq(LeverageManagerHarness(address(leverageManager)).exposed_getReentrancyGuardTransientStorage(), false);
@@ -72,7 +72,7 @@ contract NonReentrantTest is LeverageManagerTest {
         vm.expectRevert(
             abi.encodeWithSelector(ReentrancyGuardTransientUpgradeable.ReentrancyGuardReentrantCall.selector)
         );
-        leverageManager.mint(leverageToken, equityToAddInCollateralAsset, 0);
+        leverageManager.mint(leverageToken, sharesToMint, type(uint256).max);
 
         // Transient storage slot is reset to false
         assertEq(LeverageManagerHarness(address(leverageManager)).exposed_getReentrancyGuardTransientStorage(), false);
@@ -82,7 +82,7 @@ contract NonReentrantTest is LeverageManagerTest {
         vm.expectRevert(
             abi.encodeWithSelector(ReentrancyGuardTransientUpgradeable.ReentrancyGuardReentrantCall.selector)
         );
-        leverageManager.mint(leverageToken, equityToAddInCollateralAsset, 0);
+        leverageManager.mint(leverageToken, sharesToMint, type(uint256).max);
 
         // Transient storage slot is reset to false
         assertEq(LeverageManagerHarness(address(leverageManager)).exposed_getReentrancyGuardTransientStorage(), false);

@@ -8,7 +8,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
-import {ActionDataV2, ExternalAction, LeverageTokenConfig, LeverageTokenState} from "src/types/DataTypes.sol";
+import {ActionData, ExternalAction, LeverageTokenConfig, LeverageTokenState} from "src/types/DataTypes.sol";
 import {LeverageManagerTest} from "../LeverageManager/LeverageManager.t.sol";
 
 contract DepositTest is LeverageManagerTest {
@@ -71,7 +71,7 @@ contract DepositTest is LeverageManagerTest {
         );
 
         uint256 collateralToDeposit = 0;
-        ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, collateralToDeposit);
+        ActionData memory previewData = leverageManager.previewDeposit(leverageToken, collateralToDeposit);
 
         assertEq(previewData.collateral, 0);
         assertEq(previewData.debt, 0);
@@ -115,7 +115,7 @@ contract DepositTest is LeverageManagerTest {
         deal(address(collateralToken), address(this), collateralToDeposit);
         collateralToken.approve(address(leverageManager), collateralToDeposit);
 
-        ActionDataV2 memory depositData = leverageManager.deposit(leverageToken, collateralToDeposit, expectedShares);
+        ActionData memory depositData = leverageManager.deposit(leverageToken, collateralToDeposit, expectedShares);
 
         assertEq(depositData.collateral, collateralToDeposit);
         assertEq(depositData.debt, expectedDebtToBorrow);
@@ -145,7 +145,7 @@ contract DepositTest is LeverageManagerTest {
             MockLeverageManagerStateForAction({collateral: 100 ether, debt: 50 ether, sharesTotalSupply: 10 ether})
         );
 
-        ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, collateralToDeposit);
+        ActionData memory previewData = leverageManager.previewDeposit(leverageToken, collateralToDeposit);
 
         deal(address(collateralToken), address(this), previewData.collateral);
         collateralToken.approve(address(leverageManager), previewData.collateral);
@@ -203,12 +203,12 @@ contract DepositTest is LeverageManagerTest {
             beforeSharesTotalSupply != 0, "Shares total supply must be non-zero to use _testDeposit helper function"
         );
 
-        ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, collateral);
+        ActionData memory previewData = leverageManager.previewDeposit(leverageToken, collateral);
 
         deal(address(collateralToken), address(this), previewData.collateral);
         collateralToken.approve(address(leverageManager), previewData.collateral);
 
-        ActionDataV2 memory expectedDepositData = ActionDataV2({
+        ActionData memory expectedDepositData = ActionData({
             collateral: previewData.collateral,
             debt: previewData.debt,
             shares: previewData.shares,
@@ -217,8 +217,8 @@ contract DepositTest is LeverageManagerTest {
         });
 
         vm.expectEmit(true, true, true, true);
-        emit ILeverageManager.MintV2(leverageToken, address(this), expectedDepositData);
-        ActionDataV2 memory actualDepositData = leverageManager.deposit(leverageToken, collateral, previewData.shares);
+        emit ILeverageManager.Mint(leverageToken, address(this), expectedDepositData);
+        ActionData memory actualDepositData = leverageManager.deposit(leverageToken, collateral, previewData.shares);
 
         assertEq(actualDepositData.shares, expectedDepositData.shares, "Shares received mismatch with preview");
         assertEq(

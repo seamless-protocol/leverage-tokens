@@ -4,7 +4,7 @@ pragma solidity ^0.8.26;
 // Internal imports
 import {MorphoLendingAdapter} from "src/lending/MorphoLendingAdapter.sol";
 import {LeverageManagerTest} from "./LeverageManager.t.sol";
-import {ActionDataV2, LeverageTokenState, ExternalAction} from "src/types/DataTypes.sol";
+import {ActionData, LeverageTokenState, ExternalAction} from "src/types/DataTypes.sol";
 
 contract LeverageManagerDepositTest is LeverageManagerTest {
     /// @dev In this block price on oracle 3392.292471591441746049801068
@@ -13,7 +13,7 @@ contract LeverageManagerDepositTest is LeverageManagerTest {
         uint256 collateralToAdd = 20 ether;
         uint256 debtToBorrow = 33922_924715; // 33922.924715
 
-        ActionDataV2 memory depositData = _deposit(user, collateralToAdd, sharesToMint);
+        ActionData memory depositData = _deposit(user, collateralToAdd, sharesToMint);
 
         assertEq(leverageToken.balanceOf(user), depositData.shares);
         assertEq(depositData.shares, sharesToMint);
@@ -41,7 +41,7 @@ contract LeverageManagerDepositTest is LeverageManagerTest {
         uint256 sharesToMint = 8.1 ether;
         uint256 collateralToAdd = 20 ether;
 
-        ActionDataV2 memory depositData = _deposit(user, collateralToAdd, sharesToMint);
+        ActionData memory depositData = _deposit(user, collateralToAdd, sharesToMint);
 
         // 10% of equity is for diluting leverage token shares, and 10% of the remaining shares
         // after subtracting the dilution is for the treasury fee (10 * 0.9) * 0.9 = 8.1
@@ -62,7 +62,7 @@ contract LeverageManagerDepositTest is LeverageManagerTest {
         collateralRatio = leverageManager.getLeverageTokenState(leverageToken).collateralRatio;
         assertEq(collateralRatio, 1.974502635802161566e18);
 
-        ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, collateralToAdd);
+        ActionData memory previewData = leverageManager.previewDeposit(leverageToken, collateralToAdd);
 
         assertEq(previewData.collateral, collateralToAdd);
         // Shares minted is higher than before due to share dilution from management fee and morpho borrow interest
@@ -103,9 +103,9 @@ contract LeverageManagerDepositTest is LeverageManagerTest {
         collateralToAddC = bound(collateralToAddC, 2e9, 100 ether);
         deltaTime = uint64(bound(deltaTime, 0, 365 days));
 
-        ActionDataV2 memory previewData = leverageManager.previewDeposit(leverageToken, collateralToAddA);
+        ActionData memory previewData = leverageManager.previewDeposit(leverageToken, collateralToAddA);
 
-        ActionDataV2 memory depositDataA = _deposit(user, collateralToAddA, previewData.shares);
+        ActionData memory depositDataA = _deposit(user, collateralToAddA, previewData.shares);
 
         assertEq(depositDataA.shares, previewData.shares);
         assertEq(depositDataA.collateral, previewData.collateral);
@@ -117,7 +117,7 @@ contract LeverageManagerDepositTest is LeverageManagerTest {
 
         previewData = leverageManager.previewDeposit(leverageToken, collateralToAddB);
 
-        ActionDataV2 memory depositDataB = _deposit(user, collateralToAddB, previewData.shares);
+        ActionData memory depositDataB = _deposit(user, collateralToAddB, previewData.shares);
 
         assertEq(depositDataB.shares, previewData.shares);
         assertEq(depositDataB.collateral, previewData.collateral);
@@ -129,7 +129,7 @@ contract LeverageManagerDepositTest is LeverageManagerTest {
 
         previewData = leverageManager.previewDeposit(leverageToken, collateralToAddC);
 
-        ActionDataV2 memory depositDataC = _deposit(user, collateralToAddC, previewData.shares);
+        ActionData memory depositDataC = _deposit(user, collateralToAddC, previewData.shares);
 
         assertEq(depositDataC.shares, previewData.shares);
         assertEq(depositDataC.collateral, previewData.collateral);

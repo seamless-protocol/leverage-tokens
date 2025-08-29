@@ -15,7 +15,7 @@ import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {IWETH9} from "src/interfaces/periphery/IWETH9.sol";
 import {IEtherFiL2ModeSyncPool} from "src/interfaces/periphery/IEtherFiL2ModeSyncPool.sol";
 import {IEtherFiL2ExchangeRateProvider} from "src/interfaces/periphery/IEtherFiL2ExchangeRateProvider.sol";
-import {ActionDataV2, LeverageTokenConfig} from "src/types/DataTypes.sol";
+import {ActionData, LeverageTokenConfig} from "src/types/DataTypes.sol";
 import {LeverageRouterTest} from "../LeverageRouter.t.sol";
 
 contract LeverageRouterDepositEtherFiTest is LeverageRouterTest {
@@ -132,7 +132,7 @@ contract LeverageRouterDepositEtherFiTest is LeverageRouterTest {
     function testFuzzFork_Deposit_WithSwapAdapter(uint256 collateralFromSender) public {
         collateralFromSender = bound(collateralFromSender, 1 ether, 500 ether);
 
-        ActionDataV2 memory previewData = leverageRouter.previewDeposit(leverageToken, collateralFromSender);
+        ActionData memory previewData = leverageRouter.previewDeposit(leverageToken, collateralFromSender);
 
         uint256 expectedWeEthFromDebtSwap =
             etherFiL2ExchangeRateProvider.getConversionAmount(ETH_ADDRESS, previewData.debt);
@@ -141,7 +141,7 @@ contract LeverageRouterDepositEtherFiTest is LeverageRouterTest {
             collateralFromSender += 100;
         }
 
-        ActionDataV2 memory previewDataFullDeposit =
+        ActionData memory previewDataFullDeposit =
             leverageManager.previewDeposit(leverageToken, collateralFromSender + expectedWeEthFromDebtSwap);
 
         _dealAndDepositWithSwapAdapter(WEETH, collateralFromSender, collateralFromSender, previewData.debt);

@@ -18,7 +18,7 @@ import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
 import {IMorphoLendingAdapterFactory} from "src/interfaces/IMorphoLendingAdapterFactory.sol";
-import {ActionDataV2, LeverageTokenConfig} from "src/types/DataTypes.sol";
+import {ActionData, LeverageTokenConfig} from "src/types/DataTypes.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
@@ -165,7 +165,7 @@ contract CreateLeverageToken is Script {
             "Min collateral ratio is less than pre-liquidation collateral ratio threshold"
         );
 
-        ActionDataV2 memory previewData = leverageRouter.previewDeposit(leverageToken, INITIAL_EQUITY_DEPOSIT);
+        ActionData memory previewData = leverageRouter.previewDeposit(leverageToken, INITIAL_EQUITY_DEPOSIT);
 
         ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
         // Withdraw WETH to get ETH in the LeverageRouter
