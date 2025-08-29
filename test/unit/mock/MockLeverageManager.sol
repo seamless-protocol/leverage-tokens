@@ -36,6 +36,12 @@ contract MockLeverageManager is Test {
         uint256 maxShares;
     }
 
+    struct RedeemV2Params {
+        ILeverageToken leverageToken;
+        uint256 shares;
+        uint256 minCollateral;
+    }
+
     struct PreviewParams {
         ILeverageToken leverageToken;
         uint256 equityInCollateralAsset;
@@ -169,6 +175,14 @@ contract MockLeverageManager is Test {
         mockRedeemData[mockRedeemDataKey].push(_mockRedeemData);
     }
 
+    function setMockRedeemV2Data(RedeemV2Params memory _redeemV2Params, MockRedeemData memory _mockRedeemData)
+        external
+    {
+        bytes32 mockRedeemDataKey =
+            keccak256(abi.encode(_redeemV2Params.leverageToken, _redeemV2Params.shares, _redeemV2Params.minCollateral));
+        mockRedeemData[mockRedeemDataKey].push(_mockRedeemData);
+    }
+
     function previewDeposit(ILeverageToken leverageToken, uint256 collateral)
         external
         view
@@ -269,6 +283,45 @@ contract MockLeverageManager is Test {
                 mockRedeemData[mockRedeemDataKey][i].isExecuted = true;
                 return ActionData({
                     equity: equityInCollateralAsset,
+                    collateral: _mockRedeemData.collateral,
+                    debt: _mockRedeemData.debt,
+                    shares: _mockRedeemData.shares,
+                    tokenFee: 0,
+                    treasuryFee: 0
+                });
+            }
+        }
+
+        // If no mock redeem data is found, revert
+        revert("No mock redeem data found for MockLeverageManager.redeem");
+    }
+
+    function redeemV2(ILeverageToken leverageToken, uint256 shares, uint256 minCollateral)
+        external
+        returns (ActionDataV2 memory)
+    {
+        LeverageTokenData storage leverageTokenData = leverageTokens[leverageToken];
+
+        bytes32 mockRedeemDataKey = keccak256(abi.encode(leverageToken, shares, minCollateral));
+        MockRedeemData[] memory mockRedeemDataArray = mockRedeemData[mockRedeemDataKey];
+
+        // Find the first unexecuted mock mint data
+        for (uint256 i = 0; i < mockRedeemDataArray.length; i++) {
+            MockRedeemData memory _mockRedeemData = mockRedeemDataArray[i];
+            if (!_mockRedeemData.isExecuted) {
+                // Transfer the required debt to the LeverageManager
+                SafeERC20.safeTransferFrom(leverageTokenData.debtAsset, msg.sender, address(this), _mockRedeemData.debt);
+
+                // Give the sender the required collateral
+                deal(address(leverageTokenData.collateralAsset), address(this), _mockRedeemData.collateral);
+                leverageTokenData.collateralAsset.transfer(msg.sender, _mockRedeemData.collateral);
+
+                // Burn the sender's shares
+                leverageTokenData.leverageToken.burn(msg.sender, _mockRedeemData.shares);
+
+                // Set the mock redeem data to executed
+                mockRedeemData[mockRedeemDataKey][i].isExecuted = true;
+                return ActionDataV2({
                     collateral: _mockRedeemData.collateral,
                     debt: _mockRedeemData.debt,
                     shares: _mockRedeemData.shares,
