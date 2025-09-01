@@ -15,6 +15,7 @@ import {BytesLib} from "../libraries/BytesLib.sol";
 /// @notice Adapter for trading with Velora.
 /// @dev This adapter was modified from the original version implemented by Morpho
 /// https://github.com/morpho-org/bundler3/blob/4887f33299ba6e60b54a51237b16e7392dceeb97/src/adapters/ParaswapAdapter.sol
+/// @custom:contact security@seamlessprotocol.com
 contract VeloraAdapter is IVeloraAdapter {
     /* IMMUTABLES */
 

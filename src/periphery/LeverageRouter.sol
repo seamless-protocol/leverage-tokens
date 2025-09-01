@@ -32,6 +32,8 @@ import {ActionData, ExternalAction} from "../types/DataTypes.sol";
  *   6. The LeverageRouter will transfer the LeverageToken shares and any surplus debt assets to the sender
  *
  * The high-level redeem flow is the same as the deposit flow, but in reverse.
+ *
+ * @custom:contact security@seamlessprotocol.com
  */
 contract LeverageRouter is ILeverageRouter {
     /// @inheritdoc ILeverageRouter

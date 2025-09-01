@@ -73,6 +73,8 @@ import {
  *     by the market may be manipulatable.
  *   - Aave v3: Allows rehypothecation of collateral, which may lead to reverts when trying to remove collateral from the
  *     market during redeems and rebalances.
+ *
+ * @custom:contact security@seamlessprotocol.com
  */
 contract LeverageManager is
     ILeverageManager,

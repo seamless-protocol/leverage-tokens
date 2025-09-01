@@ -14,6 +14,8 @@ import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 /**
  * @dev The LeverageToken contract is an upgradeable ERC20 token that represents a claim to the equity held by the LeverageToken.
  * It is used to represent a user's claim to the equity held by the LeverageToken in the LeverageManager.
+ *
+ * @custom:contact security@seamlessprotocol.com
  */
 contract LeverageToken is
     Initializable,

@@ -13,6 +13,8 @@ import {MorphoLendingAdapter} from "src/lending/MorphoLendingAdapter.sol";
 /**
  * @dev The MorphoLendingAdapterFactory is a factory contract for deploying ERC-1167 minimal proxies of the
  * MorphoLendingAdapter contract using OpenZeppelin's Clones library.
+ *
+ * @custom:contact security@seamlessprotocol.com
  */
 contract MorphoLendingAdapterFactory is IMorphoLendingAdapterFactory {
     using Clones for address;
