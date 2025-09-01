@@ -245,21 +245,7 @@ contract LeverageManager is
 
     /// @inheritdoc ILeverageManager
     function getLeverageTokenState(ILeverageToken token) public view returns (LeverageTokenState memory state) {
-        ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(token);
-
-        uint256 collateral = lendingAdapter.getCollateralInDebtAsset();
-        uint256 debt = lendingAdapter.getDebt();
-        uint256 equity = lendingAdapter.getEquityInDebtAsset();
-
-        uint256 collateralRatio =
-            debt > 0 ? Math.mulDiv(collateral, BASE_RATIO, debt, Math.Rounding.Floor) : type(uint256).max;
-
-        return LeverageTokenState({
-            collateralInDebtAsset: collateral,
-            debt: debt,
-            equity: equity,
-            collateralRatio: collateralRatio
-        });
+        return _getLeverageTokenState(getLeverageTokenLendingAdapter(token));
     }
 
     /// @inheritdoc ILeverageManager
@@ -480,8 +466,10 @@ contract LeverageManager is
     ) external nonReentrant {
         _transferTokens(tokenIn, msg.sender, address(this), amountIn);
 
+        ILendingAdapter lendingAdapter = getLeverageTokenLendingAdapter(leverageToken);
+
         // Check if the LeverageToken is eligible for rebalance
-        LeverageTokenState memory stateBefore = getLeverageTokenState(leverageToken);
+        LeverageTokenState memory stateBefore = _getLeverageTokenState(lendingAdapter);
 
         IRebalanceAdapterBase rebalanceAdapter = getLeverageTokenRebalanceAdapter(leverageToken);
         if (!rebalanceAdapter.isEligibleForRebalance(leverageToken, stateBefore, msg.sender)) {
@@ -499,7 +487,7 @@ contract LeverageManager is
 
         _transferTokens(tokenOut, address(this), msg.sender, amountOut);
 
-        LeverageTokenState memory stateAfter = getLeverageTokenState(leverageToken);
+        LeverageTokenState memory stateAfter = _getLeverageTokenState(lendingAdapter);
 
         emit Rebalance(leverageToken, msg.sender, stateBefore, stateAfter, actions);
     }
@@ -732,6 +720,29 @@ contract LeverageManager is
             // slither-disable-next-line reentrancy-events
             lendingAdapter.repay(amount);
         }
+    }
+
+    //// @notice Returns all data required to describe current LeverageToken state - collateral, debt, equity and collateral ratio
+    /// @param lendingAdapter LendingAdapter of the LeverageToken
+    /// @return state LeverageToken state
+    function _getLeverageTokenState(ILendingAdapter lendingAdapter)
+        internal
+        view
+        returns (LeverageTokenState memory state)
+    {
+        uint256 collateral = lendingAdapter.getCollateralInDebtAsset();
+        uint256 debt = lendingAdapter.getDebt();
+        uint256 equity = lendingAdapter.getEquityInDebtAsset();
+
+        uint256 collateralRatio =
+            debt > 0 ? Math.mulDiv(collateral, BASE_RATIO, debt, Math.Rounding.Floor) : type(uint256).max;
+
+        return LeverageTokenState({
+            collateralInDebtAsset: collateral,
+            debt: debt,
+            equity: equity,
+            collateralRatio: collateralRatio
+        });
     }
 
     /// @notice Helper function for executing a mint action on a LeverageToken
