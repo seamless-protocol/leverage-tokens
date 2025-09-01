@@ -244,7 +244,7 @@ contract LeverageManager is
     }
 
     /// @inheritdoc ILeverageManager
-    function getLeverageTokenState(ILeverageToken token) public view returns (LeverageTokenState memory state) {
+    function getLeverageTokenState(ILeverageToken token) external view returns (LeverageTokenState memory state) {
         return _getLeverageTokenState(getLeverageTokenLendingAdapter(token));
     }
 
