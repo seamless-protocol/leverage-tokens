@@ -81,7 +81,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     /// @inheritdoc IFeeManager
     function getFeeAdjustedTotalSupply(ILeverageToken token) public view returns (uint256) {
         uint256 totalSupply = token.totalSupply();
-        uint256 accruedManagementFee = _getAccruedManagementFee(token);
+        uint256 accruedManagementFee = _getAccruedManagementFee(token, totalSupply);
         return totalSupply + accruedManagementFee;
     }
 
@@ -145,7 +145,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     /// @inheritdoc IFeeManager
     function chargeManagementFee(ILeverageToken token) public {
         // Shares fee must be obtained before the last management fee accrual timestamp is updated
-        uint256 sharesFee = _getAccruedManagementFee(token);
+        uint256 sharesFee = _getAccruedManagementFee(token, token.totalSupply());
         _getFeeManagerStorage().lastManagementFeeAccrualTimestamp[token] = uint120(block.timestamp);
 
         _chargeTreasuryFee(token, sharesFee);
@@ -246,11 +246,11 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
 
     /// @notice Function that calculates how many shares to mint for the accrued management fee at the current timestamp
     /// @param token LeverageToken to calculate management fee shares for
+    /// @param totalSupply Total supply of the LeverageToken
     /// @return shares Shares to mint
-    function _getAccruedManagementFee(ILeverageToken token) internal view returns (uint256) {
+    function _getAccruedManagementFee(ILeverageToken token, uint256 totalSupply) internal view returns (uint256) {
         uint256 managementFee = getManagementFee(token);
         uint120 lastManagementFeeAccrualTimestamp = getLastManagementFeeAccrualTimestamp(token);
-        uint256 totalSupply = token.totalSupply();
 
         uint256 duration = block.timestamp - lastManagementFeeAccrualTimestamp;
 

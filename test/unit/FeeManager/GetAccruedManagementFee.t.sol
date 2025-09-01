@@ -17,14 +17,14 @@ contract GetAccruedManagementFeeTest is FeeManagerTest {
         feeManager.chargeManagementFee(leverageToken);
         skip(SECONDS_ONE_YEAR / 2);
 
-        uint256 sharesFee = feeManager.exposed_getAccruedManagementFee(leverageToken);
+        uint256 sharesFee = feeManager.exposed_getAccruedManagementFee(leverageToken, totalSupply);
 
         assertEq(sharesFee, 50); // half of 10% of 1000 total supply
 
         feeManager.chargeManagementFee(leverageToken);
         skip(SECONDS_ONE_YEAR / 2);
 
-        sharesFee = feeManager.exposed_getAccruedManagementFee(leverageToken);
+        sharesFee = feeManager.exposed_getAccruedManagementFee(leverageToken, totalSupply + sharesFee);
         assertEq(sharesFee, 53); // half of 10% of 1000 + 50, rounded up
     }
 
@@ -38,7 +38,7 @@ contract GetAccruedManagementFeeTest is FeeManagerTest {
         feeManager.chargeManagementFee(leverageToken);
         skip(SECONDS_ONE_YEAR);
 
-        uint256 sharesFee = feeManager.exposed_getAccruedManagementFee(leverageToken);
+        uint256 sharesFee = feeManager.exposed_getAccruedManagementFee(leverageToken, totalSupply);
 
         assertEq(sharesFee, Math.mulDiv(totalSupply, managementFee, MAX_BPS, Math.Rounding.Ceil));
     }
@@ -53,7 +53,7 @@ contract GetAccruedManagementFeeTest is FeeManagerTest {
 
         _setManagementFee(feeManagerRole, leverageToken, managementFee);
 
-        uint256 shares = feeManager.exposed_getAccruedManagementFee(leverageToken);
+        uint256 shares = feeManager.exposed_getAccruedManagementFee(leverageToken, totalSupply);
 
         assertEq(shares, 0);
     }
@@ -67,7 +67,7 @@ contract GetAccruedManagementFeeTest is FeeManagerTest {
         feeManager.chargeManagementFee(leverageToken);
         skip(deltaT);
 
-        uint256 shares = feeManager.exposed_getAccruedManagementFee(leverageToken);
+        uint256 shares = feeManager.exposed_getAccruedManagementFee(leverageToken, totalSupply);
         assertEq(shares, 0);
     }
 
@@ -81,7 +81,7 @@ contract GetAccruedManagementFeeTest is FeeManagerTest {
 
         _setManagementFee(feeManagerRole, leverageToken, managementFee);
 
-        uint256 shares = feeManager.exposed_getAccruedManagementFee(leverageToken);
+        uint256 shares = feeManager.exposed_getAccruedManagementFee(leverageToken, 0);
 
         assertEq(shares, 0);
     }
