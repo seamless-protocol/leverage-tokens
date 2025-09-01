@@ -1,11 +1,171 @@
 # ILeverageManager
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/1dbcbcfe9a8bcf9392b2ada63dd8f1827a90783b/src/interfaces/ILeverageManager.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/5f47bb45d300f9abc725e6a08e82ac80219f0e37/src/interfaces/ILeverageManager.sol)
 
 **Inherits:**
 [IFeeManager](/src/interfaces/IFeeManager.sol/interface.IFeeManager.md)
 
 
 ## Functions
+### BASE_RATIO
+
+Returns the base collateral ratio
+
+
+```solidity
+function BASE_RATIO() external view returns (uint256);
+```
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`uint256`|baseRatio Base collateral ratio|
+
+
+### convertCollateralToDebt
+
+Converts an amount of collateral to an amount of debt for a LeverageToken, based on the current
+collateral ratio of the LeverageToken
+
+*For deposits/mints, Math.Rounding.Floor should be used. For withdraws/redeems, Math.Rounding.Ceil should be used.*
+
+
+```solidity
+function convertCollateralToDebt(ILeverageToken token, uint256 collateral, Math.Rounding rounding)
+    external
+    view
+    returns (uint256 debt);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`ILeverageToken`|LeverageToken to convert collateral to debt for|
+|`collateral`|`uint256`|Amount of collateral to convert to debt|
+|`rounding`|`Math.Rounding`|Rounding mode to use for the conversion|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`debt`|`uint256`|Amount of debt that correspond to the collateral|
+
+
+### convertCollateralToShares
+
+Converts an amount of collateral to an amount of shares for a LeverageToken, based on the current
+collateral ratio of the LeverageToken
+
+*For deposits/mints, Math.Rounding.Floor should be used. For withdraws/redeems, Math.Rounding.Ceil should be used.*
+
+
+```solidity
+function convertCollateralToShares(ILeverageToken token, uint256 collateral, Math.Rounding rounding)
+    external
+    view
+    returns (uint256 shares);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`ILeverageToken`|LeverageToken to convert collateral to shares for|
+|`collateral`|`uint256`|Amount of collateral to convert to shares|
+|`rounding`|`Math.Rounding`|Rounding mode to use for the conversion|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`shares`|`uint256`|Amount of shares that correspond to the collateral|
+
+
+### convertDebtToCollateral
+
+Converts an amount of debt to an amount of collateral for a LeverageToken, based on the current
+collateral ratio of the LeverageToken
+
+*For deposits/mints, Math.Rounding.Ceil should be used. For withdraws/redeems, Math.Rounding.Floor should be used.*
+
+
+```solidity
+function convertDebtToCollateral(ILeverageToken token, uint256 debt, Math.Rounding rounding)
+    external
+    view
+    returns (uint256 collateral);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`ILeverageToken`|LeverageToken to convert debt to collateral for|
+|`debt`|`uint256`|Amount of debt to convert to collateral|
+|`rounding`|`Math.Rounding`|Rounding mode to use for the conversion|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`collateral`|`uint256`|Amount of collateral that correspond to the debt amount|
+
+
+### convertSharesToCollateral
+
+Converts an amount of shares to an amount of collateral for a LeverageToken, based on the current
+collateral ratio of the LeverageToken
+
+*For deposits/mints, Math.Rounding.Ceil should be used. For withdraws/redeems, Math.Rounding.Floor should be used.*
+
+
+```solidity
+function convertSharesToCollateral(ILeverageToken token, uint256 shares, Math.Rounding rounding)
+    external
+    view
+    returns (uint256 collateral);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`ILeverageToken`|LeverageToken to convert shares to collateral for|
+|`shares`|`uint256`|Amount of shares to convert to collateral|
+|`rounding`|`Math.Rounding`|Rounding mode to use for the conversion|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`collateral`|`uint256`|Amount of collateral that correspond to the shares|
+
+
+### convertSharesToDebt
+
+Converts an amount of shares to an amount of debt for a LeverageToken, based on the current
+collateral ratio of the LeverageToken
+
+*For deposits/mints, Math.Rounding.Floor should be used. For withdraws/redeems, Math.Rounding.Ceil should be used.*
+
+
+```solidity
+function convertSharesToDebt(ILeverageToken token, uint256 shares, Math.Rounding rounding)
+    external
+    view
+    returns (uint256 debt);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`ILeverageToken`|LeverageToken to convert shares to debt for|
+|`shares`|`uint256`|Amount of shares to convert to debt|
+|`rounding`|`Math.Rounding`|Rounding mode to use for the conversion|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`debt`|`uint256`|Amount of debt that correspond to the shares|
+
+
 ### getLeverageTokenFactory
 
 Returns the factory for creating new LeverageTokens
@@ -173,6 +333,102 @@ function getLeverageTokenState(ILeverageToken token) external view returns (Leve
 |`state`|`LeverageTokenState`|LeverageToken state|
 
 
+### previewDeposit
+
+Previews deposit function call and returns all required data
+
+*Sender should approve leverage manager to spend collateral amount of collateral asset*
+
+
+```solidity
+function previewDeposit(ILeverageToken token, uint256 collateral) external view returns (ActionData memory);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`ILeverageToken`|LeverageToken to preview deposit for|
+|`collateral`|`uint256`|Amount of collateral to deposit|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`ActionData`|previewData Preview data for deposit - collateral Amount of collateral that will be added to the LeverageToken and sent to the receiver - debt Amount of debt that will be borrowed and sent to the receiver - shares Amount of shares that will be minted to the receiver - tokenFee Amount of shares that will be charged for the deposit that are given to the LeverageToken - treasuryFee Amount of shares that will be charged for the deposit that are given to the treasury|
+
+
+### previewMint
+
+Previews mint function call and returns all required data
+
+*Sender should approve leverage manager to spend collateral amount of collateral asset*
+
+
+```solidity
+function previewMint(ILeverageToken token, uint256 shares) external view returns (ActionData memory);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`ILeverageToken`|LeverageToken to preview mint for|
+|`shares`|`uint256`|Amount of shares to mint|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`ActionData`|previewData Preview data for mint - collateral Amount of collateral that will be added to the LeverageToken and sent to the receiver - debt Amount of debt that will be borrowed and sent to the receiver - shares Amount of shares that will be minted to the receiver - tokenFee Amount of shares that will be charged for the mint that are given to the LeverageToken - treasuryFee Amount of shares that will be charged for the mint that are given to the treasury|
+
+
+### previewRedeem
+
+Previews redeem function call and returns all required data
+
+*Sender should approve LeverageManager to spend debt amount of debt asset*
+
+
+```solidity
+function previewRedeem(ILeverageToken token, uint256 shares) external view returns (ActionData memory);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`ILeverageToken`|LeverageToken to preview redeem for|
+|`shares`|`uint256`|Amount of shares to redeem|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`ActionData`|previewData Preview data for redeem - collateral Amount of collateral that will be removed from the LeverageToken and sent to the sender - debt Amount of debt that will be taken from sender and repaid to the LeverageToken - shares Amount of shares that will be burned from sender - tokenFee Amount of shares that will be charged for the redeem that are given to the LeverageToken - treasuryFee Amount of shares that will be charged for the redeem that are given to the treasury|
+
+
+### previewWithdraw
+
+Previews withdraw function call and returns all required data
+
+*Sender should approve LeverageManager to spend debt amount of debt asset*
+
+
+```solidity
+function previewWithdraw(ILeverageToken token, uint256 collateral) external view returns (ActionData memory);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`ILeverageToken`|LeverageToken to preview withdraw for|
+|`collateral`|`uint256`|Amount of collateral to withdraw|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`ActionData`|previewData Preview data for withdraw - collateral Amount of collateral that will be removed from the LeverageToken and sent to the sender - debt Amount of debt that will be taken from sender and repaid to the LeverageToken - shares Amount of shares that will be burned from sender - tokenFee Amount of shares that will be charged for the redeem that are given to the LeverageToken - treasuryFee Amount of shares that will be charged for the redeem that are given to the treasury|
+
+
 ### createNewLeverageToken
 
 Creates a new LeverageToken with the given config
@@ -198,83 +454,55 @@ function createNewLeverageToken(LeverageTokenConfig memory config, string memory
 |`token`|`ILeverageToken`|Address of the new LeverageToken|
 
 
-### previewMint
+### deposit
 
-Previews mint function call and returns all required data
+Deposits collateral into a LeverageToken and mints shares to the sender
 
-*Sender should approve leverage manager to spend collateralToAdd amount of collateral asset*
+*Sender should approve leverage manager to spend collateral amount of collateral asset*
 
 
 ```solidity
-function previewMint(ILeverageToken token, uint256 equityInCollateralAsset)
-    external
-    view
-    returns (ActionData memory previewData);
+function deposit(ILeverageToken token, uint256 collateral, uint256 minShares) external returns (ActionData memory);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`token`|`ILeverageToken`|LeverageToken to preview mint for|
-|`equityInCollateralAsset`|`uint256`|Equity to mint LeverageTokens (shares) for, denominated in the collateral asset|
+|`token`|`ILeverageToken`|LeverageToken to deposit into|
+|`collateral`|`uint256`|Amount of collateral to deposit|
+|`minShares`|`uint256`|Minimum number of shares to mint|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`previewData`|`ActionData`|Preview data for mint - collateralToAdd Amount of collateral that sender needs to approve the LeverageManager to spend, this includes any fees - debtToBorrow Amount of debt that will be borrowed and sent to sender - equity Amount of equity that will be used for minting shares before fees, denominated in collateral asset - shares Amount of shares that will be minted to the sender - tokenFee Amount of shares that will be charged for the mint that are given to the LeverageToken - treasuryFee Amount of shares that will be charged for the mint that are given to the treasury|
-
-
-### previewRedeem
-
-Previews redeem function call and returns all required data
-
-*Sender should approve leverage manager to spend debtToRepay amount of debt asset*
-
-
-```solidity
-function previewRedeem(ILeverageToken token, uint256 equityInCollateralAsset)
-    external
-    view
-    returns (ActionData memory previewData);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`token`|`ILeverageToken`|LeverageToken to preview redeem for|
-|`equityInCollateralAsset`|`uint256`|Equity to receive by redeem denominated in collateral asset|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`previewData`|`ActionData`|Preview data for redeem - collateralToRemove Amount of collateral that will be removed from the LeverageToken and sent to the sender - debtToRepay Amount of debt that will be taken from sender and repaid to the LeverageToken - equity Amount of equity that will be received for the redeem before fees, denominated in collateral asset - shares Amount of shares that will be burned from sender - tokenFee Amount of shares that will be charged for the redeem that are given to the LeverageToken - treasuryFee Amount of shares that will be charged for the redeem that are given to the treasury|
+|`<none>`|`ActionData`|depositData Action data for the deposit - collateral Amount of collateral that was added, including any fees - debt Amount of debt that was added - shares Amount of shares minted to the sender - tokenFee Amount of shares that was charged for the deposit that are given to the LeverageToken - treasuryFee Amount of shares that was charged for the deposit that are given to the treasury|
 
 
 ### mint
 
-Adds equity to a LeverageToken and mints shares of it to the sender
+Mints shares of a LeverageToken to the sender
+
+*Sender should approve leverage manager to spend collateral amount of collateral asset, which can be
+previewed with previewMint*
 
 
 ```solidity
-function mint(ILeverageToken token, uint256 equityInCollateralAsset, uint256 minShares)
-    external
-    returns (ActionData memory actionData);
+function mint(ILeverageToken token, uint256 shares, uint256 maxCollateral) external returns (ActionData memory);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`token`|`ILeverageToken`|The LeverageToken to mint shares of|
-|`equityInCollateralAsset`|`uint256`|The amount of equity to mint shares for, denominated in the collateral asset of the LeverageToken|
-|`minShares`|`uint256`|The minimum amount of shares to mint|
+|`token`|`ILeverageToken`|LeverageToken to mint shares for|
+|`shares`|`uint256`|Amount of shares to mint|
+|`maxCollateral`|`uint256`|Maximum amount of collateral to use for minting|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`actionData`|`ActionData`|Data about the mint - collateral Amount of collateral that was added, including any fees - debt Amount of debt that was added - equity Amount of equity that was added before fees, denominated in collateral asset - shares Amount of shares minted to the sender - tokenFee Amount of shares that was charged for the mint that are given to the LeverageToken - treasuryFee Amount of shares that was charged for the mint that are given to the treasury|
+|`<none>`|`ActionData`|mintData Action data for the mint - collateral Amount of collateral that was added, including any fees - debt Amount of debt that was added - shares Amount of shares minted to the sender - tokenFee Amount of shares that was charged for the mint that are given to the LeverageToken - treasuryFee Amount of shares that was charged for the mint that are given to the treasury|
 
 
 ### redeem
@@ -283,7 +511,7 @@ Redeems equity from a LeverageToken and burns shares from sender
 
 
 ```solidity
-function redeem(ILeverageToken token, uint256 equityInCollateralAsset, uint256 maxShares)
+function redeem(ILeverageToken token, uint256 shares, uint256 minCollateral)
     external
     returns (ActionData memory actionData);
 ```
@@ -292,14 +520,14 @@ function redeem(ILeverageToken token, uint256 equityInCollateralAsset, uint256 m
 |Name|Type|Description|
 |----|----|-----------|
 |`token`|`ILeverageToken`|The LeverageToken to redeem from|
-|`equityInCollateralAsset`|`uint256`|The amount of equity to receive by redeeming denominated in the collateral asset of the LeverageToken|
-|`maxShares`|`uint256`|The maximum amount of shares to burn|
+|`shares`|`uint256`|The amount of shares to redeem|
+|`minCollateral`|`uint256`|The minimum amount of collateral to receive|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`actionData`|`ActionData`|Data about the redeem - collateral Amount of collateral that was removed from LeverageToken and sent to sender - debt Amount of debt that was repaid to LeverageToken, taken from sender - equity Amount of equity that was received for redeem before fees, denominated in collateral asset - shares Amount of the sender's shares that were burned for the redeem - tokenFee Amount of shares that was charged for the redeem that are given to the LeverageToken - treasuryFee Amount of shares that was charged for the redeem that are given to the treasury|
+|`actionData`|`ActionData`|Data about the redeem - collateral Amount of collateral that was removed from LeverageToken and sent to sender - debt Amount of debt that was repaid to LeverageToken, taken from sender - shares Amount of the sender's shares that were burned for the redeem - tokenFee Amount of shares that was charged for the redeem that are given to the LeverageToken - treasuryFee Amount of shares that was charged for the redeem that are given to the treasury|
 
 
 ### rebalance
@@ -337,6 +565,31 @@ function rebalance(
 |`amountOut`|`uint256`|Amount of tokenOut to transfer out|
 
 
+### withdraw
+
+Withdraws collateral from a LeverageToken and burns shares from sender
+
+
+```solidity
+function withdraw(ILeverageToken token, uint256 collateral, uint256 maxShares)
+    external
+    returns (ActionData memory actionData);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`ILeverageToken`|The LeverageToken to withdraw from|
+|`collateral`|`uint256`|The amount of collateral to withdraw|
+|`maxShares`|`uint256`|The maximum amount of shares to burn|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`actionData`|`ActionData`|Data about the withdraw - collateral Amount of collateral that was removed from LeverageToken and sent to sender - debt Amount of debt that was repaid to LeverageToken, taken from sender - shares Amount of the sender's shares that were burned for the withdraw - tokenFee Amount of shares that was charged for the withdraw that are given to the LeverageToken - treasuryFee Amount of shares that was charged for the withdraw that are given to the treasury|
+
+
 ## Events
 ### LeverageManagerInitialized
 Event emitted when the LeverageManager is initialized
@@ -372,7 +625,7 @@ event LeverageTokenCreated(
 |`config`|`LeverageTokenConfig`|The config of the LeverageToken|
 
 ### Mint
-Event emitted when a user mints assets into a LeverageToken
+Event emitted when a user mints LeverageToken shares
 
 
 ```solidity
@@ -387,8 +640,32 @@ event Mint(ILeverageToken indexed token, address indexed sender, ActionData acti
 |`sender`|`address`|The sender of the mint|
 |`actionData`|`ActionData`|The action data of the mint|
 
+### Rebalance
+Event emitted when a user rebalances a LeverageToken
+
+
+```solidity
+event Rebalance(
+    ILeverageToken indexed token,
+    address indexed sender,
+    LeverageTokenState stateBefore,
+    LeverageTokenState stateAfter,
+    RebalanceAction[] actions
+);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`ILeverageToken`|The LeverageToken|
+|`sender`|`address`|The sender of the rebalance|
+|`stateBefore`|`LeverageTokenState`|The state of the LeverageToken before the rebalance|
+|`stateAfter`|`LeverageTokenState`|The state of the LeverageToken after the rebalance|
+|`actions`|`RebalanceAction[]`|The actions that were taken|
+
 ### Redeem
-Event emitted when a user redeems assets from a LeverageToken
+Event emitted when a user redeems LeverageToken shares
 
 
 ```solidity
@@ -450,13 +727,19 @@ error NotRebalancer(ILeverageToken token, address caller);
 |`token`|`ILeverageToken`|The LeverageToken to rebalance|
 |`caller`|`address`|The caller of the rebalance function|
 
-### LeverageTokenNotEligibleForRebalance
-Error thrown when attempting to rebalance a LeverageToken that is not eligible for rebalance
+### InvalidLeverageTokenInitialCollateralRatio
+Error thrown when a LeverageToken's initial collateral ratio is invalid (must be greater than the base ratio)
 
 
 ```solidity
-error LeverageTokenNotEligibleForRebalance();
+error InvalidLeverageTokenInitialCollateralRatio(uint256 initialCollateralRatio);
 ```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`initialCollateralRatio`|`uint256`|The initial collateral ratio that is invalid|
 
 ### InvalidLeverageTokenStateAfterRebalance
 Error thrown when a LeverageToken's state after rebalance is invalid
@@ -471,4 +754,12 @@ error InvalidLeverageTokenStateAfterRebalance(ILeverageToken token);
 |Name|Type|Description|
 |----|----|-----------|
 |`token`|`ILeverageToken`|The LeverageToken that has invalid state after rebalance|
+
+### LeverageTokenNotEligibleForRebalance
+Error thrown when attempting to rebalance a LeverageToken that is not eligible for rebalance
+
+
+```solidity
+error LeverageTokenNotEligibleForRebalance();
+```
 

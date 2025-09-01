@@ -1,8 +1,34 @@
 # ILeverageRouter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/1dbcbcfe9a8bcf9392b2ada63dd8f1827a90783b/src/interfaces/periphery/ILeverageRouter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/5f47bb45d300f9abc725e6a08e82ac80219f0e37/src/interfaces/periphery/ILeverageRouter.sol)
 
 
 ## Functions
+### convertEquityToCollateral
+
+Converts an amount of equity to an amount of collateral for a LeverageToken, based on the current
+collateral ratio of the LeverageToken
+
+
+```solidity
+function convertEquityToCollateral(ILeverageToken token, uint256 equityInCollateralAsset)
+    external
+    view
+    returns (uint256 collateral);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`ILeverageToken`|LeverageToken to convert equity to collateral for|
+|`equityInCollateralAsset`|`uint256`|Amount of equity to convert to collateral, denominated in the collateral asset of the LeverageToken|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`collateral`|`uint256`|Amount of collateral that correspond to the equity amount|
+
+
 ### leverageManager
 
 The LeverageManager contract
@@ -33,80 +59,123 @@ function morpho() external view returns (IMorpho _morpho);
 |`_morpho`|`IMorpho`|The Morpho core protocol contract|
 
 
-### swapper
+### previewDeposit
 
-The swap adapter contract used to facilitate swaps
+Previews the deposit function call for an amount of equity and returns all required data
 
 
 ```solidity
-function swapper() external view returns (ISwapAdapter _swapper);
+function previewDeposit(ILeverageToken token, uint256 collateralFromSender) external view returns (ActionData memory);
 ```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`ILeverageToken`|LeverageToken to preview deposit for|
+|`collateralFromSender`|`uint256`|The amount of collateral from the sender to deposit|
+
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_swapper`|`ISwapAdapter`|The swap adapter contract|
+|`<none>`|`ActionData`|previewData Preview data for deposit - collateral Total amount of collateral that will be added to the LeverageToken (including collateral from swapping flash loaned debt) - debt Amount of debt that will be borrowed - shares Amount of shares that will be minted - tokenFee Amount of shares that will be charged for the deposit that are given to the LeverageToken - treasuryFee Amount of shares that will be charged for the deposit that are given to the treasury|
 
 
-### mint
+### deposit
 
-Mint shares of a LeverageToken by adding equity
+Deposits collateral into a LeverageToken and mints shares to the sender. Any surplus debt received from
+the deposit of (collateralFromSender + debt swapped to collateral) is given to the sender.
 
-*Flash loans the collateral required to add the equity to the LeverageToken, receives debt, then swaps the debt to the
-LeverageToken's collateral asset. The swapped assets and the sender's supplied collateral are used to repay the flash loan*
-
-*The sender should approve the LeverageRouter to spend an amount of collateral assets greater than the equity being added
-to facilitate the mint in the case that the mint requires additional collateral to cover swap slippage when swapping
-debt to collateral to repay the flash loan. The approved amount should equal at least `equityInCollateralAsset + maxSwapCostInCollateralAsset`.
-To see the preview of the mint, `LeverageRouter.leverageManager().previewMint(...)` can be used.*
+*Before each external call, the target contract is approved to spend flashLoanAmount of the debt asset*
 
 
 ```solidity
-function mint(
-    ILeverageToken token,
-    uint256 equityInCollateralAsset,
+function deposit(
+    ILeverageToken leverageToken,
+    uint256 collateralFromSender,
+    uint256 flashLoanAmount,
     uint256 minShares,
-    uint256 maxSwapCostInCollateralAsset,
-    ISwapAdapter.SwapContext memory swapContext
+    Call[] calldata swapCalls
 ) external;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`token`|`ILeverageToken`|LeverageToken to mint shares of|
-|`equityInCollateralAsset`|`uint256`|The amount of equity to mint LeverageToken shares for. Denominated in the collateral asset of the LeverageToken|
-|`minShares`|`uint256`|Minimum shares (LeverageTokens) to receive from the mint|
-|`maxSwapCostInCollateralAsset`|`uint256`|The maximum amount of collateral from the sender to use to help repay the flash loan due to the swap of debt to collateral being unfavorable|
-|`swapContext`|`ISwapAdapter.SwapContext`|Swap context to use for the swap (which DEX to use, the route, tick spacing, etc.)|
+|`leverageToken`|`ILeverageToken`|LeverageToken to deposit into|
+|`collateralFromSender`|`uint256`|Collateral asset amount from the sender to deposit|
+|`flashLoanAmount`|`uint256`|Amount of debt to flash loan, which is swapped to collateral and used to deposit into the LeverageToken|
+|`minShares`|`uint256`|Minimum number of shares expected to be received by the sender|
+|`swapCalls`|`Call[]`|External calls to execute for the swap of flash loaned debt to collateral for the LeverageToken deposit|
 
 
-### redeem
+### redeemWithVelora
 
-Redeems equity of a LeverageToken by repaying debt and burning shares
+Redeems an amount of shares of a LeverageToken and transfers collateral asset to the sender, using Velora
+for the required swap of collateral from the redemption to debt to repay the flash loan
+
+*The calldata should be for using Velora for an exact output swap of the collateral asset to the debt asset
+for the debt amount flash loaned, which is equal to the amount of debt removed from the LeverageToken for the
+redemption of shares. The exact output amount in the calldata is updated on chain to match the up to date debt
+amount for the redemption of shares, which typically occurs due to borrow interest accrual and price changes
+between off chain and on chain execution*
 
 
 ```solidity
-function redeem(
+function redeemWithVelora(
     ILeverageToken token,
-    uint256 equityInCollateralAsset,
-    uint256 maxShares,
-    uint256 maxSwapCostInCollateralAsset,
-    ISwapAdapter.SwapContext memory swapContext
+    uint256 shares,
+    uint256 minCollateralForSender,
+    IVeloraAdapter veloraAdapter,
+    address augustus,
+    IVeloraAdapter.Offsets calldata offsets,
+    bytes calldata swapData
 ) external;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`token`|`ILeverageToken`|LeverageToken to redeem|
-|`equityInCollateralAsset`|`uint256`|The amount of equity to receive by redeeming LeverageToken. Denominated in the collateral asset of the LeverageToken|
-|`maxShares`|`uint256`|Maximum shares (LeverageTokens) to redeem|
-|`maxSwapCostInCollateralAsset`|`uint256`|The maximum amount of equity to pay for the redeem of the LeverageToken to use to help repay the debt flash loan due to the swap of debt to collateral being unfavorable|
-|`swapContext`|`ISwapAdapter.SwapContext`|Swap context to use for the swap (which DEX to use, the route, tick spacing, etc.)|
+|`token`|`ILeverageToken`|LeverageToken to redeem from|
+|`shares`|`uint256`|Amount of shares to redeem|
+|`minCollateralForSender`|`uint256`|Minimum amount of collateral for the sender to receive|
+|`veloraAdapter`|`IVeloraAdapter`|Velora adapter to use for the swap|
+|`augustus`|`address`|Velora Augustus address to use for the swap|
+|`offsets`|`IVeloraAdapter.Offsets`|Offsets to use for updating the Velora Augustus calldata|
+|`swapData`|`bytes`|Velora swap calldata to use for the swap|
 
 
 ## Errors
+### CollateralSlippageTooHigh
+Error thrown when the remaining collateral is less than the minimum collateral for the sender to receive
+
+
+```solidity
+error CollateralSlippageTooHigh(uint256 remainingCollateral, uint256 minCollateralForSender);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`remainingCollateral`|`uint256`|The remaining collateral after the swap|
+|`minCollateralForSender`|`uint256`|The minimum collateral for the sender to receive|
+
+### InsufficientCollateralForDeposit
+Error thrown when the collateral from the swap + the collateral from the sender is less than the collateral required for the deposit
+
+
+```solidity
+error InsufficientCollateralForDeposit(uint256 available, uint256 required);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`available`|`uint256`|The collateral from the swap + the collateral from the sender, available for the deposit|
+|`required`|`uint256`|The collateral required for the deposit|
+
 ### MaxSwapCostExceeded
 Error thrown when the cost of a swap exceeds the maximum allowed cost
 
@@ -128,5 +197,60 @@ Error thrown when the caller is not authorized to execute a function
 
 ```solidity
 error Unauthorized();
+```
+
+## Structs
+### Call
+Struct containing the target, value, and data for a single external call.
+
+
+```solidity
+struct Call {
+    address target;
+    uint256 value;
+    bytes data;
+}
+```
+
+### DepositParams
+Deposit related parameters to pass to the Morpho flash loan callback handler for deposits
+
+
+```solidity
+struct DepositParams {
+    address sender;
+    ILeverageToken leverageToken;
+    uint256 collateralFromSender;
+    uint256 minShares;
+    Call[] swapCalls;
+}
+```
+
+### MorphoCallbackData
+Morpho flash loan callback data to pass to the Morpho flash loan callback handler
+
+
+```solidity
+struct MorphoCallbackData {
+    ExternalAction action;
+    bytes data;
+}
+```
+
+### RedeemWithVeloraParams
+Redeem related parameters to pass to the Morpho flash loan callback handler for redeems
+
+
+```solidity
+struct RedeemWithVeloraParams {
+    address sender;
+    ILeverageToken leverageToken;
+    uint256 shares;
+    uint256 minCollateralForSender;
+    IVeloraAdapter veloraAdapter;
+    address augustus;
+    IVeloraAdapter.Offsets offsets;
+    bytes swapData;
+}
 ```
 

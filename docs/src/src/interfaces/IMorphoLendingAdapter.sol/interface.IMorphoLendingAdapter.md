@@ -1,5 +1,5 @@
 # IMorphoLendingAdapter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/1dbcbcfe9a8bcf9392b2ada63dd8f1827a90783b/src/interfaces/IMorphoLendingAdapter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/5f47bb45d300f9abc725e6a08e82ac80219f0e37/src/interfaces/IMorphoLendingAdapter.sol)
 
 **Inherits:**
 [IPreLiquidationLendingAdapter](/src/interfaces/IPreLiquidationLendingAdapter.sol/interface.IPreLiquidationLendingAdapter.md)
