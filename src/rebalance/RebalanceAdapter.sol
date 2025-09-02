@@ -30,6 +30,8 @@ import {LeverageTokenState} from "src/types/DataTypes.sol";
  *   - The PreLiquidationRebalanceAdapter allows for fast-tracking rebalance operations for LeverageTokens that are below
  *     a specified collateral ratio threshold. The intention is that this acts as a pre-liquidation rebalance mechanism
  *     in cases that the dutch auction price is too slow to react to a dramatic drop in collateral ratio.
+ *
+ * @custom:contact security@seamlessprotocol.com
  */
 contract RebalanceAdapter is
     IRebalanceAdapter,

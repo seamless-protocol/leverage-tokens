@@ -24,6 +24,8 @@ import {IPreLiquidationRebalanceAdapter} from "src/interfaces/IPreLiquidationReb
  * liquidation penalty of the underlying lending pool used by the LeverageToken. The result is the amount of equity that the rebalancer
  * can earn for rebalancing the LeverageToken. It is expected that the rebalance reward is set to a value that is less than the liquidation penalty,
  * but high enough such that rebalancing is attractive to rebalancers.
+ *
+ * @custom:contact security@seamlessprotocol.com
  */
 abstract contract PreLiquidationRebalanceAdapter is Initializable, IPreLiquidationRebalanceAdapter {
     uint256 internal constant WAD = 1e18;

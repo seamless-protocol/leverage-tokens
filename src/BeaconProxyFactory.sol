@@ -12,6 +12,8 @@ import {IBeaconProxyFactory} from "src/interfaces/IBeaconProxyFactory.sol";
 /**
  * @dev Implementation of a factory that allows for deterministic deployment of BeaconProxys from an UpgradeableBeacon
  * using the Create2 opcode. The salt used for the Create2 deployment is the hash of the sender and the base salt.
+ *
+ * @custom:contact security@seamlessprotocol.com
  */
 contract BeaconProxyFactory is IBeaconProxyFactory, UpgradeableBeacon {
     /// @inheritdoc IBeaconProxyFactory
