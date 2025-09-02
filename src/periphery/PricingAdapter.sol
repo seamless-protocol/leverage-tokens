@@ -2,6 +2,7 @@
 pragma solidity ^0.8.26;
 
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import {IAggregatorV2V3Interface} from "../interfaces/periphery/IAggregatorV2V3Interface.sol";
 import {ILendingAdapter} from "../interfaces/ILendingAdapter.sol";
@@ -30,11 +31,13 @@ contract PricingAdapter is IPricingAdapter {
             return 0;
         }
 
-        uint256 totalEquityInCollateralAsset =
-            leverageManager.getLeverageTokenLendingAdapter(leverageToken).getEquityInCollateralAsset();
+        uint256 collateralPerShare = leverageManager.convertSharesToCollateral(leverageToken, WAD, Math.Rounding.Floor);
+        uint256 debtPerShare = leverageManager.convertSharesToDebt(leverageToken, WAD, Math.Rounding.Ceil);
 
-        // LT is on 18 decimals, so 1 LT is WAD wei
-        return (WAD * totalEquityInCollateralAsset) / totalSupply;
+        uint256 equityInCollateralPerShare = collateralPerShare
+            - leverageManager.getLeverageTokenLendingAdapter(leverageToken).convertDebtToCollateralAsset(debtPerShare);
+
+        return equityInCollateralPerShare;
     }
 
     /// @inheritdoc IPricingAdapter
@@ -45,11 +48,13 @@ contract PricingAdapter is IPricingAdapter {
             return 0;
         }
 
-        uint256 totalEquityInDebtAsset =
-            leverageManager.getLeverageTokenLendingAdapter(leverageToken).getEquityInDebtAsset();
+        uint256 collateralPerShare = leverageManager.convertSharesToCollateral(leverageToken, WAD, Math.Rounding.Floor);
+        uint256 debtPerShare = leverageManager.convertSharesToDebt(leverageToken, WAD, Math.Rounding.Ceil);
 
-        // LT is on 18 decimals, so 1 LT is WAD wei
-        return (WAD * totalEquityInDebtAsset) / totalSupply;
+        uint256 equityInDebtPerShare = leverageManager.getLeverageTokenLendingAdapter(leverageToken)
+            .convertCollateralToDebtAsset(collateralPerShare) - debtPerShare;
+
+        return equityInDebtPerShare;
     }
 
     /// @inheritdoc IPricingAdapter
