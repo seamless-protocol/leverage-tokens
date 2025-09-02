@@ -24,6 +24,8 @@ import {IFeeManager} from "src/interfaces/IFeeManager.sol";
  *     accrues linearly over time and is minted to the treasury when the `chargeManagementFee` function is executed
  * Note: This contract is abstract and meant to be inherited by LeverageManager
  * The maximum fee that can be set for each action is 100_00 (100%).
+ *
+ * @custom:contact security@seamlessprotocol.com
  */
 abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgradeable {
     bytes32 public constant FEE_MANAGER_ROLE = keccak256("FEE_MANAGER_ROLE");

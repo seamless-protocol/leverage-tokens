@@ -30,6 +30,8 @@ import {RebalanceAction, ActionType, LeverageTokenState, Auction} from "src/type
  * If the LeverageToken is over-collateralized, the rebalancer will borrow debt and add collateral. If the LeverageToken is
  * under-collateralized, the rebalancer will repay debt and remove collateral.
  * Note: If the auction is no longer valid, `take` will revert
+ *
+ * @custom:contact security@seamlessprotocol.com
  */
 abstract contract DutchAuctionRebalanceAdapter is IDutchAuctionRebalanceAdapter, Initializable {
     uint256 public constant PRICE_MULTIPLIER_PRECISION = 1e18;
