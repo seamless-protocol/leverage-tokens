@@ -25,34 +25,36 @@ contract PricingAdapter is IPricingAdapter {
 
     /// @inheritdoc IPricingAdapter
     function getLeverageTokenPriceInCollateral(ILeverageToken leverageToken) public view returns (uint256) {
-        uint256 totalSupply = leverageToken.totalSupply();
-
-        if (totalSupply == 0) {
+        if (leverageToken.totalSupply() == 0) {
             return 0;
         }
 
         uint256 collateralPerShare = leverageManager.convertSharesToCollateral(leverageToken, WAD, Math.Rounding.Floor);
         uint256 debtPerShare = leverageManager.convertSharesToDebt(leverageToken, WAD, Math.Rounding.Ceil);
 
-        uint256 equityInCollateralPerShare = collateralPerShare
-            - leverageManager.getLeverageTokenLendingAdapter(leverageToken).convertDebtToCollateralAsset(debtPerShare);
+        uint256 debtPerShareInCollateralAsset =
+            leverageManager.getLeverageTokenLendingAdapter(leverageToken).convertDebtToCollateralAsset(debtPerShare);
+
+        uint256 equityInCollateralPerShare =
+            collateralPerShare > debtPerShareInCollateralAsset ? collateralPerShare - debtPerShareInCollateralAsset : 0;
 
         return equityInCollateralPerShare;
     }
 
     /// @inheritdoc IPricingAdapter
     function getLeverageTokenPriceInDebt(ILeverageToken leverageToken) public view returns (uint256) {
-        uint256 totalSupply = leverageToken.totalSupply();
-
-        if (totalSupply == 0) {
+        if (leverageToken.totalSupply() == 0) {
             return 0;
         }
 
         uint256 collateralPerShare = leverageManager.convertSharesToCollateral(leverageToken, WAD, Math.Rounding.Floor);
         uint256 debtPerShare = leverageManager.convertSharesToDebt(leverageToken, WAD, Math.Rounding.Ceil);
 
-        uint256 equityInDebtPerShare = leverageManager.getLeverageTokenLendingAdapter(leverageToken)
-            .convertCollateralToDebtAsset(collateralPerShare) - debtPerShare;
+        uint256 collateralPerShareInDebtAsset = leverageManager.getLeverageTokenLendingAdapter(leverageToken)
+            .convertCollateralToDebtAsset(collateralPerShare);
+
+        uint256 equityInDebtPerShare =
+            collateralPerShareInDebtAsset > debtPerShare ? collateralPerShareInDebtAsset - debtPerShare : 0;
 
         return equityInDebtPerShare;
     }
