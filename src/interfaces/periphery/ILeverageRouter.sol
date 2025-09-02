@@ -8,7 +8,6 @@ import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 // Internal imports
 import {ILeverageManager} from "../ILeverageManager.sol";
 import {ILeverageToken} from "../ILeverageToken.sol";
-import {ISwapAdapter} from "./ISwapAdapter.sol";
 import {IVeloraAdapter} from "./IVeloraAdapter.sol";
 import {ActionData, ExternalAction} from "src/types/DataTypes.sol";
 

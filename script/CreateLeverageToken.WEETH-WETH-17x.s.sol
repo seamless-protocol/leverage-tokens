@@ -22,7 +22,6 @@ import {ActionData, LeverageTokenConfig} from "src/types/DataTypes.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
-import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {IWETH9} from "src/interfaces/periphery/IWETH9.sol";
 import {DeployConstants} from "./DeployConstants.sol";
 
