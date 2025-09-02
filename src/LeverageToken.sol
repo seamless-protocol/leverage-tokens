@@ -11,6 +11,7 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // Internal imports
+import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 
@@ -73,11 +74,11 @@ contract LeverageToken is
     function convertToShares(uint256 assets) public view returns (uint256) {
         uint256 _totalSupply = totalSupply();
 
+        ILendingAdapter lendingAdapter = leverageManager.getLeverageTokenLendingAdapter(this);
+
         if (_totalSupply == 0) {
             uint256 leverageTokenDecimals = decimals();
-            uint256 collateralDecimals = IERC20Metadata(
-                address(leverageManager.getLeverageTokenLendingAdapter(this).getCollateralAsset())
-            ).decimals();
+            uint256 collateralDecimals = IERC20Metadata(address(lendingAdapter.getCollateralAsset())).decimals();
 
             if (collateralDecimals > leverageTokenDecimals) {
                 uint256 scalingFactor = 10 ** (collateralDecimals - leverageTokenDecimals);
@@ -86,6 +87,10 @@ contract LeverageToken is
                 uint256 scalingFactor = 10 ** (leverageTokenDecimals - collateralDecimals);
                 return assets * scalingFactor;
             }
+        }
+
+        if (lendingAdapter.getEquityInCollateralAsset() == 0) {
+            return 0;
         }
 
         return Math.mulDiv(
