@@ -31,7 +31,7 @@ contract CoreDeploy is Script {
         // The LeverageManager implementation will be deployed third (nonce + 3)
         // The LeverageManager proxy will be deployed fourth (nonce + 4)
         uint64 currentNonce = vm.getNonce(deployerAddress);
-        address precomputedLeverageManagerProxy = vm.computeCreateAddress(deployerAddress, currentNonce + 4);
+        address precomputedLeverageManagerProxy = vm.computeCreateAddress(deployerAddress, currentNonce + 3);
 
         vm.startBroadcast();
 
