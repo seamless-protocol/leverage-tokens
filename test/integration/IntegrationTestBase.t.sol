@@ -149,7 +149,10 @@ contract IntegrationTestBase is Test {
     }
 
     function _deployIntegrationTestContracts() internal {
-        LeverageToken leverageTokenImplementation = new LeverageToken();
+        uint64 currentNonce = vm.getNonce(address(this));
+        address precomputedLeverageManagerProxy = vm.computeCreateAddress(address(this), currentNonce + 4);
+
+        LeverageToken leverageTokenImplementation = new LeverageToken(ILeverageManager(precomputedLeverageManagerProxy));
         BeaconProxyFactory leverageTokenFactory =
             new BeaconProxyFactory(address(leverageTokenImplementation), address(this));
 
@@ -162,6 +165,7 @@ contract IntegrationTestBase is Test {
                 )
             )
         );
+
         LeverageManager(address(leverageManager)).grantRole(keccak256("FEE_MANAGER_ROLE"), address(this));
 
         MorphoLendingAdapter morphoLendingAdapterImplementation =

@@ -25,9 +25,17 @@ contract CoreDeploy is Script {
 
         console.log("Deploying...");
 
+        // Precompute the LeverageManager proxy address
+        // The LeverageToken implementation will be deployed first (nonce + 1)
+        // The BeaconProxyFactory will be deployed second (nonce + 2)
+        // The LeverageManager implementation will be deployed third (nonce + 3)
+        // The LeverageManager proxy will be deployed fourth (nonce + 4)
+        uint64 currentNonce = vm.getNonce(deployerAddress);
+        address precomputedLeverageManagerProxy = vm.computeCreateAddress(deployerAddress, currentNonce + 4);
+
         vm.startBroadcast();
 
-        LeverageToken leverageTokenImplementation = new LeverageToken();
+        LeverageToken leverageTokenImplementation = new LeverageToken(ILeverageManager(precomputedLeverageManagerProxy));
         console.log("LeverageToken implementation deployed at: ", address(leverageTokenImplementation));
 
         BeaconProxyFactory leverageTokenFactory =
@@ -42,6 +50,9 @@ contract CoreDeploy is Script {
             )
         );
         console.log("LeverageManager proxy deployed at: ", address(leverageManagerProxy));
+
+        // Verify that our precomputed address was correct
+        require(leverageManagerProxy == precomputedLeverageManagerProxy, "Precomputed LeverageManager address mismatch");
 
         MorphoLendingAdapter lendingAdapter =
             new MorphoLendingAdapter(ILeverageManager(address(leverageManagerProxy)), IMorpho(DeployConstants.MORPHO));

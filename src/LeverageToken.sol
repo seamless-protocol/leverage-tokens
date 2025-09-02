@@ -9,6 +9,7 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 // Internal imports
+import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 
 /**
@@ -24,6 +25,13 @@ contract LeverageToken is
     OwnableUpgradeable,
     ILeverageToken
 {
+    /// @inheritdoc ILeverageToken
+    ILeverageManager public immutable leverageManager;
+
+    constructor(ILeverageManager _leverageManager) {
+        leverageManager = _leverageManager;
+    }
+
     function initialize(address _owner, string memory _name, string memory _symbol) external initializer {
         __ERC20_init(_name, _symbol);
         __ERC20Permit_init(_name);
