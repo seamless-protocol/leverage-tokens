@@ -1,5 +1,5 @@
 # FeeManager
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/1dbcbcfe9a8bcf9392b2ada63dd8f1827a90783b/src/FeeManager.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/5f47bb45d300f9abc725e6a08e82ac80219f0e37/src/FeeManager.sol)
 
 **Inherits:**
 [IFeeManager](/src/interfaces/IFeeManager.sol/interface.IFeeManager.md), Initializable, AccessControlUpgradeable
@@ -24,10 +24,31 @@ bytes32 public constant FEE_MANAGER_ROLE = keccak256("FEE_MANAGER_ROLE");
 ```
 
 
-### MAX_FEE
+### MAX_BPS
 
 ```solidity
-uint256 internal constant MAX_FEE = 100_00;
+uint256 internal constant MAX_BPS = 100_00;
+```
+
+
+### MAX_BPS_SQUARED
+
+```solidity
+uint256 internal constant MAX_BPS_SQUARED = MAX_BPS * MAX_BPS;
+```
+
+
+### MAX_ACTION_FEE
+
+```solidity
+uint256 internal constant MAX_ACTION_FEE = MAX_BPS - 1;
+```
+
+
+### MAX_MANAGEMENT_FEE
+
+```solidity
+uint256 internal constant MAX_MANAGEMENT_FEE = MAX_BPS;
 ```
 
 
@@ -50,7 +71,7 @@ function _getFeeManagerStorage() internal pure returns (FeeManagerStorage storag
 
 
 ```solidity
-function __FeeManager_init(address defaultAdmin, address treasury) public onlyInitializing;
+function __FeeManager_init(address defaultAdmin, address treasury) internal onlyInitializing;
 ```
 
 ### __FeeManager_init_unchained
@@ -73,6 +94,27 @@ function getDefaultManagementFeeAtCreation() public view returns (uint256);
 |Name|Type|Description|
 |----|----|-----------|
 |`<none>`|`uint256`|fee The default management fee for new LeverageTokens, 100_00 is 100%|
+
+
+### getFeeAdjustedTotalSupply
+
+Returns the total supply of the LeverageToken adjusted for any accrued management fees
+
+
+```solidity
+function getFeeAdjustedTotalSupply(ILeverageToken token) public view returns (uint256);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`ILeverageToken`|LeverageToken to get fee adjusted total supply for|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`uint256`|totalSupply Fee adjusted total supply of the LeverageToken|
 
 
 ### getLastManagementFeeAccrualTimestamp
@@ -266,7 +308,7 @@ function chargeManagementFee(ILeverageToken token) public;
 
 ### _chargeTreasuryFee
 
-Function that mints shares to the treasury for the treasury action fee, if the treasury is set
+Function that mints shares to the treasury, if the treasury is set
 
 *This contract must be authorized to mint shares for the LeverageToken*
 
@@ -282,33 +324,64 @@ function _chargeTreasuryFee(ILeverageToken token, uint256 shares) internal;
 |`shares`|`uint256`|Shares to mint|
 
 
-### _computeTokenFee
+### _computeFeesForGrossShares
 
-Computes the token action fee for a given action
+Computes the share fees for a given action and share amount
 
-*Fees are always rounded up.*
+*Token action fee is applied first, then treasury action fee is applied on the remaining shares*
 
 
 ```solidity
-function _computeTokenFee(ILeverageToken token, uint256 equity, ExternalAction action)
+function _computeFeesForGrossShares(ILeverageToken token, uint256 grossShares, ExternalAction action)
     internal
     view
-    returns (uint256, uint256);
+    returns (uint256, uint256, uint256);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`token`|`ILeverageToken`|LeverageToken to compute token action fee for|
-|`equity`|`uint256`|Amount of equity to compute token action fee for, denominated in collateral asset|
-|`action`|`ExternalAction`|Action to compute token action fee for, Mint or Redeem|
+|`token`|`ILeverageToken`|LeverageToken to compute share fees for|
+|`grossShares`|`uint256`|Amount of shares to compute share fees for|
+|`action`|`ExternalAction`|Action to compute share fees for|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`uint256`|equityForShares Equity to mint / burn shares for the LeverageToken after token action fees, denominated in collateral asset of the LeverageToken|
-|`<none>`|`uint256`|tokenFee LeverageToken token action fee amount in equity, denominated in the collateral asset of the LeverageToken|
+|`<none>`|`uint256`|netShares Amount of shares after fees|
+|`<none>`|`uint256`|sharesTokenFee Amount of shares that will be charged for the action that are given to the LeverageToken|
+|`<none>`|`uint256`|treasuryFee Amount of shares that will be charged for the action that are given to the treasury|
+
+
+### _computeFeesForNetShares
+
+Based on an amount of net shares, compute the gross shares, token fee, and treasury fee
+
+*Token action fee is applied first, then treasury action fee is applied on the remaining shares*
+
+
+```solidity
+function _computeFeesForNetShares(ILeverageToken token, uint256 netShares, ExternalAction action)
+    internal
+    view
+    returns (uint256 grossShares, uint256 sharesTokenFee, uint256 treasuryFee);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`ILeverageToken`|LeverageToken to compute token fee for|
+|`netShares`|`uint256`|Net shares to compute token fee for|
+|`action`|`ExternalAction`|Action to compute token fee for|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`grossShares`|`uint256`|Gross shares after token fee and treasury fee|
+|`sharesTokenFee`|`uint256`|Token fee amount in shares|
+|`treasuryFee`|`uint256`|Treasury fee amount in shares|
 
 
 ### _computeTreasuryFee
@@ -333,40 +406,20 @@ function _computeTreasuryFee(ExternalAction action, uint256 shares) internal vie
 |`<none>`|`uint256`|treasuryFee Treasury action fee amount in shares|
 
 
-### _getFeeAdjustedTotalSupply
-
-Function that returns the total supply of the LeverageToken adjusted for any accrued management fees
-
-
-```solidity
-function _getFeeAdjustedTotalSupply(ILeverageToken token) internal view returns (uint256);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`token`|`ILeverageToken`|LeverageToken to get fee adjusted total supply for|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`uint256`|totalSupply Fee adjusted total supply of the LeverageToken|
-
-
 ### _getAccruedManagementFee
 
 Function that calculates how many shares to mint for the accrued management fee at the current timestamp
 
 
 ```solidity
-function _getAccruedManagementFee(ILeverageToken token) internal view returns (uint256);
+function _getAccruedManagementFee(ILeverageToken token, uint256 totalSupply) internal view returns (uint256);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
 |`token`|`ILeverageToken`|LeverageToken to calculate management fee shares for|
+|`totalSupply`|`uint256`|Total supply of the LeverageToken|
 
 **Returns**
 
@@ -427,13 +480,28 @@ function _setTreasury(address treasury) internal;
 |`treasury`|`address`|Treasury address to set|
 
 
-### _validateFee
+### _validateActionFee
+
+Validates that the fee is not higher than 99.99%
+
+
+```solidity
+function _validateActionFee(uint256 fee) internal pure;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`fee`|`uint256`|Fee to validate|
+
+
+### _validateManagementFee
 
 Validates that the fee is not higher than 100%
 
 
 ```solidity
-function _validateFee(uint256 fee) internal pure;
+function _validateManagementFee(uint256 fee) internal pure;
 ```
 **Parameters**
 

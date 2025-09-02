@@ -1,22 +1,21 @@
 # LeverageRouter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/1dbcbcfe9a8bcf9392b2ada63dd8f1827a90783b/src/periphery/LeverageRouter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/5f47bb45d300f9abc725e6a08e82ac80219f0e37/src/periphery/LeverageRouter.sol)
 
 **Inherits:**
 [ILeverageRouter](/src/interfaces/periphery/ILeverageRouter.sol/interface.ILeverageRouter.md)
 
-*The LeverageRouter contract is an immutable periphery contract that facilitates the use of Morpho flash loans and a swap adapter
-to mint and redeem equity from LeverageTokens.
-The high-level mint flow is as follows:
-1. The user calls `mint` with the amount of equity to mint LeverageTokens (shares) for, the minimum amount of shares to receive, the maximum
-cost to the sender for the swap of debt to collateral during the mint to help repay the flash loan, and the swap context.
-2. The LeverageRouter will flash loan the required collateral asset from Morpho.
-3. The LeverageRouter will use the flash loaned collateral and the equity from the sender for the mint into the LeverageToken,
-receiving LeverageTokens and debt in return.
-4. The LeverageRouter will swap the debt received from the mint to the collateral asset.
-5. The LeverageRouter will use the swapped assets to repay the flash loan along with the collateral asset from the sender
-(the maximum swap cost)
-6. The LeverageRouter will transfer the LeverageTokens and any remaining collateral asset to the sender.
-The high-level redeem flow is the same as the mint flow, but in reverse.*
+*The LeverageRouter contract is an immutable periphery contract that facilitates the use of flash loans and a swaps
+to deposit and redeem equity from LeverageTokens.
+The high-level deposit flow is as follows:
+1. The sender calls `deposit` with the amount of collateral from the sender to deposit, the amount of debt to flash loan
+(which will be swapped to collateral), the minimum amount of shares to receive, and the calldata to execute for
+the swap of the flash loaned debt to collateral
+2. The LeverageRouter will flash loan the debt asset amount and execute the calldata to swap it to collateral
+3. The LeverageRouter will use the collateral from the swapped debt and the collateral from the sender for the deposit
+into the LeverageToken, receiving LeverageToken shares and debt in return
+4. The LeverageRouter will use the debt received from the deposit to repay the flash loan
+6. The LeverageRouter will transfer the LeverageToken shares and any surplus debt assets to the sender
+The high-level redeem flow is the same as the deposit flow, but in reverse.*
 
 
 ## State Variables
@@ -38,15 +37,6 @@ IMorpho public immutable morpho;
 ```
 
 
-### swapper
-The swap adapter contract used to facilitate swaps
-
-
-```solidity
-ISwapAdapter public immutable swapper;
-```
-
-
 ## Functions
 ### constructor
 
@@ -54,7 +44,7 @@ Creates a new LeverageRouter
 
 
 ```solidity
-constructor(ILeverageManager _leverageManager, IMorpho _morpho, ISwapAdapter _swapper);
+constructor(ILeverageManager _leverageManager, IMorpho _morpho);
 ```
 **Parameters**
 
@@ -62,60 +52,121 @@ constructor(ILeverageManager _leverageManager, IMorpho _morpho, ISwapAdapter _sw
 |----|----|-----------|
 |`_leverageManager`|`ILeverageManager`|The LeverageManager contract|
 |`_morpho`|`IMorpho`|The Morpho core protocol contract|
-|`_swapper`|`ISwapAdapter`|The Swapper contract|
 
 
-### mint
+### convertEquityToCollateral
 
-Mint shares of a LeverageToken by adding equity
-
-*Flash loans the collateral required to add the equity to the LeverageToken, receives debt, then swaps the debt to the
-LeverageToken's collateral asset. The swapped assets and the sender's supplied collateral are used to repay the flash loan*
+Converts an amount of equity to an amount of collateral for a LeverageToken, based on the current
+collateral ratio of the LeverageToken
 
 
 ```solidity
-function mint(
-    ILeverageToken token,
-    uint256 equityInCollateralAsset,
+function convertEquityToCollateral(ILeverageToken token, uint256 equityInCollateralAsset)
+    public
+    view
+    returns (uint256 collateral);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`ILeverageToken`|LeverageToken to convert equity to collateral for|
+|`equityInCollateralAsset`|`uint256`|Amount of equity to convert to collateral, denominated in the collateral asset of the LeverageToken|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`collateral`|`uint256`|Amount of collateral that correspond to the equity amount|
+
+
+### previewDeposit
+
+Previews the deposit function call for an amount of equity and returns all required data
+
+
+```solidity
+function previewDeposit(ILeverageToken token, uint256 collateralFromSender)
+    external
+    view
+    returns (ActionData memory previewData);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`ILeverageToken`|LeverageToken to preview deposit for|
+|`collateralFromSender`|`uint256`|The amount of collateral from the sender to deposit|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`previewData`|`ActionData`|Preview data for deposit - collateral Total amount of collateral that will be added to the LeverageToken (including collateral from swapping flash loaned debt) - debt Amount of debt that will be borrowed - shares Amount of shares that will be minted - tokenFee Amount of shares that will be charged for the deposit that are given to the LeverageToken - treasuryFee Amount of shares that will be charged for the deposit that are given to the treasury|
+
+
+### deposit
+
+Deposits collateral into a LeverageToken and mints shares to the sender. Any surplus debt received from
+the deposit of (collateralFromSender + debt swapped to collateral) is given to the sender.
+
+*Before each external call, the target contract is approved to spend flashLoanAmount of the debt asset*
+
+
+```solidity
+function deposit(
+    ILeverageToken leverageToken,
+    uint256 collateralFromSender,
+    uint256 flashLoanAmount,
     uint256 minShares,
-    uint256 maxSwapCostInCollateralAsset,
-    ISwapAdapter.SwapContext memory swapContext
+    Call[] calldata swapCalls
 ) external;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`token`|`ILeverageToken`|LeverageToken to mint shares of|
-|`equityInCollateralAsset`|`uint256`|The amount of equity to mint LeverageToken shares for. Denominated in the collateral asset of the LeverageToken|
-|`minShares`|`uint256`|Minimum shares (LeverageTokens) to receive from the mint|
-|`maxSwapCostInCollateralAsset`|`uint256`|The maximum amount of collateral from the sender to use to help repay the flash loan due to the swap of debt to collateral being unfavorable|
-|`swapContext`|`ISwapAdapter.SwapContext`|Swap context to use for the swap (which DEX to use, the route, tick spacing, etc.)|
+|`leverageToken`|`ILeverageToken`|LeverageToken to deposit into|
+|`collateralFromSender`|`uint256`|Collateral asset amount from the sender to deposit|
+|`flashLoanAmount`|`uint256`|Amount of debt to flash loan, which is swapped to collateral and used to deposit into the LeverageToken|
+|`minShares`|`uint256`|Minimum number of shares expected to be received by the sender|
+|`swapCalls`|`Call[]`|External calls to execute for the swap of flash loaned debt to collateral for the LeverageToken deposit|
 
 
-### redeem
+### redeemWithVelora
 
-Redeems equity of a LeverageToken by repaying debt and burning shares
+Redeems an amount of shares of a LeverageToken and transfers collateral asset to the sender, using Velora
+for the required swap of collateral from the redemption to debt to repay the flash loan
+
+*The calldata should be for using Velora for an exact output swap of the collateral asset to the debt asset
+for the debt amount flash loaned, which is equal to the amount of debt removed from the LeverageToken for the
+redemption of shares. The exact output amount in the calldata is updated on chain to match the up to date debt
+amount for the redemption of shares, which typically occurs due to borrow interest accrual and price changes
+between off chain and on chain execution*
 
 
 ```solidity
-function redeem(
+function redeemWithVelora(
     ILeverageToken token,
-    uint256 equityInCollateralAsset,
-    uint256 maxShares,
-    uint256 maxSwapCostInCollateralAsset,
-    ISwapAdapter.SwapContext memory swapContext
+    uint256 shares,
+    uint256 minCollateralForSender,
+    IVeloraAdapter veloraAdapter,
+    address augustus,
+    IVeloraAdapter.Offsets calldata offsets,
+    bytes calldata swapData
 ) external;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`token`|`ILeverageToken`|LeverageToken to redeem|
-|`equityInCollateralAsset`|`uint256`|The amount of equity to receive by redeeming LeverageToken. Denominated in the collateral asset of the LeverageToken|
-|`maxShares`|`uint256`|Maximum shares (LeverageTokens) to redeem|
-|`maxSwapCostInCollateralAsset`|`uint256`|The maximum amount of equity to pay for the redeem of the LeverageToken to use to help repay the debt flash loan due to the swap of debt to collateral being unfavorable|
-|`swapContext`|`ISwapAdapter.SwapContext`|Swap context to use for the swap (which DEX to use, the route, tick spacing, etc.)|
+|`token`|`ILeverageToken`|LeverageToken to redeem from|
+|`shares`|`uint256`|Amount of shares to redeem|
+|`minCollateralForSender`|`uint256`|Minimum amount of collateral for the sender to receive|
+|`veloraAdapter`|`IVeloraAdapter`|Velora adapter to use for the swap|
+|`augustus`|`address`|Velora Augustus address to use for the swap|
+|`offsets`|`IVeloraAdapter.Offsets`|Offsets to use for updating the Velora Augustus calldata|
+|`swapData`|`bytes`|Velora swap calldata to use for the swap|
 
 
 ### onMorphoFlashLoan
@@ -134,80 +185,47 @@ function onMorphoFlashLoan(uint256 loanAmount, bytes calldata data) external;
 |`data`|`bytes`|Encoded data passed to `morpho.flashLoan`|
 
 
-### _mintAndRepayMorphoFlashLoan
+### _depositAndRepayMorphoFlashLoan
 
-Executes the mint of a LeverageToken and the swap of debt assets to the collateral asset
-to repay the flash loan from Morpho
+Executes the deposit into a LeverageToken by flash loaning the debt asset, swapping it to collateral,
+depositing into the LeverageToken with the sender's collateral, and using the resulting debt to repay the flash loan.
+Any surplus debt assets after repaying the flash loan are given to the sender.
 
 
 ```solidity
-function _mintAndRepayMorphoFlashLoan(MintParams memory params, uint256 collateralLoanAmount) internal;
+function _depositAndRepayMorphoFlashLoan(DepositParams memory params, uint256 debtLoan) internal;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`params`|`MintParams`|Params for the mint into a LeverageToken|
-|`collateralLoanAmount`|`uint256`|Amount of collateral asset flash loaned|
+|`params`|`DepositParams`|Params for the deposit into a LeverageToken|
+|`debtLoan`|`uint256`|Amount of debt asset flash loaned|
 
 
-### _redeemAndRepayMorphoFlashLoan
+### _redeemWithVeloraAndRepayMorphoFlashLoan
 
-Executes redeem on a LeverageToken to receive equity and the swap of collateral assets to the debt asset
-to repay the flash loan from Morpho
+Executes the redeem from a LeverageToken by flash loaning the debt asset, swapping the collateral asset
+to the debt asset using Velora, using the resulting debt to repay the flash loan, and transferring the remaining
+collateral asset to the sender
 
 
 ```solidity
-function _redeemAndRepayMorphoFlashLoan(RedeemParams memory params, uint256 debtLoanAmount) internal;
+function _redeemWithVeloraAndRepayMorphoFlashLoan(RedeemWithVeloraParams memory params, uint256 debtLoanAmount)
+    internal;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`params`|`RedeemParams`|Params for the redeem of equity from a LeverageToken|
+|`params`|`RedeemWithVeloraParams`|Params for the redeem from a LeverageToken using Velora|
 |`debtLoanAmount`|`uint256`|Amount of debt asset flash loaned|
 
 
-## Structs
-### MintParams
-Mint related parameters to pass to the Morpho flash loan callback handler for mints
+### receive
 
 
 ```solidity
-struct MintParams {
-    ILeverageToken token;
-    uint256 equityInCollateralAsset;
-    uint256 minShares;
-    uint256 maxSwapCostInCollateralAsset;
-    address sender;
-    ISwapAdapter.SwapContext swapContext;
-}
-```
-
-### RedeemParams
-Redeem related parameters to pass to the Morpho flash loan callback handler for redeems
-
-
-```solidity
-struct RedeemParams {
-    ILeverageToken token;
-    uint256 equityInCollateralAsset;
-    uint256 shares;
-    uint256 maxShares;
-    uint256 maxSwapCostInCollateralAsset;
-    address sender;
-    ISwapAdapter.SwapContext swapContext;
-}
-```
-
-### MorphoCallbackData
-Morpho flash loan callback data to pass to the Morpho flash loan callback handler
-
-
-```solidity
-struct MorphoCallbackData {
-    ExternalAction action;
-    bytes data;
-}
+receive() external payable;
 ```
 

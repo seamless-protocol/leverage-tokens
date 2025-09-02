@@ -1,5 +1,5 @@
 # LeverageToken
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/1dbcbcfe9a8bcf9392b2ada63dd8f1827a90783b/src/LeverageToken.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/5f47bb45d300f9abc725e6a08e82ac80219f0e37/src/LeverageToken.sol)
 
 **Inherits:**
 Initializable, ERC20Upgradeable, ERC20PermitUpgradeable, OwnableUpgradeable, [ILeverageToken](/src/interfaces/ILeverageToken.sol/interface.ILeverageToken.md)
