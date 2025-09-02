@@ -32,6 +32,8 @@ import {IPreLiquidationLendingAdapter} from "src/interfaces/IPreLiquidationLendi
  * Note: `getDebt` uses `MorphoBalancesLib.expectedBorrowAssets` which calculates the total debt of the adapter based on the Morpho
  * market's borrow shares owned by the adapter. This logic rounds up, so it is possible that `getDebt` returns a value that is
  * greater than the actual debt owed to the Morpho market.
+ *
+ * @custom:contact security@seamlessprotocol.com
  */
 contract MorphoLendingAdapter is IMorphoLendingAdapter, Initializable {
     uint256 internal constant WAD = 1e18;

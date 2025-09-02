@@ -9,6 +9,7 @@ import {ILeverageToken} from "../interfaces/ILeverageToken.sol";
 import {ILeverageManager} from "../interfaces/ILeverageManager.sol";
 import {IPricingAdapter} from "../interfaces/periphery/IPricingAdapter.sol";
 
+/// @custom:contact security@seamlessprotocol.com
 contract PricingAdapter is IPricingAdapter {
     uint256 internal constant WAD = 1e18;
 
