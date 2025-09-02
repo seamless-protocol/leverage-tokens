@@ -118,38 +118,6 @@ contract LeverageManager is
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}
 
     /// @inheritdoc ILeverageManager
-    function convertToAssets(ILeverageToken token, uint256 shares)
-        external
-        view
-        returns (uint256 equityInCollateralAsset)
-    {
-        uint256 totalEquityInCollateralAsset = getLeverageTokenLendingAdapter(token).getEquityInCollateralAsset();
-        uint256 totalSupply = getFeeAdjustedTotalSupply(token);
-
-        if (totalSupply == 0) {
-            return 0;
-        }
-
-        return Math.mulDiv(shares, totalEquityInCollateralAsset, totalSupply, Math.Rounding.Floor);
-    }
-
-    /// @inheritdoc ILeverageManager
-    function convertToShares(ILeverageToken token, uint256 equityInCollateralAsset)
-        external
-        view
-        returns (uint256 shares)
-    {
-        uint256 totalEquityInCollateralAsset = getLeverageTokenLendingAdapter(token).getEquityInCollateralAsset();
-        uint256 totalSupply = getFeeAdjustedTotalSupply(token);
-
-        if (totalSupply == 0) {
-            return 0;
-        }
-
-        return Math.mulDiv(equityInCollateralAsset, totalSupply, totalEquityInCollateralAsset, Math.Rounding.Floor);
-    }
-
-    /// @inheritdoc ILeverageManager
     function convertCollateralToDebt(ILeverageToken token, uint256 collateral, Math.Rounding rounding)
         external
         view
@@ -220,6 +188,38 @@ contract LeverageManager is
         uint256 totalDebt = lendingAdapter.getDebt();
         uint256 totalSupply = getFeeAdjustedTotalSupply(token);
         return _convertSharesToDebt(token, lendingAdapter, shares, totalDebt, totalSupply, rounding);
+    }
+
+    /// @inheritdoc ILeverageManager
+    function convertToAssets(ILeverageToken token, uint256 shares)
+        external
+        view
+        returns (uint256 equityInCollateralAsset)
+    {
+        uint256 totalEquityInCollateralAsset = getLeverageTokenLendingAdapter(token).getEquityInCollateralAsset();
+        uint256 totalSupply = getFeeAdjustedTotalSupply(token);
+
+        if (totalSupply == 0) {
+            return 0;
+        }
+
+        return Math.mulDiv(shares, totalEquityInCollateralAsset, totalSupply, Math.Rounding.Floor);
+    }
+
+    /// @inheritdoc ILeverageManager
+    function convertToShares(ILeverageToken token, uint256 equityInCollateralAsset)
+        external
+        view
+        returns (uint256 shares)
+    {
+        uint256 totalEquityInCollateralAsset = getLeverageTokenLendingAdapter(token).getEquityInCollateralAsset();
+        uint256 totalSupply = getFeeAdjustedTotalSupply(token);
+
+        if (totalEquityInCollateralAsset == 0) {
+            return 0;
+        }
+
+        return Math.mulDiv(equityInCollateralAsset, totalSupply, totalEquityInCollateralAsset, Math.Rounding.Floor);
     }
 
     /// @inheritdoc ILeverageManager

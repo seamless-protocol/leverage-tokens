@@ -35,7 +35,7 @@ contract BeaconUpgradeToTest is Test {
         address user = makeAddr("user");
         leverageToken.mint(user, 100);
 
-        // Deploy new implementation with new LeverageManager
+        // Deploy new implementation
         NewLeverageToken newImplementation = new NewLeverageToken();
 
         // Expect the Upgraded event to be emitted

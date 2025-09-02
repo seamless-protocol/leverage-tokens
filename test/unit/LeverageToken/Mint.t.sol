@@ -13,13 +13,14 @@ contract MintTest is LeverageTokenTest {
     function test_mint(address to, uint256 amount) public {
         vm.assume(to != address(0));
 
+        vm.prank(leverageManager);
         leverageToken.mint(to, amount);
         assertEq(leverageToken.balanceOf(to), amount);
     }
 
     /// forge-config: default.fuzz.runs = 1
     function test_mint_RevertIf_CallerIsNotOwner(address caller, address to, uint256 amount) public {
-        vm.assume(caller != address(0));
+        vm.assume(caller != leverageManager);
 
         vm.startPrank(caller);
         vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, caller));

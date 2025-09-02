@@ -40,16 +40,21 @@ contract ConvertToSharesTest is LeverageManagerTest {
         assertEq(assets, 1); // 1 * 150 / 100 = 1.5, rounded down to 1
     }
 
-    function testFuzz_convertToShares_ZeroTotalSupply(uint256 shares, uint256 equityInCollateralAsset) public {
+    function testFuzz_convertToShares_ZeroTotalEquityInCollateralAsset(
+        uint256 equityInCollateralAsset,
+        uint256 totalSupply
+    ) public {
         vm.mockCall(
             address(lendingAdapter),
             abi.encodeWithSelector(ILendingAdapter.getEquityInCollateralAsset.selector),
-            abi.encode(equityInCollateralAsset)
+            abi.encode(0)
         );
 
-        vm.mockCall(address(leverageToken), abi.encodeWithSelector(IERC20.totalSupply.selector), abi.encode(0));
+        vm.mockCall(
+            address(leverageToken), abi.encodeWithSelector(IERC20.totalSupply.selector), abi.encode(totalSupply)
+        );
 
-        uint256 assets = leverageManager.convertToShares(leverageToken, shares);
+        uint256 assets = leverageManager.convertToShares(leverageToken, equityInCollateralAsset);
         assertEq(assets, 0);
     }
 }

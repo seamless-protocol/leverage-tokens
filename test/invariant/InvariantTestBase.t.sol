@@ -21,7 +21,6 @@ import {MorphoLendingAdapter} from "src/lending/MorphoLendingAdapter.sol";
 import {RebalanceAdapter} from "src/rebalance/RebalanceAdapter.sol";
 import {ExternalAction, LeverageTokenConfig, LeverageTokenState} from "src/types/DataTypes.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
-import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
 import {AdaptiveCurveIrm} from "test/invariant/morpho/AdaptiveCurveIrm.sol";
@@ -59,11 +58,7 @@ abstract contract InvariantTestBase is Test {
     RebalanceAdapter public rebalanceAdapterImplementation;
 
     function setUp() public {
-        uint64 currentNonce = vm.getNonce(address(this));
-        address precomputedLeverageManagerProxy = vm.computeCreateAddress(address(this), currentNonce + 4);
-
-        address leverageTokenImplementation =
-            address(new LeverageToken(ILeverageManager(precomputedLeverageManagerProxy)));
+        address leverageTokenImplementation = address(new LeverageToken());
 
         BeaconProxyFactory leverageTokenFactory = new BeaconProxyFactory(leverageTokenImplementation, address(this));
         address leverageManagerImplementation = address(new LeverageManagerHarness());
