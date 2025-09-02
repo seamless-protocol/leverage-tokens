@@ -8,9 +8,6 @@ import {Test} from "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-// Internal imports
-import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
-
 contract MockSwapper is Test {
     struct MockedExactInputSwap {
         IERC20 toToken;
@@ -39,12 +36,7 @@ contract MockSwapper is Test {
         );
     }
 
-    function swapExactInput(
-        IERC20 fromToken,
-        uint256 inputAmount,
-        uint256, /* minOutputAmount */
-        ISwapAdapter.SwapContext memory /* swapContext */
-    ) external returns (uint256) {
+    function swapExactInput(IERC20 fromToken, uint256 inputAmount) external returns (uint256) {
         SafeERC20.safeTransferFrom(fromToken, msg.sender, address(this), inputAmount);
 
         MockedExactInputSwap[] storage mockedSwaps = nextExactInputSwap[fromToken];
@@ -70,12 +62,7 @@ contract MockSwapper is Test {
         revert("MockSwapper: No mocked exact input swap set");
     }
 
-    function swapExactOutput(
-        IERC20 fromToken,
-        uint256 outputAmount,
-        uint256, /* maxInputAmount */
-        ISwapAdapter.SwapContext memory /* swapContext */
-    ) external returns (uint256) {
+    function swapExactOutput(IERC20 fromToken, uint256 outputAmount) external returns (uint256) {
         MockedExactOutputSwap[] storage mockedSwaps = nextExactOutputSwap[fromToken];
         for (uint256 i = 0; i < mockedSwaps.length; i++) {
             MockedExactOutputSwap memory mockedSwap = mockedSwaps[i];

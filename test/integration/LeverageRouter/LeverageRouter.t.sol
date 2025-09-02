@@ -7,9 +7,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
 import {LeverageRouter} from "src/periphery/LeverageRouter.sol";
-import {SwapAdapter} from "src/periphery/SwapAdapter.sol";
 import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
-import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {IntegrationTestBase} from "../IntegrationTestBase.t.sol";
 
 contract LeverageRouterTest is IntegrationTestBase {
@@ -23,16 +21,13 @@ contract LeverageRouterTest is IntegrationTestBase {
     address public constant cbBTC = 0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf;
 
     ILeverageRouter public leverageRouter;
-    ISwapAdapter public swapAdapter;
 
     function setUp() public virtual override {
         super.setUp();
 
-        swapAdapter = new SwapAdapter();
         leverageRouter = new LeverageRouter(leverageManager, MORPHO);
 
         vm.label(address(leverageRouter), "leverageRouter");
-        vm.label(address(swapAdapter), "swapAdapter");
     }
 
     function testFork_setUp() public view virtual override {
@@ -41,30 +36,6 @@ contract LeverageRouterTest is IntegrationTestBase {
 
         assertEq(address(leverageRouter.leverageManager()), address(leverageManager));
         assertEq(address(leverageRouter.morpho()), address(MORPHO));
-    }
-
-    function _dealAndDepositWithSwapAdapter(
-        IERC20 collateralAsset,
-        IERC20 debtAsset,
-        uint256 dealAmount,
-        uint256 collateralFromSender,
-        uint256 flashLoanAmount,
-        uint256 minShares,
-        ISwapAdapter.SwapContext memory swapContext
-    ) internal {
-        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
-        calls[0] = ILeverageRouter.Call({
-            target: address(debtAsset),
-            data: abi.encodeWithSelector(IERC20.approve.selector, address(swapAdapter), flashLoanAmount),
-            value: 0
-        });
-        calls[1] = ILeverageRouter.Call({
-            target: address(swapAdapter),
-            data: abi.encodeWithSelector(ISwapAdapter.swapExactInput.selector, debtAsset, flashLoanAmount, 0, swapContext),
-            value: 0
-        });
-
-        _dealAndDeposit(collateralAsset, debtAsset, dealAmount, collateralFromSender, flashLoanAmount, minShares, calls);
     }
 
     function _dealAndDeposit(
@@ -83,20 +54,16 @@ contract LeverageRouterTest is IntegrationTestBase {
         leverageRouter.deposit(leverageToken, collateralFromSender, flashLoanAmount, minShares, calls);
         vm.stopPrank();
 
-        // No leftover assets in the LeverageRouter or the SwapAdapter
+        // No leftover assets in the LeverageRouter
         assertEq(collateralAsset.balanceOf(address(leverageRouter)), 0, "no collateral left in LeverageRouter");
-        assertEq(collateralAsset.balanceOf(address(swapAdapter)), 0, "no collateral left in SwapAdapter");
         assertEq(debtAsset.balanceOf(address(leverageRouter)), 0, "no debt left in LeverageRouter");
-        assertEq(debtAsset.balanceOf(address(swapAdapter)), 0, "no debt left in SwapAdapter");
     }
 
     function _deployLeverageRouterIntegrationTestContracts() internal {
         _deployIntegrationTestContracts();
 
-        swapAdapter = new SwapAdapter();
         leverageRouter = new LeverageRouter(leverageManager, MORPHO);
 
         vm.label(address(leverageRouter), "leverageRouter");
-        vm.label(address(swapAdapter), "swapAdapter");
     }
 }

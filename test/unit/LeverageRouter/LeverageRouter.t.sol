@@ -13,7 +13,6 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
-import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
 import {LeverageRouter} from "src/periphery/LeverageRouter.sol";
 import {ActionData, ExternalAction} from "src/types/DataTypes.sol";
@@ -165,22 +164,6 @@ contract LeverageRouterTest is Test {
     ) internal {
         _mockLeverageManagerDeposit(requiredCollateral, requiredDebt, collateralReceivedFromDebtSwap, shares);
 
-        ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
-            path: new address[](0),
-            encodedPath: new bytes(0),
-            fees: new uint24[](0),
-            tickSpacing: new int24[](0),
-            exchange: ISwapAdapter.Exchange.AERODROME,
-            exchangeAddresses: ISwapAdapter.ExchangeAddresses({
-                aerodromeRouter: address(0),
-                aerodromePoolFactory: address(0),
-                aerodromeSlipstreamRouter: address(0),
-                uniswapSwapRouter02: address(0),
-                uniswapV2Router02: address(0)
-            }),
-            additionalData: new bytes(0)
-        });
-
         ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
         calls[0] = ILeverageRouter.Call({
             target: address(debtToken),
@@ -189,7 +172,7 @@ contract LeverageRouterTest is Test {
         });
         calls[1] = ILeverageRouter.Call({
             target: address(swapper),
-            data: abi.encodeWithSelector(ISwapAdapter.swapExactInput.selector, debtToken, requiredDebt, 0, swapContext),
+            data: abi.encodeWithSelector(MockSwapper.swapExactInput.selector, debtToken, requiredDebt),
             value: 0
         });
 

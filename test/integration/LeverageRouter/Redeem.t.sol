@@ -2,14 +2,14 @@
 pragma solidity ^0.8.26;
 
 // Dependency imports
-import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
-import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
+import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
+import {IUniswapV2Router02} from "src/interfaces/periphery/IUniswapV2Router02.sol";
 import {IVeloraAdapter} from "src/interfaces/periphery/IVeloraAdapter.sol";
 import {ActionData} from "src/types/DataTypes.sol";
 import {LeverageRouterTest} from "./LeverageRouter.t.sol";
-import {SwapPathLib} from "test/utils/SwapPathLib.sol";
 
 contract LeverageRouterRedeemWithVeloraTest is LeverageRouterTest {
     // Receiver on calldata is the VeloraAdapter
@@ -107,30 +107,36 @@ contract LeverageRouterRedeemWithVeloraTest is LeverageRouterTest {
 
         uint256 sharesBefore = leverageToken.balanceOf(user);
 
-        ISwapAdapter.SwapContext memory swapContext = ISwapAdapter.SwapContext({
-            exchange: ISwapAdapter.Exchange.UNISWAP_V2,
-            encodedPath: new bytes(0),
-            path: path,
-            fees: new uint24[](0),
-            tickSpacing: new int24[](0),
-            exchangeAddresses: ISwapAdapter.ExchangeAddresses({
-                aerodromeRouter: address(0),
-                aerodromePoolFactory: address(0),
-                aerodromeSlipstreamRouter: address(0),
-                uniswapSwapRouter02: address(0),
-                uniswapV2Router02: UNISWAP_V2_ROUTER02
-            }),
-            additionalData: new bytes(0)
+        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
+
+        // Approve UniswapV2 to spend the USDC for the swap
+        calls[0] = ILeverageRouter.Call({
+            target: address(USDC),
+            data: abi.encodeWithSelector(IERC20.approve.selector, UNISWAP_V2_ROUTER02, debt),
+            value: 0
+        });
+        // Swap USDC to WETH
+        calls[1] = ILeverageRouter.Call({
+            target: UNISWAP_V2_ROUTER02,
+            data: abi.encodeWithSelector(
+                IUniswapV2Router02.swapExactTokensForTokens.selector,
+                debt,
+                0,
+                path,
+                address(leverageRouter),
+                block.timestamp
+            ),
+            value: 0
         });
 
-        _dealAndDepositWithSwapAdapter(
+        _dealAndDeposit(
             WETH,
             USDC,
             userBalanceOfCollateralAssetBefore,
             collateralFromSender + additionalCollateralRequired,
             debt,
             0,
-            swapContext
+            calls
         );
 
         uint256 sharesAfter = leverageToken.balanceOf(user) - sharesBefore;
