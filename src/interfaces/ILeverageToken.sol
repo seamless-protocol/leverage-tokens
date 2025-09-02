@@ -11,6 +11,16 @@ interface ILeverageToken is IERC20 {
     /// @param symbol The symbol of the LeverageToken
     event LeverageTokenInitialized(string name, string symbol);
 
+    /// @notice Converts LeverageToken shares to assets
+    /// @param shares The number of shares to convert to assets
+    /// @return assets The number of assets that correspond to the shares (denominated in the collateral asset)
+    function convertToAssets(uint256 shares) external view returns (uint256);
+
+    /// @notice Converts assets to LeverageToken shares
+    /// @param assets The number of assets (denominated in the collateral asset) to convert to shares
+    /// @return shares The number of shares that correspond to the assets
+    function convertToShares(uint256 assets) external view returns (uint256);
+
     /// @notice Returns the LeverageManager contract used by the LeverageToken
     /// @return leverageManager The LeverageManager contract used by the LeverageToken
     function leverageManager() external view returns (ILeverageManager);
