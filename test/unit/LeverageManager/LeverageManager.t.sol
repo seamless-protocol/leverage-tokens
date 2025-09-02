@@ -45,10 +45,7 @@ contract LeverageManagerTest is FeeManagerTest {
     LeverageManagerHarness public leverageManager;
 
     function setUp() public virtual override {
-        uint64 currentNonce = vm.getNonce(address(this));
-        address precomputedLeverageManagerProxy = vm.computeCreateAddress(address(this), currentNonce + 6);
-
-        leverageTokenImplementation = address(new LeverageToken(ILeverageManager(precomputedLeverageManagerProxy)));
+        leverageTokenImplementation = address(new LeverageToken());
         leverageTokenFactory = new BeaconProxyFactory(leverageTokenImplementation, address(this));
         lendingAdapter = new MockLendingAdapter(address(collateralToken), address(debtToken), address(this));
         rebalanceAdapter = new MockRebalanceAdapter();

@@ -28,77 +28,22 @@ contract LeverageToken is
     OwnableUpgradeable,
     ILeverageToken
 {
-    /// @inheritdoc ILeverageToken
-    ILeverageManager public immutable leverageManager;
-
-    constructor(ILeverageManager _leverageManager) {
-        leverageManager = _leverageManager;
-    }
-
-    function initialize(address _owner, string memory _name, string memory _symbol) external initializer {
+    function initialize(address _leverageManager, string memory _name, string memory _symbol) external initializer {
         __ERC20_init(_name, _symbol);
         __ERC20Permit_init(_name);
-        __Ownable_init(_owner);
+        __Ownable_init(_leverageManager);
 
         emit ILeverageToken.LeverageTokenInitialized(_name, _symbol);
     }
 
     /// @inheritdoc ILeverageToken
     function convertToAssets(uint256 shares) public view returns (uint256) {
-        uint256 _totalSupply = totalSupply();
-
-        if (_totalSupply == 0) {
-            uint256 leverageTokenDecimals = decimals();
-            uint256 collateralDecimals = IERC20Metadata(
-                address(leverageManager.getLeverageTokenLendingAdapter(this).getCollateralAsset())
-            ).decimals();
-
-            if (collateralDecimals > leverageTokenDecimals) {
-                uint256 scalingFactor = 10 ** (collateralDecimals - leverageTokenDecimals);
-                return shares * scalingFactor;
-            } else {
-                uint256 scalingFactor = 10 ** (leverageTokenDecimals - collateralDecimals);
-                return shares / scalingFactor;
-            }
-        }
-
-        return Math.mulDiv(
-            shares,
-            leverageManager.getLeverageTokenLendingAdapter(this).getEquityInCollateralAsset(),
-            _totalSupply,
-            Math.Rounding.Floor
-        );
+        return ILeverageManager(owner()).convertToAssets(this, shares);
     }
 
     /// @inheritdoc ILeverageToken
     function convertToShares(uint256 assets) public view returns (uint256) {
-        uint256 _totalSupply = totalSupply();
-
-        ILendingAdapter lendingAdapter = leverageManager.getLeverageTokenLendingAdapter(this);
-
-        if (_totalSupply == 0) {
-            uint256 leverageTokenDecimals = decimals();
-            uint256 collateralDecimals = IERC20Metadata(address(lendingAdapter.getCollateralAsset())).decimals();
-
-            if (collateralDecimals > leverageTokenDecimals) {
-                uint256 scalingFactor = 10 ** (collateralDecimals - leverageTokenDecimals);
-                return assets / scalingFactor;
-            } else {
-                uint256 scalingFactor = 10 ** (leverageTokenDecimals - collateralDecimals);
-                return assets * scalingFactor;
-            }
-        }
-
-        if (lendingAdapter.getEquityInCollateralAsset() == 0) {
-            return 0;
-        }
-
-        return Math.mulDiv(
-            assets,
-            _totalSupply,
-            leverageManager.getLeverageTokenLendingAdapter(this).getEquityInCollateralAsset(),
-            Math.Rounding.Floor
-        );
+        return ILeverageManager(owner()).convertToShares(this, assets);
     }
 
     /// @inheritdoc ILeverageToken

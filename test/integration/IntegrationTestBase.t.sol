@@ -149,10 +149,7 @@ contract IntegrationTestBase is Test {
     }
 
     function _deployIntegrationTestContracts() internal {
-        uint64 currentNonce = vm.getNonce(address(this));
-        address precomputedLeverageManagerProxy = vm.computeCreateAddress(address(this), currentNonce + 4);
-
-        LeverageToken leverageTokenImplementation = new LeverageToken(ILeverageManager(precomputedLeverageManagerProxy));
+        LeverageToken leverageTokenImplementation = new LeverageToken();
         BeaconProxyFactory leverageTokenFactory =
             new BeaconProxyFactory(address(leverageTokenImplementation), address(this));
 

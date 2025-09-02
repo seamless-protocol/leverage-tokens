@@ -21,10 +21,6 @@ interface ILeverageToken is IERC20 {
     /// @return shares The number of shares that correspond to the assets
     function convertToShares(uint256 assets) external view returns (uint256);
 
-    /// @notice Returns the LeverageManager contract used by the LeverageToken
-    /// @return leverageManager The LeverageManager contract used by the LeverageToken
-    function leverageManager() external view returns (ILeverageManager);
-
     /// @notice Mints new tokens to the specified address
     /// @param to The address to mint tokens to
     /// @param amount The amount of tokens to mint

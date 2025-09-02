@@ -144,6 +144,26 @@ interface ILeverageManager is IFeeManager {
         view
         returns (uint256 debt);
 
+    /// @notice Converts an amount of shares to an amount of equity in collateral asset for a LeverageToken, based on the
+    /// price oracle used by the underlying lending adapter of the LeverageToken
+    /// @param token LeverageToken to convert shares to equity in collateral asset for
+    /// @param shares Amount of shares to convert to equity in collateral asset
+    /// @return equityInCollateralAsset Amount of equity in collateral asset that correspond to the shares
+    function convertToAssets(ILeverageToken token, uint256 shares)
+        external
+        view
+        returns (uint256 equityInCollateralAsset);
+
+    /// @notice Converts an amount of equity in collateral asset to an amount of shares for a LeverageToken, based on the
+    /// price oracle used by the underlying lending adapter of the LeverageToken
+    /// @param token LeverageToken to convert equity in collateral asset to shares for
+    /// @param equityInCollateralAsset Amount of equity in collateral asset to convert to shares
+    /// @return shares Amount of shares that correspond to the equity in collateral asset
+    function convertToShares(ILeverageToken token, uint256 equityInCollateralAsset)
+        external
+        view
+        returns (uint256 shares);
+
     /// @notice Returns the factory for creating new LeverageTokens
     /// @return factory Factory for creating new LeverageTokens
     function getLeverageTokenFactory() external view returns (IBeaconProxyFactory factory);
