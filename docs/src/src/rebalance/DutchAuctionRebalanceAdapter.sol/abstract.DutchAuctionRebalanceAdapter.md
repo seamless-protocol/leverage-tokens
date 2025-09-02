@@ -1,5 +1,5 @@
 # DutchAuctionRebalanceAdapter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/1dbcbcfe9a8bcf9392b2ada63dd8f1827a90783b/src/rebalance/DutchAuctionRebalanceAdapter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/5f47bb45d300f9abc725e6a08e82ac80219f0e37/src/rebalance/DutchAuctionRebalanceAdapter.sol)
 
 **Inherits:**
 [IDutchAuctionRebalanceAdapter](/src/interfaces/IDutchAuctionRebalanceAdapter.sol/interface.IDutchAuctionRebalanceAdapter.md), Initializable

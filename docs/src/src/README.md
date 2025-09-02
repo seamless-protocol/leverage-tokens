@@ -3,6 +3,7 @@
 # Contents
 - [interfaces](/src/interfaces)
 - [lending](/src/lending)
+- [libraries](/src/libraries)
 - [periphery](/src/periphery)
 - [rebalance](/src/rebalance)
 - [types](/src/types)

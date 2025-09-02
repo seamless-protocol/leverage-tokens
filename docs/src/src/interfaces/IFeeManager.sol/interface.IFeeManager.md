@@ -1,5 +1,5 @@
 # IFeeManager
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/1dbcbcfe9a8bcf9392b2ada63dd8f1827a90783b/src/interfaces/IFeeManager.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/5f47bb45d300f9abc725e6a08e82ac80219f0e37/src/interfaces/IFeeManager.sol)
 
 
 ## Functions
@@ -34,6 +34,27 @@ function getDefaultManagementFeeAtCreation() external view returns (uint256 fee)
 |Name|Type|Description|
 |----|----|-----------|
 |`fee`|`uint256`|The default management fee for new LeverageTokens, 100_00 is 100%|
+
+
+### getFeeAdjustedTotalSupply
+
+Returns the total supply of the LeverageToken adjusted for any accrued management fees
+
+
+```solidity
+function getFeeAdjustedTotalSupply(ILeverageToken token) external view returns (uint256 totalSupply);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`ILeverageToken`|LeverageToken to get fee adjusted total supply for|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`totalSupply`|`uint256`|Fee adjusted total supply of the LeverageToken|
 
 
 ### getLastManagementFeeAccrualTimestamp

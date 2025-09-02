@@ -100,7 +100,7 @@ contract VeloraAdapter is IVeloraAdapter {
         }
     }
 
-    /// @notice Sets exact amount in `callData` to `exactAmount`.
+    /// @notice Sets exact amount in `callData` to `exactAmount`, and limit amount to `limitAmount`.
     /// @notice If `offsets.quotedAmount` is not zero, proportionally scale quoted amount in `callData`.
     function _updateAmounts(
         bytes memory callData,
