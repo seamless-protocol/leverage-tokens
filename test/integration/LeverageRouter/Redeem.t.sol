@@ -44,7 +44,7 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
         });
 
         // On chain exact input swap of collateralForSwap using UniswapV2 results in ~6 USDC being left over
-        uint256 expectedSurplusDebt = 6.245106e6;
+        uint256 expectedSurplusDebt = 6.228918e6;
 
         _redeemAndAssertBalances(shares, 0, calls, expectedSurplusDebt);
     }
@@ -83,7 +83,7 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
         });
 
         // On chain exact input swap of collateralForSwap using UniswapV2 results in ~3.5 USDC being left over
-        uint256 expectedSurplusDebt = 3.538999e6;
+        uint256 expectedSurplusDebt = 3.522811e6;
 
         _redeemAndAssertBalances(sharesToRedeem, 0, calls, expectedSurplusDebt);
     }
@@ -112,8 +112,8 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
         });
         calls[1] = ILeverageRouter.Call({target: LIFI_DIAMOND, data: sellCalldata, value: 0});
 
-        // ~537 USDC left over from the swap
-        _redeemAndAssertBalances(shares, previewData.collateral - collateralForSwap, calls, 537.37438e6);
+        // ~1.5 USDC left over from the swap
+        _redeemAndAssertBalances(shares, previewData.collateral - collateralForSwap, calls, 1.555369e6);
     }
 
     function testFork_redeem_LiFiExactOutputSwap() public {
@@ -145,8 +145,8 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
         uint256 slippage = 1e18 - (remainingCollateralForSenderAfterSwap * 1e18 / equityInCollateral);
         assertEq(slippage, 0.010594843629135858e18); // An additional ~1.5% of the user's equity was required for the swap
 
-        // ~572 USDC left over from the swap
-        _redeemAndAssertBalances(shares, 0.867381850108809183 ether, calls, 571.580586e6);
+        // ~33 USDC left over from the swap
+        _redeemAndAssertBalances(shares, 0.867381850108809183 ether, calls, 33.930323e6);
     }
 
     function _deposit() internal returns (uint256 shares) {
@@ -197,6 +197,7 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
         uint256 collateralBeforeRedeem = morphoLendingAdapter.getCollateral();
         uint256 debtBeforeRedeem = morphoLendingAdapter.getDebt();
         uint256 userBalanceOfCollateralAssetBeforeRedeem = WETH.balanceOf(user);
+        uint256 userBalanceOfDebtAssetBeforeRedeem = USDC.balanceOf(user);
 
         ActionData memory previewData = leverageManager.previewRedeem(leverageToken, shares);
 
@@ -217,6 +218,6 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
         assertGe(WETH.balanceOf(user), userBalanceOfCollateralAssetBeforeRedeem + minCollateralForSender);
 
         // Validate that user also received the expected debt surplus from the swap
-        assertEq(USDC.balanceOf(user), expectedDebtForSender);
+        assertEq(USDC.balanceOf(user), userBalanceOfDebtAssetBeforeRedeem + expectedDebtForSender);
     }
 }
