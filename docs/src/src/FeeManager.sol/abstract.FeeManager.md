@@ -1,5 +1,5 @@
 # FeeManager
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/5f47bb45d300f9abc725e6a08e82ac80219f0e37/src/FeeManager.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/6fd46c53a22afa8918e99c47589c9bd10722b593/src/FeeManager.sol)
 
 **Inherits:**
 [IFeeManager](/src/interfaces/IFeeManager.sol/interface.IFeeManager.md), Initializable, AccessControlUpgradeable
@@ -14,6 +14,9 @@ shares minted for mints and shares burned for redeems
 accrues linearly over time and is minted to the treasury when the `chargeManagementFee` function is executed
 Note: This contract is abstract and meant to be inherited by LeverageManager
 The maximum fee that can be set for each action is 100_00 (100%).*
+
+**Note:**
+contact: security@seamlessprotocol.com
 
 
 ## State Variables

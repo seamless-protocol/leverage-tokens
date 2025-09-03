@@ -9,9 +9,15 @@ import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 import {ILeverageManager} from "../ILeverageManager.sol";
 import {ILeverageToken} from "../ILeverageToken.sol";
 import {IVeloraAdapter} from "./IVeloraAdapter.sol";
-import {ActionData, ExternalAction} from "src/types/DataTypes.sol";
+import {ActionData} from "src/types/DataTypes.sol";
 
 interface ILeverageRouter {
+    enum LeverageRouterAction {
+        Deposit,
+        Redeem,
+        RedeemWithVelora
+    }
+
     /// @notice Struct containing the target, value, and data for a single external call.
     struct Call {
         address target; // Call target
@@ -35,11 +41,25 @@ interface ILeverageRouter {
 
     /// @notice Morpho flash loan callback data to pass to the Morpho flash loan callback handler
     struct MorphoCallbackData {
-        ExternalAction action;
+        LeverageRouterAction action;
         bytes data;
     }
 
     /// @notice Redeem related parameters to pass to the Morpho flash loan callback handler for redeems
+    struct RedeemParams {
+        // Address of the sender of the redeem
+        address sender;
+        // LeverageToken to redeem from
+        ILeverageToken leverageToken;
+        // Amount of shares to redeem
+        uint256 shares;
+        // Minimum amount of collateral for the sender to receive
+        uint256 minCollateralForSender;
+        // External calls to execute for the swap of flash loaned debt to collateral
+        Call[] swapCalls;
+    }
+
+    /// @notice Redeem related parameters to pass to the Morpho flash loan callback handler for redeems using Velora
     struct RedeemWithVeloraParams {
         // Address of the sender of the redeem, whose shares will be burned and the collateral asset will be transferred to
         address sender;
@@ -124,6 +144,16 @@ interface ILeverageRouter {
         uint256 minShares,
         Call[] calldata swapCalls
     ) external;
+
+    /// @notice Redeems an amount of shares of a LeverageToken and transfers collateral asset to the sender, using arbitrary
+    /// calldata for the swap of collateral from the redemption to debt to repay the flash loan. Any surplus debt assets
+    /// after repaying the flash loan are given to the sender along with the remaining collateral asset.
+    /// @param token LeverageToken to redeem from
+    /// @param shares Amount of shares to redeem
+    /// @param minCollateralForSender Minimum amount of collateral for the sender to receive
+    /// @param swapCalls External calls to execute for the swap of collateral from the redemption to debt to repay the flash loan
+    function redeem(ILeverageToken token, uint256 shares, uint256 minCollateralForSender, Call[] calldata swapCalls)
+        external;
 
     /// @notice Redeems an amount of shares of a LeverageToken and transfers collateral asset to the sender, using Velora
     /// for the required swap of collateral from the redemption to debt to repay the flash loan

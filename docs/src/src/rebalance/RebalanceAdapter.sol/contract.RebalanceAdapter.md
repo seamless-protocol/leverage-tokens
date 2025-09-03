@@ -1,5 +1,5 @@
 # RebalanceAdapter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/5f47bb45d300f9abc725e6a08e82ac80219f0e37/src/rebalance/RebalanceAdapter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/6fd46c53a22afa8918e99c47589c9bd10722b593/src/rebalance/RebalanceAdapter.sol)
 
 **Inherits:**
 [IRebalanceAdapter](/src/interfaces/IRebalanceAdapter.sol/interface.IRebalanceAdapter.md), UUPSUpgradeable, OwnableUpgradeable, [CollateralRatiosRebalanceAdapter](/src/rebalance/CollateralRatiosRebalanceAdapter.sol/abstract.CollateralRatiosRebalanceAdapter.md), [DutchAuctionRebalanceAdapter](/src/rebalance/DutchAuctionRebalanceAdapter.sol/abstract.DutchAuctionRebalanceAdapter.md), [PreLiquidationRebalanceAdapter](/src/rebalance/PreLiquidationRebalanceAdapter.sol/abstract.PreLiquidationRebalanceAdapter.md)
@@ -15,6 +15,9 @@ of a specified range before a rebalance action can be performed.
 - The PreLiquidationRebalanceAdapter allows for fast-tracking rebalance operations for LeverageTokens that are below
 a specified collateral ratio threshold. The intention is that this acts as a pre-liquidation rebalance mechanism
 in cases that the dutch auction price is too slow to react to a dramatic drop in collateral ratio.*
+
+**Note:**
+contact: security@seamlessprotocol.com
 
 
 ## Functions

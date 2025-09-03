@@ -1,9 +1,12 @@
 # BytesLib
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/5f47bb45d300f9abc725e6a08e82ac80219f0e37/src/libraries/BytesLib.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/6fd46c53a22afa8918e99c47589c9bd10722b593/src/libraries/BytesLib.sol)
 
 Library exposing bytes manipulation.
 
 *This library was copied from Morpho https://github.com/morpho-org/bundler3/blob/4887f33299ba6e60b54a51237b16e7392dceeb97/src/libraries/BytesLib.sol*
+
+**Note:**
+contact: security@seamlessprotocol.com
 
 
 ## Functions

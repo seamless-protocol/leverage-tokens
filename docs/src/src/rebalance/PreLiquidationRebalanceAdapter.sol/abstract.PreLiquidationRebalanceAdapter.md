@@ -1,5 +1,5 @@
 # PreLiquidationRebalanceAdapter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/5f47bb45d300f9abc725e6a08e82ac80219f0e37/src/rebalance/PreLiquidationRebalanceAdapter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/6fd46c53a22afa8918e99c47589c9bd10722b593/src/rebalance/PreLiquidationRebalanceAdapter.sol)
 
 **Inherits:**
 Initializable, [IPreLiquidationRebalanceAdapter](/src/interfaces/IPreLiquidationRebalanceAdapter.sol/interface.IPreLiquidationRebalanceAdapter.md)
@@ -13,6 +13,9 @@ The PreLiquidationRebalanceAdapter is also initialized with a rebalance reward, 
 liquidation penalty of the underlying lending pool used by the LeverageToken. The result is the amount of equity that the rebalancer
 can earn for rebalancing the LeverageToken. It is expected that the rebalance reward is set to a value that is less than the liquidation penalty,
 but high enough such that rebalancing is attractive to rebalancers.*
+
+**Note:**
+contact: security@seamlessprotocol.com
 
 
 ## State Variables

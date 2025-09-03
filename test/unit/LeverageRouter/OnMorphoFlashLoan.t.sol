@@ -7,7 +7,6 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 // Internal imports
 import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
 import {IVeloraAdapter} from "src/interfaces/periphery/IVeloraAdapter.sol";
-import {ExternalAction} from "src/types/DataTypes.sol";
 import {LeverageRouterTest} from "./LeverageRouter.t.sol";
 import {MockSwapper} from "../mock/MockSwapper.sol";
 
@@ -53,7 +52,12 @@ contract OnMorphoFlashLoanTest is LeverageRouterTest {
         vm.prank(address(morpho));
         leverageRouter.onMorphoFlashLoan(
             flashLoanAmount,
-            abi.encode(ILeverageRouter.MorphoCallbackData({action: ExternalAction.Mint, data: depositData}))
+            abi.encode(
+                ILeverageRouter.MorphoCallbackData({
+                    action: ILeverageRouter.LeverageRouterAction.Deposit,
+                    data: depositData
+                })
+            )
         );
         assertEq(leverageToken.balanceOf(address(this)), shares);
         assertEq(debtToken.balanceOf(address(leverageRouter)), requiredDebt);
@@ -66,16 +70,72 @@ contract OnMorphoFlashLoanTest is LeverageRouterTest {
         uint256 collateralReceivedFromDebtSwap = 5 ether;
         uint256 shares = 10 ether;
         uint256 requiredDebt = 100e6;
+        uint256 excessDebt = 10e6;
 
         _deposit(collateralFromSender, requiredCollateral, requiredDebt, collateralReceivedFromDebtSwap, shares);
 
         uint256 requiredCollateralForSwap = requiredCollateral - collateralFromSender;
+        swapper.mockNextExactInputSwap(collateralToken, debtToken, uint256(requiredDebt) + excessDebt);
         _mockLeverageManagerRedeem(
-            requiredCollateral,
-            requiredDebt,
-            requiredCollateralForSwap,
-            shares,
-            requiredCollateral - requiredCollateralForSwap
+            requiredCollateral, requiredDebt, shares, requiredCollateral - requiredCollateralForSwap
+        );
+
+        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
+        calls[0] = ILeverageRouter.Call({
+            target: address(collateralToken),
+            data: abi.encodeWithSelector(IERC20.approve.selector, address(swapper), requiredCollateralForSwap),
+            value: 0
+        });
+        calls[1] = ILeverageRouter.Call({
+            target: address(swapper),
+            data: abi.encodeWithSelector(MockSwapper.swapExactInput.selector, collateralToken, requiredCollateralForSwap),
+            value: 0
+        });
+
+        bytes memory redeemData = abi.encode(
+            ILeverageRouter.RedeemParams({
+                leverageToken: leverageToken,
+                shares: shares,
+                minCollateralForSender: requiredCollateral - requiredCollateralForSwap,
+                sender: address(this),
+                swapCalls: calls
+            })
+        );
+
+        leverageToken.approve(address(leverageRouter), shares);
+
+        // Mock morpho flash loaning the debt required for the redeem
+        uint256 flashLoanAmount = requiredDebt;
+        deal(address(debtToken), address(leverageRouter), flashLoanAmount);
+
+        vm.prank(address(morpho));
+        leverageRouter.onMorphoFlashLoan(
+            flashLoanAmount,
+            abi.encode(
+                ILeverageRouter.MorphoCallbackData({
+                    action: ILeverageRouter.LeverageRouterAction.Redeem,
+                    data: redeemData
+                })
+            )
+        );
+        assertEq(leverageToken.balanceOf(address(this)), 0);
+        assertEq(collateralToken.balanceOf(address(this)), requiredCollateral - requiredCollateralForSwap);
+        assertEq(debtToken.balanceOf(address(this)), excessDebt);
+    }
+
+    function test_onMorphoFlashLoan_RedeemWithVelora() public {
+        uint256 requiredCollateral = 10 ether;
+        uint256 collateralFromSender = 5 ether;
+        uint256 collateralReceivedFromDebtSwap = 5 ether;
+        uint256 shares = 10 ether;
+        uint256 requiredDebt = 100e6;
+
+        _deposit(collateralFromSender, requiredCollateral, requiredDebt, collateralReceivedFromDebtSwap, shares);
+
+        uint256 requiredCollateralForSwap = requiredCollateral - collateralFromSender;
+        veloraAdapter.mockNextBuy(address(collateralToken), requiredCollateralForSwap);
+        _mockLeverageManagerRedeem(
+            requiredCollateral, requiredDebt, shares, requiredCollateral - requiredCollateralForSwap
         );
 
         bytes memory redeemWithVeloraData = abi.encode(
@@ -100,7 +160,12 @@ contract OnMorphoFlashLoanTest is LeverageRouterTest {
         vm.prank(address(morpho));
         leverageRouter.onMorphoFlashLoan(
             flashLoanAmount,
-            abi.encode(ILeverageRouter.MorphoCallbackData({action: ExternalAction.Redeem, data: redeemWithVeloraData}))
+            abi.encode(
+                ILeverageRouter.MorphoCallbackData({
+                    action: ILeverageRouter.LeverageRouterAction.RedeemWithVelora,
+                    data: redeemWithVeloraData
+                })
+            )
         );
         assertEq(leverageToken.balanceOf(address(this)), 0);
         assertEq(collateralToken.balanceOf(address(this)), requiredCollateral - requiredCollateralForSwap);
