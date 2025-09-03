@@ -74,12 +74,9 @@ contract OnMorphoFlashLoanTest is LeverageRouterTest {
         _deposit(collateralFromSender, requiredCollateral, requiredDebt, collateralReceivedFromDebtSwap, shares);
 
         uint256 requiredCollateralForSwap = requiredCollateral - collateralFromSender;
+        veloraAdapter.mockNextBuy(address(collateralToken), requiredCollateralForSwap);
         _mockLeverageManagerRedeem(
-            requiredCollateral,
-            requiredDebt,
-            requiredCollateralForSwap,
-            shares,
-            requiredCollateral - requiredCollateralForSwap
+            requiredCollateral, requiredDebt, shares, requiredCollateral - requiredCollateralForSwap
         );
 
         bytes memory redeemWithVeloraData = abi.encode(

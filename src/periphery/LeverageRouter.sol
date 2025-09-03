@@ -109,6 +109,7 @@ contract LeverageRouter is ILeverageRouter {
         );
     }
 
+    /// @inheritdoc ILeverageRouter
     function redeem(ILeverageToken token, uint256 shares, uint256 minCollateralForSender, Call[] calldata swapCalls)
         external
     {

@@ -120,12 +120,9 @@ contract LeverageRouterTest is Test {
     function _mockLeverageManagerRedeem(
         uint256 requiredCollateral,
         uint256 requiredDebt,
-        uint256 requiredCollateralForSwap,
         uint256 shares,
         uint256 minCollateral
     ) internal {
-        veloraAdapter.mockNextBuy(address(collateralToken), requiredCollateralForSwap);
-
         vm.mockCall(
             address(leverageManager),
             abi.encodeWithSelector(ILeverageManager.previewRedeem.selector, leverageToken, shares),

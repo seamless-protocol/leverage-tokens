@@ -145,6 +145,16 @@ interface ILeverageRouter {
         Call[] calldata swapCalls
     ) external;
 
+    /// @notice Redeems an amount of shares of a LeverageToken and transfers collateral asset to the sender, using arbitrary
+    /// calldata for the swap of collateral from the redemption to debt to repay the flash loan. Any surplus debt assets
+    /// after repaying the flash loan are given to the sender along with the remaining collateral asset.
+    /// @param token LeverageToken to redeem from
+    /// @param shares Amount of shares to redeem
+    /// @param minCollateralForSender Minimum amount of collateral for the sender to receive
+    /// @param swapCalls External calls to execute for the swap of collateral from the redemption to debt to repay the flash loan
+    function redeem(ILeverageToken token, uint256 shares, uint256 minCollateralForSender, Call[] calldata swapCalls)
+        external;
+
     /// @notice Redeems an amount of shares of a LeverageToken and transfers collateral asset to the sender, using Velora
     /// for the required swap of collateral from the redemption to debt to repay the flash loan
     /// @param token LeverageToken to redeem from
