@@ -243,6 +243,7 @@ contract LeverageRouter is ILeverageRouter {
 
         // Use the debt from the flash loan to redeem the shares from the sender
         SafeERC20.forceApprove(debtAsset, address(leverageManager), debtLoanAmount);
+        // slither-disable-next-line unused-return
         leverageManager.redeem(params.leverageToken, params.shares, params.minCollateralForSender);
 
         // Swap the collateral asset received from the flash loan to the debt asset, used to repay the flash loan.
