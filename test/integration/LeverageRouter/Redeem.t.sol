@@ -23,13 +23,13 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
         ActionData memory previewData = leverageManager.previewRedeem(leverageToken, shares);
         uint256 collateralForSwap = previewData.collateral * 1.005e18 / 2e18;
 
-        // Approve UniswapV2 to spend the USDC for the swap
+        // Approve UniswapV2 to spend the WETH for the swap
         calls[0] = ILeverageRouter.Call({
             target: address(WETH),
             data: abi.encodeWithSelector(IERC20.approve.selector, UNISWAP_V2_ROUTER02, collateralForSwap),
             value: 0
         });
-        // Swap USDC to WETH
+        // Swap WETH to USDC
         calls[1] = ILeverageRouter.Call({
             target: UNISWAP_V2_ROUTER02,
             data: abi.encodeWithSelector(
@@ -62,13 +62,13 @@ contract LeverageRouterRedeemTest is LeverageRouterTest {
         ActionData memory previewData = leverageManager.previewRedeem(leverageToken, sharesToRedeem);
         uint256 collateralForSwap = previewData.collateral * 1.005e18 / 2e18;
 
-        // Approve UniswapV2 to spend the USDC for the swap
+        // Approve UniswapV2 to spend the WETH for the swap
         calls[0] = ILeverageRouter.Call({
             target: address(WETH),
             data: abi.encodeWithSelector(IERC20.approve.selector, UNISWAP_V2_ROUTER02, collateralForSwap),
             value: 0
         });
-        // Swap USDC to WETH
+        // Swap WETH to USDC
         calls[1] = ILeverageRouter.Call({
             target: UNISWAP_V2_ROUTER02,
             data: abi.encodeWithSelector(
