@@ -246,7 +246,7 @@ contract LeverageRouter is ILeverageRouter {
         // slither-disable-next-line unused-return
         leverageManager.redeem(params.leverageToken, params.shares, params.minCollateralForSender);
 
-        // Swap the collateral asset received from the flash loan to the debt asset, used to repay the flash loan.
+        // Swap the collateral asset received from the redeem to the debt asset, used to repay the flash loan.
         for (uint256 i = 0; i < params.swapCalls.length; i++) {
             // slither-disable-next-line unused-return
             Address.functionCallWithValue(
