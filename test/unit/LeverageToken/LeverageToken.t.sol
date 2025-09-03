@@ -15,6 +15,8 @@ import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 contract LeverageTokenTest is Test {
     LeverageToken public leverageToken;
 
+    address public leverageManager = makeAddr("leverageManager");
+
     function setUp() public virtual {
         address leverageTokenImplementation = address(new LeverageToken());
 
@@ -23,7 +25,7 @@ contract LeverageTokenTest is Test {
 
         address leverageTokenProxy = UnsafeUpgrades.deployUUPSProxy(
             leverageTokenImplementation,
-            abi.encodeWithSelector(LeverageToken.initialize.selector, address(this), "Test name", "Test symbol")
+            abi.encodeWithSelector(LeverageToken.initialize.selector, leverageManager, "Test name", "Test symbol")
         );
 
         leverageToken = LeverageToken(leverageTokenProxy);
@@ -32,11 +34,11 @@ contract LeverageTokenTest is Test {
     function test_setUp() public view {
         assertEq(leverageToken.name(), "Test name");
         assertEq(leverageToken.symbol(), "Test symbol");
-        assertEq(leverageToken.owner(), address(this));
+        assertEq(leverageToken.owner(), leverageManager);
     }
 
     function test_initialize_RevertIf_AlreadyInitialized() public {
         vm.expectRevert(abi.encodeWithSelector(Initializable.InvalidInitialization.selector));
-        leverageToken.initialize(address(this), "Test name", "Test symbol");
+        leverageToken.initialize(leverageManager, "Test name", "Test symbol");
     }
 }

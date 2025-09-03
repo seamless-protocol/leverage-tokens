@@ -162,6 +162,7 @@ contract IntegrationTestBase is Test {
                 )
             )
         );
+
         LeverageManager(address(leverageManager)).grantRole(keccak256("FEE_MANAGER_ROLE"), address(this));
 
         MorphoLendingAdapter morphoLendingAdapterImplementation =
