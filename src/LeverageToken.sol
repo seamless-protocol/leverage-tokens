@@ -5,10 +5,11 @@ pragma solidity ^0.8.20;
 import {ERC20PermitUpgradeable} from
     "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 // Internal imports
+import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 
 /**
@@ -24,12 +25,22 @@ contract LeverageToken is
     OwnableUpgradeable,
     ILeverageToken
 {
-    function initialize(address _owner, string memory _name, string memory _symbol) external initializer {
+    function initialize(address _leverageManager, string memory _name, string memory _symbol) external initializer {
         __ERC20_init(_name, _symbol);
         __ERC20Permit_init(_name);
-        __Ownable_init(_owner);
+        __Ownable_init(_leverageManager);
 
         emit ILeverageToken.LeverageTokenInitialized(_name, _symbol);
+    }
+
+    /// @inheritdoc ILeverageToken
+    function convertToAssets(uint256 shares) public view returns (uint256 assets) {
+        return ILeverageManager(owner()).convertToAssets(this, shares);
+    }
+
+    /// @inheritdoc ILeverageToken
+    function convertToShares(uint256 assets) public view returns (uint256 shares) {
+        return ILeverageManager(owner()).convertToShares(this, assets);
     }
 
     /// @inheritdoc ILeverageToken
