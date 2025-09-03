@@ -9,9 +9,15 @@ import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 import {ILeverageManager} from "../ILeverageManager.sol";
 import {ILeverageToken} from "../ILeverageToken.sol";
 import {IVeloraAdapter} from "./IVeloraAdapter.sol";
-import {ActionData, ExternalAction} from "src/types/DataTypes.sol";
+import {ActionData} from "src/types/DataTypes.sol";
 
 interface ILeverageRouter {
+    enum LeverageRouterAction {
+        Deposit,
+        Redeem,
+        RedeemWithVelora
+    }
+
     /// @notice Struct containing the target, value, and data for a single external call.
     struct Call {
         address target; // Call target
@@ -35,11 +41,27 @@ interface ILeverageRouter {
 
     /// @notice Morpho flash loan callback data to pass to the Morpho flash loan callback handler
     struct MorphoCallbackData {
-        ExternalAction action;
+        LeverageRouterAction action;
         bytes data;
     }
 
     /// @notice Redeem related parameters to pass to the Morpho flash loan callback handler for redeems
+    struct RedeemParams {
+        // Address of the sender of the redeem
+        address sender;
+        // LeverageToken to redeem from
+        ILeverageToken leverageToken;
+        // Amount of shares to redeem
+        uint256 shares;
+        // Minimum amount of collateral for the sender to receive
+        uint256 minCollateralForSender;
+        // Minimum amount of debt for the sender to receive
+        uint256 minDebtForSender;
+        // External calls to execute for the swap of flash loaned debt to collateral
+        Call[] swapCalls;
+    }
+
+    /// @notice Redeem related parameters to pass to the Morpho flash loan callback handler for redeems using Velora
     struct RedeemWithVeloraParams {
         // Address of the sender of the redeem, whose shares will be burned and the collateral asset will be transferred to
         address sender;
@@ -63,6 +85,11 @@ interface ILeverageRouter {
     /// @param remainingCollateral The remaining collateral after the swap
     /// @param minCollateralForSender The minimum collateral for the sender to receive
     error CollateralSlippageTooHigh(uint256 remainingCollateral, uint256 minCollateralForSender);
+
+    /// @notice Error thrown when the remaining debt is less than the minimum debt for the sender to receive
+    /// @param remainingDebt The remaining debt after the swap
+    /// @param minDebtForSender The minimum debt for the sender to receive
+    error DebtSlippageTooHigh(uint256 remainingDebt, uint256 minDebtForSender);
 
     /// @notice Error thrown when the collateral from the swap + the collateral from the sender is less than the collateral required for the deposit
     /// @param available The collateral from the swap + the collateral from the sender, available for the deposit
