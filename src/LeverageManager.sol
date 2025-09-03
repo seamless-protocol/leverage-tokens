@@ -191,6 +191,39 @@ contract LeverageManager is
     }
 
     /// @inheritdoc ILeverageManager
+    function convertToAssets(ILeverageToken token, uint256 shares)
+        external
+        view
+        returns (uint256 equityInCollateralAsset)
+    {
+        uint256 totalEquityInCollateralAsset = getLeverageTokenLendingAdapter(token).getEquityInCollateralAsset();
+        uint256 totalSupply = getFeeAdjustedTotalSupply(token);
+
+        // slither-disable-next-line incorrect-equality,timestamp
+        if (totalSupply == 0) {
+            return 0;
+        }
+
+        return Math.mulDiv(shares, totalEquityInCollateralAsset, totalSupply, Math.Rounding.Floor);
+    }
+
+    /// @inheritdoc ILeverageManager
+    function convertToShares(ILeverageToken token, uint256 equityInCollateralAsset)
+        external
+        view
+        returns (uint256 shares)
+    {
+        uint256 totalEquityInCollateralAsset = getLeverageTokenLendingAdapter(token).getEquityInCollateralAsset();
+        uint256 totalSupply = getFeeAdjustedTotalSupply(token);
+
+        if (totalEquityInCollateralAsset == 0) {
+            return 0;
+        }
+
+        return Math.mulDiv(equityInCollateralAsset, totalSupply, totalEquityInCollateralAsset, Math.Rounding.Floor);
+    }
+
+    /// @inheritdoc ILeverageManager
     function getLeverageTokenFactory() public view returns (IBeaconProxyFactory factory) {
         return _getLeverageManagerStorage().tokenFactory;
     }
