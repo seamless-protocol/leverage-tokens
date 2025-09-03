@@ -62,6 +62,7 @@ contract RedeemTest is LeverageRouterTest {
 
         // Sender receives the remaining collateral
         assertEq(collateralToken.balanceOf(address(this)), requiredCollateral - requiredCollateralForSwap);
+        assertEq(collateralToken.balanceOf(address(leverageRouter)), 0);
 
         // Sender receives any surplus debt from the swap
         assertEq(debtToken.balanceOf(address(this)), excessDebt);
