@@ -1,5 +1,5 @@
 # VeloraAdapter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/5f47bb45d300f9abc725e6a08e82ac80219f0e37/src/periphery/VeloraAdapter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/6fd46c53a22afa8918e99c47589c9bd10722b593/src/periphery/VeloraAdapter.sol)
 
 **Inherits:**
 [IVeloraAdapter](/src/interfaces/periphery/IVeloraAdapter.sol/interface.IVeloraAdapter.md)
@@ -8,6 +8,9 @@ Adapter for trading with Velora.
 
 *This adapter was modified from the original version implemented by Morpho
 https://github.com/morpho-org/bundler3/blob/4887f33299ba6e60b54a51237b16e7392dceeb97/src/adapters/ParaswapAdapter.sol*
+
+**Note:**
+contact: security@seamlessprotocol.com
 
 
 ## State Variables

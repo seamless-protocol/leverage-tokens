@@ -1,5 +1,5 @@
 # ILeverageRouter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/5f47bb45d300f9abc725e6a08e82ac80219f0e37/src/interfaces/periphery/ILeverageRouter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/6fd46c53a22afa8918e99c47589c9bd10722b593/src/interfaces/periphery/ILeverageRouter.sol)
 
 
 ## Functions
@@ -107,6 +107,27 @@ function deposit(
 |`flashLoanAmount`|`uint256`|Amount of debt to flash loan, which is swapped to collateral and used to deposit into the LeverageToken|
 |`minShares`|`uint256`|Minimum number of shares expected to be received by the sender|
 |`swapCalls`|`Call[]`|External calls to execute for the swap of flash loaned debt to collateral for the LeverageToken deposit|
+
+
+### redeem
+
+Redeems an amount of shares of a LeverageToken and transfers collateral asset to the sender, using arbitrary
+calldata for the swap of collateral from the redemption to debt to repay the flash loan. Any surplus debt assets
+after repaying the flash loan are given to the sender along with the remaining collateral asset.
+
+
+```solidity
+function redeem(ILeverageToken token, uint256 shares, uint256 minCollateralForSender, Call[] calldata swapCalls)
+    external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`ILeverageToken`|LeverageToken to redeem from|
+|`shares`|`uint256`|Amount of shares to redeem|
+|`minCollateralForSender`|`uint256`|Minimum amount of collateral for the sender to receive|
+|`swapCalls`|`Call[]`|External calls to execute for the swap of collateral from the redemption to debt to repay the flash loan|
 
 
 ### redeemWithVelora
@@ -232,13 +253,27 @@ Morpho flash loan callback data to pass to the Morpho flash loan callback handle
 
 ```solidity
 struct MorphoCallbackData {
-    ExternalAction action;
+    LeverageRouterAction action;
     bytes data;
 }
 ```
 
-### RedeemWithVeloraParams
+### RedeemParams
 Redeem related parameters to pass to the Morpho flash loan callback handler for redeems
+
+
+```solidity
+struct RedeemParams {
+    address sender;
+    ILeverageToken leverageToken;
+    uint256 shares;
+    uint256 minCollateralForSender;
+    Call[] swapCalls;
+}
+```
+
+### RedeemWithVeloraParams
+Redeem related parameters to pass to the Morpho flash loan callback handler for redeems using Velora
 
 
 ```solidity
@@ -251,6 +286,17 @@ struct RedeemWithVeloraParams {
     address augustus;
     IVeloraAdapter.Offsets offsets;
     bytes swapData;
+}
+```
+
+## Enums
+### LeverageRouterAction
+
+```solidity
+enum LeverageRouterAction {
+    Deposit,
+    Redeem,
+    RedeemWithVelora
 }
 ```
 

@@ -15,7 +15,7 @@ import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
 import {LeverageRouter} from "src/periphery/LeverageRouter.sol";
-import {ActionData, ExternalAction} from "src/types/DataTypes.sol";
+import {ActionData} from "src/types/DataTypes.sol";
 import {MockERC20} from "../mock/MockERC20.sol";
 import {MockLendingAdapter} from "../mock/MockLendingAdapter.sol";
 import {MockLeverageManager} from "../mock/MockLeverageManager.sol";
@@ -120,12 +120,9 @@ contract LeverageRouterTest is Test {
     function _mockLeverageManagerRedeem(
         uint256 requiredCollateral,
         uint256 requiredDebt,
-        uint256 requiredCollateralForSwap,
         uint256 shares,
         uint256 minCollateral
     ) internal {
-        veloraAdapter.mockNextBuy(address(collateralToken), requiredCollateralForSwap);
-
         vm.mockCall(
             address(leverageManager),
             abi.encodeWithSelector(ILeverageManager.previewRedeem.selector, leverageToken, shares),
@@ -196,7 +193,12 @@ contract LeverageRouterTest is Test {
         vm.prank(address(morpho));
         leverageRouter.onMorphoFlashLoan(
             requiredDebt,
-            abi.encode(ILeverageRouter.MorphoCallbackData({action: ExternalAction.Mint, data: depositData}))
+            abi.encode(
+                ILeverageRouter.MorphoCallbackData({
+                    action: ILeverageRouter.LeverageRouterAction.Deposit,
+                    data: depositData
+                })
+            )
         );
 
         // Repayment of flash loan

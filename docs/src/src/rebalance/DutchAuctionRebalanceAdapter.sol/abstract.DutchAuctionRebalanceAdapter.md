@@ -1,5 +1,5 @@
 # DutchAuctionRebalanceAdapter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/5f47bb45d300f9abc725e6a08e82ac80219f0e37/src/rebalance/DutchAuctionRebalanceAdapter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/6fd46c53a22afa8918e99c47589c9bd10722b593/src/rebalance/DutchAuctionRebalanceAdapter.sol)
 
 **Inherits:**
 [IDutchAuctionRebalanceAdapter](/src/interfaces/IDutchAuctionRebalanceAdapter.sol/interface.IDutchAuctionRebalanceAdapter.md), Initializable
@@ -16,6 +16,9 @@ decrease or increase the collateral ratio of the LeverageToken, depending on the
 If the LeverageToken is over-collateralized, the rebalancer will borrow debt and add collateral. If the LeverageToken is
 under-collateralized, the rebalancer will repay debt and remove collateral.
 Note: If the auction is no longer valid, `take` will revert*
+
+**Note:**
+contact: security@seamlessprotocol.com
 
 
 ## State Variables
