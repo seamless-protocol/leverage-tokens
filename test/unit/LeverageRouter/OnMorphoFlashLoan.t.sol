@@ -7,7 +7,6 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 // Internal imports
 import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
 import {IVeloraAdapter} from "src/interfaces/periphery/IVeloraAdapter.sol";
-import {ExternalAction} from "src/types/DataTypes.sol";
 import {LeverageRouterTest} from "./LeverageRouter.t.sol";
 import {MockSwapper} from "../mock/MockSwapper.sol";
 
@@ -53,14 +52,19 @@ contract OnMorphoFlashLoanTest is LeverageRouterTest {
         vm.prank(address(morpho));
         leverageRouter.onMorphoFlashLoan(
             flashLoanAmount,
-            abi.encode(ILeverageRouter.MorphoCallbackData({action: ExternalAction.Mint, data: depositData}))
+            abi.encode(
+                ILeverageRouter.MorphoCallbackData({
+                    action: ILeverageRouter.LeverageRouterAction.Deposit,
+                    data: depositData
+                })
+            )
         );
         assertEq(leverageToken.balanceOf(address(this)), shares);
         assertEq(debtToken.balanceOf(address(leverageRouter)), requiredDebt);
         assertEq(debtToken.allowance(address(leverageRouter), address(morpho)), requiredDebt);
     }
 
-    function test_onMorphoFlashLoan_Redeem() public {
+    function test_onMorphoFlashLoan_RedeemWithVelora() public {
         uint256 requiredCollateral = 10 ether;
         uint256 collateralFromSender = 5 ether;
         uint256 collateralReceivedFromDebtSwap = 5 ether;
@@ -100,7 +104,12 @@ contract OnMorphoFlashLoanTest is LeverageRouterTest {
         vm.prank(address(morpho));
         leverageRouter.onMorphoFlashLoan(
             flashLoanAmount,
-            abi.encode(ILeverageRouter.MorphoCallbackData({action: ExternalAction.Redeem, data: redeemWithVeloraData}))
+            abi.encode(
+                ILeverageRouter.MorphoCallbackData({
+                    action: ILeverageRouter.LeverageRouterAction.RedeemWithVelora,
+                    data: redeemWithVeloraData
+                })
+            )
         );
         assertEq(leverageToken.balanceOf(address(this)), 0);
         assertEq(collateralToken.balanceOf(address(this)), requiredCollateral - requiredCollateralForSwap);

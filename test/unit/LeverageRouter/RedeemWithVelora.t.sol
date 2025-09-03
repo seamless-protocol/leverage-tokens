@@ -9,8 +9,8 @@ import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
 import {IVeloraAdapter} from "src/interfaces/periphery/IVeloraAdapter.sol";
 import {LeverageRouterTest} from "./LeverageRouter.t.sol";
 
-contract RedeemTest is LeverageRouterTest {
-    function testFuzz_redeem_CollateralReceivedWithinSlippage(
+contract RedeemWithVeloraTest is LeverageRouterTest {
+    function testFuzz_redeemWithVelora_CollateralReceivedWithinSlippage(
         uint128 requiredCollateral,
         uint128 requiredDebt,
         uint128 requiredCollateralForSwap
@@ -62,7 +62,7 @@ contract RedeemTest is LeverageRouterTest {
         assertEq(collateralToken.balanceOf(address(this)), requiredCollateral - requiredCollateralForSwap);
     }
 
-    function testFuzz_redeem_RevertIf_CollateralReceivedOutsideSlippage(
+    function testFuzz_redeemWithVelora_RevertIf_CollateralReceivedOutsideSlippage(
         uint128 requiredCollateral,
         uint128 requiredDebt,
         uint128 requiredCollateralForSwap

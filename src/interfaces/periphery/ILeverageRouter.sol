@@ -55,8 +55,6 @@ interface ILeverageRouter {
         uint256 shares;
         // Minimum amount of collateral for the sender to receive
         uint256 minCollateralForSender;
-        // Minimum amount of debt for the sender to receive
-        uint256 minDebtForSender;
         // External calls to execute for the swap of flash loaned debt to collateral
         Call[] swapCalls;
     }
@@ -85,11 +83,6 @@ interface ILeverageRouter {
     /// @param remainingCollateral The remaining collateral after the swap
     /// @param minCollateralForSender The minimum collateral for the sender to receive
     error CollateralSlippageTooHigh(uint256 remainingCollateral, uint256 minCollateralForSender);
-
-    /// @notice Error thrown when the remaining debt is less than the minimum debt for the sender to receive
-    /// @param remainingDebt The remaining debt after the swap
-    /// @param minDebtForSender The minimum debt for the sender to receive
-    error DebtSlippageTooHigh(uint256 remainingDebt, uint256 minDebtForSender);
 
     /// @notice Error thrown when the collateral from the swap + the collateral from the sender is less than the collateral required for the deposit
     /// @param available The collateral from the swap + the collateral from the sender, available for the deposit

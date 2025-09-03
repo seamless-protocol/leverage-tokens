@@ -109,28 +109,24 @@ contract LeverageRouter is ILeverageRouter {
         );
     }
 
-    function redeem(
-        ILeverageToken token,
-        uint256 shares,
-        uint256 flashLoanAmount,
-        uint256 minCollateralForSender,
-        uint256 minDebtForSender,
-        Call[] calldata swapCalls
-    ) external {
+    function redeem(ILeverageToken token, uint256 shares, uint256 minCollateralForSender, Call[] calldata swapCalls)
+        external
+    {
+        uint256 debtRequired = leverageManager.previewRedeem(token, shares).debt;
+
         bytes memory redeemData = abi.encode(
             RedeemParams({
                 sender: msg.sender,
                 leverageToken: token,
                 shares: shares,
                 minCollateralForSender: minCollateralForSender,
-                minDebtForSender: minDebtForSender,
                 swapCalls: swapCalls
             })
         );
 
         morpho.flashLoan(
             address(leverageManager.getLeverageTokenDebtAsset(token)),
-            flashLoanAmount,
+            debtRequired,
             abi.encode(MorphoCallbackData({action: LeverageRouterAction.Redeem, data: redeemData}))
         );
     }
@@ -246,7 +242,7 @@ contract LeverageRouter is ILeverageRouter {
 
         // Use the debt from the flash loan to redeem the shares from the sender
         SafeERC20.forceApprove(debtAsset, address(leverageManager), debtLoanAmount);
-        leverageManager.redeem(params.leverageToken, params.shares, params.minCollateralForSender).collateral;
+        leverageManager.redeem(params.leverageToken, params.shares, params.minCollateralForSender);
 
         // Swap the collateral asset received from the flash loan to the debt asset, used to repay the flash loan.
         for (uint256 i = 0; i < params.swapCalls.length; i++) {
@@ -267,11 +263,6 @@ contract LeverageRouter is ILeverageRouter {
         // Check slippage on collateral the sender receives
         if (collateralForSender < params.minCollateralForSender) {
             revert CollateralSlippageTooHigh(collateralForSender, params.minCollateralForSender);
-        }
-
-        // Check slippage on debt the sender receives
-        if (debtForSender < params.minDebtForSender) {
-            revert DebtSlippageTooHigh(debtForSender, params.minDebtForSender);
         }
 
         // Transfer remaining collateral to the sender
