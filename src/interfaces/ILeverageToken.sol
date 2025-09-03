@@ -11,15 +11,21 @@ interface ILeverageToken is IERC20 {
     /// @param symbol The symbol of the LeverageToken
     event LeverageTokenInitialized(string name, string symbol);
 
-    /// @notice Converts LeverageToken shares to assets
-    /// @param shares The number of shares to convert to assets
-    /// @return assets The number of assets that correspond to the shares (denominated in the collateral asset)
-    function convertToAssets(uint256 shares) external view returns (uint256);
+    /// @notice Converts an amount of LeverageToken shares to an amount of equity in collateral asset, based on the
+    /// price oracle used by the underlying lending adapter and state of the LeverageToken.
+    /// @notice Equity in collateral asset is equal to the difference between collateral and debt denominated
+    /// in the collateral asset.
+    /// @param shares The number of shares to convert to equity in collateral asset
+    /// @return assets Amount of equity in collateral asset that correspond to the shares
+    function convertToAssets(uint256 shares) external view returns (uint256 assets);
 
-    /// @notice Converts assets to LeverageToken shares
-    /// @param assets The number of assets (denominated in the collateral asset) to convert to shares
-    /// @return shares The number of shares that correspond to the assets
-    function convertToShares(uint256 assets) external view returns (uint256);
+    /// @notice Converts an amount of equity in collateral asset to an amount of LeverageToken shares, based on the
+    /// price oracle used by the underlying lending adapter and state of the LeverageToken.
+    /// @notice Equity in collateral asset is equal to the difference between collateral and debt denominated
+    /// in the collateral asset.
+    /// @param assets The amount of equity in collateral asset to convert to shares
+    /// @return shares The number of shares that correspond to the equity in collateral asset
+    function convertToShares(uint256 assets) external view returns (uint256 shares);
 
     /// @notice Mints new tokens to the specified address
     /// @param to The address to mint tokens to

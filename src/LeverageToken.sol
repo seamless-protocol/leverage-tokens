@@ -34,12 +34,12 @@ contract LeverageToken is
     }
 
     /// @inheritdoc ILeverageToken
-    function convertToAssets(uint256 shares) public view returns (uint256) {
+    function convertToAssets(uint256 shares) public view returns (uint256 assets) {
         return ILeverageManager(owner()).convertToAssets(this, shares);
     }
 
     /// @inheritdoc ILeverageToken
-    function convertToShares(uint256 assets) public view returns (uint256) {
+    function convertToShares(uint256 assets) public view returns (uint256 shares) {
         return ILeverageManager(owner()).convertToShares(this, assets);
     }
 
