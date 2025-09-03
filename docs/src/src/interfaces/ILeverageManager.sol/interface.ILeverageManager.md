@@ -1,5 +1,5 @@
 # ILeverageManager
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/63ad4618d949dfaeb75f5b0c721e0d9d828264c2/src/interfaces/ILeverageManager.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/6fd46c53a22afa8918e99c47589c9bd10722b593/src/interfaces/ILeverageManager.sol)
 
 **Inherits:**
 [IFeeManager](/src/interfaces/IFeeManager.sol/interface.IFeeManager.md)
@@ -164,6 +164,58 @@ function convertSharesToDebt(ILeverageToken token, uint256 shares, Math.Rounding
 |Name|Type|Description|
 |----|----|-----------|
 |`debt`|`uint256`|Amount of debt that correspond to the shares|
+
+
+### convertToAssets
+
+Converts an amount of shares to an amount of equity in collateral asset for a LeverageToken, based on the
+price oracle used by the underlying lending adapter and state of the LeverageToken
+
+
+```solidity
+function convertToAssets(ILeverageToken token, uint256 shares)
+    external
+    view
+    returns (uint256 equityInCollateralAsset);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`ILeverageToken`|LeverageToken to convert shares to equity in collateral asset for|
+|`shares`|`uint256`|Amount of shares to convert to equity in collateral asset|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`equityInCollateralAsset`|`uint256`|Amount of equity in collateral asset that correspond to the shares|
+
+
+### convertToShares
+
+Converts an amount of equity in collateral asset to an amount of shares for a LeverageToken, based on the
+price oracle used by the underlying lending adapter and state of the LeverageToken
+
+
+```solidity
+function convertToShares(ILeverageToken token, uint256 equityInCollateralAsset)
+    external
+    view
+    returns (uint256 shares);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`ILeverageToken`|LeverageToken to convert equity in collateral asset to shares for|
+|`equityInCollateralAsset`|`uint256`|Amount of equity in collateral asset to convert to shares|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`shares`|`uint256`|Amount of shares that correspond to the equity in collateral asset|
 
 
 ### getLeverageTokenFactory

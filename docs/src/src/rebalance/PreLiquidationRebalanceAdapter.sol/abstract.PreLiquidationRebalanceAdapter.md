@@ -1,5 +1,5 @@
 # PreLiquidationRebalanceAdapter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/63ad4618d949dfaeb75f5b0c721e0d9d828264c2/src/rebalance/PreLiquidationRebalanceAdapter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/6fd46c53a22afa8918e99c47589c9bd10722b593/src/rebalance/PreLiquidationRebalanceAdapter.sol)
 
 **Inherits:**
 Initializable, [IPreLiquidationRebalanceAdapter](/src/interfaces/IPreLiquidationRebalanceAdapter.sol/interface.IPreLiquidationRebalanceAdapter.md)
