@@ -199,6 +199,7 @@ contract LeverageManager is
         uint256 totalEquityInCollateralAsset = getLeverageTokenLendingAdapter(token).getEquityInCollateralAsset();
         uint256 totalSupply = getFeeAdjustedTotalSupply(token);
 
+        // slither-disable-next-line incorrect-equality,timestamp
         if (totalSupply == 0) {
             return 0;
         }
