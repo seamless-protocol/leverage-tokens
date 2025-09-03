@@ -43,6 +43,8 @@ contract IntegrationTestBase is Test {
     address public constant AUGUSTUS_REGISTRY = 0x7E31B336F9E8bA52ba3c4ac861b033Ba90900bb3;
     address public constant AUGUSTUS_V6_2 = 0x6A000F20005980200259B80c5102003040001068;
 
+    address public constant LIFI_DIAMOND = 0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE;
+
     address public user = makeAddr("user");
     address public treasury = makeAddr("treasury");
 
