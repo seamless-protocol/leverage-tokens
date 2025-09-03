@@ -10,8 +10,6 @@ import {IUniswapV2Router02} from "src/interfaces/periphery/IUniswapV2Router02.so
 import {ActionData} from "src/types/DataTypes.sol";
 import {LeverageRouterTest} from "./LeverageRouter.t.sol";
 
-import {console2} from "forge-std/console2.sol";
-
 contract LeverageRouterRedeemTest is LeverageRouterTest {
     function testFork_redeem_FullRedeem() public {
         uint256 shares = _deposit();
