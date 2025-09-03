@@ -1,5 +1,5 @@
 # LeverageRouter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/5f47bb45d300f9abc725e6a08e82ac80219f0e37/src/periphery/LeverageRouter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/63ad4618d949dfaeb75f5b0c721e0d9d828264c2/src/periphery/LeverageRouter.sol)
 
 **Inherits:**
 [ILeverageRouter](/src/interfaces/periphery/ILeverageRouter.sol/interface.ILeverageRouter.md)
@@ -16,6 +16,9 @@ into the LeverageToken, receiving LeverageToken shares and debt in return
 4. The LeverageRouter will use the debt received from the deposit to repay the flash loan
 6. The LeverageRouter will transfer the LeverageToken shares and any surplus debt assets to the sender
 The high-level redeem flow is the same as the deposit flow, but in reverse.*
+
+**Note:**
+contact: security@seamlessprotocol.com
 
 
 ## State Variables
@@ -133,6 +136,27 @@ function deposit(
 |`swapCalls`|`Call[]`|External calls to execute for the swap of flash loaned debt to collateral for the LeverageToken deposit|
 
 
+### redeem
+
+Redeems an amount of shares of a LeverageToken and transfers collateral asset to the sender, using arbitrary
+calldata for the swap of collateral from the redemption to debt to repay the flash loan. Any surplus debt assets
+after repaying the flash loan are given to the sender along with the remaining collateral asset.
+
+
+```solidity
+function redeem(ILeverageToken token, uint256 shares, uint256 minCollateralForSender, Call[] calldata swapCalls)
+    external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`ILeverageToken`|LeverageToken to redeem from|
+|`shares`|`uint256`|Amount of shares to redeem|
+|`minCollateralForSender`|`uint256`|Minimum amount of collateral for the sender to receive|
+|`swapCalls`|`Call[]`|External calls to execute for the swap of collateral from the redemption to debt to repay the flash loan|
+
+
 ### redeemWithVelora
 
 Redeems an amount of shares of a LeverageToken and transfers collateral asset to the sender, using Velora
@@ -201,6 +225,24 @@ function _depositAndRepayMorphoFlashLoan(DepositParams memory params, uint256 de
 |----|----|-----------|
 |`params`|`DepositParams`|Params for the deposit into a LeverageToken|
 |`debtLoan`|`uint256`|Amount of debt asset flash loaned|
+
+
+### _redeemAndRepayMorphoFlashLoan
+
+Executes the redeem from a LeverageToken by flash loaning the debt asset, swapping the collateral asset
+to the debt asset using arbitrary calldata, using the resulting debt to repay the flash loan, and transferring
+the remaining collateral asset and debt assets to the sender
+
+
+```solidity
+function _redeemAndRepayMorphoFlashLoan(RedeemParams memory params, uint256 debtLoanAmount) internal;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`params`|`RedeemParams`|Params for the redeem from a LeverageToken, using arbitrary calldata for the swap|
+|`debtLoanAmount`|`uint256`|Amount of debt asset flash loaned|
 
 
 ### _redeemWithVeloraAndRepayMorphoFlashLoan

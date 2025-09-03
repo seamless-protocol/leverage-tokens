@@ -1,5 +1,5 @@
 # MorphoLendingAdapter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/5f47bb45d300f9abc725e6a08e82ac80219f0e37/src/lending/MorphoLendingAdapter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/63ad4618d949dfaeb75f5b0c721e0d9d828264c2/src/lending/MorphoLendingAdapter.sol)
 
 **Inherits:**
 [IMorphoLendingAdapter](/src/interfaces/IMorphoLendingAdapter.sol/interface.IMorphoLendingAdapter.md), Initializable
@@ -11,6 +11,9 @@ uses Morpho's libraries to calculate the collateral and debt held by the adapter
 Note: `getDebt` uses `MorphoBalancesLib.expectedBorrowAssets` which calculates the total debt of the adapter based on the Morpho
 market's borrow shares owned by the adapter. This logic rounds up, so it is possible that `getDebt` returns a value that is
 greater than the actual debt owed to the Morpho market.*
+
+**Note:**
+contact: security@seamlessprotocol.com
 
 
 ## State Variables

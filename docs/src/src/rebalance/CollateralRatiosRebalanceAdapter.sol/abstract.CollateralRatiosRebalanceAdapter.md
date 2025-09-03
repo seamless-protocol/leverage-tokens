@@ -1,5 +1,5 @@
 # CollateralRatiosRebalanceAdapter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/5f47bb45d300f9abc725e6a08e82ac80219f0e37/src/rebalance/CollateralRatiosRebalanceAdapter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/63ad4618d949dfaeb75f5b0c721e0d9d828264c2/src/rebalance/CollateralRatiosRebalanceAdapter.sol)
 
 **Inherits:**
 [ICollateralRatiosRebalanceAdapter](/src/interfaces/ICollateralRatiosRebalanceAdapter.sol/interface.ICollateralRatiosRebalanceAdapter.md), Initializable
@@ -12,6 +12,9 @@ The `isStateAfterRebalanceValid` function will return true if the collateral rat
 - The collateral ratio is closer to the target collateral ratio than before
 - If the collateral ratio was below the target collateral ratio, the collateral ratio is still below the target collateral ratio or equal to it
 - If the collateral ratio was above the target collateral ratio, the collateral ratio is still above the target collateral ratio or equal to it*
+
+**Note:**
+contact: security@seamlessprotocol.com
 
 
 ## Functions

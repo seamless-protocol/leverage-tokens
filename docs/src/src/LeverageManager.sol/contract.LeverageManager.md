@@ -1,5 +1,5 @@
 # LeverageManager
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/5f47bb45d300f9abc725e6a08e82ac80219f0e37/src/LeverageManager.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/63ad4618d949dfaeb75f5b0c721e0d9d828264c2/src/LeverageManager.sol)
 
 **Inherits:**
 [ILeverageManager](/src/interfaces/ILeverageManager.sol/interface.ILeverageManager.md), AccessControlUpgradeable, ReentrancyGuardTransientUpgradeable, [FeeManager](/src/FeeManager.sol/abstract.FeeManager.md), UUPSUpgradeable
@@ -40,6 +40,9 @@ considering using. Some examples:
 by the market may be manipulatable.
 - Aave v3: Allows rehypothecation of collateral, which may lead to reverts when trying to remove collateral from the
 market during redeems and rebalances.*
+
+**Note:**
+contact: security@seamlessprotocol.com
 
 
 ## State Variables

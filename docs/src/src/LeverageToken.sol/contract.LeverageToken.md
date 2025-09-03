@@ -1,11 +1,14 @@
 # LeverageToken
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/5f47bb45d300f9abc725e6a08e82ac80219f0e37/src/LeverageToken.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/63ad4618d949dfaeb75f5b0c721e0d9d828264c2/src/LeverageToken.sol)
 
 **Inherits:**
 Initializable, ERC20Upgradeable, ERC20PermitUpgradeable, OwnableUpgradeable, [ILeverageToken](/src/interfaces/ILeverageToken.sol/interface.ILeverageToken.md)
 
 *The LeverageToken contract is an upgradeable ERC20 token that represents a claim to the equity held by the LeverageToken.
 It is used to represent a user's claim to the equity held by the LeverageToken in the LeverageManager.*
+
+**Note:**
+contact: security@seamlessprotocol.com
 
 
 ## Functions
