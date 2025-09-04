@@ -2,15 +2,14 @@
 pragma solidity ^0.8.26;
 
 // Dependency imports
-import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
 import {LeverageRouter} from "src/periphery/LeverageRouter.sol";
 import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
-import {IntegrationTestBase} from "../IntegrationTestBase.t.sol";
+import {IntegrationTestChainBase} from "../IntegrationTestChainBase.t.sol";
 
-contract LeverageRouterTest is IntegrationTestBase {
+contract LeverageRouterTest is IntegrationTestChainBase {
     address public constant AERODROME_ROUTER = 0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43;
     address public constant AERODROME_SLIPSTREAM_ROUTER = 0xBE6D8f0d05cC4be24d5167a3eF062215bE6D18a5;
     address public constant AERODROME_POOL_FACTORY = 0x420DD381b31aEf6683db6B902084cB0FFECe40Da;

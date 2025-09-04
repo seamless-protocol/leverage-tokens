@@ -13,10 +13,10 @@ import {LeverageManagerHarness} from "test/unit/harness/LeverageManagerHarness.t
 import {MorphoLendingAdapterTest} from "../MorphoLendingAdapter.t.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
-import {IntegrationTestBase} from "../IntegrationTestBase.t.sol";
+import {IntegrationTestChainBase} from "../IntegrationTestChainBase.t.sol";
 import {LeverageTokenState, ActionData} from "src/types/DataTypes.sol";
 
-contract LeverageManagerTest is IntegrationTestBase {
+contract LeverageManagerTest is IntegrationTestChainBase {
     function testFork_setUp() public view virtual override {
         assertEq(address(leverageManager.getLeverageTokenCollateralAsset(leverageToken)), address(WETH));
         assertEq(address(leverageManager.getLeverageTokenDebtAsset(leverageToken)), address(USDC));

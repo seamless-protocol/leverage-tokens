@@ -27,7 +27,7 @@ import {MorphoLendingAdapterFactory} from "src/lending/MorphoLendingAdapterFacto
 import {RebalanceAdapter} from "src/rebalance/RebalanceAdapter.sol";
 import {VeloraAdapter} from "src/periphery/VeloraAdapter.sol";
 
-contract IntegrationTestBaseUtils is Test {
+contract IntegrationTestBase is Test {
     uint256 public constant BASE_RATIO = 1e18;
     uint256 public constant SECONDS_ONE_YEAR = 31536000;
 
