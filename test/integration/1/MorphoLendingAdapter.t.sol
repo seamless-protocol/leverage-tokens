@@ -24,27 +24,15 @@ import {LeverageTokenConfig} from "src/types/DataTypes.sol";
 import {MorphoLendingAdapterTestBase} from "../MorphoLendingAdapterTestBase.t.sol";
 
 contract MorphoLendingAdapterTest is IntegrationTestChainBase, MorphoLendingAdapterTestBase {
-    Id public constant MARKET_ID = WETH_USDC_MARKET_ID;
-    IERC20 public constant COLLATERAL_ASSET = WETH;
+    Id public constant MARKET_ID = CBBTC_USDC_MARKET_ID;
+    IERC20 public constant COLLATERAL_ASSET = CBBTC;
     IERC20 public constant DEBT_ASSET = USDC;
 
     function testFork_getLiquidationPenalty() public {
-        // cbBTC/USDC market from Morpho UI
-        IMorphoLendingAdapter lendingAdapter = morphoLendingAdapterFactory.deployAdapter(
-            Id.wrap(0x9103c3b4e834476c9a62ea009ba2c884ee42e94e6e314a26f04d312434191836),
-            address(this),
-            bytes32(uint256(1))
-        );
+        IMorphoLendingAdapter lendingAdapter =
+            morphoLendingAdapterFactory.deployAdapter(MARKET_ID, address(this), bytes32(uint256(1)));
 
         assertEq(lendingAdapter.getLiquidationPenalty(), 0.043841336116910229e18);
-
-        // PT-LBTC-29MAY2025/LBTC market from Morpho UI
-        lendingAdapter = morphoLendingAdapterFactory.deployAdapter(
-            Id.wrap(0x12c37bd01e0050e15e85e37b6bfd9a9bc357e7881a4589b6873f94512af1ce66),
-            address(this),
-            bytes32(uint256(2))
-        );
-        assertEq(lendingAdapter.getLiquidationPenalty(), 0.01677681748856126e18);
     }
 
     function testFork_createNewLeverageToken_RevertIf_LendingAdapterIsAlreadyInUse() public {
@@ -61,39 +49,36 @@ contract MorphoLendingAdapterTest is IntegrationTestChainBase, MorphoLendingAdap
         );
     }
 
-    /// @dev In this block price on oracle 3392.292471591441746049801068
     function testFork_convertCollateralToDebtAsset() public view {
-        uint256 result = morphoLendingAdapter.convertCollateralToDebtAsset(1 ether);
-        assertEq(result, 3392_292471);
+        uint256 result = morphoLendingAdapter.convertCollateralToDebtAsset(1e8);
+        assertEq(result, 109472.330695e6);
 
-        result = morphoLendingAdapter.convertCollateralToDebtAsset(5 ether);
-        assertEq(result, 16961462357);
+        result = morphoLendingAdapter.convertCollateralToDebtAsset(5e8);
+        assertEq(result, 547361.653475e6);
 
-        result = morphoLendingAdapter.convertCollateralToDebtAsset(10 ether);
-        assertEq(result, 33922924715);
+        result = morphoLendingAdapter.convertCollateralToDebtAsset(10e8);
+        assertEq(result, 1094723.30695e6);
 
-        result = morphoLendingAdapter.convertCollateralToDebtAsset(0.5 ether);
-        assertEq(result, 1696146235);
+        result = morphoLendingAdapter.convertCollateralToDebtAsset(0.5e8);
+        assertEq(result, 54736.165347e6);
     }
 
-    /// @dev In this block price on oracle 3392.292471591441746049801068
     function testFork_convertDebtToCollateralAsset() public view {
-        uint256 result = morphoLendingAdapter.convertDebtToCollateralAsset(1000_000000);
-        assertEq(result, 294785903153823706);
+        uint256 result = morphoLendingAdapter.convertDebtToCollateralAsset(1000e6);
+        assertEq(result, 0.00913473e8);
 
-        result = morphoLendingAdapter.convertDebtToCollateralAsset(80_000_000000);
-        assertEq(result, 23582872252305896433);
+        result = morphoLendingAdapter.convertDebtToCollateralAsset(109472.330695e6);
+        assertEq(result, 1e8);
     }
 
-    /// @dev In this block price on oracle 3392.292471591441746049801068
     function testFork_getEquityInDebtAsset() public {
-        uint256 collateral = 1e18;
-        uint256 debt = 2000e6;
+        uint256 collateral = 1e8;
+        uint256 debt = 90000e6;
 
         _addCollateral(address(this), collateral);
         _borrow(address(leverageManager), debt);
 
-        assertEq(morphoLendingAdapter.getEquityInDebtAsset(), 1392292470);
+        assertEq(morphoLendingAdapter.getEquityInDebtAsset(), 19472.330694e6);
     }
 
     /// forge-config: default.fuzz.runs = 1
@@ -151,12 +136,14 @@ contract MorphoLendingAdapterTest is IntegrationTestChainBase, MorphoLendingAdap
             MorphoBalancesLib.expectedTotalBorrowAssets(MORPHO, MORPHO.idToMarketParams(MARKET_ID));
 
         uint256 maxBorrow = totalSupplyAssetsBefore - totalBorrowAssetsBefore;
+        assertEq(maxBorrow, 36961106.867558e6);
 
         // Bound amount to max borrow available in the morpho market
         amount = uint32(bound(amount, 1, maxBorrow));
 
-        // Put max collateral so borrow tx does not revert due to insufficient collateral
-        _addCollateral(address(this), type(uint128).max);
+        // Add collateral so borrow tx does not revert due to insufficient collateral
+        uint256 collateral = 500e8;
+        _addCollateral(address(this), collateral);
 
         _borrow(address(leverageManager), amount);
 
@@ -173,7 +160,7 @@ contract MorphoLendingAdapterTest is IntegrationTestChainBase, MorphoLendingAdap
         assertGe(expectedBorrowAssets, amount);
         assertLe(expectedBorrowAssets, uint256(amount) + 1);
 
-        assertEq(morphoLendingAdapter.getCollateral(), type(uint128).max);
+        assertEq(morphoLendingAdapter.getCollateral(), collateral);
         assertEq(morphoLendingAdapter.getDebt(), expectedBorrowAssets);
 
         // Validate that debt is correctly transferred to leverage manager
@@ -198,12 +185,14 @@ contract MorphoLendingAdapterTest is IntegrationTestChainBase, MorphoLendingAdap
             MorphoBalancesLib.expectedTotalBorrowAssets(MORPHO, MORPHO.idToMarketParams(MARKET_ID));
 
         uint256 maxBorrow = totalSupplyAssetsBefore - totalBorrowAssetsBefore;
+        assertEq(maxBorrow, 36961106.867558e6);
 
         // Bound amount to max borrow available in the morpho market
         debtBefore = uint32(bound(debtBefore, 1, maxBorrow));
         debtToRepay = uint32(bound(debtToRepay, 1, debtBefore));
 
-        _addCollateral(caller, type(uint128).max);
+        uint256 collateral = 500e8;
+        _addCollateral(caller, collateral);
         _borrow(address(leverageManager), debtBefore);
         _repay(caller, debtToRepay);
 
@@ -218,7 +207,7 @@ contract MorphoLendingAdapterTest is IntegrationTestChainBase, MorphoLendingAdap
         assertGe(expectedBorrowAssets, debtBefore - debtToRepay);
         assertLe(expectedBorrowAssets, debtBefore - debtToRepay + 1);
 
-        assertEq(morphoLendingAdapter.getCollateral(), type(uint128).max);
+        assertEq(morphoLendingAdapter.getCollateral(), collateral);
         assertEq(morphoLendingAdapter.getDebt(), expectedBorrowAssets);
 
         assertEq(DEBT_ASSET.balanceOf(caller), 0);
