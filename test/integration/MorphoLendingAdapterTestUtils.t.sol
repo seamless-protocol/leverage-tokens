@@ -10,7 +10,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 // Internal imports
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 
-contract MorphoLendingAdapterTestBase is Test {
+contract MorphoLendingAdapterTestUtils is Test {
     function _addCollateral(
         IMorphoLendingAdapter morphoLendingAdapter,
         IERC20 collateralAsset,

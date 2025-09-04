@@ -13,11 +13,11 @@ import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {MorphoLendingAdapter} from "src/lending/MorphoLendingAdapter.sol";
-import {IntegrationTestChainBase} from "./IntegrationTestChainBase.t.sol";
+import {IntegrationTestBase} from "./IntegrationTestBase.t.sol";
 import {LeverageTokenConfig} from "src/types/DataTypes.sol";
-import {MorphoLendingAdapterTestBase} from "../MorphoLendingAdapterTestBase.t.sol";
+import {MorphoLendingAdapterTestUtils} from "../MorphoLendingAdapterTestUtils.t.sol";
 
-contract MorphoLendingAdapterTest is IntegrationTestChainBase, MorphoLendingAdapterTestBase {
+contract MorphoLendingAdapterTest is IntegrationTestBase, MorphoLendingAdapterTestUtils {
     Id public constant MARKET_ID = CBBTC_USDC_MARKET_ID;
     IERC20 public constant COLLATERAL_ASSET = CBBTC;
     IERC20 public constant DEBT_ASSET = USDC;

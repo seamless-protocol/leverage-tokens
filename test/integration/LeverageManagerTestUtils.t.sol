@@ -13,7 +13,7 @@ import {LeverageManagerHarness} from "test/unit/harness/LeverageManagerHarness.t
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {LeverageTokenState, ActionData} from "src/types/DataTypes.sol";
 
-contract LeverageManagerTestBase is Test {
+contract LeverageManagerTestUtils is Test {
     function _deposit(
         ILeverageManager leverageManager,
         ILeverageToken leverageToken,

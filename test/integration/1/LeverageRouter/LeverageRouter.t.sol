@@ -7,9 +7,9 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 // Internal imports
 import {LeverageRouter} from "src/periphery/LeverageRouter.sol";
 import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
-import {IntegrationTestChainBase} from "../IntegrationTestChainBase.t.sol";
+import {IntegrationTestBase} from "../IntegrationTestBase.t.sol";
 
-contract LeverageRouterTest is IntegrationTestChainBase {
+contract LeverageRouterTest is IntegrationTestBase {
     address public constant UNISWAP_V2_ROUTER02 = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
 
     ILeverageRouter public leverageRouter;
