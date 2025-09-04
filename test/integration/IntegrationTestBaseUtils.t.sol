@@ -29,19 +29,9 @@ import {MorphoLendingAdapterFactory} from "src/lending/MorphoLendingAdapterFacto
 import {RebalanceAdapter} from "src/rebalance/RebalanceAdapter.sol";
 import {VeloraAdapter} from "src/periphery/VeloraAdapter.sol";
 
-contract IntegrationTestBase is Test {
-    uint256 public constant FORK_BLOCK_NUMBER = 25473904;
+contract IntegrationTestBaseUtils is Test {
     uint256 public constant BASE_RATIO = 1e18;
     uint256 public constant SECONDS_ONE_YEAR = 31536000;
-
-    IERC20 public constant WETH = IERC20(0x4200000000000000000000000000000000000006);
-    IERC20 public constant USDC = IERC20(0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913);
-    IMorpho public constant MORPHO = IMorpho(0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb);
-    Id public constant WETH_USDC_MARKET_ID = Id.wrap(0x8793cf302b8ffd655ab97bd1c695dbd967807e8367a65cb2f4edaf1380ba1bda);
-    Id public constant USDC_WETH_MARKET_ID = Id.wrap(0x3b3769cfca57be2eaed03fcc5299c25691b77781a1e124e7a8d520eb9a7eabb5);
-
-    address public constant AUGUSTUS_REGISTRY = 0x7E31B336F9E8bA52ba3c4ac861b033Ba90900bb3;
-    address public constant AUGUSTUS_V6_2 = 0x6A000F20005980200259B80c5102003040001068;
 
     address public user = makeAddr("user");
     address public treasury = makeAddr("treasury");
@@ -50,30 +40,10 @@ contract IntegrationTestBase is Test {
 
     ILeverageToken public leverageToken;
     IMorphoLendingAdapterFactory public morphoLendingAdapterFactory;
-    ILeverageManager public leverageManager = ILeverageManager(makeAddr("leverageManager"));
+    ILeverageManager public leverageManager;
     IVeloraAdapter public veloraAdapter;
     MorphoLendingAdapter public morphoLendingAdapter;
     RebalanceAdapter public rebalanceAdapter;
-
-    function setUp() public virtual {
-        vm.createSelectFork(vm.envString("BASE_RPC_URL"), FORK_BLOCK_NUMBER);
-
-        _deployIntegrationTestContracts();
-    }
-
-    function testFork_setUp() public view virtual {
-        assertEq(address(morphoLendingAdapter.leverageManager()), address(leverageManager));
-        assertEq(address(morphoLendingAdapter.morpho()), address(MORPHO));
-        assertEq(leverageManager.getTreasury(), treasury);
-        assertEq(address(morphoLendingAdapter.getCollateralAsset()), address(WETH));
-        assertEq(address(morphoLendingAdapter.getDebtAsset()), address(USDC));
-
-        assertEq(morphoLendingAdapter.getCollateral(), 0);
-        assertEq(morphoLendingAdapter.getCollateralInDebtAsset(), 0);
-        assertEq(morphoLendingAdapter.getDebt(), 0);
-        assertEq(morphoLendingAdapter.getEquityInCollateralAsset(), 0);
-        assertEq(morphoLendingAdapter.getEquityInDebtAsset(), 0);
-    }
 
     function _convertToAssets(uint256 shares) internal view returns (uint256) {
         return Math.mulDiv(
@@ -89,10 +59,11 @@ contract IntegrationTestBase is Test {
         uint256 targetCollateralRatio,
         uint256 maxColRatio,
         uint256 mintFee,
-        uint256 redeemFee
-    ) internal returns (ILeverageToken) {
+        uint256 redeemFee,
+        Id morphoMarketId
+    ) internal virtual returns (ILeverageToken) {
         ILendingAdapter lendingAdapter = ILendingAdapter(
-            morphoLendingAdapterFactory.deployAdapter(WETH_USDC_MARKET_ID, address(this), bytes32(vm.randomUint()))
+            morphoLendingAdapterFactory.deployAdapter(morphoMarketId, address(this), bytes32(vm.randomUint()))
         );
 
         address _rebalanceAdapter = address(
@@ -148,7 +119,7 @@ contract IntegrationTestBase is Test {
         return RebalanceAdapter(address(proxy));
     }
 
-    function _deployIntegrationTestContracts() internal {
+    function _deployIntegrationTestContracts(IMorpho morpho, Id morphoMarketId, address augustusRegistry) internal {
         LeverageToken leverageTokenImplementation = new LeverageToken();
         BeaconProxyFactory leverageTokenFactory =
             new BeaconProxyFactory(address(leverageTokenImplementation), address(this));
@@ -162,22 +133,21 @@ contract IntegrationTestBase is Test {
                 )
             )
         );
-
         LeverageManager(address(leverageManager)).grantRole(keccak256("FEE_MANAGER_ROLE"), address(this));
 
         MorphoLendingAdapter morphoLendingAdapterImplementation =
-            new MorphoLendingAdapter(ILeverageManager(leverageManager), MORPHO);
+            new MorphoLendingAdapter(ILeverageManager(leverageManager), morpho);
 
         morphoLendingAdapterFactory = new MorphoLendingAdapterFactory(morphoLendingAdapterImplementation);
 
         morphoLendingAdapter = MorphoLendingAdapter(
-            address(morphoLendingAdapterFactory.deployAdapter(WETH_USDC_MARKET_ID, address(this), bytes32(0)))
+            address(morphoLendingAdapterFactory.deployAdapter(morphoMarketId, address(this), bytes32(0)))
         );
 
         rebalanceAdapterImplementation = new RebalanceAdapter();
         rebalanceAdapter = _deployRebalanceAdapter(1.5e18, 2e18, 2.5e18, 7 minutes, 1.2e18, 0.9e18, 1.2e18, 40_00);
 
-        veloraAdapter = new VeloraAdapter(AUGUSTUS_REGISTRY);
+        veloraAdapter = new VeloraAdapter(augustusRegistry);
 
         leverageToken = leverageManager.createNewLeverageToken(
             LeverageTokenConfig({
@@ -186,15 +156,16 @@ contract IntegrationTestBase is Test {
                 mintTokenFee: 0,
                 redeemTokenFee: 0
             }),
-            "Seamless ETH/USDC 2x leverage token",
-            "ltETH/USDC-2x"
+            "Leverage Token Name",
+            "Leverage Token Symbol"
         );
 
         vm.label(address(user), "user");
         vm.label(address(treasury), "treasury");
         vm.label(address(leverageToken), "leverageToken");
         vm.label(address(morphoLendingAdapter), "morphoLendingAdapter");
-        vm.label(address(MORPHO), "MORPHO");
+        vm.label(address(morpho), "morpho");
         vm.label(address(leverageManager), "leverageManager");
+        vm.label(address(veloraAdapter), "veloraAdapter");
     }
 }

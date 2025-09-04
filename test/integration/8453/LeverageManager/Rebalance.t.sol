@@ -13,10 +13,10 @@ import {LeverageManagerHarness} from "test/unit/harness/LeverageManagerHarness.t
 import {LeverageTokenState, RebalanceAction, ActionType, LeverageTokenConfig} from "src/types/DataTypes.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
-import {LeverageManagerTest} from "test/integration/LeverageManager/LeverageManager.t.sol";
 import {MorphoLendingAdapter} from "src/lending/MorphoLendingAdapter.sol";
 import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 import {RebalanceAdapter} from "src/rebalance/RebalanceAdapter.sol";
+import {LeverageManagerTest} from "../LeverageManager/LeverageManager.t.sol";
 
 enum RebalanceType {
     UP,
