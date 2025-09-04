@@ -213,7 +213,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         assertGe(leverageToken.balanceOf(user), minShares);
         assertEq(leverageToken.balanceOf(user), previewData.shares);
 
-        // assertEq(morphoLendingAdapter.getCollateral(), totalCollateral);
+        assertEq(morphoLendingAdapter.getCollateral(), totalCollateral);
         assertEq(morphoLendingAdapter.getDebt(), previewData.debt + 1); // + 1 because of rounding up by MorphoBalancesLib.expectedBorrowAssets
     }
 
