@@ -460,7 +460,7 @@ contract LeverageManager is
 
         // slither-disable-next-line timestamp
         if (depositData.shares < minShares) {
-            revert SlippageTooHigh(depositData.shares, minShares); // TODO: check if this is correct
+            revert SlippageTooHigh(depositData.shares, minShares);
         }
 
         _mint(token, depositData);
