@@ -16,7 +16,7 @@ contract LeverageRouterRedeemWithVeloraTest is LeverageRouterTest {
     uint256 maxInputAmountOffset = 100;
     uint256 quotedInputAmountOffset = 164;
 
-    function testFork1_redeemWithVelora_FullRedeem() public {
+    function testFork_redeemWithVelora_FullRedeem() public {
         uint256 shares = _deposit();
 
         // Preview the redemption of shares
