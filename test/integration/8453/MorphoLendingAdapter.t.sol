@@ -1,24 +1,16 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-// Forge imports
-import {Test} from "forge-std/Test.sol";
-
 // Dependency imports
-import {IOracle} from "@morpho-blue/interfaces/IOracle.sol";
 import {IMorpho, Position, Market} from "@morpho-blue/interfaces/IMorpho.sol";
 import {Id, MarketParams} from "@morpho-blue/interfaces/IMorpho.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {MorphoBalancesLib} from "@morpho-blue/libraries/periphery/MorphoBalancesLib.sol";
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 // Internal imports
 import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
-import {BeaconProxyFactory} from "src/BeaconProxyFactory.sol";
-import {MorphoLendingAdapter} from "src/lending/MorphoLendingAdapter.sol";
-import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IntegrationTestChainBase} from "./IntegrationTestChainBase.t.sol";
 import {LeverageTokenConfig} from "src/types/DataTypes.sol";
 import {MorphoLendingAdapterTestBase} from "../MorphoLendingAdapterTestBase.t.sol";
@@ -56,7 +48,7 @@ contract MorphoLendingAdapterTest is IntegrationTestChainBase, MorphoLendingAdap
                 mintTokenFee: 0,
                 redeemTokenFee: 0
             }),
-            "LT",
+            "LT Name",
             "LT"
         );
     }

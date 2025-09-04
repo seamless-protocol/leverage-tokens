@@ -43,15 +43,6 @@ contract IntegrationTestBase is Test {
     MorphoLendingAdapter public morphoLendingAdapter;
     RebalanceAdapter public rebalanceAdapter;
 
-    function _convertToAssets(uint256 shares) internal view returns (uint256) {
-        return Math.mulDiv(
-            shares,
-            morphoLendingAdapter.getEquityInCollateralAsset() + 1,
-            leverageToken.totalSupply() + 1,
-            Math.Rounding.Floor
-        );
-    }
-
     function _createNewLeverageToken(
         uint256 minColRatio,
         uint256 targetCollateralRatio,
