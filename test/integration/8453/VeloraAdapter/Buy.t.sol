@@ -2,11 +2,11 @@
 pragma solidity ^0.8.26;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IntegrationTestChainBase} from "../IntegrationTestChainBase.t.sol";
+import {IntegrationTestBase} from "../IntegrationTestBase.t.sol";
 import {IVeloraAdapter} from "src/interfaces/periphery/IVeloraAdapter.sol";
 import {VeloraAdapter} from "src/periphery/VeloraAdapter.sol";
 
-contract VeloraAdapterForkTest is IntegrationTestChainBase {
+contract VeloraAdapterForkTest is IntegrationTestBase {
     uint256 outputAmountOffset = 132;
     uint256 maxInputAmountOffset = 100;
     uint256 quotedInputAmountOffset = 164;
