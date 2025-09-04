@@ -3,12 +3,12 @@ pragma solidity ^0.8.26;
 
 // Internal imports
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
-import {IntegrationTestBase} from "../IntegrationTestBase.t.sol";
+import {IntegrationTestChainBase} from "../IntegrationTestChainBase.t.sol";
 import {LeverageTokenState, ActionData} from "src/types/DataTypes.sol";
 
 import {LeverageManagerTestBase} from "../../LeverageManagerTestBase.t.sol";
 
-contract LeverageManagerTest is IntegrationTestBase, LeverageManagerTestBase {
+contract LeverageManagerTest is IntegrationTestChainBase, LeverageManagerTestBase {
     function testFork_setUp() public view virtual override {
         assertEq(address(leverageManager.getLeverageTokenCollateralAsset(leverageToken)), address(WETH));
         assertEq(address(leverageManager.getLeverageTokenDebtAsset(leverageToken)), address(USDC));

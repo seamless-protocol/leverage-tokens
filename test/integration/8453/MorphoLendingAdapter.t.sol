@@ -11,11 +11,11 @@ import {MorphoBalancesLib} from "@morpho-blue/libraries/periphery/MorphoBalances
 import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
-import {IntegrationTestBase} from "./IntegrationTestBase.t.sol";
+import {IntegrationTestChainBase} from "./IntegrationTestChainBase.t.sol";
 import {LeverageTokenConfig} from "src/types/DataTypes.sol";
 import {MorphoLendingAdapterTestBase} from "../MorphoLendingAdapterTestBase.t.sol";
 
-contract MorphoLendingAdapterTest is IntegrationTestBase, MorphoLendingAdapterTestBase {
+contract MorphoLendingAdapterTest is IntegrationTestChainBase, MorphoLendingAdapterTestBase {
     Id public constant MARKET_ID = WETH_USDC_MARKET_ID;
     IERC20 public constant COLLATERAL_ASSET = WETH;
     IERC20 public constant DEBT_ASSET = USDC;
