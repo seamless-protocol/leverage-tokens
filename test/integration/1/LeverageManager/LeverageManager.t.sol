@@ -10,7 +10,7 @@ import {LeverageManagerTestBase} from "../../LeverageManagerTestBase.t.sol";
 
 contract LeverageManagerTest is IntegrationTestChainBase, LeverageManagerTestBase {
     function testFork_setUp() public view virtual override {
-        assertEq(address(leverageManager.getLeverageTokenCollateralAsset(leverageToken)), address(WETH));
+        assertEq(address(leverageManager.getLeverageTokenCollateralAsset(leverageToken)), address(CBBTC));
         assertEq(address(leverageManager.getLeverageTokenDebtAsset(leverageToken)), address(USDC));
     }
 
@@ -18,11 +18,11 @@ contract LeverageManagerTest is IntegrationTestChainBase, LeverageManagerTestBas
         internal
         returns (ActionData memory)
     {
-        return _deposit(leverageManager, leverageToken, WETH, caller, collateralToDeposit, minShares);
+        return _deposit(leverageManager, leverageToken, CBBTC, caller, collateralToDeposit, minShares);
     }
 
     function _mint(address caller, uint256 sharesToMint, uint256 maxCollateral) internal returns (ActionData memory) {
-        return _mint(leverageManager, leverageToken, WETH, caller, sharesToMint, maxCollateral);
+        return _mint(leverageManager, leverageToken, CBBTC, caller, sharesToMint, maxCollateral);
     }
 
     function _redeem(address caller, uint256 shares, uint256 minCollateral, uint256 debtToRepay) internal {
