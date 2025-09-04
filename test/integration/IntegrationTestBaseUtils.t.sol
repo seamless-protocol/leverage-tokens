@@ -8,14 +8,12 @@ import {Test} from "forge-std/Test.sol";
 import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IMorpho, Id} from "@morpho-blue/interfaces/IMorpho.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IMorphoLendingAdapterFactory} from "src/interfaces/IMorphoLendingAdapterFactory.sol";
 import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
-import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {IVeloraAdapter} from "src/interfaces/periphery/IVeloraAdapter.sol";

@@ -2,7 +2,6 @@
 pragma solidity ^0.8.26;
 
 // Dependency imports
-import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
