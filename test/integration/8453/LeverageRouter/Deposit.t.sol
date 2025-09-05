@@ -18,8 +18,8 @@ import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 import {IUniswapV2Router02} from "src/interfaces/periphery/IUniswapV2Router02.sol";
 import {IUniswapSwapRouter02} from "src/interfaces/periphery/IUniswapSwapRouter02.sol";
 import {ActionData, LeverageTokenConfig} from "src/types/DataTypes.sol";
+import {MockSwapper} from "test/unit/mock/MockSwapper.sol";
 import {LeverageRouterTest} from "./LeverageRouter.t.sol";
-import {MockSwapper} from "../../unit/mock/MockSwapper.sol";
 
 contract LeverageRouterDepositTest is LeverageRouterTest {
     struct DepositWithMockedSwapParams {

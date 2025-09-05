@@ -44,6 +44,7 @@ jobs:
       - name: Run Forge tests
         env:
           BASE_RPC_URL: ${{ secrets.BASE_RPC_URL }}
+          ETH_RPC_URL: ${{ secrets.ETH_RPC_URL }}
         run: |
           forge coverage --no-match-coverage script --report lcov
         id: test
