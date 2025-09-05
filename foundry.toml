@@ -21,10 +21,12 @@ via_ir=false
 [rpc_endpoints]
 tenderly = "${TENDERLY_RPC_URL}"
 base = "${BASE_RPC_URL}"
+eth = "${ETH_RPC_URL}"
 
 [etherscan]
 tenderly = { url = "${TENDERLY_VERIFIER_URL}", key = "${TENDERLY_VERIFIER_KEY}" }
 base = { url = "${BASE_VERIFIER_URL}", key = "${BASE_VERIFIER_KEY}" }
+eth = { url = "${ETH_VERIFIER_URL}", key = "${ETH_VERIFIER_KEY}" }
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
 

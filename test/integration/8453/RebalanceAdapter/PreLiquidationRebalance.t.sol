@@ -6,8 +6,8 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {RebalanceTest, RebalanceType} from "test/integration/LeverageManager/Rebalance.t.sol";
 import {RebalanceAction, LeverageTokenState} from "src/types/DataTypes.sol";
+import {RebalanceTest, RebalanceType} from "../LeverageManager/Rebalance.t.sol";
 
 contract PreLiquidationRebalanceTest is RebalanceTest {
     /// @dev In this block price on oracle 3392.292471591441746049801068
