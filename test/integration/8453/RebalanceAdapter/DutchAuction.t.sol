@@ -4,13 +4,13 @@ pragma solidity ^0.8.26;
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 import {LeverageTokenConfig} from "src/types/DataTypes.sol";
-import {RebalanceTest} from "test/integration/LeverageManager/Rebalance.t.sol";
 import {DutchAuctionRebalanceAdapter} from "src/rebalance/DutchAuctionRebalanceAdapter.sol";
 import {Auction, LeverageTokenState} from "src/types/DataTypes.sol";
 import {IDutchAuctionRebalanceAdapter} from "src/interfaces/IDutchAuctionRebalanceAdapter.sol";
 import {RebalanceAdapter} from "src/rebalance/RebalanceAdapter.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ICollateralRatiosRebalanceAdapter} from "src/interfaces/ICollateralRatiosRebalanceAdapter.sol";
+import {RebalanceTest} from "../LeverageManager/Rebalance.t.sol";
 
 contract DutchAuctionTest is RebalanceTest {
     function test_setUp() public view {

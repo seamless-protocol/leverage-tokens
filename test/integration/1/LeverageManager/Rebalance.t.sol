@@ -13,10 +13,10 @@ import {LeverageManagerHarness} from "test/unit/harness/LeverageManagerHarness.t
 import {LeverageTokenState, RebalanceAction, ActionType, LeverageTokenConfig} from "src/types/DataTypes.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
-import {LeverageManagerTest} from "test/integration/LeverageManager/LeverageManager.t.sol";
 import {MorphoLendingAdapter} from "src/lending/MorphoLendingAdapter.sol";
 import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 import {RebalanceAdapter} from "src/rebalance/RebalanceAdapter.sol";
+import {LeverageManagerTest} from "../LeverageManager/LeverageManager.t.sol";
 
 enum RebalanceType {
     UP,
@@ -26,147 +26,120 @@ enum RebalanceType {
 contract RebalanceTest is LeverageManagerTest {
     int256 public constant MAX_PERCENTAGE = 100_00; // 100%
 
-    ILeverageToken ethLong2x;
-    ILeverageToken ethShort2x;
-
-    MorphoLendingAdapter ethLong2xAdapter;
-    MorphoLendingAdapter ethShort2xAdapter;
-
-    RebalanceAdapter ethLong2xRebalanceAdapter;
-    RebalanceAdapter ethShort2xRebalanceAdapter;
-
     function setUp() public virtual override {
         super.setUp();
 
         rebalanceAdapterImplementation = new RebalanceAdapter();
-        ethLong2xRebalanceAdapter =
-            _deployRebalanceAdapter(1.8e18, 2e18, 2.2e18, 7 minutes, 1.2e18, 0.98e18, 1.3e18, 45_66);
-        ethShort2xRebalanceAdapter =
-            _deployRebalanceAdapter(1.3e18, 1.5e18, 2e18, 7 minutes, 1.2e18, 0.9e18, 1.3e18, 45_66);
+        rebalanceAdapter = _deployRebalanceAdapter(1.8e18, 2e18, 2.2e18, 7 minutes, 1.2e18, 0.98e18, 1.3e18, 45_66);
 
-        ethLong2xAdapter = MorphoLendingAdapter(
-            address(morphoLendingAdapterFactory.deployAdapter(WETH_USDC_MARKET_ID, address(this), bytes32(uint256(1))))
+        morphoLendingAdapter = MorphoLendingAdapter(
+            address(morphoLendingAdapterFactory.deployAdapter(CBBTC_USDC_MARKET_ID, address(this), bytes32(uint256(1))))
         );
 
-        ethShort2xAdapter = MorphoLendingAdapter(
-            address(morphoLendingAdapterFactory.deployAdapter(USDC_WETH_MARKET_ID, address(this), bytes32(uint256(2))))
-        );
-
-        ethLong2x = leverageManager.createNewLeverageToken(
+        leverageToken = leverageManager.createNewLeverageToken(
             LeverageTokenConfig({
-                lendingAdapter: ILendingAdapter(address(ethLong2xAdapter)),
-                rebalanceAdapter: IRebalanceAdapter(ethLong2xRebalanceAdapter),
+                lendingAdapter: ILendingAdapter(address(morphoLendingAdapter)),
+                rebalanceAdapter: IRebalanceAdapter(rebalanceAdapter),
                 mintTokenFee: 0,
                 redeemTokenFee: 0
             }),
-            "Seamless ETH/USDC 2x leverage token",
-            "ltETH/USDC-2x"
-        );
-
-        ethShort2x = leverageManager.createNewLeverageToken(
-            LeverageTokenConfig({
-                lendingAdapter: ILendingAdapter(address(ethShort2xAdapter)),
-                rebalanceAdapter: IRebalanceAdapter(ethShort2xRebalanceAdapter),
-                mintTokenFee: 0,
-                redeemTokenFee: 0
-            }),
-            "Seamless USDC/ETH 2x leverage token",
-            "ltUSDC/ETH-2x"
+            "Seamless CBBTC/USDC 2x leverage token",
+            "ltCBBTC/USDC-2x"
         );
     }
 
-    /// @dev In this block price on oracle 3392.292471591441746049801068
     function test_rebalance_SingleLeverageToken_OverCollateralized() public {
-        _mintEthLong2x();
+        _mint();
 
-        // After previous action we expect leverage token to have 20 ETH collateral
+        // After previous action we expect leverage token to have 1 cbBTC collateral
         // We need to mock price change so leverage token goes off balance
         // Price should change for 20% which means that collateral ratio is now going to be ~2.4x
-        // Price of ETH after this change should be 4070.750000000000000000000000
-        _moveEthPrice(20_00);
+        _moveBTCPrice(20_00);
 
-        LeverageTokenState memory stateBefore = getLeverageTokenState(ethLong2x);
-        assertEq(stateBefore.collateralRatio, 2399999999988208563);
+        LeverageTokenState memory stateBefore = getLeverageTokenState(leverageToken);
+        assertEq(stateBefore.collateralRatio, 2.399999999978076652e18);
 
-        uint256 collateralBefore = ethLong2xAdapter.getCollateral();
-        uint256 debtBefore = ethLong2xAdapter.getDebt();
+        uint256 collateralBefore = morphoLendingAdapter.getCollateral();
+        assertEq(collateralBefore, 1e8);
+        uint256 debtBefore = morphoLendingAdapter.getDebt();
+        assertEq(debtBefore, 54736.165348e6);
 
         // At the moment we have the following state:
-        // 20 ETH collateral = 81414.999999999999999999999992 USDC debt
-        // 33922.92471591441746049801068 USDC debt is owed to the Morpho protocol
+        // 1 cbBTC collateral = 131366.796834 USDC debt
+        // 54736.165348 USDC debt is owed to the Morpho protocol
 
         // User rebalances the leverage token but still leaves it out of bounds
-        // User adds 1 ETH collateral and borrows 4100 USDC
-        _rebalance(ethLong2x, RebalanceType.UP, 1e18, 0, 4100 * 1e6, 0);
+        // User adds 1 cbBTC collateral and borrows 60000 USDC
+        _rebalance(leverageToken, RebalanceType.UP, 1e8, 0, 60000e6, 0);
 
         // Validate that ratio is better (leans towards 2x)
-        LeverageTokenState memory stateAfter = getLeverageTokenState(ethLong2x);
+        LeverageTokenState memory stateAfter = getLeverageTokenState(leverageToken);
         assertLe(stateAfter.collateralRatio, stateBefore.collateralRatio);
         assertGe(stateAfter.collateralRatio, 2 * BASE_RATIO);
 
-        uint256 collateralAfter = ethLong2xAdapter.getCollateral();
-        uint256 debtAfter = ethLong2xAdapter.getDebt();
+        uint256 collateralAfter = morphoLendingAdapter.getCollateral();
+        uint256 debtAfter = morphoLendingAdapter.getDebt();
 
         // Check that collateral and debt are changed properly
-        assertEq(collateralAfter, collateralBefore + 1e18);
-        assertEq(debtAfter, debtBefore + 4100 * 1e6);
+        assertEq(collateralAfter, collateralBefore + 1e8);
+        assertEq(debtAfter, debtBefore + 60000e6);
 
-        // Check that USDC is sent to rebalancer and that WETH is taken from him
-        assertEq(USDC.balanceOf(address(ethLong2xRebalanceAdapter)), 4100 * 1e6);
-        assertEq(WETH.balanceOf(address(ethLong2xRebalanceAdapter)), 0);
+        // Check that USDC is sent to rebalancer and that cbBTC is taken from the rebalancer
+        assertEq(USDC.balanceOf(address(rebalanceAdapter)), 60000e6);
+        assertEq(CBBTC.balanceOf(address(rebalanceAdapter)), 0);
     }
 
     function test_rebalance_SingleLeverageToken_UnderCollateralized() public {
-        _mintEthLong2x();
+        _mint();
 
-        // After previous action we expect leverage token to have 20 ETH collateral
+        // After previous action we expect leverage token to have 1 cbBTC collateral
         // We need to mock price change so leverage token goes off balance
         // Price should change for 20% downwards which means that collateral ratio is now going to be ~1.6x
-        // Price of ETH after this change should be 2728.194981060953630732673600
-        _moveEthPrice(-20_00);
+        _moveBTCPrice(-20_00);
 
-        LeverageTokenState memory stateBefore = getLeverageTokenState(ethLong2x);
-        assertEq(stateBefore.collateralRatio, 1599999999982312845);
+        LeverageTokenState memory stateBefore = getLeverageTokenState(leverageToken);
+        assertEq(stateBefore.collateralRatio, 1.599999999985384434e18);
 
-        uint256 collateralBefore = ethLong2xAdapter.getCollateral();
-        uint256 debtBefore = ethLong2xAdapter.getDebt();
+        uint256 collateralBefore = morphoLendingAdapter.getCollateral();
+        assertEq(collateralBefore, 1e8);
+        uint256 debtBefore = morphoLendingAdapter.getDebt();
+        assertEq(debtBefore, 54736.165348e6);
 
-        // User repays 2800 USDC and removes 1 ETH collateral
-        _rebalance(ethLong2x, RebalanceType.DOWN, 0, 1e18, 0, 2800 * 1e6);
+        // User repays 5400 USDC and removes 0.05 cbBTC collateral
+        _rebalance(leverageToken, RebalanceType.DOWN, 0, 0.05e8, 0, 5400e6);
 
         // Validate that ratio is better (leans towards 2x)
-        LeverageTokenState memory stateAfter = getLeverageTokenState(ethLong2x);
+        LeverageTokenState memory stateAfter = getLeverageTokenState(leverageToken);
         assertGe(stateAfter.collateralRatio, stateBefore.collateralRatio);
         assertLe(stateAfter.collateralRatio, 2 * BASE_RATIO);
 
-        uint256 collateralAfter = ethLong2xAdapter.getCollateral();
-        uint256 debtAfter = ethLong2xAdapter.getDebt();
+        uint256 collateralAfter = morphoLendingAdapter.getCollateral();
+        uint256 debtAfter = morphoLendingAdapter.getDebt();
 
         // Check that collateral and debt are changed properly
-        assertEq(collateralAfter, collateralBefore - 1e18);
-        assertEq(debtAfter, debtBefore - 2800 * 1e6);
+        assertEq(collateralAfter, collateralBefore - 0.05e8);
+        assertEq(debtAfter, debtBefore - 5400e6);
 
-        // Check that USDC is sent to rebalancer and that WETH is taken from him
-        assertEq(USDC.balanceOf(address(ethLong2xRebalanceAdapter)), 0);
-        assertEq(WETH.balanceOf(address(ethLong2xRebalanceAdapter)), 1e18);
+        // Check that USDC is sent to rebalancer and that cbBTC is taken from the rebalancer
+        assertEq(USDC.balanceOf(address(rebalanceAdapter)), 0);
+        assertEq(CBBTC.balanceOf(address(rebalanceAdapter)), 0.05e8);
     }
 
-    /// @dev In this block price on oracle 3392.292471591441746049801068
     function test_rebalance_RevertIf_ExposureDirectionChanged() public {
-        _mintEthLong2x();
+        _mint();
 
-        // Move price of ETH 20% downwards
-        _moveEthPrice(-20_00);
+        // Move price of cbBTC 20% downwards
+        _moveBTCPrice(-20_00);
 
-        // User comes and rebalances it in a way that he only adds collateral so leverage token becomes over-collateralized
+        // User comes and rebalances by only adding collateral so the leverage token becomes over-collateralized
         (RebalanceAction[] memory actions, IERC20 tokenIn, IERC20 tokenOut, uint256 amountIn, uint256 amountOut) =
-            _prepareForRebalance(ethLong2x, RebalanceType.UP, 10 * 1e18, 0, 0, 0);
+            _prepareForRebalance(leverageToken, RebalanceType.UP, 0.5e8, 0, 0, 0);
 
-        vm.prank(address(ethLong2xRebalanceAdapter));
+        vm.prank(address(rebalanceAdapter));
         vm.expectRevert(
-            abi.encodeWithSelector(ILeverageManager.InvalidLeverageTokenStateAfterRebalance.selector, ethLong2x)
+            abi.encodeWithSelector(ILeverageManager.InvalidLeverageTokenStateAfterRebalance.selector, leverageToken)
         );
-        leverageManager.rebalance(ethLong2x, actions, tokenIn, tokenOut, amountIn, amountOut);
+        leverageManager.rebalance(leverageToken, actions, tokenIn, tokenOut, amountIn, amountOut);
     }
 
     struct RebalanceData {
@@ -193,11 +166,7 @@ contract RebalanceTest is LeverageManagerTest {
         (RebalanceAction[] memory actions, IERC20 tokenIn, IERC20 tokenOut, uint256 amountIn, uint256 amountOut) =
             _prepareForRebalance(leverageToken, rebalanceType, collToAdd, collToTake, debtToBorrow, debtToRepay);
 
-        vm.prank(
-            address(leverageToken) == address(ethLong2x)
-                ? address(ethLong2xRebalanceAdapter)
-                : address(ethShort2xRebalanceAdapter)
-        );
+        vm.prank(address(rebalanceAdapter));
         leverageManager.rebalance(leverageToken, actions, tokenIn, tokenOut, amountIn, amountOut);
     }
 
@@ -223,9 +192,7 @@ contract RebalanceTest is LeverageManagerTest {
         internal
         returns (RebalanceAction[] memory actions, IERC20 tokenIn, IERC20 tokenOut, uint256 amountIn, uint256 amountOut)
     {
-        address rebalancer = address(leverageToken) == address(ethLong2x)
-            ? address(ethLong2xRebalanceAdapter)
-            : address(ethShort2xRebalanceAdapter);
+        address rebalancer = address(rebalanceAdapter);
 
         address collateralToken = address(leverageManager.getLeverageTokenCollateralAsset(leverageToken));
         address debtToken = address(leverageManager.getLeverageTokenDebtAsset(leverageToken));
@@ -263,44 +230,36 @@ contract RebalanceTest is LeverageManagerTest {
         return (actions, tokenIn, tokenOut, amountIn, amountOut);
     }
 
-    function _supplyWETHForETHShortLeverageToken() internal {
-        deal(address(WETH), address(this), 1000 * 1e18);
-        IMorpho morpho = IMorpho(ethShort2xAdapter.morpho());
+    function _supplyCBBTCForLeverageToken() internal {
+        deal(address(CBBTC), address(this), 1000 * 1e18);
+        IMorpho morpho = IMorpho(morphoLendingAdapter.morpho());
 
         (address loanToken, address collateralToken, address oracle, address irm, uint256 lltv) =
-            ethShort2xAdapter.marketParams();
+            morphoLendingAdapter.marketParams();
         MarketParams memory marketParams =
             MarketParams({loanToken: loanToken, collateralToken: collateralToken, oracle: oracle, irm: irm, lltv: lltv});
 
-        WETH.approve(address(morpho), 1000 * 1e18);
+        CBBTC.approve(address(morpho), 1000 * 1e18);
         morpho.supply(marketParams, 1000 * 1e18, 0, address(this), new bytes(0));
     }
 
-    function _giftUSDCToETHShortLeverageToken() internal {
+    function _giftUSDCToLeverageToken() internal {
         deal(address(USDC), address(this), 150_000 * 1e6);
-        IMorpho morpho = IMorpho(ethShort2xAdapter.morpho());
+        IMorpho morpho = IMorpho(morphoLendingAdapter.morpho());
 
         (address loanToken, address collateralToken, address oracle, address irm, uint256 lltv) =
-            ethShort2xAdapter.marketParams();
+            morphoLendingAdapter.marketParams();
         MarketParams memory marketParams =
             MarketParams({loanToken: loanToken, collateralToken: collateralToken, oracle: oracle, irm: irm, lltv: lltv});
 
         USDC.approve(address(morpho), 150_000 * 1e6);
-        morpho.supplyCollateral(marketParams, 150_000 * 1e6, address(ethShort2xAdapter), new bytes(0));
+        morpho.supplyCollateral(marketParams, 150_000 * 1e6, address(morphoLendingAdapter), new bytes(0));
     }
 
-    /// @dev Performs initial mint into ETH long leverage token, amount is not important but it is important to gain some collateral and debt
-    function _mintEthLong2x() internal {
-        uint256 sharesToMint = 10 ether;
-        uint256 collateralToAdd = leverageManager.previewMint(ethLong2x, sharesToMint).collateral;
-        _mint(ethLong2x, user, sharesToMint, collateralToAdd);
-    }
-
-    /// @dev Performs initial mint into ETH short leverage token, amount is not important but it is important to gain some collateral and debt
-    function _mintEthShort2x() internal {
-        uint256 sharesToMint = 30_000 * 1e6;
-        uint256 collateralToAdd = leverageManager.previewMint(ethShort2x, sharesToMint).collateral;
-        _mint(ethShort2x, user, sharesToMint, collateralToAdd);
+    function _mint() internal {
+        uint256 sharesToMint = 0.5 ether;
+        uint256 collateralToAdd = leverageManager.previewMint(leverageToken, sharesToMint).collateral;
+        _mint(leverageToken, user, sharesToMint, collateralToAdd);
     }
 
     function _mint(ILeverageToken _leverageToken, address _caller, uint256 _sharesToMint, uint256 _collateralToAdd)
@@ -316,20 +275,13 @@ contract RebalanceTest is LeverageManagerTest {
     }
 
     /// @dev Moves price of ETH for given percentage, if percentage is negative it moves price of ETH down
-    function _moveEthPrice(int256 percentage) internal {
+    function _moveBTCPrice(int256 percentage) internal {
         // Move price on ETH long
-        (,, address ethLongOracle,,) = ethLong2xAdapter.marketParams();
-        uint256 currentPrice = IOracle(ethLongOracle).price();
+        (,, address btcOracle,,) = morphoLendingAdapter.marketParams();
+        uint256 currentPrice = IOracle(btcOracle).price();
         int256 priceChange = int256(currentPrice) * percentage / MAX_PERCENTAGE;
         uint256 newPrice = uint256(int256(currentPrice) + priceChange);
-        vm.mockCall(address(ethLongOracle), abi.encodeWithSelector(IOracle.price.selector), abi.encode(newPrice));
-
-        // Move price in different direction on ETH short
-        (,, address ethShortOracle,,) = ethShort2xAdapter.marketParams();
-        currentPrice = IOracle(ethShortOracle).price();
-        priceChange = int256(currentPrice) * percentage / MAX_PERCENTAGE;
-        newPrice = uint256(int256(currentPrice) - priceChange);
-        vm.mockCall(address(ethShortOracle), abi.encodeWithSelector(IOracle.price.selector), abi.encode(newPrice));
+        vm.mockCall(address(btcOracle), abi.encodeWithSelector(IOracle.price.selector), abi.encode(newPrice));
     }
 
     function getLeverageTokenState(ILeverageToken leverageToken) internal view returns (LeverageTokenState memory) {
