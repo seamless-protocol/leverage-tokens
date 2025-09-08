@@ -24,7 +24,6 @@ contract MintInvariants is InvariantTestBase {
         if (stateBefore.actionType != LeverageManagerHandler.ActionType.Mint) {
             return;
         }
-
         LeverageManagerHandler.MintActionData memory mintData =
             abi.decode(stateBefore.actionData, (LeverageManagerHandler.MintActionData));
         IRebalanceAdapterBase rebalanceAdapter =
@@ -135,27 +134,34 @@ contract MintInvariants is InvariantTestBase {
     ) internal view {
         bool isInitialStateEmpty = stateBefore.totalSupply == 0 && stateBefore.collateral == 0;
 
-        if (isInitialStateEmpty && mintData.equityInCollateralAsset != 0) {
-            if (mintData.equityInDebtAsset == 0) {
-                assertEq(
+        if (isInitialStateEmpty && mintData.shares != 0) {
+            uint256 initialCollateralRatio =
+                rebalanceAdapter.getLeverageTokenInitialCollateralRatio(mintData.leverageToken);
+            if (stateAfter.debt > 0) {
+                assertApproxEqRel(
                     stateAfter.collateralRatio,
-                    type(uint256).max,
+                    initialCollateralRatio,
+                    _getAllowedCollateralRatioSlippage(stateAfter.equity),
                     _getMintInvariantDescriptionString(
-                        "Minting into an empty LT for zero equity in debt asset must result in type(uint256).max collateral ratio.",
+                        "Collateral ratio after mint into an empty LT with no collateral must be equal to the specified initial collateral ratio, within the allowed slippage.",
                         stateBefore,
                         stateAfter,
                         mintData
                     )
                 );
             } else {
-                uint256 initialCollateralRatio =
-                    rebalanceAdapter.getLeverageTokenInitialCollateralRatio(mintData.leverageToken);
-                assertApproxEqRel(
+                // Debt borrowed can be zero on an initial mint if the amount of collateral added * the base ratio is less than the initial collateral ratio
+                ILendingAdapter lendingAdapter = leverageManager.getLeverageTokenLendingAdapter(mintData.leverageToken);
+                uint256 debt = lendingAdapter.convertCollateralToDebtAsset(
+                    Math.mulDiv(lendingAdapter.getCollateral(), BASE_RATIO, initialCollateralRatio, Math.Rounding.Floor)
+                );
+                assertEq(debt, 0);
+
+                assertEq(
                     stateAfter.collateralRatio,
-                    initialCollateralRatio,
-                    _getAllowedCollateralRatioSlippage(mintData.equityInDebtAsset),
+                    type(uint256).max,
                     _getMintInvariantDescriptionString(
-                        "Collateral ratio after mint into an empty LT with no collateral must be equal to the specified initial collateral ratio, within the allowed slippage.",
+                        "Collateral ratio after mint into an empty LT with no collateral must be equal to type(uint256).max if the debt borrowed for the mint is zero.",
                         stateBefore,
                         stateAfter,
                         mintData
@@ -240,10 +246,8 @@ contract MintInvariants is InvariantTestBase {
         return string.concat(
             " mintData.leverageToken: ",
             Strings.toHexString(address(mintData.leverageToken)),
-            " mintData.equityInCollateralAsset: ",
-            Strings.toString(mintData.equityInCollateralAsset),
-            " mintData.equityInDebtAsset: ",
-            Strings.toString(mintData.equityInDebtAsset)
+            " mintData.shares: ",
+            Strings.toString(mintData.shares)
         );
     }
 }
