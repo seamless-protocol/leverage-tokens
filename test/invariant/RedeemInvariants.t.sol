@@ -113,12 +113,13 @@ contract RedeemInvariants is InvariantTestBase {
                 )
             );
 
+            uint256 totalCollateralAfter = lendingAdapter.getCollateral();
             if (leverageManager.getLeverageTokenActionFee(redeemData.leverageToken, ExternalAction.Redeem) > 0) {
-                uint256 sharesCollateralValue =
+                uint256 sharesRedeemedCollateralValue =
                     Math.mulDiv(redeemData.shares, stateBefore.collateral, stateBefore.totalSupply, Math.Rounding.Floor);
                 assertGt(
-                    lendingAdapter.getCollateral(),
-                    stateBefore.collateral - sharesCollateralValue,
+                    totalCollateralAfter,
+                    stateBefore.collateral - sharesRedeemedCollateralValue,
                     _getRedeemInvariantDescriptionString(
                         "Remaining collateral after all shares are redeemed must be greater than the difference of the total collateral and the value of the shares redeemed due to the redeem token action fee.",
                         stateBefore,
@@ -128,7 +129,7 @@ contract RedeemInvariants is InvariantTestBase {
                 );
             } else {
                 assertEq(
-                    lendingAdapter.getCollateral(),
+                    totalCollateralAfter,
                     0,
                     _getRedeemInvariantDescriptionString(
                         "Remaining collateral must be zero when all shares have been redeemed and the redeem token action fee is zero.",
