@@ -270,19 +270,6 @@ abstract contract InvariantTestBase is Test {
         return _morpho;
     }
 
-    function _convertToAssets(ILeverageToken leverageToken, uint256 shares, Math.Rounding rounding)
-        public
-        view
-        returns (uint256)
-    {
-        return Math.mulDiv(
-            shares,
-            leverageManager.getLeverageTokenLendingAdapter(leverageToken).getEquityInCollateralAsset(),
-            leverageManager.getFeeAdjustedTotalSupply(leverageToken),
-            rounding
-        );
-    }
-
     function _getInvariantDescriptionString(
         string memory invariantDescription,
         LeverageManagerHandler.LeverageTokenStateData memory stateBefore,

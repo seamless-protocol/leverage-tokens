@@ -75,7 +75,7 @@ contract MintInvariants is InvariantTestBase {
     ) internal view {
         if (stateBefore.totalSupply != 0) {
             assertGe(
-                _convertToAssets(stateBefore.leverageToken, stateBefore.totalSupply, Math.Rounding.Ceil),
+                leverageManager.convertToAssets(stateBefore.leverageToken, stateBefore.totalSupply),
                 stateBefore.equityInCollateralAsset,
                 _getMintInvariantDescriptionString(
                     "The value of the total supply of shares before the mint must be greater than or equal to their value before the mint.",
@@ -95,7 +95,7 @@ contract MintInvariants is InvariantTestBase {
         uint256 sharesMinted
     ) internal view {
         if (sharesMinted != 0) {
-            uint256 mintedSharesValue = _convertToAssets(mintData.leverageToken, sharesMinted, Math.Rounding.Floor);
+            uint256 mintedSharesValue = leverageManager.convertToAssets(mintData.leverageToken, sharesMinted);
 
             if (stateBefore.totalSupply != 0) {
                 uint256 deltaEquityInCollateralAsset =
@@ -137,31 +137,47 @@ contract MintInvariants is InvariantTestBase {
         if (isInitialStateEmpty && mintData.shares != 0) {
             uint256 initialCollateralRatio =
                 rebalanceAdapter.getLeverageTokenInitialCollateralRatio(mintData.leverageToken);
+
             if (stateAfter.debt > 0) {
                 assertApproxEqRel(
                     stateAfter.collateralRatio,
                     initialCollateralRatio,
                     _getAllowedCollateralRatioSlippage(stateAfter.equity),
                     _getMintInvariantDescriptionString(
-                        "Collateral ratio after mint into an empty LT with no collateral must be equal to the specified initial collateral ratio, within the allowed slippage.",
+                        "Collateral ratio after minting an LT with 0 collateral and 0 total supply must be equal to the specified initial collateral ratio, within the allowed slippage.",
                         stateBefore,
                         stateAfter,
                         mintData
                     )
                 );
             } else {
-                // Debt borrowed can be zero on an initial mint if the amount of collateral added * the base ratio is less than the initial collateral ratio
-                ILendingAdapter lendingAdapter = leverageManager.getLeverageTokenLendingAdapter(mintData.leverageToken);
-                uint256 debt = lendingAdapter.convertCollateralToDebtAsset(
-                    Math.mulDiv(lendingAdapter.getCollateral(), BASE_RATIO, initialCollateralRatio, Math.Rounding.Floor)
-                );
-                assertEq(debt, 0);
+                if (stateBefore.debt == 0) {
+                    // Debt borrowed can be zero on an initial mint if the amount of collateral added * the base ratio is less
+                    // than the initial collateral ratio, calculated when determining the amount of debt to borrow in the
+                    // LeverageManager logic when the initial collateral and debt are both zero (debt = collateral * BASE_RATIO / initialCollateralRatio).
+                    // It may also be zero if that amount converted to debt using the underlying market oracle results in zero.
+                    ILendingAdapter lendingAdapter =
+                        leverageManager.getLeverageTokenLendingAdapter(mintData.leverageToken);
+                    uint256 collateralAdded = lendingAdapter.getCollateral();
+                    assertTrue(
+                        collateralAdded * BASE_RATIO < initialCollateralRatio
+                            || lendingAdapter.convertCollateralToDebtAsset(
+                                collateralAdded * BASE_RATIO / initialCollateralRatio
+                            ) == 0,
+                        _getMintInvariantDescriptionString(
+                            "The amount of collateral added multiplied by the base ratio must be less than the initial collateral ratio or the debt in collateral asset converted to debt using the underlying market oracle must result in zero if the debt borrowed for the mint is zero.",
+                            stateBefore,
+                            stateAfter,
+                            mintData
+                        )
+                    );
+                }
 
                 assertEq(
                     stateAfter.collateralRatio,
                     type(uint256).max,
                     _getMintInvariantDescriptionString(
-                        "Collateral ratio after mint into an empty LT with no collateral must be equal to type(uint256).max if the debt borrowed for the mint is zero.",
+                        "Collateral ratio after minting an LT with 0 collateral and 0 total supply must be equal to type(uint256).max if the debt borrowed for the mint is zero.",
                         stateBefore,
                         stateAfter,
                         mintData

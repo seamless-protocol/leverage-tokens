@@ -65,7 +65,7 @@ contract RedeemInvariants is InvariantTestBase {
                 totalSupplyAfter, stateBefore.equityInCollateralAsset, stateBefore.totalSupply, Math.Rounding.Floor
             );
             uint256 totalSupplyAfterValueAfterRedeem =
-                _convertToAssets(redeemData.leverageToken, totalSupplyAfter, Math.Rounding.Floor);
+                leverageManager.convertToAssets(redeemData.leverageToken, totalSupplyAfter);
 
             assertGe(
                 totalSupplyAfterValueAfterRedeem,

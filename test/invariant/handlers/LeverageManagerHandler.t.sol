@@ -243,12 +243,10 @@ contract LeverageManagerHandler is Test {
 
             if (collateralDecimals > leverageTokenDecimals) {
                 uint256 scalingFactor = 10 ** (collateralDecimals - leverageTokenDecimals);
-                // Prevent overflow in: shares * scalingFactor * initialCollateralRatio
-                // maxShares = type(uint256).max / (scalingFactor * initialCollateralRatio)
+                // Prevent overflow in: shares * scalingFactor * initialCollateralRatio, in LeverageManager.convertSharesToCollateral
                 maxShares = type(uint128).max / (scalingFactor * initialCollateralRatio);
             } else {
-                // In this case, shares is multiplied directly by initialCollateralRatio
-                // maxShares = type(uint256).max / initialCollateralRatio
+                // In this case, shares is multiplied directly by initialCollateralRatio, in LeverageManager.convertSharesToCollateral
                 maxShares = type(uint128).max / initialCollateralRatio;
             }
 
@@ -257,7 +255,7 @@ contract LeverageManagerHandler is Test {
 
             // Morpho uses uint128 for collateral, the max shares should be scaled down
             // so that the collateral added does not result in overflows.
-            // There can be collateral without shares already if someone adds collateral when total supply is 0.
+            // There can be collateral without shares already if someone adds collateral directly on the LendingAdapter when total supply is 0.
             if (collateralForMaxShares > allowedCollateral) {
                 if (collateralForMaxShares > allowedCollateral) {
                     maxShares = Math.mulDiv(maxShares, allowedCollateral, collateralForMaxShares, Math.Rounding.Floor);
