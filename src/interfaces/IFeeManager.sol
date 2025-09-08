@@ -44,9 +44,10 @@ interface IFeeManager {
 
     /// @notice Function that charges any accrued management fees for the LeverageToken by minting shares to the treasury
     /// @param token LeverageToken to charge management fee for
+    /// @return sharesFee The amount of shares that were minted to the treasury
     /// @dev If the treasury is not set, the management fee is not charged (shares are not minted to the treasury) but
     /// still accrues
-    function chargeManagementFee(ILeverageToken token) external;
+    function chargeManagementFee(ILeverageToken token) external returns (uint256 sharesFee);
 
     /// @notice Returns the default management fee for new LeverageTokens
     /// @return fee The default management fee for new LeverageTokens, 100_00 is 100%

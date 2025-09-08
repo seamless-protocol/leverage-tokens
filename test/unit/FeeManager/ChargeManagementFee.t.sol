@@ -12,8 +12,6 @@ contract ChargeManagementFeeTest is FeeManagerTest {
         uint256 totalSupply = 1000;
         leverageToken.mint(address(this), totalSupply);
 
-        vm.expectEmit(true, true, true, true);
-        emit IFeeManager.ManagementFeeCharged(leverageToken, 0);
         feeManager.chargeManagementFee(leverageToken);
 
         uint256 totalSupplyAfter = leverageToken.totalSupply();
@@ -22,32 +20,35 @@ contract ChargeManagementFeeTest is FeeManagerTest {
         skip(SECONDS_ONE_YEAR); // One year passes and management fee is charged
         vm.expectEmit(true, true, true, true);
         emit IFeeManager.ManagementFeeCharged(leverageToken, 100);
-        feeManager.chargeManagementFee(leverageToken);
+        uint256 sharesFee = feeManager.chargeManagementFee(leverageToken);
 
         // 10% of 1000 total supply should be minted to the treasury and the last management fee accrual timestamp
         // should be updated
         totalSupplyAfter = leverageToken.totalSupply();
         assertEq(totalSupplyAfter, totalSupply + 100);
         assertEq(leverageToken.balanceOf(treasury), 100);
+        assertEq(sharesFee, 100);
         assertEq(feeManager.getLastManagementFeeAccrualTimestamp(leverageToken), block.timestamp);
 
         // Another year passes and management fee is charged again
         skip(SECONDS_ONE_YEAR);
         vm.expectEmit(true, true, true, true);
         emit IFeeManager.ManagementFeeCharged(leverageToken, 110);
-        feeManager.chargeManagementFee(leverageToken);
+        sharesFee = feeManager.chargeManagementFee(leverageToken);
 
         // 10% of 1100 total supply should be minted to the treasury and the last management fee accrual timestamp
         // should be updated
         totalSupplyAfter = leverageToken.totalSupply();
         assertEq(totalSupplyAfter, totalSupply + 100 + 110);
         assertEq(leverageToken.balanceOf(treasury), 100 + 110);
+        assertEq(sharesFee, 110);
         assertEq(feeManager.getLastManagementFeeAccrualTimestamp(leverageToken), block.timestamp);
     }
 
     function test_chargeManagementFee_ZeroFee() public {
         _setManagementFee(feeManagerRole, leverageToken, 0);
 
+        uint256 t0 = block.timestamp;
         uint256 totalSupply = 1000;
         leverageToken.mint(address(this), totalSupply);
 
@@ -59,5 +60,6 @@ contract ChargeManagementFeeTest is FeeManagerTest {
 
         assertEq(leverageToken.balanceOf(treasury), 0);
         assertEq(leverageToken.totalSupply(), totalSupply);
+        assertEq(feeManager.getLastManagementFeeAccrualTimestamp(leverageToken), t0);
     }
 }

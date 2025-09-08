@@ -122,12 +122,20 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
 
     /// @inheritdoc IFeeManager
     function setManagementFee(ILeverageToken token, uint256 fee) external onlyRole(FEE_MANAGER_ROLE) {
-        // Charge any accrued management fees before setting the new management fee
-        chargeManagementFee(token);
-
         _validateManagementFee(fee);
 
+        // Charge any accrued management fees before setting the new management fee
+        uint256 sharesFee = chargeManagementFee(token);
+
         _getFeeManagerStorage().managementFee[token] = fee;
+
+        // chargeManagementFee will update the last management fee accrual timestamp only if the computed shares
+        // fee was greater than 0. So, we need to ensure the last management fee accrual timestamp is updated
+        // in that case
+        if (sharesFee == 0) {
+            _getFeeManagerStorage().lastManagementFeeAccrualTimestamp[token] = uint120(block.timestamp);
+        }
+
         emit ManagementFeeSet(token, fee);
     }
 
@@ -145,13 +153,18 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     }
 
     /// @inheritdoc IFeeManager
-    function chargeManagementFee(ILeverageToken token) public {
+    function chargeManagementFee(ILeverageToken token) public returns (uint256) {
         // Shares fee must be obtained before the last management fee accrual timestamp is updated
         uint256 sharesFee = _getAccruedManagementFee(token, token.totalSupply());
-        _getFeeManagerStorage().lastManagementFeeAccrualTimestamp[token] = uint120(block.timestamp);
 
-        _chargeTreasuryFee(token, sharesFee);
-        emit ManagementFeeCharged(token, sharesFee);
+        if (sharesFee != 0) {
+            _getFeeManagerStorage().lastManagementFeeAccrualTimestamp[token] = uint120(block.timestamp);
+
+            _chargeTreasuryFee(token, sharesFee);
+            emit ManagementFeeCharged(token, sharesFee);
+        }
+
+        return sharesFee;
     }
 
     /// @notice Function that mints shares to the treasury, if the treasury is set
@@ -258,7 +271,14 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
 
         uint256 sharesFee =
             Math.mulDiv(managementFee * totalSupply, duration, MAX_BPS * SECS_PER_YEAR, Math.Rounding.Ceil);
-        return sharesFee;
+
+        // Only return the fee if it's greater than 1 to prevent excessive fee amplification.
+        // Due to ceiling rounding, any fractional fee (e.g., 0.1) gets rounded up to 1 whole share.
+        // For very low management fees, this could result in an effective fee that's orders of
+        // magnitude higher than intended. By returning 0 for fees of 1 or less, we limit the
+        // maximum fee amplification to a factor of 2 in the worst case, preventing the
+        // management fee from becoming disproportionately large relative to the set management fee rate.
+        return sharesFee > 1 ? sharesFee : 0;
     }
 
     /// @notice Sets the LeverageToken fee for a specific action

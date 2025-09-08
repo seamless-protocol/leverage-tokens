@@ -28,6 +28,48 @@ contract GetAccruedManagementFeeTest is FeeManagerTest {
         assertEq(sharesFee, 53); // half of 10% of 1000 + 50, rounded up
     }
 
+    function test_getAccruedManagementFee_ReturnsZeroWhenComputedSharesFeeLeOne() public {
+        uint256 managementFee = 1;
+        _setManagementFee(feeManagerRole, leverageToken, 1); // 0.01% management fee
+
+        uint256 lastManagementFeeAccrualTimestamp = feeManager.getLastManagementFeeAccrualTimestamp(leverageToken);
+
+        uint256 deltaT = 1;
+        skip(deltaT);
+
+        uint256 totalSupply = 1e4;
+        {
+            uint256 computedSharesFee = Math.mulDiv(totalSupply, managementFee * deltaT, MAX_BPS, Math.Rounding.Ceil);
+            assertEq(computedSharesFee, 1);
+        }
+        uint256 sharesFee = feeManager.exposed_getAccruedManagementFee(leverageToken, totalSupply);
+
+        // When the computed shares fee is = 1, the function returns 0 and the last management fee accrual timestamp
+        // is not updated
+        assertEq(sharesFee, 0);
+        assertEq(feeManager.getLastManagementFeeAccrualTimestamp(leverageToken), lastManagementFeeAccrualTimestamp);
+
+        // Same thing occurs when the computed shares fee is < 1
+        totalSupply = 1e3;
+        {
+            uint256 computedSharesFee = Math.mulDiv(totalSupply, managementFee * deltaT, MAX_BPS, Math.Rounding.Ceil);
+            assertEq(computedSharesFee, 1);
+        }
+        sharesFee = feeManager.exposed_getAccruedManagementFee(leverageToken, totalSupply);
+        assertEq(sharesFee, 0);
+        assertEq(feeManager.getLastManagementFeeAccrualTimestamp(leverageToken), lastManagementFeeAccrualTimestamp);
+
+        // Same thing occurs when the computed shares fee is = 0
+        totalSupply = 0;
+        {
+            uint256 computedSharesFee = Math.mulDiv(totalSupply, managementFee * deltaT, MAX_BPS, Math.Rounding.Ceil);
+            assertEq(computedSharesFee, 0);
+        }
+        sharesFee = feeManager.exposed_getAccruedManagementFee(leverageToken, totalSupply);
+        assertEq(sharesFee, 0);
+        assertEq(feeManager.getLastManagementFeeAccrualTimestamp(leverageToken), lastManagementFeeAccrualTimestamp);
+    }
+
     function testFuzz_getAccruedManagementFee_RoundsUp(uint128 totalSupply, uint256 managementFee) public {
         managementFee = bound(managementFee, 1, MAX_MANAGEMENT_FEE);
 
@@ -40,7 +82,9 @@ contract GetAccruedManagementFeeTest is FeeManagerTest {
 
         uint256 sharesFee = feeManager.exposed_getAccruedManagementFee(leverageToken, totalSupply);
 
-        assertEq(sharesFee, Math.mulDiv(totalSupply, managementFee, MAX_BPS, Math.Rounding.Ceil));
+        uint256 computedSharesFee = Math.mulDiv(totalSupply, managementFee, MAX_BPS, Math.Rounding.Ceil);
+
+        assertEq(sharesFee, computedSharesFee > 1 ? computedSharesFee : 0);
     }
 
     /// forge-config: default.fuzz.runs = 1
