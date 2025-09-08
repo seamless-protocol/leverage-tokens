@@ -186,27 +186,32 @@ contract MintInvariants is InvariantTestBase {
             uint256 allowedSlippage =
                 _getAllowedCollateralRatioSlippage(Math.min(stateBefore.collateral, stateBefore.debt));
 
-            bool isCollateralRatioWithinAllowedSlippage = stdMath.percentDelta(
-                stateAfter.collateralRatio, stateBefore.collateralRatio
-            ) <= allowedSlippage
-                || stdMath.percentDelta(collateralRatioUsingDebtNormalized, stateBefore.collateralRatioUsingDebtNormalized)
-                    <= allowedSlippage;
+            // Due to oracle price, it's possible for the collateral ratio to be 0 in these tests. In those cases,
+            // the % difference will be 100%. Also, stdMath.percentDelta will overflow due to division by zero.
+            if (stateBefore.collateralRatio != 0 && stateBefore.collateralRatioUsingDebtNormalized != 0) {
+                bool isCollateralRatioWithinAllowedSlippage = stdMath.percentDelta(
+                    stateAfter.collateralRatio, stateBefore.collateralRatio
+                ) <= allowedSlippage
+                    || stdMath.percentDelta(
+                        collateralRatioUsingDebtNormalized, stateBefore.collateralRatioUsingDebtNormalized
+                    ) <= allowedSlippage;
 
-            assertTrue(
-                isCollateralRatioWithinAllowedSlippage,
-                _getMintInvariantDescriptionString(
-                    "Collateral ratio after mint must be equal to the collateral ratio before the mint, within the allowed slippage.",
-                    stateBefore,
-                    stateAfter,
-                    mintData
-                )
-            );
+                assertTrue(
+                    isCollateralRatioWithinAllowedSlippage,
+                    _getMintInvariantDescriptionString(
+                        "Collateral ratio after mint must be equal to the collateral ratio before the mint, within the allowed slippage.",
+                        stateBefore,
+                        stateAfter,
+                        mintData
+                    )
+                );
+            }
 
-            bool isCollateralRatioGe = collateralRatioUsingDebtNormalized
+            bool isCollateralRatioGeBefore = collateralRatioUsingDebtNormalized
                 >= stateBefore.collateralRatioUsingDebtNormalized
                 || stateAfter.collateralRatio >= stateBefore.collateralRatio;
             assertTrue(
-                isCollateralRatioGe,
+                isCollateralRatioGeBefore,
                 _getMintInvariantDescriptionString(
                     string.concat(
                         "Collateral ratio after mint must be greater than or equal to the collateral ratio before the mint.",

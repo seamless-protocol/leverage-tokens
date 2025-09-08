@@ -217,21 +217,25 @@ contract RedeemInvariants is InvariantTestBase {
 
         uint256 allowedSlippage = _getAllowedCollateralRatioSlippage(Math.min(minDebt, minCollateral));
 
-        bool isCollateralRatioWithinAllowedSlippage = stdMath.percentDelta(
-            stateAfter.collateralRatio, stateBefore.collateralRatio
-        ) <= allowedSlippage
-            || stdMath.percentDelta(collateralRatioUsingDebtNormalized, stateBefore.collateralRatioUsingDebtNormalized)
-                <= allowedSlippage;
+        // Due to oracle price, it's possible for the collateral ratio to be 0 in these tests. In those cases,
+        // the % difference will be 100%. Also, stdMath.percentDelta will overflow due to division by zero.
+        if (stateBefore.collateralRatioUsingDebtNormalized != 0 && stateBefore.collateralRatio != 0) {
+            bool isCollateralRatioWithinAllowedSlippage = stdMath.percentDelta(
+                stateAfter.collateralRatio, stateBefore.collateralRatio
+            ) <= allowedSlippage
+                || stdMath.percentDelta(collateralRatioUsingDebtNormalized, stateBefore.collateralRatioUsingDebtNormalized)
+                    <= allowedSlippage;
 
-        assertTrue(
-            isCollateralRatioWithinAllowedSlippage,
-            _getRedeemInvariantDescriptionString(
-                "Collateral ratio after a redeem must be equal to the collateral ratio before the redeem, within the allowed slippage.",
-                stateBefore,
-                stateAfter,
-                redeemData
-            )
-        );
+            assertTrue(
+                isCollateralRatioWithinAllowedSlippage,
+                _getRedeemInvariantDescriptionString(
+                    "Collateral ratio after a redeem must be equal to the collateral ratio before the redeem, within the allowed slippage.",
+                    stateBefore,
+                    stateAfter,
+                    redeemData
+                )
+            );
+        }
     }
 
     function _getRedeemInvariantDescriptionString(

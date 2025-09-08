@@ -116,12 +116,12 @@ abstract contract InvariantTestBase is Test {
     }
 
     function _fuzzedSelectors() internal pure returns (bytes4[] memory) {
-        bytes4[] memory selectors = new bytes4[](4);
+        bytes4[] memory selectors = new bytes4[](5);
         selectors[0] = LeverageManagerHandler.mint.selector;
         selectors[1] = LeverageManagerHandler.redeem.selector;
         selectors[2] = LeverageManagerHandler.addCollateral.selector;
         selectors[3] = LeverageManagerHandler.repayDebt.selector;
-        // selectors[4] = LeverageManagerHandler.updateOraclePrice.selector;
+        selectors[4] = LeverageManagerHandler.updateOraclePrice.selector;
         // TODO: Add selectors for fuzzing over fees (token action, treasury action, and management fees)
         return selectors;
     }
