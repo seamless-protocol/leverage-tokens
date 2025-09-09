@@ -9,6 +9,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 // Internal imports
 import {IMulticallExecutor} from "../interfaces/periphery/IMulticallExecutor.sol";
 
+/// @custom:contact security@seamlessprotocol.com
 contract MulticallExecutor is IMulticallExecutor {
     /// @inheritdoc IMulticallExecutor
     function multicallAndSweep(Call[] calldata calls, IERC20[] calldata tokens) external {
