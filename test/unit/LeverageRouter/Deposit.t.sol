@@ -4,8 +4,10 @@ pragma solidity ^0.8.26;
 // Dependency imports
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 // Internal imports
+import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
 import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {LeverageRouterTest} from "./LeverageRouter.t.sol";
 import {MockLeverageManager} from "../mock/MockLeverageManager.sol";
@@ -193,5 +195,38 @@ contract DepositTest is LeverageRouterTest {
         );
         debtToken.transferFrom(address(leverageRouter), address(morpho), debtFlashLoan);
         vm.stopPrank();
+    }
+
+    function test_Deposit_RevertIf_Reentrancy() public {
+        uint256 requiredCollateral = 10 ether;
+        uint256 collateralFromSender = 5 ether;
+        uint256 debtFlashLoan = 1 ether;
+        uint256 requiredCollateralFromSwap = requiredCollateral - collateralFromSender;
+        uint256 collateralReceivedFromDebtSwap = requiredCollateralFromSwap;
+        uint256 shares = 10 ether;
+        uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
+
+        _mockLeverageManagerDeposit(totalCollateral, debtFlashLoan, collateralReceivedFromDebtSwap, shares);
+
+        ISwapAdapter.Call[] memory calls = new ISwapAdapter.Call[](1);
+        calls[0] = ISwapAdapter.Call({
+            target: address(leverageRouter),
+            data: abi.encodeWithSelector(
+                ILeverageRouter.deposit.selector,
+                leverageToken,
+                collateralFromSender,
+                debtFlashLoan,
+                shares,
+                swapAdapter,
+                calls
+            ),
+            value: 0
+        });
+
+        deal(address(collateralToken), address(this), collateralFromSender);
+        collateralToken.approve(address(leverageRouter), collateralFromSender);
+
+        vm.expectRevert(ReentrancyGuard.ReentrancyGuardReentrantCall.selector);
+        leverageRouter.deposit(leverageToken, collateralFromSender, debtFlashLoan, shares, swapAdapter, calls);
     }
 }

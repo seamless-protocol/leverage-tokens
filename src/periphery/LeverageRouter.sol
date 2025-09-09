@@ -5,6 +5,7 @@ pragma solidity ^0.8.26;
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // Internal imports
@@ -34,7 +35,7 @@ import {ActionData} from "../types/DataTypes.sol";
  *
  * @custom:contact security@seamlessprotocol.com
  */
-contract LeverageRouter is ILeverageRouter {
+contract LeverageRouter is ILeverageRouter, ReentrancyGuard {
     /// @inheritdoc ILeverageRouter
     ILeverageManager public immutable leverageManager;
 
@@ -92,7 +93,7 @@ contract LeverageRouter is ILeverageRouter {
         uint256 minShares,
         ISwapAdapter swapAdapter,
         ISwapAdapter.Call[] calldata swapCalls
-    ) external {
+    ) external nonReentrant {
         bytes memory depositData = abi.encode(
             DepositParams({
                 sender: msg.sender,
@@ -118,7 +119,7 @@ contract LeverageRouter is ILeverageRouter {
         uint256 minCollateralForSender,
         ISwapAdapter swapAdapter,
         ISwapAdapter.Call[] calldata swapCalls
-    ) external {
+    ) external nonReentrant {
         uint256 debtRequired = leverageManager.previewRedeem(token, shares).debt;
 
         bytes memory redeemData = abi.encode(
@@ -148,7 +149,7 @@ contract LeverageRouter is ILeverageRouter {
         address augustus,
         IVeloraAdapter.Offsets calldata offsets,
         bytes calldata swapData
-    ) external {
+    ) external nonReentrant {
         uint256 debtRequired = leverageManager.previewRedeem(token, shares).debt;
 
         bytes memory redeemData = abi.encode(
