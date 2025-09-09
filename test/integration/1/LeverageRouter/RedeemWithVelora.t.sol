@@ -5,7 +5,7 @@ pragma solidity ^0.8.26;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
-import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
+import {IMulticallExecutor} from "src/interfaces/periphery/IMulticallExecutor.sol";
 import {IVeloraAdapter} from "src/interfaces/periphery/IVeloraAdapter.sol";
 import {ActionData} from "src/types/DataTypes.sol";
 import {LeverageRouterTest} from "./LeverageRouter.t.sol";
@@ -60,15 +60,15 @@ contract LeverageRouterRedeemWithVeloraTest is LeverageRouterTest {
 
         uint256 sharesBefore = leverageToken.balanceOf(user);
 
-        ISwapAdapter.Call[] memory calls = new ISwapAdapter.Call[](2);
+        IMulticallExecutor.Call[] memory calls = new IMulticallExecutor.Call[](2);
         // Approve Velora to spend the USDC for the swap
-        calls[0] = ISwapAdapter.Call({
+        calls[0] = IMulticallExecutor.Call({
             target: address(USDC),
             data: abi.encodeWithSelector(IERC20.approve.selector, address(AUGUSTUS_V6_2), flashLoanAmount),
             value: 0
         });
         // Swap USDC to CBBTC
-        calls[1] = ISwapAdapter.Call({target: AUGUSTUS_V6_2, data: sellCalldata, value: 0});
+        calls[1] = IMulticallExecutor.Call({target: AUGUSTUS_V6_2, data: sellCalldata, value: 0});
 
         _dealAndDeposit(CBBTC, USDC, collateralFromSender, collateralFromSender, flashLoanAmount, 0, calls);
 

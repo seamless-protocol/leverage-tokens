@@ -14,11 +14,11 @@ import {ILeverageManager} from "../interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "../interfaces/ILeverageToken.sol";
 import {ILeverageRouter} from "../interfaces/periphery/ILeverageRouter.sol";
 import {IVeloraAdapter} from "../interfaces/periphery/IVeloraAdapter.sol";
-import {ISwapAdapter} from "../interfaces/periphery/ISwapAdapter.sol";
+import {IMulticallExecutor} from "../interfaces/periphery/IMulticallExecutor.sol";
 import {ActionData} from "../types/DataTypes.sol";
 
 /**
- * @dev The LeverageRouter contract is an immutable periphery contract that facilitates the use of flash loans and a swaps
+ * @dev The LeverageRouter contract is an immutable periphery contract that facilitates the use of flash loans and swaps
  * to deposit and redeem equity from LeverageTokens.
  *
  * The high-level deposit flow is as follows:
@@ -91,8 +91,8 @@ contract LeverageRouter is ILeverageRouter, ReentrancyGuard {
         uint256 collateralFromSender,
         uint256 flashLoanAmount,
         uint256 minShares,
-        ISwapAdapter swapAdapter,
-        ISwapAdapter.Call[] calldata swapCalls
+        IMulticallExecutor multicallExecutor,
+        IMulticallExecutor.Call[] calldata swapCalls
     ) external nonReentrant {
         bytes memory depositData = abi.encode(
             DepositParams({
@@ -100,7 +100,7 @@ contract LeverageRouter is ILeverageRouter, ReentrancyGuard {
                 leverageToken: leverageToken,
                 collateralFromSender: collateralFromSender,
                 minShares: minShares,
-                swapAdapter: swapAdapter,
+                multicallExecutor: multicallExecutor,
                 swapCalls: swapCalls
             })
         );
@@ -117,8 +117,8 @@ contract LeverageRouter is ILeverageRouter, ReentrancyGuard {
         ILeverageToken token,
         uint256 shares,
         uint256 minCollateralForSender,
-        ISwapAdapter swapAdapter,
-        ISwapAdapter.Call[] calldata swapCalls
+        IMulticallExecutor multicallExecutor,
+        IMulticallExecutor.Call[] calldata swapCalls
     ) external nonReentrant {
         uint256 debtRequired = leverageManager.previewRedeem(token, shares).debt;
 
@@ -128,7 +128,7 @@ contract LeverageRouter is ILeverageRouter, ReentrancyGuard {
                 leverageToken: token,
                 shares: shares,
                 minCollateralForSender: minCollateralForSender,
-                swapAdapter: swapAdapter,
+                multicallExecutor: multicallExecutor,
                 swapCalls: swapCalls
             })
         );
@@ -206,8 +206,12 @@ contract LeverageRouter is ILeverageRouter, ReentrancyGuard {
         SafeERC20.safeTransferFrom(collateralAsset, params.sender, address(this), params.collateralFromSender);
 
         // Swap the debt asset received from the flash loan to the collateral asset, used to deposit into the LeverageToken
-        SafeERC20.safeTransfer(debtAsset, address(params.swapAdapter), debtLoan);
-        params.swapAdapter.swapWithMulticall(params.swapCalls, debtAsset, collateralAsset);
+        SafeERC20.safeTransfer(debtAsset, address(params.multicallExecutor), debtLoan);
+
+        IERC20[] memory tokens = new IERC20[](2);
+        tokens[0] = collateralAsset;
+        tokens[1] = debtAsset;
+        params.multicallExecutor.multicallAndSweep(params.swapCalls, tokens);
 
         // The sum of the collateral from the swap and the collateral from the sender
         uint256 totalCollateral = IERC20(collateralAsset).balanceOf(address(this));
@@ -252,8 +256,12 @@ contract LeverageRouter is ILeverageRouter, ReentrancyGuard {
             leverageManager.redeem(params.leverageToken, params.shares, params.minCollateralForSender).collateral;
 
         // Swap the collateral asset received from the redeem to the debt asset, used to repay the flash loan.
-        SafeERC20.safeTransfer(collateralAsset, address(params.swapAdapter), collateralWithdrawn);
-        params.swapAdapter.swapWithMulticall(params.swapCalls, collateralAsset, debtAsset);
+        SafeERC20.safeTransfer(collateralAsset, address(params.multicallExecutor), collateralWithdrawn);
+
+        IERC20[] memory tokens = new IERC20[](2);
+        tokens[0] = collateralAsset;
+        tokens[1] = debtAsset;
+        params.multicallExecutor.multicallAndSweep(params.swapCalls, tokens);
 
         // The remaining collateral after the arbitrary swap calls is available for the sender
         uint256 collateralForSender = collateralAsset.balanceOf(address(this));

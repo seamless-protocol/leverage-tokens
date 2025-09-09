@@ -6,7 +6,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
 import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
-import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
+import {IMulticallExecutor} from "src/interfaces/periphery/IMulticallExecutor.sol";
 import {IVeloraAdapter} from "src/interfaces/periphery/IVeloraAdapter.sol";
 import {LeverageRouterTest} from "./LeverageRouter.t.sol";
 import {MockSwapper} from "../mock/MockSwapper.sol";
@@ -21,13 +21,13 @@ contract OnMorphoFlashLoanTest is LeverageRouterTest {
 
         _mockLeverageManagerDeposit(requiredCollateral, requiredDebt, collateralReceivedFromDebtSwap, shares);
 
-        ISwapAdapter.Call[] memory calls = new ISwapAdapter.Call[](2);
-        calls[0] = ISwapAdapter.Call({
+        IMulticallExecutor.Call[] memory calls = new IMulticallExecutor.Call[](2);
+        calls[0] = IMulticallExecutor.Call({
             target: address(debtToken),
             data: abi.encodeWithSelector(IERC20.approve.selector, address(swapper), requiredDebt),
             value: 0
         });
-        calls[1] = ISwapAdapter.Call({
+        calls[1] = IMulticallExecutor.Call({
             target: address(swapper),
             data: abi.encodeWithSelector(MockSwapper.swapExactInput.selector, debtToken, requiredDebt),
             value: 0
@@ -39,7 +39,7 @@ contract OnMorphoFlashLoanTest is LeverageRouterTest {
                 collateralFromSender: collateralFromSender,
                 minShares: shares,
                 sender: address(this),
-                swapAdapter: swapAdapter,
+                multicallExecutor: multicallExecutor,
                 swapCalls: calls
             })
         );
@@ -82,13 +82,13 @@ contract OnMorphoFlashLoanTest is LeverageRouterTest {
             requiredCollateral, requiredDebt, shares, requiredCollateral - requiredCollateralForSwap
         );
 
-        ISwapAdapter.Call[] memory calls = new ISwapAdapter.Call[](2);
-        calls[0] = ISwapAdapter.Call({
+        IMulticallExecutor.Call[] memory calls = new IMulticallExecutor.Call[](2);
+        calls[0] = IMulticallExecutor.Call({
             target: address(collateralToken),
             data: abi.encodeWithSelector(IERC20.approve.selector, address(swapper), requiredCollateralForSwap),
             value: 0
         });
-        calls[1] = ISwapAdapter.Call({
+        calls[1] = IMulticallExecutor.Call({
             target: address(swapper),
             data: abi.encodeWithSelector(MockSwapper.swapExactInput.selector, collateralToken, requiredCollateralForSwap),
             value: 0
@@ -100,7 +100,7 @@ contract OnMorphoFlashLoanTest is LeverageRouterTest {
                 shares: shares,
                 minCollateralForSender: requiredCollateral - requiredCollateralForSwap,
                 sender: address(this),
-                swapAdapter: swapAdapter,
+                multicallExecutor: multicallExecutor,
                 swapCalls: calls
             })
         );

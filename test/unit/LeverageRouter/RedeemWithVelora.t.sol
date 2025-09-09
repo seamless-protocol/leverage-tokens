@@ -7,7 +7,7 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 
 // Internal imports
 import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
-import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
+import {IMulticallExecutor} from "src/interfaces/periphery/IMulticallExecutor.sol";
 import {IVeloraAdapter} from "src/interfaces/periphery/IVeloraAdapter.sol";
 import {LeverageRouterTest} from "./LeverageRouter.t.sol";
 
@@ -110,8 +110,8 @@ contract RedeemWithVeloraTest is LeverageRouterTest {
         // reentrancy guard is triggered
         _mockLeverageManagerRedeem(0, 0, 0, 0);
 
-        ISwapAdapter.Call[] memory calls = new ISwapAdapter.Call[](1);
-        calls[0] = ISwapAdapter.Call({
+        IMulticallExecutor.Call[] memory calls = new IMulticallExecutor.Call[](1);
+        calls[0] = IMulticallExecutor.Call({
             target: address(leverageRouter),
             data: abi.encodeWithSelector(
                 ILeverageRouter.redeemWithVelora.selector,
@@ -130,6 +130,6 @@ contract RedeemWithVeloraTest is LeverageRouterTest {
         leverageToken.approve(address(leverageRouter), 0);
 
         vm.expectRevert(ReentrancyGuard.ReentrancyGuardReentrantCall.selector);
-        leverageRouter.redeem(leverageToken, 0, 0, swapAdapter, calls);
+        leverageRouter.redeem(leverageToken, 0, 0, multicallExecutor, calls);
     }
 }

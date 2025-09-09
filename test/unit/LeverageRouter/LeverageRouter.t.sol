@@ -14,9 +14,9 @@ import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
-import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
+import {IMulticallExecutor} from "src/interfaces/periphery/IMulticallExecutor.sol";
 import {LeverageRouter} from "src/periphery/LeverageRouter.sol";
-import {SwapAdapter} from "src/periphery/SwapAdapter.sol";
+import {MulticallExecutor} from "src/periphery/MulticallExecutor.sol";
 import {ActionData} from "src/types/DataTypes.sol";
 import {MockERC20} from "../mock/MockERC20.sol";
 import {MockLendingAdapter} from "../mock/MockLendingAdapter.sol";
@@ -52,7 +52,7 @@ contract LeverageRouterTest is Test {
 
     LeverageRouter public leverageRouter;
 
-    SwapAdapter public swapAdapter;
+    MulticallExecutor public multicallExecutor;
 
     function setUp() public virtual {
         // Setup mocked contracts
@@ -70,7 +70,7 @@ contract LeverageRouterTest is Test {
             })
         );
         swapper = new MockSwapper();
-        swapAdapter = new SwapAdapter();
+        multicallExecutor = new MulticallExecutor();
         veloraAdapter = new MockVeloraAdapter();
 
         // Setup the leverage router
@@ -166,13 +166,13 @@ contract LeverageRouterTest is Test {
     ) internal {
         _mockLeverageManagerDeposit(requiredCollateral, requiredDebt, collateralReceivedFromDebtSwap, shares);
 
-        ISwapAdapter.Call[] memory calls = new ISwapAdapter.Call[](2);
-        calls[0] = ISwapAdapter.Call({
+        IMulticallExecutor.Call[] memory calls = new IMulticallExecutor.Call[](2);
+        calls[0] = IMulticallExecutor.Call({
             target: address(debtToken),
             data: abi.encodeWithSelector(IERC20.approve.selector, address(swapper), requiredDebt),
             value: 0
         });
-        calls[1] = ISwapAdapter.Call({
+        calls[1] = IMulticallExecutor.Call({
             target: address(swapper),
             data: abi.encodeWithSelector(MockSwapper.swapExactInput.selector, debtToken, requiredDebt),
             value: 0
@@ -184,7 +184,7 @@ contract LeverageRouterTest is Test {
                 leverageToken: leverageToken,
                 collateralFromSender: collateralFromSender,
                 minShares: shares,
-                swapAdapter: swapAdapter,
+                multicallExecutor: multicallExecutor,
                 swapCalls: calls
             })
         );

@@ -8,13 +8,13 @@ import {Test} from "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
-import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
-import {SwapAdapter} from "src/periphery/SwapAdapter.sol";
+import {IMulticallExecutor} from "src/interfaces/periphery/IMulticallExecutor.sol";
+import {MulticallExecutor} from "src/periphery/MulticallExecutor.sol";
 import {MockERC20} from "../mock/MockERC20.sol";
 import {MockSwapper} from "../mock/MockSwapper.sol";
 
-contract SwapWithMulticallTest is Test {
-    ISwapAdapter public swapAdapter;
+contract MulticallAndSweepTest is Test {
+    IMulticallExecutor public multicallExecutor;
 
     MockSwapper public mockSwapper;
 
@@ -27,7 +27,7 @@ contract SwapWithMulticallTest is Test {
     address public alice = makeAddr("alice");
 
     function setUp() public {
-        swapAdapter = new SwapAdapter();
+        multicallExecutor = new MulticallExecutor();
         mockSwapper = new MockSwapper();
 
         tokenA = new MockERC20();
@@ -36,7 +36,7 @@ contract SwapWithMulticallTest is Test {
         freeETH = new FreeETH();
     }
 
-    function test_swapWithMulticall() public {
+    function test_multicallAndSweep() public {
         uint256[] memory outputAmounts = new uint256[](2);
         outputAmounts[0] = 10;
         outputAmounts[1] = 5;
@@ -48,33 +48,33 @@ contract SwapWithMulticallTest is Test {
         inputAmounts[0] = 100;
         inputAmounts[1] = 50;
 
-        ISwapAdapter.Call[] memory calls = new ISwapAdapter.Call[](5);
+        IMulticallExecutor.Call[] memory calls = new IMulticallExecutor.Call[](5);
         // Approve MockSwapper to spend inputAmounts[0] of tokenA
-        calls[0] = ISwapAdapter.Call({
+        calls[0] = IMulticallExecutor.Call({
             target: address(tokenA),
             data: abi.encodeWithSelector(IERC20.approve.selector, address(mockSwapper), inputAmounts[0]),
             value: 0
         });
         // Swap inputAmounts[0] of tokenA to outputAmounts[0] of tokenB
-        calls[1] = ISwapAdapter.Call({
+        calls[1] = IMulticallExecutor.Call({
             target: address(mockSwapper),
             data: abi.encodeWithSelector(MockSwapper.swapExactInput.selector, tokenA, inputAmounts[0]),
             value: 0
         });
         // Approve MockSwapper to spend inputAmounts[1] of tokenA
-        calls[2] = ISwapAdapter.Call({
+        calls[2] = IMulticallExecutor.Call({
             target: address(tokenA),
             data: abi.encodeWithSelector(IERC20.approve.selector, address(mockSwapper), inputAmounts[1]),
             value: 0
         });
         // Swap inputAmounts[1] of tokenA to outputAmounts[1] of tokenB
-        calls[3] = ISwapAdapter.Call({
+        calls[3] = IMulticallExecutor.Call({
             target: address(mockSwapper),
             data: abi.encodeWithSelector(MockSwapper.swapExactInput.selector, tokenA, inputAmounts[1]),
             value: 0
         });
         // Receive some free ETH (1 ether)
-        calls[4] = ISwapAdapter.Call({
+        calls[4] = IMulticallExecutor.Call({
             target: address(freeETH),
             data: abi.encodeWithSelector(FreeETH.freeETH.selector),
             value: 0
@@ -82,18 +82,22 @@ contract SwapWithMulticallTest is Test {
 
         uint256 ethBalanceBefore = alice.balance;
 
-        // Transfer the input tokens to the SwapAdapter, more than required
+        // Transfer the input tokens to the MulticallExecutor, more than required
         uint256 totalInputAmount = inputAmounts[0] + inputAmounts[1] + 5;
         deal(address(tokenA), address(this), totalInputAmount);
-        tokenA.transfer(address(swapAdapter), totalInputAmount);
+        tokenA.transfer(address(multicallExecutor), totalInputAmount);
+
+        IERC20[] memory tokens = new IERC20[](2);
+        tokens[0] = tokenA;
+        tokens[1] = tokenB;
 
         vm.prank(alice);
-        swapAdapter.swapWithMulticall(calls, tokenA, tokenB);
+        multicallExecutor.multicallAndSweep(calls, tokens);
 
-        // SwapAdapter swept the input tokens, output tokens, and ETH
-        assertEq(tokenA.balanceOf(address(swapAdapter)), 0);
-        assertEq(tokenB.balanceOf(address(swapAdapter)), 0);
-        assertEq(address(swapAdapter).balance, 0);
+        // MulticallExecutor swept the input tokens, output tokens, and ETH
+        assertEq(tokenA.balanceOf(address(multicallExecutor)), 0);
+        assertEq(tokenB.balanceOf(address(multicallExecutor)), 0);
+        assertEq(address(multicallExecutor).balance, 0);
 
         // Sender received the swept input tokens, output tokens, and ETH
         assertEq(tokenA.balanceOf(alice), totalInputAmount - inputAmounts[0] - inputAmounts[1]);

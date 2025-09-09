@@ -7,24 +7,23 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // Internal imports
-import {ISwapAdapter} from "../interfaces/periphery/ISwapAdapter.sol";
+import {IMulticallExecutor} from "../interfaces/periphery/IMulticallExecutor.sol";
 
-contract SwapAdapter is ISwapAdapter {
-    /// @inheritdoc ISwapAdapter
-    function swapWithMulticall(Call[] calldata calls, IERC20 from, IERC20 to) external {
+contract MulticallExecutor is IMulticallExecutor {
+    /// @inheritdoc IMulticallExecutor
+    function multicallAndSweep(Call[] calldata calls, IERC20[] calldata tokens) external {
         for (uint256 i = 0; i < calls.length; i++) {
             // slither-disable-next-line unused-return
             Address.functionCallWithValue(calls[i].target, calls[i].data, calls[i].value);
         }
 
         // Sweep any remaining tokens to the sender
-        uint256 fromBalance = from.balanceOf(address(this));
-        uint256 toBalance = to.balanceOf(address(this));
-        if (fromBalance > 0) {
-            SafeERC20.safeTransfer(from, msg.sender, fromBalance);
-        }
-        if (toBalance > 0) {
-            SafeERC20.safeTransfer(to, msg.sender, toBalance);
+        uint256 balance;
+        for (uint256 i = 0; i < tokens.length; i++) {
+            balance = tokens[i].balanceOf(address(this));
+            if (balance > 0) {
+                SafeERC20.safeTransfer(tokens[i], msg.sender, balance);
+            }
         }
 
         // Sweep any remaining ETH to the sender

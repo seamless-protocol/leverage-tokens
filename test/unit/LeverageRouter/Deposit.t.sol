@@ -8,7 +8,7 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 
 // Internal imports
 import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
-import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
+import {IMulticallExecutor} from "src/interfaces/periphery/IMulticallExecutor.sol";
 import {LeverageRouterTest} from "./LeverageRouter.t.sol";
 import {MockLeverageManager} from "../mock/MockLeverageManager.sol";
 import {MockSwapper} from "../mock/MockSwapper.sol";
@@ -40,13 +40,13 @@ contract DepositTest is LeverageRouterTest {
         uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
         _mockLeverageManagerDeposit(totalCollateral, debtFromDeposit, collateralReceivedFromDebtSwap, shares);
 
-        ISwapAdapter.Call[] memory calls = new ISwapAdapter.Call[](2);
-        calls[0] = ISwapAdapter.Call({
+        IMulticallExecutor.Call[] memory calls = new IMulticallExecutor.Call[](2);
+        calls[0] = IMulticallExecutor.Call({
             target: address(debtToken),
             data: abi.encodeWithSelector(IERC20.approve.selector, address(swapper), debtFlashLoan),
             value: 0
         });
-        calls[1] = ISwapAdapter.Call({
+        calls[1] = IMulticallExecutor.Call({
             target: address(swapper),
             data: abi.encodeWithSelector(MockSwapper.swapExactInput.selector, debtToken, debtFlashLoan),
             value: 0
@@ -55,7 +55,7 @@ contract DepositTest is LeverageRouterTest {
         // Execute the deposit
         deal(address(collateralToken), address(this), collateralFromSender);
         collateralToken.approve(address(leverageRouter), collateralFromSender);
-        leverageRouter.deposit(leverageToken, collateralFromSender, debtFlashLoan, shares, swapAdapter, calls);
+        leverageRouter.deposit(leverageToken, collateralFromSender, debtFlashLoan, shares, multicallExecutor, calls);
 
         // Sender receives the minted shares
         assertEq(leverageToken.balanceOf(address(this)), shares);
@@ -98,13 +98,13 @@ contract DepositTest is LeverageRouterTest {
         uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
         _mockLeverageManagerDeposit(totalCollateral, debtFromDeposit, collateralReceivedFromDebtSwap, shares);
 
-        ISwapAdapter.Call[] memory calls = new ISwapAdapter.Call[](2);
-        calls[0] = ISwapAdapter.Call({
+        IMulticallExecutor.Call[] memory calls = new IMulticallExecutor.Call[](2);
+        calls[0] = IMulticallExecutor.Call({
             target: address(debtToken),
             data: abi.encodeWithSelector(IERC20.approve.selector, address(swapper), debtFlashLoan),
             value: 0
         });
-        calls[1] = ISwapAdapter.Call({
+        calls[1] = IMulticallExecutor.Call({
             target: address(swapper),
             data: abi.encodeWithSelector(MockSwapper.swapExactInput.selector, debtToken, debtFlashLoan),
             value: 0
@@ -113,7 +113,7 @@ contract DepositTest is LeverageRouterTest {
         // Execute the deposit
         deal(address(collateralToken), address(this), collateralFromSender);
         collateralToken.approve(address(leverageRouter), collateralFromSender);
-        leverageRouter.deposit(leverageToken, collateralFromSender, debtFlashLoan, shares, swapAdapter, calls);
+        leverageRouter.deposit(leverageToken, collateralFromSender, debtFlashLoan, shares, multicallExecutor, calls);
 
         // Sender receives the minted shares
         assertEq(leverageToken.balanceOf(address(this)), shares);
@@ -169,19 +169,19 @@ contract DepositTest is LeverageRouterTest {
 
         _mockLeverageManagerDeposit(totalCollateral, debtFromDeposit, collateralReceivedFromDebtSwap, shares);
 
-        ISwapAdapter.Call[] memory calls = new ISwapAdapter.Call[](2);
-        calls[0] = ISwapAdapter.Call({
+        IMulticallExecutor.Call[] memory calls = new IMulticallExecutor.Call[](2);
+        calls[0] = IMulticallExecutor.Call({
             target: address(debtToken),
             data: abi.encodeWithSelector(IERC20.approve.selector, address(swapper), debtFlashLoan),
             value: 0
         });
-        calls[1] = ISwapAdapter.Call({
+        calls[1] = IMulticallExecutor.Call({
             target: address(swapper),
             data: abi.encodeWithSelector(MockSwapper.swapExactInput.selector, debtToken, debtFlashLoan),
             value: 0
         });
 
-        leverageRouter.deposit(leverageToken, collateralFromSender, debtFlashLoan, shares, swapAdapter, calls);
+        leverageRouter.deposit(leverageToken, collateralFromSender, debtFlashLoan, shares, multicallExecutor, calls);
 
         // Mimic Morpho attempting to transfer debt from the LeverageRouter to repay the flash loan
         vm.startPrank(address(morpho));
@@ -208,8 +208,8 @@ contract DepositTest is LeverageRouterTest {
 
         _mockLeverageManagerDeposit(totalCollateral, debtFlashLoan, collateralReceivedFromDebtSwap, shares);
 
-        ISwapAdapter.Call[] memory calls = new ISwapAdapter.Call[](1);
-        calls[0] = ISwapAdapter.Call({
+        IMulticallExecutor.Call[] memory calls = new IMulticallExecutor.Call[](1);
+        calls[0] = IMulticallExecutor.Call({
             target: address(leverageRouter),
             data: abi.encodeWithSelector(
                 ILeverageRouter.deposit.selector,
@@ -217,7 +217,7 @@ contract DepositTest is LeverageRouterTest {
                 collateralFromSender,
                 debtFlashLoan,
                 shares,
-                swapAdapter,
+                multicallExecutor,
                 calls
             ),
             value: 0
@@ -227,6 +227,6 @@ contract DepositTest is LeverageRouterTest {
         collateralToken.approve(address(leverageRouter), collateralFromSender);
 
         vm.expectRevert(ReentrancyGuard.ReentrancyGuardReentrantCall.selector);
-        leverageRouter.deposit(leverageToken, collateralFromSender, debtFlashLoan, shares, swapAdapter, calls);
+        leverageRouter.deposit(leverageToken, collateralFromSender, debtFlashLoan, shares, multicallExecutor, calls);
     }
 }

@@ -25,7 +25,7 @@ import {LeverageTokenConfig} from "src/types/DataTypes.sol";
 import {LeverageManagerHarness} from "test/unit/harness/LeverageManagerHarness.t.sol";
 import {MorphoLendingAdapterFactory} from "src/lending/MorphoLendingAdapterFactory.sol";
 import {RebalanceAdapter} from "src/rebalance/RebalanceAdapter.sol";
-import {SwapAdapter} from "src/periphery/SwapAdapter.sol";
+import {MulticallExecutor} from "src/periphery/MulticallExecutor.sol";
 import {VeloraAdapter} from "src/periphery/VeloraAdapter.sol";
 
 contract IntegrationTestUtils is Test {
@@ -43,7 +43,7 @@ contract IntegrationTestUtils is Test {
     IVeloraAdapter public veloraAdapter;
     MorphoLendingAdapter public morphoLendingAdapter;
     RebalanceAdapter public rebalanceAdapter;
-    SwapAdapter public swapAdapter;
+    MulticallExecutor public multicallExecutor;
 
     function _createNewLeverageToken(
         uint256 minColRatio,
@@ -138,7 +138,7 @@ contract IntegrationTestUtils is Test {
         rebalanceAdapterImplementation = new RebalanceAdapter();
         rebalanceAdapter = _deployRebalanceAdapter(1.5e18, 2e18, 2.5e18, 7 minutes, 1.2e18, 0.9e18, 1.2e18, 40_00);
 
-        swapAdapter = new SwapAdapter();
+        multicallExecutor = new MulticallExecutor();
 
         veloraAdapter = new VeloraAdapter(augustusRegistry);
 
@@ -159,7 +159,7 @@ contract IntegrationTestUtils is Test {
         vm.label(address(morphoLendingAdapter), "morphoLendingAdapter");
         vm.label(address(morpho), "morpho");
         vm.label(address(leverageManager), "leverageManager");
-        vm.label(address(swapAdapter), "swapAdapter");
+        vm.label(address(multicallExecutor), "multicallExecutor");
         vm.label(address(veloraAdapter), "veloraAdapter");
     }
 }

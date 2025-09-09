@@ -8,7 +8,7 @@ import {Script, console} from "forge-std/Script.sol";
 import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 
 /// Internal imports
-import {SwapAdapter} from "src/periphery/SwapAdapter.sol";
+import {MulticallExecutor} from "src/periphery/MulticallExecutor.sol";
 import {VeloraAdapter} from "src/periphery/VeloraAdapter.sol";
 import {LeverageRouter} from "src/periphery/LeverageRouter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
@@ -26,8 +26,8 @@ contract PeripheryDeploy is Script {
 
         vm.startBroadcast();
 
-        SwapAdapter swapAdapter = new SwapAdapter();
-        console.log("SwapAdapter deployed at: ", address(swapAdapter));
+        MulticallExecutor multicallExecutor = new MulticallExecutor();
+        console.log("MulticallExecutor deployed at: ", address(multicallExecutor));
 
         VeloraAdapter veloraAdapter = new VeloraAdapter(DeployConstants.AUGUSTUS_REGISTRY);
         console.log("VeloraAdapter deployed at: ", address(veloraAdapter));
