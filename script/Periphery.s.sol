@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
+/// Forge imports
 import {Script, console} from "forge-std/Script.sol";
 
+/// Dependency imports
 import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 
+/// Internal imports
+import {SwapAdapter} from "src/periphery/SwapAdapter.sol";
 import {VeloraAdapter} from "src/periphery/VeloraAdapter.sol";
 import {LeverageRouter} from "src/periphery/LeverageRouter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
@@ -21,6 +25,9 @@ contract PeripheryDeploy is Script {
         console.log("Deploying...");
 
         vm.startBroadcast();
+
+        SwapAdapter swapAdapter = new SwapAdapter();
+        console.log("SwapAdapter deployed at: ", address(swapAdapter));
 
         VeloraAdapter veloraAdapter = new VeloraAdapter(DeployConstants.AUGUSTUS_REGISTRY);
         console.log("VeloraAdapter deployed at: ", address(veloraAdapter));

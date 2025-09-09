@@ -9,8 +9,8 @@ import {Id} from "@morpho-blue/interfaces/IMorpho.sol";
 import {MorphoLendingAdapter} from "src/lending/MorphoLendingAdapter.sol";
 import {RebalanceAdapter} from "src/rebalance/RebalanceAdapter.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
-import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
 import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
+import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {IWETH9} from "src/interfaces/periphery/IWETH9.sol";
 import {IEtherFiL2ModeSyncPool} from "src/interfaces/periphery/IEtherFiL2ModeSyncPool.sol";
 import {IEtherFiL2ExchangeRateProvider} from "src/interfaces/periphery/IEtherFiL2ExchangeRateProvider.sol";
@@ -70,16 +70,16 @@ contract LeverageRouterDepositEtherFiTest is LeverageRouterTest {
 
         deal(address(WEETH), user, userBalanceOfCollateralAsset);
 
-        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
+        ISwapAdapter.Call[] memory calls = new ISwapAdapter.Call[](2);
 
         // Withdraw WETH to get ETH in the LeverageRouter
-        calls[0] = ILeverageRouter.Call({
+        calls[0] = ISwapAdapter.Call({
             target: address(WETH),
             data: abi.encodeWithSelector(IWETH9.withdraw.selector, debt),
             value: 0
         });
         // Deposit ETH into the EtherFi L2 Mode Sync Pool to get WEETH
-        calls[1] = ILeverageRouter.Call({
+        calls[1] = ISwapAdapter.Call({
             target: address(etherFiL2ModeSyncPool),
             data: abi.encodeWithSelector(IEtherFiL2ModeSyncPool.deposit.selector, ETH_ADDRESS, debt, 0, address(0)),
             value: debt
@@ -87,7 +87,7 @@ contract LeverageRouterDepositEtherFiTest is LeverageRouterTest {
 
         vm.startPrank(user);
         WEETH.approve(address(leverageRouter), collateralFromSender);
-        leverageRouter.deposit(leverageToken, collateralFromSender, debt, 0, calls);
+        leverageRouter.deposit(leverageToken, collateralFromSender, debt, 0, swapAdapter, calls);
         vm.stopPrank();
 
         // Initial mint results in 1:1 shares to equity
@@ -137,15 +137,15 @@ contract LeverageRouterDepositEtherFiTest is LeverageRouterTest {
     {
         deal(address(collateralAsset), user, dealAmount);
 
-        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
+        ISwapAdapter.Call[] memory calls = new ISwapAdapter.Call[](2);
         // Withdraw WETH to get ETH in the LeverageRouter
-        calls[0] = ILeverageRouter.Call({
+        calls[0] = ISwapAdapter.Call({
             target: address(WETH),
             data: abi.encodeWithSelector(IWETH9.withdraw.selector, debt),
             value: 0
         });
         // Deposit ETH into the EtherFi L2 Mode Sync Pool to get WEETH
-        calls[1] = ILeverageRouter.Call({
+        calls[1] = ISwapAdapter.Call({
             target: address(etherFiL2ModeSyncPool),
             data: abi.encodeWithSelector(IEtherFiL2ModeSyncPool.deposit.selector, ETH_ADDRESS, debt, 0, address(0)),
             value: debt
@@ -153,7 +153,7 @@ contract LeverageRouterDepositEtherFiTest is LeverageRouterTest {
 
         vm.startPrank(user);
         collateralAsset.approve(address(leverageRouter), collateralFromSender);
-        leverageRouter.deposit(leverageToken, collateralFromSender, debt, 0, calls);
+        leverageRouter.deposit(leverageToken, collateralFromSender, debt, 0, swapAdapter, calls);
         vm.stopPrank();
 
         // No leftover assets in the LeverageRouter

@@ -14,6 +14,7 @@ library DeployConstants {
     address public constant LEVERAGE_MANAGER = 0x38Ba21C6Bf31dF1b1798FCEd07B4e9b07C5ec3a8;
     address public constant LENDING_ADAPTER_FACTORY = 0xDd33419F0c01879a23051edbcdA997A0f9E68e61;
     address public constant LEVERAGE_ROUTER = 0xDbA92fC3dc10a17b96b6E807a908155C389A887C;
+    address public constant SWAP_ADAPTER = 0x0000000000000000000000000000000000000000;
 
     address public constant AUGUSTUS_REGISTRY = 0x7E31B336F9E8bA52ba3c4ac861b033Ba90900bb3;
 }

@@ -6,7 +6,7 @@ import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.so
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
-import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
+import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {LeverageRouterTest} from "./LeverageRouter.t.sol";
 import {MockLeverageManager} from "../mock/MockLeverageManager.sol";
 import {MockSwapper} from "../mock/MockSwapper.sol";
@@ -38,13 +38,13 @@ contract DepositTest is LeverageRouterTest {
         uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
         _mockLeverageManagerDeposit(totalCollateral, debtFromDeposit, collateralReceivedFromDebtSwap, shares);
 
-        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
-        calls[0] = ILeverageRouter.Call({
+        ISwapAdapter.Call[] memory calls = new ISwapAdapter.Call[](2);
+        calls[0] = ISwapAdapter.Call({
             target: address(debtToken),
             data: abi.encodeWithSelector(IERC20.approve.selector, address(swapper), debtFlashLoan),
             value: 0
         });
-        calls[1] = ILeverageRouter.Call({
+        calls[1] = ISwapAdapter.Call({
             target: address(swapper),
             data: abi.encodeWithSelector(MockSwapper.swapExactInput.selector, debtToken, debtFlashLoan),
             value: 0
@@ -53,7 +53,7 @@ contract DepositTest is LeverageRouterTest {
         // Execute the deposit
         deal(address(collateralToken), address(this), collateralFromSender);
         collateralToken.approve(address(leverageRouter), collateralFromSender);
-        leverageRouter.deposit(leverageToken, collateralFromSender, debtFlashLoan, shares, calls);
+        leverageRouter.deposit(leverageToken, collateralFromSender, debtFlashLoan, shares, swapAdapter, calls);
 
         // Sender receives the minted shares
         assertEq(leverageToken.balanceOf(address(this)), shares);
@@ -96,13 +96,13 @@ contract DepositTest is LeverageRouterTest {
         uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
         _mockLeverageManagerDeposit(totalCollateral, debtFromDeposit, collateralReceivedFromDebtSwap, shares);
 
-        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
-        calls[0] = ILeverageRouter.Call({
+        ISwapAdapter.Call[] memory calls = new ISwapAdapter.Call[](2);
+        calls[0] = ISwapAdapter.Call({
             target: address(debtToken),
             data: abi.encodeWithSelector(IERC20.approve.selector, address(swapper), debtFlashLoan),
             value: 0
         });
-        calls[1] = ILeverageRouter.Call({
+        calls[1] = ISwapAdapter.Call({
             target: address(swapper),
             data: abi.encodeWithSelector(MockSwapper.swapExactInput.selector, debtToken, debtFlashLoan),
             value: 0
@@ -111,7 +111,7 @@ contract DepositTest is LeverageRouterTest {
         // Execute the deposit
         deal(address(collateralToken), address(this), collateralFromSender);
         collateralToken.approve(address(leverageRouter), collateralFromSender);
-        leverageRouter.deposit(leverageToken, collateralFromSender, debtFlashLoan, shares, calls);
+        leverageRouter.deposit(leverageToken, collateralFromSender, debtFlashLoan, shares, swapAdapter, calls);
 
         // Sender receives the minted shares
         assertEq(leverageToken.balanceOf(address(this)), shares);
@@ -167,19 +167,19 @@ contract DepositTest is LeverageRouterTest {
 
         _mockLeverageManagerDeposit(totalCollateral, debtFromDeposit, collateralReceivedFromDebtSwap, shares);
 
-        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
-        calls[0] = ILeverageRouter.Call({
+        ISwapAdapter.Call[] memory calls = new ISwapAdapter.Call[](2);
+        calls[0] = ISwapAdapter.Call({
             target: address(debtToken),
             data: abi.encodeWithSelector(IERC20.approve.selector, address(swapper), debtFlashLoan),
             value: 0
         });
-        calls[1] = ILeverageRouter.Call({
+        calls[1] = ISwapAdapter.Call({
             target: address(swapper),
             data: abi.encodeWithSelector(MockSwapper.swapExactInput.selector, debtToken, debtFlashLoan),
             value: 0
         });
 
-        leverageRouter.deposit(leverageToken, collateralFromSender, debtFlashLoan, shares, calls);
+        leverageRouter.deposit(leverageToken, collateralFromSender, debtFlashLoan, shares, swapAdapter, calls);
 
         // Mimic Morpho attempting to transfer debt from the LeverageRouter to repay the flash loan
         vm.startPrank(address(morpho));

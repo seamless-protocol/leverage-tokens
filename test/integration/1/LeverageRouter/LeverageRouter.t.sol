@@ -7,6 +7,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 // Internal imports
 import {LeverageRouter} from "src/periphery/LeverageRouter.sol";
 import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
+import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {IntegrationTestBase} from "../IntegrationTestBase.t.sol";
 
 contract LeverageRouterTest is IntegrationTestBase {
@@ -37,13 +38,13 @@ contract LeverageRouterTest is IntegrationTestBase {
         uint256 collateralFromSender,
         uint256 flashLoanAmount,
         uint256 minShares,
-        ILeverageRouter.Call[] memory calls
+        ISwapAdapter.Call[] memory calls
     ) internal {
         deal(address(collateralAsset), user, dealAmount);
 
         vm.startPrank(user);
         collateralAsset.approve(address(leverageRouter), collateralFromSender);
-        leverageRouter.deposit(leverageToken, collateralFromSender, flashLoanAmount, minShares, calls);
+        leverageRouter.deposit(leverageToken, collateralFromSender, flashLoanAmount, minShares, swapAdapter, calls);
         vm.stopPrank();
 
         // No leftover assets in the LeverageRouter

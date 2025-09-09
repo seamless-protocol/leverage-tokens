@@ -22,6 +22,7 @@ import {ActionData, LeverageTokenConfig} from "src/types/DataTypes.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
+import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {IWETH9} from "src/interfaces/periphery/IWETH9.sol";
 import {DeployConstants} from "./DeployConstants.sol";
 
@@ -32,6 +33,7 @@ contract CreateLeverageToken is Script {
     IMorphoLendingAdapterFactory public lendingAdapterFactory =
         IMorphoLendingAdapterFactory(DeployConstants.LENDING_ADAPTER_FACTORY);
     ILeverageRouter public leverageRouter = ILeverageRouter(DeployConstants.LEVERAGE_ROUTER);
+    ISwapAdapter public swapAdapter = ISwapAdapter(DeployConstants.SWAP_ADAPTER);
 
     /// @dev Market ID for Morpho market that LT will be created on top of
     Id public MORPHO_MARKET_ID = Id.wrap(0xfd0895ba253889c243bf59bc4b96fd1e06d68631241383947b04d1c293a0cfea);
@@ -166,15 +168,15 @@ contract CreateLeverageToken is Script {
 
         ActionData memory previewData = leverageRouter.previewDeposit(leverageToken, INITIAL_EQUITY_DEPOSIT);
 
-        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
-        // Withdraw WETH to get ETH in the LeverageRouter
-        calls[0] = ILeverageRouter.Call({
+        ISwapAdapter.Call[] memory calls = new ISwapAdapter.Call[](2);
+        // Withdraw WETH to get ETH in the SwapAdapter
+        calls[0] = ISwapAdapter.Call({
             target: address(DeployConstants.WETH),
             data: abi.encodeWithSelector(IWETH9.withdraw.selector, previewData.debt),
             value: 0
         });
-        // Deposit ETH into the EtherFi L2 Mode Sync Pool to get WEETH in the LeverageRouter
-        calls[1] = ILeverageRouter.Call({
+        // Deposit ETH into the EtherFi L2 Mode Sync Pool to get WEETH in the SwapAdapter
+        calls[1] = ISwapAdapter.Call({
             target: address(DeployConstants.ETHERFI_L2_MODE_SYNC_POOL),
             data: abi.encodeWithSelector(
                 IEtherFiL2ModeSyncPool.deposit.selector,
@@ -192,6 +194,7 @@ contract CreateLeverageToken is Script {
             INITIAL_EQUITY_DEPOSIT + INITIAL_EQUITY_DEPOSIT_MAX_SWAP_COST,
             previewData.debt,
             previewData.shares,
+            swapAdapter,
             calls
         );
 

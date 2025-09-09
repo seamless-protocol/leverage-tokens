@@ -6,6 +6,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
 import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
+import {ISwapAdapter} from "src/interfaces/periphery/ISwapAdapter.sol";
 import {LeverageRouterTest} from "./LeverageRouter.t.sol";
 import {MockSwapper} from "../mock/MockSwapper.sol";
 
@@ -37,13 +38,13 @@ contract RedeemTest is LeverageRouterTest {
             mintShares
         );
 
-        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
-        calls[0] = ILeverageRouter.Call({
+        ISwapAdapter.Call[] memory calls = new ISwapAdapter.Call[](2);
+        calls[0] = ISwapAdapter.Call({
             target: address(collateralToken),
             data: abi.encodeWithSelector(IERC20.approve.selector, address(swapper), requiredCollateralForSwap),
             value: 0
         });
-        calls[1] = ILeverageRouter.Call({
+        calls[1] = ISwapAdapter.Call({
             target: address(swapper),
             data: abi.encodeWithSelector(MockSwapper.swapExactInput.selector, collateralToken, requiredCollateralForSwap),
             value: 0
@@ -51,7 +52,9 @@ contract RedeemTest is LeverageRouterTest {
 
         // Execute the redeem
         leverageToken.approve(address(leverageRouter), redeemShares);
-        leverageRouter.redeem(leverageToken, redeemShares, requiredCollateral - requiredCollateralForSwap, calls);
+        leverageRouter.redeem(
+            leverageToken, redeemShares, requiredCollateral - requiredCollateralForSwap, swapAdapter, calls
+        );
 
         // Senders shares are burned
         assertEq(leverageToken.balanceOf(address(this)), mintShares - redeemShares);
@@ -96,13 +99,13 @@ contract RedeemTest is LeverageRouterTest {
             mintShares
         );
 
-        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
-        calls[0] = ILeverageRouter.Call({
+        ISwapAdapter.Call[] memory calls = new ISwapAdapter.Call[](2);
+        calls[0] = ISwapAdapter.Call({
             target: address(collateralToken),
             data: abi.encodeWithSelector(IERC20.approve.selector, address(swapper), requiredCollateralForSwap),
             value: 0
         });
-        calls[1] = ILeverageRouter.Call({
+        calls[1] = ISwapAdapter.Call({
             target: address(swapper),
             data: abi.encodeWithSelector(MockSwapper.swapExactInput.selector, collateralToken, requiredCollateralForSwap),
             value: 0
@@ -114,6 +117,6 @@ contract RedeemTest is LeverageRouterTest {
         vm.expectRevert(
             abi.encodeWithSelector(ILeverageRouter.CollateralSlippageTooHigh.selector, minCollateral - 1, minCollateral)
         );
-        leverageRouter.redeem(leverageToken, redeemShares, minCollateral, calls);
+        leverageRouter.redeem(leverageToken, redeemShares, minCollateral, swapAdapter, calls);
     }
 }
