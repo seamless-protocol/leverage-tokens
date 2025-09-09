@@ -133,8 +133,8 @@ interface ILeverageRouter {
     /// @param flashLoanAmount Amount of debt to flash loan, which is swapped to collateral and used to deposit into the LeverageToken
     /// @param minShares Minimum number of shares expected to be received by the sender
     /// @param swapAdapter Swap adapter to use for the swap
-    /// @param swapCalls External calls to execute for the swap of flash loaned debt to collateral for the LeverageToken deposit
-    /// @dev Before each external call, the target contract is approved to spend flashLoanAmount of the debt asset
+    /// @param swapCalls External calls to execute for the swap of flash loaned debt to collateral for the LeverageToken deposit.
+    /// The calls are executed by the `swapAdapter` contract after receiving the flash loaned debt.
     function deposit(
         ILeverageToken leverageToken,
         uint256 collateralFromSender,
@@ -151,7 +151,8 @@ interface ILeverageRouter {
     /// @param shares Amount of shares to redeem
     /// @param minCollateralForSender Minimum amount of collateral for the sender to receive
     /// @param swapAdapter Swap adapter to use for the swap
-    /// @param swapCalls External calls to execute for the swap of collateral from the redemption to debt to repay the flash loan
+    /// @param swapCalls External calls to execute for the swap of collateral from the redemption to debt to repay the flash loan.
+    /// The calls are executed by the `swapAdapter` contract after receiving the collateral from the redemption.
     function redeem(
         ILeverageToken token,
         uint256 shares,
