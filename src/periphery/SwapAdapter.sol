@@ -29,6 +29,7 @@ contract SwapAdapter is ISwapAdapter {
 
         // Sweep any remaining ETH to the sender
         if (address(this).balance > 0) {
+            // slither-disable-next-line arbitrary-send-eth
             payable(msg.sender).transfer(address(this).balance);
         }
     }
