@@ -132,7 +132,7 @@ contract LeverageManager is
 
     /// @inheritdoc ILeverageManager
     function convertCollateralToShares(ILeverageToken token, uint256 collateral, Math.Rounding rounding)
-        public
+        external
         view
         returns (uint256 shares)
     {
