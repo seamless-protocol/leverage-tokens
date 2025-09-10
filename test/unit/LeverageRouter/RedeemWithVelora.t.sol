@@ -3,9 +3,11 @@ pragma solidity ^0.8.26;
 
 // External imports
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 // Internal imports
 import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
+import {IMulticallExecutor} from "src/interfaces/periphery/IMulticallExecutor.sol";
 import {IVeloraAdapter} from "src/interfaces/periphery/IVeloraAdapter.sol";
 import {LeverageRouterTest} from "./LeverageRouter.t.sol";
 
@@ -101,5 +103,33 @@ contract RedeemWithVeloraTest is LeverageRouterTest {
             IVeloraAdapter.Offsets(0, 0, 0), // Doesn't matter for this test as the swap is mocked
             new bytes(0)
         );
+    }
+
+    function test_redeemWithVelora_RevertIf_Reentrancy() public {
+        // Doesn't matter for this test, but we need to mock it still to avoid a revert before the
+        // reentrancy guard is triggered
+        _mockLeverageManagerRedeem(0, 0, 0, 0);
+
+        IMulticallExecutor.Call[] memory calls = new IMulticallExecutor.Call[](1);
+        calls[0] = IMulticallExecutor.Call({
+            target: address(leverageRouter),
+            data: abi.encodeWithSelector(
+                ILeverageRouter.redeemWithVelora.selector,
+                leverageToken,
+                0,
+                0,
+                IVeloraAdapter(address(veloraAdapter)),
+                address(0),
+                IVeloraAdapter.Offsets(0, 0, 0),
+                new bytes(0)
+            ),
+            value: 0
+        });
+
+        // Execute the redeem
+        leverageToken.approve(address(leverageRouter), 0);
+
+        vm.expectRevert(ReentrancyGuard.ReentrancyGuardReentrantCall.selector);
+        leverageRouter.redeem(leverageToken, 0, 0, multicallExecutor, calls);
     }
 }
