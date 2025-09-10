@@ -24,7 +24,7 @@ contract PricingAdapter is IPricingAdapter {
 
     /// @inheritdoc IPricingAdapter
     function getLeverageTokenPriceInCollateral(ILeverageToken leverageToken) public view returns (uint256) {
-        uint256 totalSupply = leverageToken.totalSupply();
+        uint256 totalSupply = leverageManager.getFeeAdjustedTotalSupply(leverageToken);
 
         if (totalSupply == 0) {
             return 0;
@@ -39,7 +39,7 @@ contract PricingAdapter is IPricingAdapter {
 
     /// @inheritdoc IPricingAdapter
     function getLeverageTokenPriceInDebt(ILeverageToken leverageToken) public view returns (uint256) {
-        uint256 totalSupply = leverageToken.totalSupply();
+        uint256 totalSupply = leverageManager.getFeeAdjustedTotalSupply(leverageToken);
 
         if (totalSupply == 0) {
             return 0;

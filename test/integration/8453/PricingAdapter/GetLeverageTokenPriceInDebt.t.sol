@@ -19,4 +19,18 @@ contract GetLeverageTokenPriceInDebtTest is PricingAdapterTest {
         uint256 result = pricingAdapter.getLeverageTokenPriceInDebt(leverageToken);
         assertEq(result, 0);
     }
+
+    function testFork_getLeverageTokenPriceInDebt_ManagementFeeDilution() public {
+        uint256 sharesToMint = 1e18;
+        _mint(user, sharesToMint, type(uint256).max);
+
+        uint256 managementFee = 10_00; // 10%
+        leverageManager.setManagementFee(leverageToken, managementFee);
+
+        uint256 resultA = pricingAdapter.getLeverageTokenPriceInDebt(leverageToken);
+        skip(SECONDS_ONE_YEAR);
+
+        uint256 resultB = pricingAdapter.getLeverageTokenPriceInDebt(leverageToken);
+        assertLt(resultB, resultA);
+    }
 }
