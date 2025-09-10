@@ -19,4 +19,19 @@ contract GetLeverageTokenPriceInCollateralTest is PricingAdapterTest {
         uint256 result = pricingAdapter.getLeverageTokenPriceInCollateral(leverageToken);
         assertEq(result, 0);
     }
+
+    function testFork_getLeverageTokenPriceInCollateral_ManagementFeeDilution() public {
+        uint256 sharesToMint = 1e18;
+        _mint(user, sharesToMint, type(uint256).max);
+
+        uint256 managementFee = 10_00; // 10%
+        leverageManager.setManagementFee(leverageToken, managementFee);
+
+        uint256 resultA = pricingAdapter.getLeverageTokenPriceInCollateral(leverageToken);
+
+        skip(SECONDS_ONE_YEAR);
+
+        uint256 resultB = pricingAdapter.getLeverageTokenPriceInCollateral(leverageToken);
+        assertLt(resultB, resultA);
+    }
 }
