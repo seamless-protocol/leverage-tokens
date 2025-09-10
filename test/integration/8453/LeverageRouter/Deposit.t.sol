@@ -12,9 +12,9 @@ import {MorphoLendingAdapter} from "src/lending/MorphoLendingAdapter.sol";
 import {RebalanceAdapter} from "src/rebalance/RebalanceAdapter.sol";
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
+import {IMulticallExecutor} from "src/interfaces/periphery/IMulticallExecutor.sol";
 import {IUniswapV2Router02} from "src/interfaces/periphery/IUniswapV2Router02.sol";
 import {IUniswapSwapRouter02} from "src/interfaces/periphery/IUniswapSwapRouter02.sol";
 import {ActionData, LeverageTokenConfig} from "src/types/DataTypes.sol";
@@ -114,15 +114,15 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         assertGe(previewData.shares, minShares);
         assertEq(previewData.shares, 0.996683412531705855 ether);
 
-        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
+        IMulticallExecutor.Call[] memory calls = new IMulticallExecutor.Call[](2);
         // Approve Velora to spend the USDC for the swap
-        calls[0] = ILeverageRouter.Call({
+        calls[0] = IMulticallExecutor.Call({
             target: address(USDC),
             data: abi.encodeWithSelector(IERC20.approve.selector, address(AUGUSTUS_V6_2), flashLoanAmountReduced),
             value: 0
         });
         // Swap USDC to WETH
-        calls[1] = ILeverageRouter.Call({target: AUGUSTUS_V6_2, data: sellCalldata, value: 0});
+        calls[1] = IMulticallExecutor.Call({target: AUGUSTUS_V6_2, data: sellCalldata, value: 0});
 
         _dealAndDeposit(
             WETH, USDC, userBalanceOfCollateralAsset, collateralFromSender, flashLoanAmountReduced, minShares, calls
@@ -188,15 +188,15 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         assertGe(previewData.shares, minShares);
         assertEq(previewData.shares, 0.997010445737461631 ether);
 
-        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
+        IMulticallExecutor.Call[] memory calls = new IMulticallExecutor.Call[](2);
         // Approve LiFi to spend the USDC for the swap
-        calls[0] = ILeverageRouter.Call({
+        calls[0] = IMulticallExecutor.Call({
             target: address(USDC),
             data: abi.encodeWithSelector(IERC20.approve.selector, LIFI_DIAMOND, flashLoanAmountReduced),
             value: 0
         });
         // Swap USDC to WETH
-        calls[1] = ILeverageRouter.Call({target: LIFI_DIAMOND, data: sellCalldata, value: 0});
+        calls[1] = IMulticallExecutor.Call({target: LIFI_DIAMOND, data: sellCalldata, value: 0});
 
         _dealAndDeposit(
             WETH, USDC, userBalanceOfCollateralAsset, collateralFromSender, flashLoanAmountReduced, 0, calls
@@ -261,15 +261,15 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         path[0] = address(USDC);
         path[1] = address(WETH);
 
-        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
+        IMulticallExecutor.Call[] memory calls = new IMulticallExecutor.Call[](2);
         // Approve UniswapV2 to spend the USDC for the swap
-        calls[0] = ILeverageRouter.Call({
+        calls[0] = IMulticallExecutor.Call({
             target: address(USDC),
             data: abi.encodeWithSelector(IERC20.approve.selector, UNISWAP_V2_ROUTER02, flashLoanAmountReduced),
             value: 0
         });
         // Swap USDC to WETH
-        calls[1] = ILeverageRouter.Call({
+        calls[1] = IMulticallExecutor.Call({
             target: UNISWAP_V2_ROUTER02,
             data: abi.encodeWithSelector(
                 IUniswapV2Router02.swapExactTokensForTokens.selector,
@@ -312,15 +312,15 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         path[0] = address(USDC);
         path[1] = address(WETH);
 
-        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
+        IMulticallExecutor.Call[] memory calls = new IMulticallExecutor.Call[](2);
         // Approve UniswapV2 to spend the USDC for the swap
-        calls[0] = ILeverageRouter.Call({
+        calls[0] = IMulticallExecutor.Call({
             target: address(USDC),
             data: abi.encodeWithSelector(IERC20.approve.selector, UNISWAP_V2_ROUTER02, flashLoanAmount),
             value: 0
         });
         // Swap USDC to WETH
-        calls[1] = ILeverageRouter.Call({
+        calls[1] = IMulticallExecutor.Call({
             target: UNISWAP_V2_ROUTER02,
             data: abi.encodeWithSelector(
                 IUniswapV2Router02.swapExactTokensForTokens.selector,
@@ -367,12 +367,12 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             assertGe(previewDataReducedDeposit.shares, minShares);
             assertEq(previewDataReducedDeposit.shares, 0.9947739972255148 ether);
 
-            calls[0] = ILeverageRouter.Call({
+            calls[0] = IMulticallExecutor.Call({
                 target: address(USDC),
                 data: abi.encodeWithSelector(IERC20.approve.selector, address(UNISWAP_V2_ROUTER02), flashLoanAmountReduced),
                 value: 0
             });
-            calls[1] = ILeverageRouter.Call({
+            calls[1] = IMulticallExecutor.Call({
                 target: UNISWAP_V2_ROUTER02,
                 data: abi.encodeWithSelector(
                     IUniswapV2Router02.swapExactTokensForTokens.selector,
@@ -430,12 +430,12 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             assertGe(previewDataReducedDeposit.shares, minShares);
             assertEq(previewDataReducedDeposit.shares, 0.995243452682691599 ether);
 
-            calls[0] = ILeverageRouter.Call({
+            calls[0] = IMulticallExecutor.Call({
                 target: address(USDC),
                 data: abi.encodeWithSelector(IERC20.approve.selector, address(UNISWAP_V2_ROUTER02), flashLoanAmountReduced),
                 value: 0
             });
-            calls[1] = ILeverageRouter.Call({
+            calls[1] = IMulticallExecutor.Call({
                 target: UNISWAP_V2_ROUTER02,
                 data: abi.encodeWithSelector(
                     IUniswapV2Router02.swapExactTokensForTokens.selector,
@@ -492,12 +492,12 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             assertGe(previewDataReducedDeposit.shares, minShares);
             assertEq(previewDataReducedDeposit.shares, 0.994295914132365898 ether);
 
-            calls[0] = ILeverageRouter.Call({
+            calls[0] = IMulticallExecutor.Call({
                 target: address(USDC),
                 data: abi.encodeWithSelector(IERC20.approve.selector, address(UNISWAP_V2_ROUTER02), flashLoanAmountReduced),
                 value: 0
             });
-            calls[1] = ILeverageRouter.Call({
+            calls[1] = IMulticallExecutor.Call({
                 target: UNISWAP_V2_ROUTER02,
                 data: abi.encodeWithSelector(
                     IUniswapV2Router02.swapExactTokensForTokens.selector,
@@ -720,13 +720,13 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         path[0] = address(USDC);
         path[1] = address(WETH);
 
-        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
-        calls[0] = ILeverageRouter.Call({
+        IMulticallExecutor.Call[] memory calls = new IMulticallExecutor.Call[](2);
+        calls[0] = IMulticallExecutor.Call({
             target: address(USDC),
             data: abi.encodeWithSelector(IERC20.approve.selector, UNISWAP_V2_ROUTER02, flashLoanAmountReduced),
             value: 0
         });
-        calls[1] = ILeverageRouter.Call({
+        calls[1] = IMulticallExecutor.Call({
             target: UNISWAP_V2_ROUTER02,
             data: abi.encodeWithSelector(
                 IUniswapV2Router02.swapExactTokensForTokens.selector,
@@ -746,7 +746,9 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         vm.expectRevert(
             abi.encodeWithSelector(ILeverageManager.SlippageTooHigh.selector, 0.997145366325135105 ether, 0.99715 ether)
         );
-        leverageRouter.deposit(leverageToken, collateralFromSender, flashLoanAmountReduced, minShares, calls);
+        leverageRouter.deposit(
+            leverageToken, collateralFromSender, flashLoanAmountReduced, minShares, multicallExecutor, calls
+        );
         vm.stopPrank();
     }
 
@@ -763,13 +765,13 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         path[0] = address(USDC);
         path[1] = address(WETH);
 
-        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
-        calls[0] = ILeverageRouter.Call({
+        IMulticallExecutor.Call[] memory calls = new IMulticallExecutor.Call[](2);
+        calls[0] = IMulticallExecutor.Call({
             target: address(USDC),
             data: abi.encodeWithSelector(IERC20.approve.selector, UNISWAP_V2_ROUTER02, previewData.debt),
             value: 0
         });
-        calls[1] = ILeverageRouter.Call({
+        calls[1] = IMulticallExecutor.Call({
             target: UNISWAP_V2_ROUTER02,
             data: abi.encodeWithSelector(
                 IUniswapV2Router02.swapExactTokensForTokens.selector,
@@ -796,7 +798,7 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         // Reverts when morpho attempts to pull assets to repay the flash loan. The debt amount returned from the deposit is too
         // low because the collateral from the swap + the collateral from the sender is less than the collateral required.
         vm.expectRevert("transferFrom reverted"); // Thrown by morpho
-        leverageRouter.deposit(leverageToken, collateralFromSender, previewData.debt, 0, calls);
+        leverageRouter.deposit(leverageToken, collateralFromSender, previewData.debt, 0, multicallExecutor, calls);
         vm.stopPrank();
     }
 
@@ -850,14 +852,14 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             sqrtPriceLimitX96: 0
         });
 
-        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
+        IMulticallExecutor.Call[] memory calls = new IMulticallExecutor.Call[](2);
 
-        calls[0] = ILeverageRouter.Call({
+        calls[0] = IMulticallExecutor.Call({
             target: address(USDC),
             data: abi.encodeWithSelector(IERC20.approve.selector, UNISWAP_SWAP_ROUTER02, flashLoanAmountReduced),
             value: 0
         });
-        calls[1] = ILeverageRouter.Call({
+        calls[1] = IMulticallExecutor.Call({
             target: UNISWAP_SWAP_ROUTER02,
             data: abi.encodeWithSelector(IUniswapSwapRouter02.exactInputSingle.selector, params),
             value: 0
@@ -912,13 +914,13 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
         );
 
         {
-            ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
-            calls[0] = ILeverageRouter.Call({
+            IMulticallExecutor.Call[] memory calls = new IMulticallExecutor.Call[](2);
+            calls[0] = IMulticallExecutor.Call({
                 target: address(params.debtAsset),
                 data: abi.encodeWithSelector(IERC20.approve.selector, address(mockSwapper), flashLoanAmountReduced),
                 value: 0
             });
-            calls[1] = ILeverageRouter.Call({
+            calls[1] = IMulticallExecutor.Call({
                 target: address(mockSwapper),
                 data: abi.encodeWithSelector(MockSwapper.swapExactInput.selector, params.debtAsset, flashLoanAmountReduced),
                 value: 0
@@ -929,7 +931,12 @@ contract LeverageRouterDepositTest is LeverageRouterTest {
             vm.startPrank(user);
             params.collateralAsset.approve(address(leverageRouter), params.collateralFromSender);
             leverageRouter.deposit(
-                params.leverageToken, params.collateralFromSender, flashLoanAmountReduced, params.minShares, calls
+                params.leverageToken,
+                params.collateralFromSender,
+                flashLoanAmountReduced,
+                params.minShares,
+                multicallExecutor,
+                calls
             );
             vm.stopPrank();
         }

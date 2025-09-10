@@ -5,7 +5,7 @@ pragma solidity ^0.8.26;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
-import {ILeverageRouter} from "src/interfaces/periphery/ILeverageRouter.sol";
+import {IMulticallExecutor} from "src/interfaces/periphery/IMulticallExecutor.sol";
 import {IUniswapV2Router02} from "src/interfaces/periphery/IUniswapV2Router02.sol";
 import {IVeloraAdapter} from "src/interfaces/periphery/IVeloraAdapter.sol";
 import {ActionData} from "src/types/DataTypes.sol";
@@ -107,16 +107,16 @@ contract LeverageRouterRedeemWithVeloraTest is LeverageRouterTest {
 
         uint256 sharesBefore = leverageToken.balanceOf(user);
 
-        ILeverageRouter.Call[] memory calls = new ILeverageRouter.Call[](2);
+        IMulticallExecutor.Call[] memory calls = new IMulticallExecutor.Call[](2);
 
         // Approve UniswapV2 to spend the USDC for the swap
-        calls[0] = ILeverageRouter.Call({
+        calls[0] = IMulticallExecutor.Call({
             target: address(USDC),
             data: abi.encodeWithSelector(IERC20.approve.selector, UNISWAP_V2_ROUTER02, debt),
             value: 0
         });
         // Swap USDC to WETH
-        calls[1] = ILeverageRouter.Call({
+        calls[1] = IMulticallExecutor.Call({
             target: UNISWAP_V2_ROUTER02,
             data: abi.encodeWithSelector(
                 IUniswapV2Router02.swapExactTokensForTokens.selector,
