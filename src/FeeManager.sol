@@ -251,10 +251,14 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     /// @param totalSupply Total supply of the LeverageToken
     /// @return shares Shares to mint
     function _getAccruedManagementFee(ILeverageToken token, uint256 totalSupply) internal view returns (uint256) {
-        uint256 managementFee = getManagementFee(token);
         uint120 lastManagementFeeAccrualTimestamp = getLastManagementFeeAccrualTimestamp(token);
-
         uint256 duration = block.timestamp - lastManagementFeeAccrualTimestamp;
+
+        if (duration == 0) {
+            return 0;
+        }
+
+        uint256 managementFee = getManagementFee(token);
 
         uint256 sharesFee =
             Math.mulDiv(managementFee * totalSupply, duration, MAX_BPS * SECS_PER_YEAR, Math.Rounding.Ceil);
