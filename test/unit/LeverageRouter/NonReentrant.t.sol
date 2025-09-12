@@ -42,8 +42,14 @@ contract NonReentrantTest is LeverageRouterTest {
         deal(address(collateralToken), address(this), collateralFromSender);
         collateralToken.approve(address(leverageRouter), collateralFromSender);
 
+        // Transient storage for reentrancy guard is false outside of any tx execution stack on the LeverageManager
+        assertEq(LeverageRouterHarness(address(leverageRouter)).exposed_getReentrancyGuardTransientStorage(), false);
+
         vm.expectRevert(ReentrancyGuardTransient.ReentrancyGuardReentrantCall.selector);
         leverageRouter.deposit(leverageToken, collateralFromSender, debtFlashLoan, shares, multicallExecutor, calls);
+
+        // Sanity check: Transient storage slot is reset to false
+        assertEq(LeverageRouterHarness(address(leverageRouter)).exposed_getReentrancyGuardTransientStorage(), false);
 
         // Check reentrancy guard on redeem
         calls[0] = IMulticallExecutor.Call({
@@ -53,6 +59,9 @@ contract NonReentrantTest is LeverageRouterTest {
         });
         vm.expectRevert(ReentrancyGuardTransient.ReentrancyGuardReentrantCall.selector);
         leverageRouter.deposit(leverageToken, collateralFromSender, debtFlashLoan, shares, multicallExecutor, calls);
+
+        // Sanity check: Transient storage slot is reset to false
+        assertEq(LeverageRouterHarness(address(leverageRouter)).exposed_getReentrancyGuardTransientStorage(), false);
 
         // Check reentrancy guard on redeemWithVelora
         calls[0] = IMulticallExecutor.Call({
@@ -71,5 +80,8 @@ contract NonReentrantTest is LeverageRouterTest {
         });
         vm.expectRevert(ReentrancyGuardTransient.ReentrancyGuardReentrantCall.selector);
         leverageRouter.deposit(leverageToken, collateralFromSender, debtFlashLoan, shares, multicallExecutor, calls);
+
+        // Sanity check: Transient storage slot is reset to false
+        assertEq(LeverageRouterHarness(address(leverageRouter)).exposed_getReentrancyGuardTransientStorage(), false);
     }
 }
