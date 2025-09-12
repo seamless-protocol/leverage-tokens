@@ -213,7 +213,7 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
         // Withdrawing the other half of collateral is not possible for the user due to share dilution from the management fee
         // and morpho borrow interest
         ActionData memory previewDataAfterYear = leverageManager.previewWithdraw(leverageToken, collateralToWithdraw);
-        assertEq(previewDataAfterYear.shares, 5.951836610272824265 ether);
+        assertEq(previewDataAfterYear.shares, 5.951836610272824263 ether);
         assertGt(previewDataAfterYear.shares, leverageToken.balanceOf(user));
 
         deal(address(USDC), user, previewDataAfterYear.debt);

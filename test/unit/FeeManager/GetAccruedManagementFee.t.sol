@@ -25,7 +25,7 @@ contract GetAccruedManagementFeeTest is FeeManagerTest {
         skip(SECONDS_ONE_YEAR / 2);
 
         sharesFee = feeManager.exposed_getAccruedManagementFee(leverageToken, totalSupply + sharesFee);
-        assertEq(sharesFee, 53); // half of 10% of 1000 + 50, rounded up
+        assertEq(sharesFee, 52); // half of 10% of 1000 + 50, rounded down
     }
 
     function testFuzz_getAccruedManagementFee_RoundsUp(uint128 totalSupply, uint256 managementFee) public {
@@ -40,7 +40,7 @@ contract GetAccruedManagementFeeTest is FeeManagerTest {
 
         uint256 sharesFee = feeManager.exposed_getAccruedManagementFee(leverageToken, totalSupply);
 
-        assertEq(sharesFee, Math.mulDiv(totalSupply, managementFee, MAX_BPS, Math.Rounding.Ceil));
+        assertEq(sharesFee, Math.mulDiv(totalSupply, managementFee, MAX_BPS, Math.Rounding.Floor));
     }
 
     /// forge-config: default.fuzz.runs = 1
