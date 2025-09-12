@@ -5,7 +5,7 @@ pragma solidity ^0.8.26;
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // Internal imports
@@ -35,7 +35,7 @@ import {ActionData} from "../types/DataTypes.sol";
  *
  * @custom:contact security@seamlessprotocol.com
  */
-contract LeverageRouter is ILeverageRouter, ReentrancyGuard {
+contract LeverageRouter is ILeverageRouter, ReentrancyGuardTransient {
     /// @inheritdoc ILeverageRouter
     ILeverageManager public immutable leverageManager;
 

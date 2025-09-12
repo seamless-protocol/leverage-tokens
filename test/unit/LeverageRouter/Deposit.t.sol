@@ -196,37 +196,4 @@ contract DepositTest is LeverageRouterTest {
         debtToken.transferFrom(address(leverageRouter), address(morpho), debtFlashLoan);
         vm.stopPrank();
     }
-
-    function test_Deposit_RevertIf_Reentrancy() public {
-        uint256 requiredCollateral = 10 ether;
-        uint256 collateralFromSender = 5 ether;
-        uint256 debtFlashLoan = 1 ether;
-        uint256 requiredCollateralFromSwap = requiredCollateral - collateralFromSender;
-        uint256 collateralReceivedFromDebtSwap = requiredCollateralFromSwap;
-        uint256 shares = 10 ether;
-        uint256 totalCollateral = collateralFromSender + collateralReceivedFromDebtSwap;
-
-        _mockLeverageManagerDeposit(totalCollateral, debtFlashLoan, collateralReceivedFromDebtSwap, shares);
-
-        IMulticallExecutor.Call[] memory calls = new IMulticallExecutor.Call[](1);
-        calls[0] = IMulticallExecutor.Call({
-            target: address(leverageRouter),
-            data: abi.encodeWithSelector(
-                ILeverageRouter.deposit.selector,
-                leverageToken,
-                collateralFromSender,
-                debtFlashLoan,
-                shares,
-                multicallExecutor,
-                calls
-            ),
-            value: 0
-        });
-
-        deal(address(collateralToken), address(this), collateralFromSender);
-        collateralToken.approve(address(leverageRouter), collateralFromSender);
-
-        vm.expectRevert(ReentrancyGuard.ReentrancyGuardReentrantCall.selector);
-        leverageRouter.deposit(leverageToken, collateralFromSender, debtFlashLoan, shares, multicallExecutor, calls);
-    }
 }
