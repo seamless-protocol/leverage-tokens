@@ -405,14 +405,12 @@ contract PreviewWithdrawTest is LeverageManagerTest {
             })
         );
 
-        {
-            uint256 collateralToWithdraw = bound(params.collateral, 0, uint256(params.initialCollateral));
+        uint256 collateralToWithdraw = bound(params.collateral, 0, uint256(params.initialCollateral));
 
-            ActionData memory withdrawData = leverageManager.previewWithdraw(leverageToken, collateralToWithdraw);
-            ActionData memory redeemData = leverageManager.previewRedeem(leverageToken, withdrawData.shares);
-            assertEq(redeemData.shares, withdrawData.shares, "A: Preview shares mismatch");
-            assertEq(redeemData.tokenFee, withdrawData.tokenFee, "A: Preview token fee mismatch");
-            assertApproxEqAbs(redeemData.treasuryFee, withdrawData.treasuryFee, 1, "A: Preview treasury fee mismatch");
-        }
+        ActionData memory withdrawData = leverageManager.previewWithdraw(leverageToken, collateralToWithdraw);
+        ActionData memory redeemData = leverageManager.previewRedeem(leverageToken, withdrawData.shares);
+        assertEq(redeemData.shares, withdrawData.shares, "Preview shares mismatch");
+        assertEq(redeemData.tokenFee, withdrawData.tokenFee, "Preview token fee mismatch");
+        assertApproxEqAbs(redeemData.treasuryFee, withdrawData.treasuryFee, 1, "Preview treasury fee mismatch");
     }
 }
