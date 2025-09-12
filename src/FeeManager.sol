@@ -254,6 +254,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
         uint120 lastManagementFeeAccrualTimestamp = getLastManagementFeeAccrualTimestamp(token);
         uint256 duration = block.timestamp - lastManagementFeeAccrualTimestamp;
 
+        // slither-disable-next-line timestamp,incorrect-equality
         if (duration == 0) {
             return 0;
         }
