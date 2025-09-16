@@ -22,7 +22,7 @@ contract GetLeverageTokenPriceAdjustedTest is PricingAdapterTest {
         assertEq(expectedPrice, 3392.389999591429999598e18);
 
         int256 result = pricingAdapter.getLeverageTokenPriceAdjusted(leverageToken, WETH_USD_ORACLE, false);
-        assertEq(result, int256(expectedPrice)); // 3392.389999591429999598e18 USD
+        assertEq(result, int256(expectedPrice)); // 3392.389999591429999598 USD
     }
 
     function testFork_getLeverageTokenPriceAdjusted_baseAssetIsDebtAsset() public {
