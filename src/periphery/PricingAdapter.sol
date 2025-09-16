@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
+// Dependency imports
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
+// Internal imports
 import {IAggregatorV2V3Interface} from "../interfaces/periphery/IAggregatorV2V3Interface.sol";
 import {ILendingAdapter} from "../interfaces/ILendingAdapter.sol";
 import {ILeverageToken} from "../interfaces/ILeverageToken.sol";
@@ -61,14 +64,14 @@ contract PricingAdapter is IPricingAdapter {
         uint256 priceInBaseAsset = isBaseDebtAsset
             ? getLeverageTokenPriceInDebt(leverageToken)
             : getLeverageTokenPriceInCollateral(leverageToken);
+
         uint256 baseAssetDecimals = isBaseDebtAsset
             ? IERC20Metadata(address(leverageManager.getLeverageTokenDebtAsset(leverageToken))).decimals()
             : IERC20Metadata(address(leverageManager.getLeverageTokenCollateralAsset(leverageToken))).decimals();
 
+        uint256 oracleDecimals = chainlinkOracle.decimals();
         int256 oraclePrice = chainlinkOracle.latestAnswer();
 
-        int256 adjustedPrice = (oraclePrice * int256(priceInBaseAsset)) / int256(10 ** baseAssetDecimals);
-
-        return adjustedPrice;
+        return (oraclePrice * int256(priceInBaseAsset)) / int256(10 ** Math.min(oracleDecimals, baseAssetDecimals));
     }
 }
