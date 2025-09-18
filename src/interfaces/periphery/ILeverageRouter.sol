@@ -2,12 +2,12 @@
 pragma solidity ^0.8.26;
 
 // Dependency imports
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 
 // Internal imports
 import {ILeverageManager} from "../ILeverageManager.sol";
 import {ILeverageToken} from "../ILeverageToken.sol";
+import {IMulticallExecutor} from "./IMulticallExecutor.sol";
 import {IVeloraAdapter} from "./IVeloraAdapter.sol";
 import {ActionData} from "src/types/DataTypes.sol";
 
@@ -16,13 +16,6 @@ interface ILeverageRouter {
         Deposit,
         Redeem,
         RedeemWithVelora
-    }
-
-    /// @notice Struct containing the target, value, and data for a single external call.
-    struct Call {
-        address target; // Call target
-        uint256 value; // ETH value to send
-        bytes data; // Calldata you ABI-encode off-chain
     }
 
     /// @notice Deposit related parameters to pass to the Morpho flash loan callback handler for deposits
@@ -35,8 +28,10 @@ interface ILeverageRouter {
         uint256 collateralFromSender;
         // Minimum amount of shares (LeverageTokens) to receive
         uint256 minShares;
+        // multicall executor to use for the swap
+        IMulticallExecutor multicallExecutor;
         // External calls to execute for the swap of flash loaned debt to collateral
-        Call[] swapCalls;
+        IMulticallExecutor.Call[] swapCalls;
     }
 
     /// @notice Morpho flash loan callback data to pass to the Morpho flash loan callback handler
@@ -55,8 +50,10 @@ interface ILeverageRouter {
         uint256 shares;
         // Minimum amount of collateral for the sender to receive
         uint256 minCollateralForSender;
+        // multicall executor to use for the swap
+        IMulticallExecutor multicallExecutor;
         // External calls to execute for the swap of flash loaned debt to collateral
-        Call[] swapCalls;
+        IMulticallExecutor.Call[] swapCalls;
     }
 
     /// @notice Redeem related parameters to pass to the Morpho flash loan callback handler for redeems using Velora
@@ -135,14 +132,19 @@ interface ILeverageRouter {
     /// @param collateralFromSender Collateral asset amount from the sender to deposit
     /// @param flashLoanAmount Amount of debt to flash loan, which is swapped to collateral and used to deposit into the LeverageToken
     /// @param minShares Minimum number of shares expected to be received by the sender
-    /// @param swapCalls External calls to execute for the swap of flash loaned debt to collateral for the LeverageToken deposit
-    /// @dev Before each external call, the target contract is approved to spend flashLoanAmount of the debt asset
+    /// @param multicallExecutor multicall executor to use for the swap
+    /// @param swapCalls External calls to execute for the swap of flash loaned debt to collateral for the LeverageToken deposit.
+    /// The calls are executed by the `multicallExecutor` contract after receiving the flash loaned debt. Thus, for any encoded approvals and
+    /// swaps that require the `from` address to be encoded,`from` must be set to the `multicallExecutor` contract address. The receiver of the swap
+    /// must either be the `multicallExecutor` or this `LeverageRouter` contract - any leftover collateral and debt assets after the execution
+    /// of the calls are swept to this `LeverageRouter` contract.
     function deposit(
         ILeverageToken leverageToken,
         uint256 collateralFromSender,
         uint256 flashLoanAmount,
         uint256 minShares,
-        Call[] calldata swapCalls
+        IMulticallExecutor multicallExecutor,
+        IMulticallExecutor.Call[] calldata swapCalls
     ) external;
 
     /// @notice Redeems an amount of shares of a LeverageToken and transfers collateral asset to the sender, using arbitrary
@@ -151,9 +153,19 @@ interface ILeverageRouter {
     /// @param token LeverageToken to redeem from
     /// @param shares Amount of shares to redeem
     /// @param minCollateralForSender Minimum amount of collateral for the sender to receive
-    /// @param swapCalls External calls to execute for the swap of collateral from the redemption to debt to repay the flash loan
-    function redeem(ILeverageToken token, uint256 shares, uint256 minCollateralForSender, Call[] calldata swapCalls)
-        external;
+    /// @param multicallExecutor multicall executor to use for the swap
+    /// @param swapCalls External calls to execute for the swap of collateral from the redemption to debt to repay the flash loan.
+    /// The calls are executed by the `multicallExecutor` contract after receiving the collateral from the redemption. Thus, for
+    /// any encoded approvals and swaps that require the `from` address to be encoded, `from` must be set to the `multicallExecutor`
+    /// contract address. The receiver of the swap must either be the `multicallExecutor` or this `LeverageRouter` contract - any leftover
+    /// collateral and debt assets after the execution of the calls are swept to this `LeverageRouter` contract.
+    function redeem(
+        ILeverageToken token,
+        uint256 shares,
+        uint256 minCollateralForSender,
+        IMulticallExecutor multicallExecutor,
+        IMulticallExecutor.Call[] calldata swapCalls
+    ) external;
 
     /// @notice Redeems an amount of shares of a LeverageToken and transfers collateral asset to the sender, using Velora
     /// for the required swap of collateral from the redemption to debt to repay the flash loan

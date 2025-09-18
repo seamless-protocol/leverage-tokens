@@ -132,7 +132,7 @@ contract LeverageManager is
 
     /// @inheritdoc ILeverageManager
     function convertCollateralToShares(ILeverageToken token, uint256 collateral, Math.Rounding rounding)
-        public
+        external
         view
         returns (uint256 shares)
     {
@@ -460,7 +460,7 @@ contract LeverageManager is
 
         // slither-disable-next-line timestamp
         if (depositData.shares < minShares) {
-            revert SlippageTooHigh(depositData.shares, minShares); // TODO: check if this is correct
+            revert SlippageTooHigh(depositData.shares, minShares);
         }
 
         _mint(token, depositData);
@@ -641,7 +641,8 @@ contract LeverageManager is
 
         // If total supply != 0 and total collateral is zero, the LeverageToken was fully liquidated. In this case,
         // no amount of collateral can be converted to shares. An implication of this is that new mints of shares
-        // will not be possible for the LeverageToken.
+        // will not be possible for the LeverageToken, unless a deposit of collateral occurs directly on the
+        // lending adapter of the LeverageToken resulting in totalCollateral no longer being zero.
         if (totalCollateral == 0) {
             return 0;
         }

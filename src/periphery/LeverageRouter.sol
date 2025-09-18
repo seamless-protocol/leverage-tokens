@@ -2,10 +2,10 @@
 pragma solidity ^0.8.26;
 
 // Dependency imports
-import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // Internal imports
@@ -14,10 +14,11 @@ import {ILeverageManager} from "../interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "../interfaces/ILeverageToken.sol";
 import {ILeverageRouter} from "../interfaces/periphery/ILeverageRouter.sol";
 import {IVeloraAdapter} from "../interfaces/periphery/IVeloraAdapter.sol";
+import {IMulticallExecutor} from "../interfaces/periphery/IMulticallExecutor.sol";
 import {ActionData} from "../types/DataTypes.sol";
 
 /**
- * @dev The LeverageRouter contract is an immutable periphery contract that facilitates the use of flash loans and a swaps
+ * @dev The LeverageRouter contract is an immutable periphery contract that facilitates the use of flash loans and swaps
  * to deposit and redeem equity from LeverageTokens.
  *
  * The high-level deposit flow is as follows:
@@ -34,7 +35,7 @@ import {ActionData} from "../types/DataTypes.sol";
  *
  * @custom:contact security@seamlessprotocol.com
  */
-contract LeverageRouter is ILeverageRouter {
+contract LeverageRouter is ILeverageRouter, ReentrancyGuardTransient {
     /// @inheritdoc ILeverageRouter
     ILeverageManager public immutable leverageManager;
 
@@ -90,14 +91,16 @@ contract LeverageRouter is ILeverageRouter {
         uint256 collateralFromSender,
         uint256 flashLoanAmount,
         uint256 minShares,
-        Call[] calldata swapCalls
-    ) external {
+        IMulticallExecutor multicallExecutor,
+        IMulticallExecutor.Call[] calldata swapCalls
+    ) external nonReentrant {
         bytes memory depositData = abi.encode(
             DepositParams({
                 sender: msg.sender,
                 leverageToken: leverageToken,
                 collateralFromSender: collateralFromSender,
                 minShares: minShares,
+                multicallExecutor: multicallExecutor,
                 swapCalls: swapCalls
             })
         );
@@ -110,9 +113,13 @@ contract LeverageRouter is ILeverageRouter {
     }
 
     /// @inheritdoc ILeverageRouter
-    function redeem(ILeverageToken token, uint256 shares, uint256 minCollateralForSender, Call[] calldata swapCalls)
-        external
-    {
+    function redeem(
+        ILeverageToken token,
+        uint256 shares,
+        uint256 minCollateralForSender,
+        IMulticallExecutor multicallExecutor,
+        IMulticallExecutor.Call[] calldata swapCalls
+    ) external nonReentrant {
         uint256 debtRequired = leverageManager.previewRedeem(token, shares).debt;
 
         bytes memory redeemData = abi.encode(
@@ -121,6 +128,7 @@ contract LeverageRouter is ILeverageRouter {
                 leverageToken: token,
                 shares: shares,
                 minCollateralForSender: minCollateralForSender,
+                multicallExecutor: multicallExecutor,
                 swapCalls: swapCalls
             })
         );
@@ -141,7 +149,7 @@ contract LeverageRouter is ILeverageRouter {
         address augustus,
         IVeloraAdapter.Offsets calldata offsets,
         bytes calldata swapData
-    ) external {
+    ) external nonReentrant {
         uint256 debtRequired = leverageManager.previewRedeem(token, shares).debt;
 
         bytes memory redeemData = abi.encode(
@@ -198,12 +206,12 @@ contract LeverageRouter is ILeverageRouter {
         SafeERC20.safeTransferFrom(collateralAsset, params.sender, address(this), params.collateralFromSender);
 
         // Swap the debt asset received from the flash loan to the collateral asset, used to deposit into the LeverageToken
-        for (uint256 i = 0; i < params.swapCalls.length; i++) {
-            // slither-disable-next-line unused-return
-            Address.functionCallWithValue(
-                params.swapCalls[i].target, params.swapCalls[i].data, params.swapCalls[i].value
-            );
-        }
+        SafeERC20.safeTransfer(debtAsset, address(params.multicallExecutor), debtLoan);
+
+        IERC20[] memory tokens = new IERC20[](2);
+        tokens[0] = collateralAsset;
+        tokens[1] = debtAsset;
+        params.multicallExecutor.multicallAndSweep(params.swapCalls, tokens);
 
         // The sum of the collateral from the swap and the collateral from the sender
         uint256 totalCollateral = IERC20(collateralAsset).balanceOf(address(this));
@@ -244,15 +252,16 @@ contract LeverageRouter is ILeverageRouter {
         // Use the debt from the flash loan to redeem the shares from the sender
         SafeERC20.forceApprove(debtAsset, address(leverageManager), debtLoanAmount);
         // slither-disable-next-line unused-return
-        leverageManager.redeem(params.leverageToken, params.shares, params.minCollateralForSender);
+        uint256 collateralWithdrawn =
+            leverageManager.redeem(params.leverageToken, params.shares, params.minCollateralForSender).collateral;
 
         // Swap the collateral asset received from the redeem to the debt asset, used to repay the flash loan.
-        for (uint256 i = 0; i < params.swapCalls.length; i++) {
-            // slither-disable-next-line unused-return
-            Address.functionCallWithValue(
-                params.swapCalls[i].target, params.swapCalls[i].data, params.swapCalls[i].value
-            );
-        }
+        SafeERC20.safeTransfer(collateralAsset, address(params.multicallExecutor), collateralWithdrawn);
+
+        IERC20[] memory tokens = new IERC20[](2);
+        tokens[0] = collateralAsset;
+        tokens[1] = debtAsset;
+        params.multicallExecutor.multicallAndSweep(params.swapCalls, tokens);
 
         // The remaining collateral after the arbitrary swap calls is available for the sender
         uint256 collateralForSender = collateralAsset.balanceOf(address(this));
@@ -328,6 +337,4 @@ contract LeverageRouter is ILeverageRouter {
         // Approve Morpho to spend the debt asset to repay the flash loan
         SafeERC20.forceApprove(debtAsset, address(morpho), debtLoanAmount);
     }
-
-    receive() external payable {}
 }

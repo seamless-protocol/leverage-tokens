@@ -162,8 +162,12 @@ contract WithdrawTest is LeverageManagerTest {
             })
         );
 
-        uint256 maxCollateral = sharesTotalSupply * (MAX_BPS - tokenFee) * (MAX_BPS - treasuryFee) / MAX_BPS_SQUARED
-            * initialCollateral / sharesTotalSupply;
+        uint256 maxCollateral = Math.mulDiv(
+            Math.mulDiv(sharesTotalSupply, (MAX_BPS - treasuryFee), MAX_BPS, Math.Rounding.Floor),
+            MAX_BPS - tokenFee,
+            MAX_BPS,
+            Math.Rounding.Floor
+        ) * initialCollateral / sharesTotalSupply;
         collateral = bound(collateral, 0, maxCollateral);
 
         uint256 expectedShares = leverageManager.previewWithdraw(leverageToken, collateral).shares;
