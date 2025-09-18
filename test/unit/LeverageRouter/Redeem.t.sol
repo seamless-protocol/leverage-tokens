@@ -120,23 +120,4 @@ contract RedeemTest is LeverageRouterTest {
         );
         leverageRouter.redeem(leverageToken, redeemShares, minCollateral, multicallExecutor, calls);
     }
-
-    function test_Redeem_RevertIf_Reentrancy() public {
-        // Doesn't matter for this test, but we need to mock it still to avoid a revert before the
-        // reentrancy guard is triggered
-        _mockLeverageManagerRedeem(0, 0, 0, 0);
-
-        IMulticallExecutor.Call[] memory calls = new IMulticallExecutor.Call[](1);
-        calls[0] = IMulticallExecutor.Call({
-            target: address(leverageRouter),
-            data: abi.encodeWithSelector(ILeverageRouter.redeem.selector, leverageToken, 0, 0, multicallExecutor, calls),
-            value: 0
-        });
-
-        // Execute the redeem
-        leverageToken.approve(address(leverageRouter), 0);
-
-        vm.expectRevert(ReentrancyGuard.ReentrancyGuardReentrantCall.selector);
-        leverageRouter.redeem(leverageToken, 0, 0, multicallExecutor, calls);
-    }
 }

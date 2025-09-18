@@ -18,6 +18,7 @@ import {IMulticallExecutor} from "src/interfaces/periphery/IMulticallExecutor.so
 import {LeverageRouter} from "src/periphery/LeverageRouter.sol";
 import {MulticallExecutor} from "src/periphery/MulticallExecutor.sol";
 import {ActionData} from "src/types/DataTypes.sol";
+import {LeverageRouterHarness} from "../harness/LeverageRouterHarness.t.sol";
 import {MockERC20} from "../mock/MockERC20.sol";
 import {MockLendingAdapter} from "../mock/MockLendingAdapter.sol";
 import {MockLeverageManager} from "../mock/MockLeverageManager.sol";
@@ -74,7 +75,7 @@ contract LeverageRouterTest is Test {
         veloraAdapter = new MockVeloraAdapter();
 
         // Setup the leverage router
-        leverageRouter = new LeverageRouter(ILeverageManager(address(leverageManager)), IMorpho(address(morpho)));
+        leverageRouter = new LeverageRouterHarness(ILeverageManager(address(leverageManager)), IMorpho(address(morpho)));
 
         // Setup the mock tokens
         collateralToken.mockSetDecimals(18);
