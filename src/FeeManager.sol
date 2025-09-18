@@ -32,8 +32,6 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
 
     uint256 internal constant MAX_BPS = 100_00;
 
-    uint256 internal constant MAX_BPS_SQUARED = MAX_BPS * MAX_BPS;
-
     uint256 internal constant MAX_ACTION_FEE = MAX_BPS - 1;
 
     uint256 internal constant MAX_MANAGEMENT_FEE = MAX_BPS;
@@ -220,15 +218,13 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
         //
         // Substituting step 1 into step 2:
         //   net = gross * (baseFee - tokenActionFeeRate) / baseFee * (baseFee - treasuryActionFeeRate) / baseFee
-        //   net = gross * (baseFee - tokenActionFeeRate) * (baseFee - treasuryActionFeeRate) / (baseFee * baseFee)
-        //   net = gross * (baseFee - tokenActionFeeRate) * (baseFee - treasuryActionFeeRate) / baseFeeSquared
         //
         // Solving for gross:
-        //   gross = net * baseFeeSquared / ((baseFee - tokenActionFeeRate) * (baseFee - treasuryActionFeeRate))
-        grossShares = Math.mulDiv(
-            netShares,
-            MAX_BPS_SQUARED,
-            (MAX_BPS - tokenActionFeeRate) * (MAX_BPS - treasuryActionFeeRate),
+        //   gross = net * baseFee / (baseFee - tokenActionFeeRate) * baseFee / (baseFee - treasuryActionFeeRate)
+        grossShares = grossShares = Math.mulDiv(
+            Math.mulDiv(netShares, MAX_BPS, (MAX_BPS - tokenActionFeeRate), Math.Rounding.Ceil),
+            MAX_BPS,
+            MAX_BPS - treasuryActionFeeRate,
             Math.Rounding.Ceil
         );
         sharesTokenFee =
