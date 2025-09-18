@@ -12,7 +12,16 @@ import {ILeverageToken} from "../interfaces/ILeverageToken.sol";
 import {ILeverageManager} from "../interfaces/ILeverageManager.sol";
 import {IPricingAdapter} from "../interfaces/periphery/IPricingAdapter.sol";
 
-/// @custom:contact security@seamlessprotocol.com
+/**
+ * @dev This contract is used to get the price of a LeverageToken in the collateral asset of the LeverageToken, debt asset
+ * of the LeverageToken, or the price using a Chainlink oracle.
+ * The decimal precision of the price using a Chainlink oracle is equal to the decimals of the base asset of the Chainlink
+ * oracle.
+ * Integrators using this PricingAdapter should carefully evaluate and understand the risks of using this contract before
+ * using it. Some points to consider are the rounding direction and precision used by the logic in this contract.
+ *
+ * @custom:contact security@seamlessprotocol.com
+ */
 contract PricingAdapter is IPricingAdapter {
     uint256 internal constant WAD = 1e18;
 
@@ -65,13 +74,11 @@ contract PricingAdapter is IPricingAdapter {
             ? getLeverageTokenPriceInDebt(leverageToken)
             : getLeverageTokenPriceInCollateral(leverageToken);
 
-        uint256 baseAssetDecimals = isBaseDebtAsset
-            ? IERC20Metadata(address(leverageManager.getLeverageTokenDebtAsset(leverageToken))).decimals()
-            : IERC20Metadata(address(leverageManager.getLeverageTokenCollateralAsset(leverageToken))).decimals();
-
-        uint256 oracleDecimals = chainlinkOracle.decimals();
         int256 oraclePrice = chainlinkOracle.latestAnswer();
+        uint256 oracleDecimals = chainlinkOracle.decimals();
 
-        return (oraclePrice * int256(priceInBaseAsset)) / int256(10 ** Math.min(oracleDecimals, baseAssetDecimals));
+        int256 adjustedPrice = (oraclePrice * int256(priceInBaseAsset)) / int256(10 ** oracleDecimals);
+
+        return adjustedPrice;
     }
 }

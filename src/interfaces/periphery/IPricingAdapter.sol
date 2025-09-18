@@ -27,7 +27,7 @@ interface IPricingAdapter {
     /// @param isBaseDebtAsset True if the debt asset is the base asset of the Chainlink oracle, false if the
     /// collateral asset is the base asset
     /// @return price The price of one LeverageToken adjusted to the price on the Chainlink oracle, with decimal
-    /// precision equal to the larger of the base asset decimals and the oracle decimals
+    /// precision equal to the base asset decimals
     function getLeverageTokenPriceAdjusted(
         ILeverageToken leverageToken,
         IAggregatorV2V3Interface chainlinkOracle,

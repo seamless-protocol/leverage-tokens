@@ -17,7 +17,7 @@ contract GetLeverageTokenPriceAdjustedTest is PricingAdapterTest {
             leverageManager.getLeverageTokenLendingAdapter(leverageToken).getEquityInCollateralAsset();
         assertEq(leverageTokenEquity, 999999999879562786); // The amount of equity in collateral asset is 999999999879562786 (~0.99 WETH)
 
-        // Divide by by the lower of the oracle and leverage token decimals to get the expected precision
+        // Precision is equal to the base asset decimals, by dividing by the oracle decimals
         uint256 expectedPrice = uint256(oraclePrice) * leverageTokenEquity / 1e8;
         assertEq(expectedPrice, 3392.389999591429999598e18);
 
@@ -38,11 +38,11 @@ contract GetLeverageTokenPriceAdjustedTest is PricingAdapterTest {
             leverageManager.getLeverageTokenLendingAdapter(leverageToken).getEquityInDebtAsset();
         assertEq(leverageTokenEquity, 3392292471); // The amount of equity in debt asset is 3392292471 (~3392.292471 USDC)
 
-        // Divide by by the lower of the oracle and leverage token decimals to get the expected precision
-        uint256 expectedPrice = uint256(oraclePrice) * leverageTokenEquity / 1e6;
-        assertEq(expectedPrice, 3392.3899994e8);
+        // Precision is equal to the base asset decimals, by dividing by the oracle decimals
+        uint256 expectedPrice = uint256(oraclePrice) * leverageTokenEquity / 1e8;
+        assertEq(expectedPrice, 3392.389999e6);
 
         int256 result = pricingAdapter.getLeverageTokenPriceAdjusted(leverageToken, USDC_USD_ORACLE, true);
-        assertEq(result, int256(expectedPrice)); // 3392.38999940 USD
+        assertEq(result, int256(expectedPrice)); // 3392.389999 USD
     }
 }
