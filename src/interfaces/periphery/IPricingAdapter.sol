@@ -24,8 +24,10 @@ interface IPricingAdapter {
     /// @notice Returns the price of one LeverageToken (1e18 wei) adjusted to the price on the Chainlink oracle
     /// @param leverageToken The LeverageToken to get the price for
     /// @param chainlinkOracle The Chainlink oracle to use for pricing
-    /// @param isBaseDebtAsset True if the debt asset is the base asset of the Chainlink oracle, false if the collateral asset is the base asset
-    /// @return price The price of one LeverageToken adjusted to the price on the Chainlink oracle, in the decimals of the oracle
+    /// @param isBaseDebtAsset True if the debt asset is the base asset of the Chainlink oracle, false if the
+    /// collateral asset is the base asset
+    /// @return price The price of one LeverageToken adjusted to the price on the Chainlink oracle, with decimal
+    /// precision equal to the base asset decimals
     function getLeverageTokenPriceAdjusted(
         ILeverageToken leverageToken,
         IAggregatorV2V3Interface chainlinkOracle,

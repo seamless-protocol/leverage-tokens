@@ -641,7 +641,8 @@ contract LeverageManager is
 
         // If total supply != 0 and total collateral is zero, the LeverageToken was fully liquidated. In this case,
         // no amount of collateral can be converted to shares. An implication of this is that new mints of shares
-        // will not be possible for the LeverageToken.
+        // will not be possible for the LeverageToken, unless a deposit of collateral occurs directly on the
+        // lending adapter of the LeverageToken resulting in totalCollateral no longer being zero.
         if (totalCollateral == 0) {
             return 0;
         }

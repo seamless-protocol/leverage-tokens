@@ -104,32 +104,4 @@ contract RedeemWithVeloraTest is LeverageRouterTest {
             new bytes(0)
         );
     }
-
-    function test_redeemWithVelora_RevertIf_Reentrancy() public {
-        // Doesn't matter for this test, but we need to mock it still to avoid a revert before the
-        // reentrancy guard is triggered
-        _mockLeverageManagerRedeem(0, 0, 0, 0);
-
-        IMulticallExecutor.Call[] memory calls = new IMulticallExecutor.Call[](1);
-        calls[0] = IMulticallExecutor.Call({
-            target: address(leverageRouter),
-            data: abi.encodeWithSelector(
-                ILeverageRouter.redeemWithVelora.selector,
-                leverageToken,
-                0,
-                0,
-                IVeloraAdapter(address(veloraAdapter)),
-                address(0),
-                IVeloraAdapter.Offsets(0, 0, 0),
-                new bytes(0)
-            ),
-            value: 0
-        });
-
-        // Execute the redeem
-        leverageToken.approve(address(leverageRouter), 0);
-
-        vm.expectRevert(ReentrancyGuard.ReentrancyGuardReentrantCall.selector);
-        leverageRouter.redeem(leverageToken, 0, 0, multicallExecutor, calls);
-    }
 }

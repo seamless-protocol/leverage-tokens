@@ -16,7 +16,8 @@ contract PreviewWithdrawTest is LeverageManagerTest {
         uint128 initialDebt;
         uint128 initialSharesTotalSupply;
         uint256 collateral;
-        uint16 fee;
+        uint16 tokenActionFee;
+        uint16 treasuryActionFee;
         uint16 managementFee;
         uint256 collateralRatioTarget;
     }
@@ -243,7 +244,7 @@ contract PreviewWithdrawTest is LeverageManagerTest {
             uint256(bound(params.collateralRatioTarget, _BASE_RATIO() + 1, 10 * _BASE_RATIO()));
 
         // 0% to 99.99% token action fee
-        params.fee = uint16(bound(params.fee, 0, MAX_ACTION_FEE));
+        params.tokenActionFee = uint16(bound(params.tokenActionFee, 0, MAX_ACTION_FEE));
 
         _createNewLeverageToken(
             manager,
@@ -252,7 +253,7 @@ contract PreviewWithdrawTest is LeverageManagerTest {
                 lendingAdapter: ILendingAdapter(address(lendingAdapter)),
                 rebalanceAdapter: IRebalanceAdapter(address(rebalanceAdapter)),
                 mintTokenFee: 0,
-                redeemTokenFee: params.fee
+                redeemTokenFee: params.tokenActionFee
             }),
             address(collateralToken),
             address(debtToken),
@@ -263,6 +264,10 @@ contract PreviewWithdrawTest is LeverageManagerTest {
         // 0% to 100% management fee
         params.managementFee = uint16(bound(params.managementFee, 0, MAX_MANAGEMENT_FEE));
         _setManagementFee(feeManagerRole, leverageToken, params.managementFee);
+
+        // 0% to 99.99% treasury action fee
+        params.treasuryActionFee = uint16(bound(params.treasuryActionFee, 0, MAX_ACTION_FEE));
+        _setTreasuryActionFee(feeManagerRole, ExternalAction.Redeem, params.treasuryActionFee);
 
         // Bound initial debt in collateral asset to be less than or equal to initial collateral (1:1 exchange rate)
         params.initialDebt = uint128(bound(params.initialDebt, 0, params.initialCollateral));
@@ -364,5 +369,48 @@ contract PreviewWithdrawTest is LeverageManagerTest {
                 assertEq(newDebt, 0, "New debt should be zero if new collateral is zero");
             }
         }
+    }
+
+    function testFuzz_PreviewWithdraw_FeesMatchPreviewRedeem(FuzzPreviewWithdrawParams memory params) public {
+        params.collateralRatioTarget =
+            uint256(bound(params.collateralRatioTarget, _BASE_RATIO() + 1, type(uint256).max));
+
+        params.tokenActionFee = uint16(bound(params.tokenActionFee, 0, MAX_ACTION_FEE));
+        params.treasuryActionFee = uint16(bound(params.treasuryActionFee, 0, MAX_ACTION_FEE));
+
+        _createNewLeverageToken(
+            manager,
+            params.collateralRatioTarget,
+            LeverageTokenConfig({
+                lendingAdapter: ILendingAdapter(address(lendingAdapter)),
+                rebalanceAdapter: IRebalanceAdapter(address(rebalanceAdapter)),
+                mintTokenFee: 0,
+                redeemTokenFee: params.tokenActionFee
+            }),
+            address(collateralToken),
+            address(debtToken),
+            "dummy name",
+            "dummy symbol"
+        );
+
+        _setTreasuryActionFee(feeManagerRole, ExternalAction.Redeem, params.treasuryActionFee);
+
+        params.initialSharesTotalSupply = uint128(bound(params.initialSharesTotalSupply, 0, type(uint128).max));
+
+        _prepareLeverageManagerStateForAction(
+            MockLeverageManagerStateForAction({
+                collateral: params.initialCollateral,
+                debt: params.initialDebt, // 1:1 exchange rate for this test
+                sharesTotalSupply: params.initialSharesTotalSupply
+            })
+        );
+
+        uint256 collateralToWithdraw = bound(params.collateral, 0, uint256(params.initialCollateral));
+
+        ActionData memory withdrawData = leverageManager.previewWithdraw(leverageToken, collateralToWithdraw);
+        ActionData memory redeemData = leverageManager.previewRedeem(leverageToken, withdrawData.shares);
+        assertEq(redeemData.shares, withdrawData.shares, "Preview shares mismatch");
+        assertEq(redeemData.tokenFee, withdrawData.tokenFee, "Preview token fee mismatch");
+        assertApproxEqAbs(redeemData.treasuryFee, withdrawData.treasuryFee, 1, "Preview treasury fee mismatch");
     }
 }
