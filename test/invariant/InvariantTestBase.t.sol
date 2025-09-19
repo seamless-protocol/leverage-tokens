@@ -244,7 +244,7 @@ abstract contract InvariantTestBase is Test {
         leverageManager.setTreasuryActionFee(action, newTreasuryFee);
     }
 
-    function _setManagementFee(ILeverageToken leverageToken, uint16 newManagementFee) internal {
+    function _setManagementFee(ILeverageToken leverageToken, uint128 newManagementFee) internal {
         vm.prank(feeManagerRole);
         leverageManager.setManagementFee(leverageToken, newManagementFee);
     }

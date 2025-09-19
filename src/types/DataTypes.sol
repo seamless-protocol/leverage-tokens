@@ -76,8 +76,8 @@ struct LeverageTokenState {
 }
 
 struct ManagementFeeData {
-    /// @dev Annual management fee, 100_00 is 100%
-    uint16 fee;
+    /// @dev Annual management fee, 1e18 is 100%
+    uint128 fee;
     /// @dev Timestamp when the management fee was most recently accrued
     uint120 lastAccrualTimestamp;
 }
