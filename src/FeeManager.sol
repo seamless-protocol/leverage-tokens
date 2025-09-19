@@ -9,7 +9,7 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Internal imports
-import {ExternalAction} from "src/types/DataTypes.sol";
+import {ExternalAction, ManagementFeeData} from "src/types/DataTypes.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 
@@ -45,14 +45,16 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
         address treasury;
         /// @dev Default annual management fee for LeverageTokens at creation. 100_00 is 100% per year
         uint256 defaultManagementFeeAtCreation;
-        /// @dev Annual management fee for each LeverageToken. 100_00 is 100% per year
-        mapping(ILeverageToken token => uint256) managementFee;
-        /// @dev Timestamp when the management fee was most recently accrued for each LeverageToken
-        mapping(ILeverageToken token => uint120) lastManagementFeeAccrualTimestamp;
+        /// @dev DEPRECATED
+        mapping(ILeverageToken token => uint256) __deprecated_managementFee;
+        /// @dev DEPRECATED
+        mapping(ILeverageToken token => uint120) __deprecated_lastManagementFeeAccrualTimestamp;
         /// @dev Treasury action fee for each action. 100_00 is 100%
         mapping(ExternalAction action => uint256) treasuryActionFee;
         /// @dev Token action fee for each action. 100_00 is 100%
         mapping(ILeverageToken token => mapping(ExternalAction action => uint256)) tokenActionFee;
+        /// @dev Management fee data for each LeverageToken
+        mapping(ILeverageToken token => ManagementFeeData) managementFeeData;
     }
 
     function _getFeeManagerStorage() internal pure returns (FeeManagerStorage storage $) {
@@ -86,8 +88,8 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     }
 
     /// @inheritdoc IFeeManager
-    function getLastManagementFeeAccrualTimestamp(ILeverageToken token) public view returns (uint120) {
-        return _getFeeManagerStorage().lastManagementFeeAccrualTimestamp[token];
+    function getLastManagementFeeAccrualTimestamp(ILeverageToken token) external view returns (uint120) {
+        return _getFeeManagerStorage().managementFeeData[token].lastAccrualTimestamp;
     }
 
     /// @inheritdoc IFeeManager
@@ -96,8 +98,8 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     }
 
     /// @inheritdoc IFeeManager
-    function getManagementFee(ILeverageToken token) public view returns (uint256 fee) {
-        return _getFeeManagerStorage().managementFee[token];
+    function getManagementFee(ILeverageToken token) external view returns (uint256 fee) {
+        return _getFeeManagerStorage().managementFeeData[token].fee;
     }
 
     /// @inheritdoc IFeeManager
@@ -119,13 +121,13 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     }
 
     /// @inheritdoc IFeeManager
-    function setManagementFee(ILeverageToken token, uint256 fee) external onlyRole(FEE_MANAGER_ROLE) {
+    function setManagementFee(ILeverageToken token, uint16 fee) external onlyRole(FEE_MANAGER_ROLE) {
         // Charge any accrued management fees before setting the new management fee
         chargeManagementFee(token);
 
         _validateManagementFee(fee);
 
-        _getFeeManagerStorage().managementFee[token] = fee;
+        _getFeeManagerStorage().managementFeeData[token].fee = fee;
         emit ManagementFeeSet(token, fee);
     }
 
@@ -146,7 +148,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     function chargeManagementFee(ILeverageToken token) public {
         // Shares fee must be obtained before the last management fee accrual timestamp is updated
         uint256 sharesFee = _getAccruedManagementFee(token, token.totalSupply());
-        _getFeeManagerStorage().lastManagementFeeAccrualTimestamp[token] = uint120(block.timestamp);
+        _getFeeManagerStorage().managementFeeData[token].lastAccrualTimestamp = uint120(block.timestamp);
 
         _chargeTreasuryFee(token, sharesFee);
         emit ManagementFeeCharged(token, sharesFee);
@@ -247,18 +249,16 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     /// @param totalSupply Total supply of the LeverageToken
     /// @return shares Shares to mint
     function _getAccruedManagementFee(ILeverageToken token, uint256 totalSupply) internal view returns (uint256) {
-        uint120 lastManagementFeeAccrualTimestamp = getLastManagementFeeAccrualTimestamp(token);
-        uint256 duration = block.timestamp - lastManagementFeeAccrualTimestamp;
+        ManagementFeeData memory managementFeeData = _getFeeManagerStorage().managementFeeData[token];
+        uint256 duration = block.timestamp - managementFeeData.lastAccrualTimestamp;
 
         // slither-disable-next-line timestamp,incorrect-equality
         if (duration == 0) {
             return 0;
         }
 
-        uint256 managementFee = getManagementFee(token);
-
         uint256 sharesFee =
-            Math.mulDiv(managementFee * totalSupply, duration, MAX_BPS * SECS_PER_YEAR, Math.Rounding.Floor);
+            Math.mulDiv(managementFeeData.fee * totalSupply, duration, MAX_BPS * SECS_PER_YEAR, Math.Rounding.Floor);
         return sharesFee;
     }
 
@@ -280,8 +280,10 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     function _setNewLeverageTokenManagementFee(ILeverageToken token) internal {
         uint256 fee = _getFeeManagerStorage().defaultManagementFeeAtCreation;
 
-        _getFeeManagerStorage().managementFee[token] = fee;
-        _getFeeManagerStorage().lastManagementFeeAccrualTimestamp[token] = uint120(block.timestamp);
+        ManagementFeeData storage managementFeeData = _getFeeManagerStorage().managementFeeData[token];
+        managementFeeData.fee = uint16(fee);
+        managementFeeData.lastAccrualTimestamp = uint120(block.timestamp);
+
         emit ManagementFeeSet(token, fee);
     }
 

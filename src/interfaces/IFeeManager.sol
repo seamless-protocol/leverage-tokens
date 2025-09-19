@@ -97,7 +97,7 @@ interface IFeeManager {
     /// @param token LeverageToken to set management fee for
     /// @param fee Management fee, 100_00 is 100%
     /// @dev Only `FEE_MANAGER_ROLE` can call this function
-    function setManagementFee(ILeverageToken token, uint256 fee) external;
+    function setManagementFee(ILeverageToken token, uint16 fee) external;
 
     /// @notice Sets the address of the treasury. The treasury receives all treasury and management fees from the
     /// LeverageManager.

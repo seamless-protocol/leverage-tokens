@@ -31,7 +31,7 @@ contract LeverageManagerMintTest is LeverageManagerTest {
         uint256 tokenActionFee = 10_00; // 10%
         leverageToken = _createNewLeverageToken(BASE_RATIO, 2 * BASE_RATIO, 3 * BASE_RATIO, tokenActionFee, 0);
 
-        uint256 managementFee = 10_00; // 10%
+        uint16 managementFee = 10_00; // 10%
         leverageManager.setManagementFee(leverageToken, managementFee);
 
         morphoLendingAdapter =

@@ -75,6 +75,13 @@ struct LeverageTokenState {
     uint256 collateralRatio;
 }
 
+struct ManagementFeeData {
+    /// @dev Annual management fee, 100_00 is 100%
+    uint16 fee;
+    /// @dev Timestamp when the management fee was most recently accrued
+    uint120 lastAccrualTimestamp;
+}
+
 /// @dev Struct that contains all data related to a rebalance action
 struct RebalanceAction {
     /// @dev Type of action to perform

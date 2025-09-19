@@ -77,7 +77,7 @@ contract FeeManagerTest is Test {
         feeManager.setTreasuryActionFee(action, fee);
     }
 
-    function _setManagementFee(address caller, ILeverageToken token, uint256 fee) internal {
+    function _setManagementFee(address caller, ILeverageToken token, uint16 fee) internal {
         vm.prank(caller);
         feeManager.setManagementFee(token, fee);
     }

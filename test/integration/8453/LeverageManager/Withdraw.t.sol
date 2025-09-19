@@ -184,7 +184,7 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
         leverageToken =
             _createNewLeverageToken(BASE_RATIO, 2 * BASE_RATIO, 3 * BASE_RATIO, tokenActionFee, tokenActionFee);
 
-        uint256 managementFee = 10_00; // 10%
+        uint16 managementFee = 10_00; // 10%
         leverageManager.setManagementFee(leverageToken, managementFee);
 
         morphoLendingAdapter =
@@ -213,7 +213,7 @@ contract LeverageManagerWithdrawTest is LeverageManagerTest {
         // Withdrawing the other half of collateral is not possible for the user due to share dilution from the management fee
         // and morpho borrow interest
         ActionData memory previewDataAfterYear = leverageManager.previewWithdraw(leverageToken, collateralToWithdraw);
-        assertEq(previewDataAfterYear.shares, 5.951836610272824263 ether);
+        assertEq(previewDataAfterYear.shares, 5.951836610272824264 ether);
         assertGt(previewDataAfterYear.shares, leverageToken.balanceOf(user));
 
         deal(address(USDC), user, previewDataAfterYear.debt);

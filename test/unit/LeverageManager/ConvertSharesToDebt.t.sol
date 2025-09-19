@@ -208,7 +208,7 @@ contract ConvertSharesToDebtTest is LeverageManagerTest {
         uint128 totalSupply = 100;
         uint128 totalDebt = 99;
 
-        uint256 managementFee = 0.5e4; // 50%
+        uint16 managementFee = 0.5e4; // 50%
         _setManagementFee(feeManagerRole, leverageToken, managementFee);
 
         lendingAdapter.mockDebt(totalDebt);

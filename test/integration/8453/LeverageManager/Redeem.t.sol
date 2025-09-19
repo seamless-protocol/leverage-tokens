@@ -178,7 +178,7 @@ contract LeverageManagerRedeemTest is LeverageManagerTest {
         leverageToken =
             _createNewLeverageToken(BASE_RATIO, 2 * BASE_RATIO, 3 * BASE_RATIO, tokenActionFee, tokenActionFee);
 
-        uint256 managementFee = 10_00; // 10%
+        uint16 managementFee = 10_00; // 10%
         leverageManager.setManagementFee(leverageToken, managementFee);
 
         morphoLendingAdapter =
