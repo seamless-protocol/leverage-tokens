@@ -37,8 +37,8 @@ contract RedeemTest is LeverageManagerTest {
     }
 
     function testFuzz_redeem_WithFees(uint256 shares) public {
-        leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Redeem, 0.05e4); // 5% fee
-        _setTreasuryActionFee(ExternalAction.Redeem, 0.05e4); // 5% fee
+        leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Redeem, 0.05e18); // 5% fee
+        _setTreasuryActionFee(ExternalAction.Redeem, 0.05e18); // 5% fee
 
         // 1:2 exchange rate
         lendingAdapter.mockConvertCollateralToDebtAssetExchangeRate(2e8);
@@ -122,13 +122,13 @@ contract RedeemTest is LeverageManagerTest {
         uint128 initialDebtInCollateralAsset,
         uint128 sharesTotalSupply,
         uint128 sharesToRedeem,
-        uint16 tokenFee,
-        uint16 treasuryFee,
+        uint128 tokenFee,
+        uint128 treasuryFee,
         uint256 collateralRatioTarget
     ) public {
         collateralRatioTarget = uint256(bound(collateralRatioTarget, _BASE_RATIO() + 1, 10 * _BASE_RATIO()));
 
-        tokenFee = uint16(bound(tokenFee, 0, MAX_ACTION_FEE));
+        tokenFee = uint128(bound(tokenFee, 0, MAX_ACTION_FEE));
 
         _createNewLeverageToken(
             manager,
@@ -145,7 +145,7 @@ contract RedeemTest is LeverageManagerTest {
             "dummy symbol"
         );
 
-        treasuryFee = uint16(bound(treasuryFee, 0, MAX_ACTION_FEE));
+        treasuryFee = uint128(bound(treasuryFee, 0, MAX_ACTION_FEE));
         _setTreasuryActionFee(ExternalAction.Redeem, treasuryFee);
 
         // Bound debt to be lower than collateral asset and share total supply to be greater than 0 otherwise redeem can not work
