@@ -1,5 +1,5 @@
 # FeeManager
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/6fd46c53a22afa8918e99c47589c9bd10722b593/src/FeeManager.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/d05e32eba516aef697eb220f9b66720e48434416/src/FeeManager.sol)
 
 **Inherits:**
 [IFeeManager](/src/interfaces/IFeeManager.sol/interface.IFeeManager.md), Initializable, AccessControlUpgradeable
@@ -31,13 +31,6 @@ bytes32 public constant FEE_MANAGER_ROLE = keccak256("FEE_MANAGER_ROLE");
 
 ```solidity
 uint256 internal constant MAX_BPS = 100_00;
-```
-
-
-### MAX_BPS_SQUARED
-
-```solidity
-uint256 internal constant MAX_BPS_SQUARED = MAX_BPS * MAX_BPS;
 ```
 
 

@@ -1,5 +1,5 @@
 # ILeverageRouter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/6fd46c53a22afa8918e99c47589c9bd10722b593/src/interfaces/periphery/ILeverageRouter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/d05e32eba516aef697eb220f9b66720e48434416/src/interfaces/periphery/ILeverageRouter.sol)
 
 
 ## Functions
@@ -86,8 +86,6 @@ function previewDeposit(ILeverageToken token, uint256 collateralFromSender) exte
 Deposits collateral into a LeverageToken and mints shares to the sender. Any surplus debt received from
 the deposit of (collateralFromSender + debt swapped to collateral) is given to the sender.
 
-*Before each external call, the target contract is approved to spend flashLoanAmount of the debt asset*
-
 
 ```solidity
 function deposit(
@@ -95,7 +93,8 @@ function deposit(
     uint256 collateralFromSender,
     uint256 flashLoanAmount,
     uint256 minShares,
-    Call[] calldata swapCalls
+    IMulticallExecutor multicallExecutor,
+    IMulticallExecutor.Call[] calldata swapCalls
 ) external;
 ```
 **Parameters**
@@ -106,7 +105,8 @@ function deposit(
 |`collateralFromSender`|`uint256`|Collateral asset amount from the sender to deposit|
 |`flashLoanAmount`|`uint256`|Amount of debt to flash loan, which is swapped to collateral and used to deposit into the LeverageToken|
 |`minShares`|`uint256`|Minimum number of shares expected to be received by the sender|
-|`swapCalls`|`Call[]`|External calls to execute for the swap of flash loaned debt to collateral for the LeverageToken deposit|
+|`multicallExecutor`|`IMulticallExecutor`|multicall executor to use for the swap|
+|`swapCalls`|`IMulticallExecutor.Call[]`|External calls to execute for the swap of flash loaned debt to collateral for the LeverageToken deposit. The calls are executed by the `multicallExecutor` contract after receiving the flash loaned debt. Thus, for any encoded approvals and swaps that require the `from` address to be encoded,`from` must be set to the `multicallExecutor` contract address. The receiver of the swap must either be the `multicallExecutor` or this `LeverageRouter` contract - any leftover collateral and debt assets after the execution of the calls are swept to this `LeverageRouter` contract.|
 
 
 ### redeem
@@ -117,8 +117,13 @@ after repaying the flash loan are given to the sender along with the remaining c
 
 
 ```solidity
-function redeem(ILeverageToken token, uint256 shares, uint256 minCollateralForSender, Call[] calldata swapCalls)
-    external;
+function redeem(
+    ILeverageToken token,
+    uint256 shares,
+    uint256 minCollateralForSender,
+    IMulticallExecutor multicallExecutor,
+    IMulticallExecutor.Call[] calldata swapCalls
+) external;
 ```
 **Parameters**
 
@@ -127,7 +132,8 @@ function redeem(ILeverageToken token, uint256 shares, uint256 minCollateralForSe
 |`token`|`ILeverageToken`|LeverageToken to redeem from|
 |`shares`|`uint256`|Amount of shares to redeem|
 |`minCollateralForSender`|`uint256`|Minimum amount of collateral for the sender to receive|
-|`swapCalls`|`Call[]`|External calls to execute for the swap of collateral from the redemption to debt to repay the flash loan|
+|`multicallExecutor`|`IMulticallExecutor`|multicall executor to use for the swap|
+|`swapCalls`|`IMulticallExecutor.Call[]`|External calls to execute for the swap of collateral from the redemption to debt to repay the flash loan. The calls are executed by the `multicallExecutor` contract after receiving the collateral from the redemption. Thus, for any encoded approvals and swaps that require the `from` address to be encoded, `from` must be set to the `multicallExecutor` contract address. The receiver of the swap must either be the `multicallExecutor` or this `LeverageRouter` contract - any leftover collateral and debt assets after the execution of the calls are swept to this `LeverageRouter` contract.|
 
 
 ### redeemWithVelora
@@ -221,18 +227,6 @@ error Unauthorized();
 ```
 
 ## Structs
-### Call
-Struct containing the target, value, and data for a single external call.
-
-
-```solidity
-struct Call {
-    address target;
-    uint256 value;
-    bytes data;
-}
-```
-
 ### DepositParams
 Deposit related parameters to pass to the Morpho flash loan callback handler for deposits
 
@@ -243,7 +237,8 @@ struct DepositParams {
     ILeverageToken leverageToken;
     uint256 collateralFromSender;
     uint256 minShares;
-    Call[] swapCalls;
+    IMulticallExecutor multicallExecutor;
+    IMulticallExecutor.Call[] swapCalls;
 }
 ```
 
@@ -268,7 +263,8 @@ struct RedeemParams {
     ILeverageToken leverageToken;
     uint256 shares;
     uint256 minCollateralForSender;
-    Call[] swapCalls;
+    IMulticallExecutor multicallExecutor;
+    IMulticallExecutor.Call[] swapCalls;
 }
 ```
 

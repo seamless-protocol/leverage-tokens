@@ -1,5 +1,5 @@
 # IAugustusRegistry
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/6fd46c53a22afa8918e99c47589c9bd10722b593/src/interfaces/periphery/IAugustusRegistry.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/d05e32eba516aef697eb220f9b66720e48434416/src/interfaces/periphery/IAugustusRegistry.sol)
 
 Velora registry of valid Augustus contracts
 
