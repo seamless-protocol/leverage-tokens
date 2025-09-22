@@ -153,7 +153,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
         uint256 sharesFee = _getAccruedManagementFee(token, token.totalSupply());
 
         // Return early if the calculated shares fee is 0, to avoid missing out on fees if someone continuously
-        //calls `chargeManagementFee`, due to rounding down in `_getAccruedManagementFee`.
+        // calls `chargeManagementFee`, due to rounding down in `_getAccruedManagementFee`.
         // slither-disable-next-line incorrect-equality,timestamp
         if (sharesFee == 0) {
             return;
