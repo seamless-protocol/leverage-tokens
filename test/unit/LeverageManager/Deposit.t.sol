@@ -49,10 +49,10 @@ contract DepositTest is LeverageManagerTest {
     }
 
     function test_deposit_WithFees() public {
-        leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Mint, 0.05e4); // 5% fee
-        _setTreasuryActionFee(ExternalAction.Mint, 0.1e4); // 10% fee
+        leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Mint, 0.05e18); // 5% fee
+        _setTreasuryActionFee(ExternalAction.Mint, 0.1e18); // 10% fee
 
-        _setManagementFee(feeManagerRole, leverageToken, 0.1e4); // 10% management fee
+        _setManagementFee(feeManagerRole, leverageToken, 0.1e18); // 10% management fee
         feeManager.chargeManagementFee(leverageToken);
 
         MockLeverageManagerStateForAction memory beforeState =

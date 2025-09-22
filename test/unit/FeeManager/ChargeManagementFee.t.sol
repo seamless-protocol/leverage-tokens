@@ -7,7 +7,7 @@ import {FeeManagerTest} from "test/unit/FeeManager/FeeManager.t.sol";
 
 contract ChargeManagementFeeTest is FeeManagerTest {
     function test_chargeManagementFee() public {
-        _setManagementFee(feeManagerRole, leverageToken, 0.1e4); // 10% management fee
+        _setManagementFee(feeManagerRole, leverageToken, 0.1e18); // 10% management fee
 
         uint256 totalSupply = 1000;
         leverageToken.mint(address(this), totalSupply);
