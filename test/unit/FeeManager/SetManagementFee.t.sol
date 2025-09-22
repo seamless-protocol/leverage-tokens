@@ -13,8 +13,8 @@ import {IFeeManager} from "src/interfaces/IFeeManager.sol";
 
 contract SetManagementFeeTest is FeeManagerTest {
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_setManagementFee(ILeverageToken token, uint256 managementFee) public {
-        managementFee = bound(managementFee, 0, MAX_MANAGEMENT_FEE);
+    function testFuzz_setManagementFee(ILeverageToken token, uint128 managementFee) public {
+        managementFee = uint128(bound(managementFee, 0, MAX_MANAGEMENT_FEE));
 
         vm.mockCall(
             address(token),
@@ -30,8 +30,8 @@ contract SetManagementFeeTest is FeeManagerTest {
     }
 
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_setManagementFee_RevertIf_FeeTooHigh(ILeverageToken token, uint256 managementFee) public {
-        managementFee = bound(managementFee, MAX_MANAGEMENT_FEE + 1, type(uint256).max);
+    function testFuzz_setManagementFee_RevertIf_FeeTooHigh(ILeverageToken token, uint128 managementFee) public {
+        managementFee = uint128(bound(managementFee, MAX_MANAGEMENT_FEE + 1, type(uint128).max));
 
         vm.mockCall(
             address(token),
@@ -59,7 +59,7 @@ contract SetManagementFeeTest is FeeManagerTest {
     }
 
     function test_setManagementFee_ChargesOutstandingFees() public {
-        uint256 managementFee = 0.1e4; // 10%
+        uint128 managementFee = 0.1e18; // 10%
         _setManagementFee(feeManagerRole, leverageToken, managementFee);
 
         uint256 initialSupply = 100 ether;
@@ -68,7 +68,7 @@ contract SetManagementFeeTest is FeeManagerTest {
         skip(SECONDS_ONE_YEAR);
 
         uint256 expectedOutstandingFees = 10 ether;
-        uint256 newManagementFee = 0.2e4;
+        uint128 newManagementFee = 0.2e18;
 
         vm.expectEmit(true, true, true, true);
         emit IFeeManager.ManagementFeeCharged(leverageToken, expectedOutstandingFees);
