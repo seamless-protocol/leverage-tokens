@@ -21,7 +21,7 @@ contract ChargeManagementFeeTest is FeeManagerTest {
         feeManager.chargeManagementFee(leverageToken);
         // Due to rounding down, the total supply should be the same
         assertEq(totalSupplyAfter, leverageToken.totalSupply());
-        // And the last management fee accrual timestamp should be not be updated yet
+        // And the last management fee accrual timestamp should not be updated yet
         assertEq(feeManager.getLastManagementFeeAccrualTimestamp(leverageToken), block.timestamp - 1);
 
         skip(SECONDS_ONE_YEAR); // One year passes and management fee is charged
