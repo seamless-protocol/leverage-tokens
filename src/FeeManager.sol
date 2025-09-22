@@ -126,6 +126,11 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
         _validateManagementFee(fee);
 
         _getFeeManagerStorage().managementFee[token] = fee;
+
+        // It's possible that the last accrual timestamp was not updated during `chargeManagementFee` if the calculated fee was 0
+        // and the previous management fee was not 0, so we make sure it's updated here regardless
+        _getFeeManagerStorage().lastManagementFeeAccrualTimestamp[token] = uint120(block.timestamp);
+
         emit ManagementFeeSet(token, fee);
     }
 
@@ -146,6 +151,13 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     function chargeManagementFee(ILeverageToken token) public {
         // Shares fee must be obtained before the last management fee accrual timestamp is updated
         uint256 sharesFee = _getAccruedManagementFee(token, token.totalSupply());
+
+        // Return early if the management fee is not 0 and the calculated shares fee is 0, to avoid missing out on fees
+        // if an someone continuously calls `chargeManagementFee`, due to rounding down in `_getAccruedManagementFee`.
+        if (getManagementFee(token) != 0 && sharesFee == 0) {
+            return;
+        }
+
         _getFeeManagerStorage().lastManagementFeeAccrualTimestamp[token] = uint120(block.timestamp);
 
         _chargeTreasuryFee(token, sharesFee);
@@ -221,7 +233,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
         //
         // Solving for gross:
         //   gross = net * baseFee / (baseFee - tokenActionFeeRate) * baseFee / (baseFee - treasuryActionFeeRate)
-        grossShares = grossShares = Math.mulDiv(
+        grossShares = Math.mulDiv(
             Math.mulDiv(netShares, MAX_BPS, (MAX_BPS - tokenActionFeeRate), Math.Rounding.Ceil),
             MAX_BPS,
             MAX_BPS - treasuryActionFeeRate,
