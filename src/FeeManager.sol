@@ -126,6 +126,11 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
         _validateManagementFee(fee);
 
         _getFeeManagerStorage().managementFee[token] = fee;
+
+        // It's possible that the last accrual timestamp was not updated during `chargeManagementFee` if the calculated fee was 0
+        // and the previous management fee was not 0, so we make sure it's updated here regardless
+        _getFeeManagerStorage().lastManagementFeeAccrualTimestamp[token] = uint120(block.timestamp);
+
         emit ManagementFeeSet(token, fee);
     }
 
@@ -146,6 +151,14 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     function chargeManagementFee(ILeverageToken token) public {
         // Shares fee must be obtained before the last management fee accrual timestamp is updated
         uint256 sharesFee = _getAccruedManagementFee(token, token.totalSupply());
+
+        // Return early if the calculated shares fee is 0, to avoid missing out on fees if someone continuously
+        // calls `chargeManagementFee`, due to rounding down in `_getAccruedManagementFee`.
+        // slither-disable-next-line incorrect-equality,timestamp
+        if (sharesFee == 0) {
+            return;
+        }
+
         _getFeeManagerStorage().lastManagementFeeAccrualTimestamp[token] = uint120(block.timestamp);
 
         _chargeTreasuryFee(token, sharesFee);
@@ -221,7 +234,7 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
         //
         // Solving for gross:
         //   gross = net * baseFee / (baseFee - tokenActionFeeRate) * baseFee / (baseFee - treasuryActionFeeRate)
-        grossShares = grossShares = Math.mulDiv(
+        grossShares = Math.mulDiv(
             Math.mulDiv(netShares, WAD, (WAD - tokenActionFeeRate), Math.Rounding.Ceil),
             WAD,
             WAD - treasuryActionFeeRate,
@@ -247,6 +260,11 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     /// @param totalSupply Total supply of the LeverageToken
     /// @return shares Shares to mint
     function _getAccruedManagementFee(ILeverageToken token, uint256 totalSupply) internal view returns (uint256) {
+        uint256 managementFee = getManagementFee(token);
+        if (managementFee == 0) {
+            return 0;
+        }
+
         uint120 lastManagementFeeAccrualTimestamp = getLastManagementFeeAccrualTimestamp(token);
         uint256 duration = block.timestamp - lastManagementFeeAccrualTimestamp;
 
@@ -254,8 +272,6 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
         if (duration == 0) {
             return 0;
         }
-
-        uint256 managementFee = getManagementFee(token);
 
         uint256 sharesFee = Math.mulDiv(managementFee * totalSupply, duration, WAD * SECS_PER_YEAR, Math.Rounding.Floor);
         return sharesFee;
