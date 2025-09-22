@@ -152,9 +152,9 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
         // Shares fee must be obtained before the last management fee accrual timestamp is updated
         uint256 sharesFee = _getAccruedManagementFee(token, token.totalSupply());
 
-        // Return early if the management fee is not 0 and the calculated shares fee is 0, to avoid missing out on fees
-        // if an someone continuously calls `chargeManagementFee`, due to rounding down in `_getAccruedManagementFee`.
-        if (getManagementFee(token) != 0 && sharesFee == 0) {
+        // Return early if the calculated shares fee is 0, to avoid missing out on fees if someone continuously
+        //calls `chargeManagementFee`, due to rounding down in `_getAccruedManagementFee`.
+        if (sharesFee == 0) {
             return;
         }
 
@@ -259,6 +259,11 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
     /// @param totalSupply Total supply of the LeverageToken
     /// @return shares Shares to mint
     function _getAccruedManagementFee(ILeverageToken token, uint256 totalSupply) internal view returns (uint256) {
+        uint256 managementFee = getManagementFee(token);
+        if (managementFee == 0) {
+            return 0;
+        }
+
         uint120 lastManagementFeeAccrualTimestamp = getLastManagementFeeAccrualTimestamp(token);
         uint256 duration = block.timestamp - lastManagementFeeAccrualTimestamp;
 
@@ -266,8 +271,6 @@ abstract contract FeeManager is IFeeManager, Initializable, AccessControlUpgrade
         if (duration == 0) {
             return 0;
         }
-
-        uint256 managementFee = getManagementFee(token);
 
         uint256 sharesFee = Math.mulDiv(managementFee * totalSupply, duration, WAD * SECS_PER_YEAR, Math.Rounding.Floor);
         return sharesFee;
