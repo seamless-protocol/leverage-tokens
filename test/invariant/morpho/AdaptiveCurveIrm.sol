@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 import {UtilsLib} from "@morpho-blue-irm/adaptive-curve-irm/libraries/UtilsLib.sol";
 import {ErrorsLib} from "@morpho-blue-irm/adaptive-curve-irm/libraries/ErrorsLib.sol";
@@ -13,7 +13,7 @@ import {MathLib as MorphoMathLib} from "@morpho-blue/libraries/MathLib.sol";
 /// @title AdaptiveCurveIrm
 /// @author Morpho Labs
 /// @custom:contact security@morpho.org
-/// @dev This contract is copied from Morpho, with the compiler version updated from 0.8.19 to ^0.8.26. Inheritance of
+/// @dev This contract is copied from Morpho, with the compiler version updated from 0.8.19 to ^0.8.27. Inheritance of
 ///      IAdaptiveCurveIrm interface is removed to avoid compilation issues from importing interfaces in nested
 ///      dependencies.
 /// @dev We copied this contract over for testing purposes instead of etching because we cannot update the stored

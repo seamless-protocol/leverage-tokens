@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 // Internal imports
 import {IAggregatorV2V3Interface} from "src/interfaces/periphery/IAggregatorV2V3Interface.sol";
