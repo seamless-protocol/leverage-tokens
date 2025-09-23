@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.30;
 
 interface IEtherFiL2ExchangeRateProvider {
     /// @notice Get conversion amount for a token, given an amount in of token it should return the amount out. It also

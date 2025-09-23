@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.30;
 
 import {CollateralRatiosRebalanceAdapterTest} from "./CollateralRatiosRebalanceAdapter.t.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";

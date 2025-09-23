@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.30;
 
 import {DutchAuctionTest} from "./DutchAuction.t.sol";
 import {LeverageTokenState} from "src/types/DataTypes.sol";

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.30;
 
 // Dependency imports
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";

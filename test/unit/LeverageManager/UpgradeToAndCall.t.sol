@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.30;
 
 // Dependency imports
 import {IERC1967} from "@openzeppelin/contracts/interfaces/IERC1967.sol";

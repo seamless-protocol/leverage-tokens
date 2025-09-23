@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.30;
 
 // Dependency imports
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
