@@ -14,7 +14,7 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
-import {ActionData, LeverageTokenState} from "src/types/DataTypes.sol";
+import {ActionData, ExternalAction, LeverageTokenState} from "src/types/DataTypes.sol";
 import {LeverageManagerHarness} from "test/unit/harness/LeverageManagerHarness.t.sol";
 import {MockMorphoOracle} from "test/unit/mock/MockMorphoOracle.sol";
 
@@ -65,9 +65,13 @@ contract LeverageManagerHandler is Test {
 
     uint256 public BASE_RATIO;
 
+    uint256 public constant WAD = 1e18;
+    uint256 public constant MAX_ACTION_FEE = WAD - 1;
+
     LeverageManagerHarness public leverageManager;
     ILeverageToken[] public leverageTokens;
     address[] public actors;
+    address public feeManagerRole;
 
     address public currentActor;
     ILeverageToken public currentLeverageToken;
@@ -89,11 +93,13 @@ contract LeverageManagerHandler is Test {
     constructor(
         LeverageManagerHarness _leverageManager,
         ILeverageToken[] memory _leverageTokens,
-        address[] memory _actors
+        address[] memory _actors,
+        address _feeManagerRole
     ) {
         leverageManager = _leverageManager;
         leverageTokens = _leverageTokens;
         actors = _actors;
+        feeManagerRole = _feeManagerRole;
 
         BASE_RATIO = leverageManager.BASE_RATIO();
 
@@ -183,6 +189,21 @@ contract LeverageManagerHandler is Test {
         deal(address(debtAsset), currentActor, preview.debt);
         debtAsset.approve(address(leverageManager), preview.debt);
         leverageManager.redeem(currentLeverageToken, sharesForRedeem, preview.collateral);
+    }
+
+    function setTokenActionFee(uint256 seed) public useLeverageToken {
+        uint256 fee = bound(seed, 0, MAX_ACTION_FEE);
+        ExternalAction action = ExternalAction(bound(seed, 0, uint256(type(ExternalAction).max)));
+
+        leverageManager.exposed_setLeverageTokenActionFee(currentLeverageToken, action, fee);
+    }
+
+    function setTreasuryActionFee(uint256 seed) public useLeverageToken {
+        uint256 fee = bound(seed, 0, MAX_ACTION_FEE);
+        ExternalAction action = ExternalAction(bound(seed, 0, uint256(type(ExternalAction).max)));
+
+        vm.prank(feeManagerRole);
+        leverageManager.setTreasuryActionFee(action, fee);
     }
 
     /// @dev Simulates updates to the oracle used by the lending adapter of a leverage token
