@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.30;
+pragma solidity ^0.8.26;
 
 import {IERC1967} from "@openzeppelin/contracts/interfaces/IERC1967.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";

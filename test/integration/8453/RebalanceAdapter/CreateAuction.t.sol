@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.30;
+pragma solidity ^0.8.26;
 
 import {DutchAuctionRebalanceAdapter} from "src/rebalance/DutchAuctionRebalanceAdapter.sol";
 import {Auction, LeverageTokenState} from "src/types/DataTypes.sol";

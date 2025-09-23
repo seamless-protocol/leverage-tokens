@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.30;
+pragma solidity ^0.8.26;
 
 import {IDutchAuctionRebalanceAdapter} from "src/interfaces/IDutchAuctionRebalanceAdapter.sol";
 import {DutchAuctionTest} from "./DutchAuction.t.sol";

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.30;
+pragma solidity ^0.8.26;
 
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";

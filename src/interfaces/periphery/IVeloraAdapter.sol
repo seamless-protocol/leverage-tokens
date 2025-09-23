@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-pragma solidity ^0.8.30;
+pragma solidity ^0.8.26;
 
 /// @notice Interface of Velora Adapter.
 /// @dev This adapter was copied from the original version implemented by Morpho

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.30;
+pragma solidity ^0.8.26;
 
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {LeverageTokenState} from "src/types/DataTypes.sol";
