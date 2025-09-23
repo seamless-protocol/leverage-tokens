@@ -9,7 +9,7 @@ import {FeeManagerTest} from "test/unit/FeeManager/FeeManager.t.sol";
 
 contract GetAccruedManagementFeeTest is FeeManagerTest {
     function test_getAccruedManagementFee() public {
-        _setManagementFee(feeManagerRole, leverageToken, 0.1e4); // 10% management fee
+        _setManagementFee(feeManagerRole, leverageToken, 0.1e18); // 10% management fee
 
         uint256 totalSupply = 1000;
         leverageToken.mint(address(this), totalSupply);
@@ -25,11 +25,11 @@ contract GetAccruedManagementFeeTest is FeeManagerTest {
         skip(SECONDS_ONE_YEAR / 2);
 
         sharesFee = feeManager.exposed_getAccruedManagementFee(leverageToken, totalSupply + sharesFee);
-        assertEq(sharesFee, 53); // half of 10% of 1000 + 50, rounded up
+        assertEq(sharesFee, 52); // half of 10% of 1000 + 50, rounded down
     }
 
-    function testFuzz_getAccruedManagementFee_RoundsUp(uint128 totalSupply, uint256 managementFee) public {
-        managementFee = bound(managementFee, 1, MAX_MANAGEMENT_FEE);
+    function testFuzz_getAccruedManagementFee_RoundsUp(uint128 totalSupply, uint128 managementFee) public {
+        managementFee = uint128(bound(managementFee, 1, MAX_MANAGEMENT_FEE));
 
         _setManagementFee(feeManagerRole, leverageToken, managementFee);
 
@@ -40,12 +40,12 @@ contract GetAccruedManagementFeeTest is FeeManagerTest {
 
         uint256 sharesFee = feeManager.exposed_getAccruedManagementFee(leverageToken, totalSupply);
 
-        assertEq(sharesFee, Math.mulDiv(totalSupply, managementFee, MAX_BPS, Math.Rounding.Ceil));
+        assertEq(sharesFee, Math.mulDiv(totalSupply, managementFee, WAD, Math.Rounding.Floor));
     }
 
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_getAccruedManagementFee_ZeroDuration(uint128 totalSupply, uint256 managementFee) public {
-        managementFee = bound(managementFee, 1, MAX_MANAGEMENT_FEE);
+    function testFuzz_getAccruedManagementFee_ZeroDuration(uint128 totalSupply, uint128 managementFee) public {
+        managementFee = uint128(bound(managementFee, 1, MAX_MANAGEMENT_FEE));
 
         leverageToken.mint(address(this), totalSupply);
 
@@ -72,8 +72,8 @@ contract GetAccruedManagementFeeTest is FeeManagerTest {
     }
 
     /// forge-config: default.fuzz.runs = 1
-    function testFuzz_getAccruedManagementFee_ZeroTotalSupply(uint256 managementFee, uint120 deltaT) public {
-        managementFee = bound(managementFee, 1, MAX_MANAGEMENT_FEE);
+    function testFuzz_getAccruedManagementFee_ZeroTotalSupply(uint128 managementFee, uint120 deltaT) public {
+        managementFee = uint128(bound(managementFee, 1, MAX_MANAGEMENT_FEE));
         deltaT = uint120(bound(deltaT, 1, type(uint120).max));
 
         feeManager.chargeManagementFee(leverageToken);

@@ -7,17 +7,22 @@ import {FeeManagerTest} from "test/unit/FeeManager/FeeManager.t.sol";
 
 contract ChargeManagementFeeTest is FeeManagerTest {
     function test_chargeManagementFee() public {
-        _setManagementFee(feeManagerRole, leverageToken, 0.1e4); // 10% management fee
+        _setManagementFee(feeManagerRole, leverageToken, 0.1e18); // 10% management fee
 
         uint256 totalSupply = 1000;
         leverageToken.mint(address(this), totalSupply);
 
-        vm.expectEmit(true, true, true, true);
-        emit IFeeManager.ManagementFeeCharged(leverageToken, 0);
         feeManager.chargeManagementFee(leverageToken);
-
         uint256 totalSupplyAfter = leverageToken.totalSupply();
         assertEq(totalSupplyAfter, totalSupply); // No time has passed yet, total supply should be the same
+
+        skip(1); // 1 second passes
+
+        feeManager.chargeManagementFee(leverageToken);
+        // Due to rounding down, the total supply should be the same
+        assertEq(totalSupplyAfter, leverageToken.totalSupply());
+        // And the last management fee accrual timestamp should not be updated yet
+        assertEq(feeManager.getLastManagementFeeAccrualTimestamp(leverageToken), block.timestamp - 1);
 
         skip(SECONDS_ONE_YEAR); // One year passes and management fee is charged
         vm.expectEmit(true, true, true, true);
