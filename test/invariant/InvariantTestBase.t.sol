@@ -116,7 +116,7 @@ abstract contract InvariantTestBase is Test {
     }
 
     function _fuzzedSelectors() internal pure returns (bytes4[] memory) {
-        bytes4[] memory selectors = new bytes4[](7);
+        bytes4[] memory selectors = new bytes4[](9);
         selectors[0] = LeverageManagerHandler.mint.selector;
         selectors[1] = LeverageManagerHandler.redeem.selector;
         selectors[2] = LeverageManagerHandler.addCollateral.selector;
@@ -124,6 +124,8 @@ abstract contract InvariantTestBase is Test {
         selectors[4] = LeverageManagerHandler.updateOraclePrice.selector;
         selectors[5] = LeverageManagerHandler.setTreasuryActionFee.selector;
         selectors[6] = LeverageManagerHandler.setTokenActionFee.selector;
+        selectors[7] = LeverageManagerHandler.deposit.selector;
+        selectors[8] = LeverageManagerHandler.withdraw.selector;
         // TODO: Add selectors for fuzzing over management fee and skipping time
         return selectors;
     }

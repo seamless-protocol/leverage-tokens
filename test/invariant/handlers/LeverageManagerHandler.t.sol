@@ -22,10 +22,12 @@ contract LeverageManagerHandler is Test {
     enum ActionType {
         // Invariants are checked before any calls are made as well, so we need a specific identifer for it for filtering
         Initial,
+        Deposit,
         Mint,
         AddCollateral,
         RepayDebt,
         Redeem,
+        Withdraw,
         UpdateOraclePrice
     }
 
@@ -113,6 +115,24 @@ contract LeverageManagerHandler is Test {
         }
     }
 
+    function deposit(uint256 seed) public useLeverageToken useActor {
+        uint256 sharesToMint = _boundSharesForMint(currentLeverageToken, seed);
+
+        ActionData memory preview = leverageManager.previewMint(currentLeverageToken, sharesToMint);
+
+        _saveLeverageTokenState(
+            currentLeverageToken,
+            ActionType.Deposit,
+            abi.encode(MintActionData({leverageToken: currentLeverageToken, shares: sharesToMint, preview: preview}))
+        );
+
+        IERC20 collateralAsset = leverageManager.getLeverageTokenCollateralAsset(currentLeverageToken);
+        deal(address(collateralAsset), currentActor, preview.collateral);
+        collateralAsset.approve(address(leverageManager), preview.collateral);
+
+        leverageManager.deposit(currentLeverageToken, preview.collateral, sharesToMint);
+    }
+
     function mint(uint256 seed) public useLeverageToken useActor {
         uint256 sharesToMint = _boundSharesForMint(currentLeverageToken, seed);
 
@@ -189,6 +209,25 @@ contract LeverageManagerHandler is Test {
         deal(address(debtAsset), currentActor, preview.debt);
         debtAsset.approve(address(leverageManager), preview.debt);
         leverageManager.redeem(currentLeverageToken, sharesForRedeem, preview.collateral);
+    }
+
+    function withdraw(uint256 seed) public useLeverageToken useActor {
+        uint256 sharesForRedeem = _boundSharesForRedeem(currentLeverageToken, currentActor, seed);
+
+        ActionData memory preview = leverageManager.previewRedeem(currentLeverageToken, sharesForRedeem);
+
+        _saveLeverageTokenState(
+            currentLeverageToken,
+            ActionType.Withdraw,
+            abi.encode(
+                RedeemActionData({leverageToken: currentLeverageToken, shares: sharesForRedeem, preview: preview})
+            )
+        );
+
+        IERC20 debtAsset = leverageManager.getLeverageTokenDebtAsset(currentLeverageToken);
+        deal(address(debtAsset), currentActor, preview.debt);
+        debtAsset.approve(address(leverageManager), preview.debt);
+        leverageManager.withdraw(currentLeverageToken, preview.collateral, sharesForRedeem);
     }
 
     function setTokenActionFee(uint256 seed) public useLeverageToken {

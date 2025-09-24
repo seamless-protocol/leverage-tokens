@@ -20,7 +20,10 @@ contract RedeemInvariants is InvariantTestBase {
     function invariant_redeem() public view {
         LeverageManagerHandler.LeverageTokenStateData memory stateBefore =
             leverageManagerHandler.getLeverageTokenStateBefore();
-        if (stateBefore.actionType != LeverageManagerHandler.ActionType.Redeem) {
+        if (
+            stateBefore.actionType != LeverageManagerHandler.ActionType.Redeem
+                && stateBefore.actionType != LeverageManagerHandler.ActionType.Withdraw
+        ) {
             return;
         }
 

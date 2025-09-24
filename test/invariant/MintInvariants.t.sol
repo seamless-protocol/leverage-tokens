@@ -21,7 +21,10 @@ contract MintInvariants is InvariantTestBase {
     function invariant_mint() public view {
         LeverageManagerHandler.LeverageTokenStateData memory stateBefore =
             leverageManagerHandler.getLeverageTokenStateBefore();
-        if (stateBefore.actionType != LeverageManagerHandler.ActionType.Mint) {
+        if (
+            stateBefore.actionType != LeverageManagerHandler.ActionType.Mint
+                && stateBefore.actionType != LeverageManagerHandler.ActionType.Deposit
+        ) {
             return;
         }
         LeverageManagerHandler.MintActionData memory mintData =
