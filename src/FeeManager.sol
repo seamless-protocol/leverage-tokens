@@ -23,7 +23,7 @@ import {IFeeManager} from "src/interfaces/IFeeManager.sol";
  *   - Management fees: Fees charged in shares that are transferred to the configured treasury address. The management fee
  *     accrues linearly over time and is minted to the treasury when the `chargeManagementFee` function is executed
  * Note: This contract is abstract and meant to be inherited by LeverageManager
- * The maximum fee that can be set for each action is 100_00 (100%).
+ * The maximum fee that can be set for each action is 1e4 - 1 (99.99%). The maximum fee that can be set for management fees is 1e4 (100%).
  *
  * @custom:contact security@seamlessprotocol.com
  */
