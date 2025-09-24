@@ -37,8 +37,8 @@ contract WithdrawTest is LeverageManagerTest {
     }
 
     function testFuzz_withdraw_WithFees(uint256 collateral) public {
-        leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Redeem, 0.05e18); // 5% fee
-        _setTreasuryActionFee(ExternalAction.Redeem, 0.1e18); // 10% fee
+        leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Redeem, 0.05e4); // 5% fee
+        _setTreasuryActionFee(ExternalAction.Redeem, 0.1e4); // 10% fee
 
         // 1:2 exchange rate
         lendingAdapter.mockConvertCollateralToDebtAssetExchangeRate(2e8);
@@ -48,7 +48,7 @@ contract WithdrawTest is LeverageManagerTest {
 
         _prepareLeverageManagerStateForAction(beforeState);
 
-        uint256 maxCollateralAfterFees = 200 ether * (WAD - 0.05e18) * (WAD - 0.1e18) / WAD_SQUARED;
+        uint256 maxCollateralAfterFees = 200 ether * (MAX_BPS - 0.05e4) * (MAX_BPS - 0.1e4) / MAX_BPS_SQUARED;
         collateral = uint256(bound(collateral, 1, maxCollateralAfterFees));
 
         _testWithdraw(collateral, type(uint256).max);
@@ -121,13 +121,13 @@ contract WithdrawTest is LeverageManagerTest {
         uint128 initialDebtInCollateralAsset,
         uint128 sharesTotalSupply,
         uint256 collateral,
-        uint128 tokenFee,
-        uint128 treasuryFee,
+        uint16 tokenFee,
+        uint16 treasuryFee,
         uint256 collateralRatioTarget
     ) public {
         collateralRatioTarget = uint256(bound(collateralRatioTarget, _BASE_RATIO() + 1, 10 * _BASE_RATIO()));
 
-        tokenFee = uint128(bound(tokenFee, 0, MAX_ACTION_FEE));
+        tokenFee = uint16(bound(tokenFee, 0, MAX_ACTION_FEE));
 
         _createNewLeverageToken(
             manager,
@@ -144,11 +144,11 @@ contract WithdrawTest is LeverageManagerTest {
             "dummy symbol"
         );
 
-        treasuryFee = uint128(bound(treasuryFee, 0, MAX_ACTION_FEE));
+        treasuryFee = uint16(bound(treasuryFee, 0, MAX_ACTION_FEE));
         _setTreasuryActionFee(ExternalAction.Redeem, treasuryFee);
 
         initialCollateral =
-            uint128(bound(initialCollateral, 0, type(uint128).max / ((WAD - tokenFee) * (WAD - treasuryFee))));
+            uint128(bound(initialCollateral, 0, type(uint128).max / ((MAX_BPS - tokenFee) * (MAX_BPS - treasuryFee))));
 
         // Bound debt to be lower than collateral asset and share total supply to be greater than 0 otherwise redeem can not work
         initialDebtInCollateralAsset = uint128(bound(initialDebtInCollateralAsset, 0, initialCollateral));
@@ -163,9 +163,9 @@ contract WithdrawTest is LeverageManagerTest {
         );
 
         uint256 maxCollateral = Math.mulDiv(
-            Math.mulDiv(sharesTotalSupply, (WAD - treasuryFee), WAD, Math.Rounding.Floor),
-            WAD - tokenFee,
-            WAD,
+            Math.mulDiv(sharesTotalSupply, (MAX_BPS - treasuryFee), MAX_BPS, Math.Rounding.Floor),
+            MAX_BPS - tokenFee,
+            MAX_BPS,
             Math.Rounding.Floor
         ) * initialCollateral / sharesTotalSupply;
         collateral = bound(collateral, 0, maxCollateral);
