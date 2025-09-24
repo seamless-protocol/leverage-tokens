@@ -28,6 +28,8 @@ contract LeverageManagerHandler is Test {
         RepayDebt,
         Redeem,
         Withdraw,
+        SetTokenActionFee,
+        SetTreasuryActionFee,
         UpdateOraclePrice
     }
 
@@ -67,8 +69,7 @@ contract LeverageManagerHandler is Test {
 
     uint256 public BASE_RATIO;
 
-    uint256 public constant WAD = 1e18;
-    uint256 public constant MAX_ACTION_FEE = WAD - 1;
+    uint256 public constant MAX_ACTION_FEE = 1e4 - 1;
 
     LeverageManagerHarness public leverageManager;
     ILeverageToken[] public leverageTokens;
@@ -234,12 +235,17 @@ contract LeverageManagerHandler is Test {
         uint256 fee = bound(seed, 0, MAX_ACTION_FEE);
         ExternalAction action = ExternalAction(bound(seed, 0, uint256(type(ExternalAction).max)));
 
+        _saveLeverageTokenState(currentLeverageToken, ActionType.SetTokenActionFee, "");
+
+        vm.prank(feeManagerRole);
         leverageManager.exposed_setLeverageTokenActionFee(currentLeverageToken, action, fee);
     }
 
     function setTreasuryActionFee(uint256 seed) public useLeverageToken {
         uint256 fee = bound(seed, 0, MAX_ACTION_FEE);
         ExternalAction action = ExternalAction(bound(seed, 0, uint256(type(ExternalAction).max)));
+
+        _saveLeverageTokenState(currentLeverageToken, ActionType.SetTreasuryActionFee, "");
 
         vm.prank(feeManagerRole);
         leverageManager.setTreasuryActionFee(action, fee);
