@@ -17,10 +17,10 @@ import {ExternalAction} from "src/types/DataTypes.sol";
 import {MockERC20} from "test/unit/mock/MockERC20.sol";
 
 contract FeeManagerTest is Test {
-    uint256 public constant WAD = 1e18;
-    uint256 public constant WAD_SQUARED = WAD * WAD;
-    uint256 public constant MAX_ACTION_FEE = WAD - 1;
-    uint256 public constant MAX_MANAGEMENT_FEE = WAD;
+    uint256 public constant MAX_ACTION_FEE = 100_00 - 1;
+    uint256 public constant MAX_MANAGEMENT_FEE = 100_00;
+    uint256 public constant MAX_BPS = 100_00;
+    uint256 public constant MAX_BPS_SQUARED = MAX_BPS * MAX_BPS;
     uint256 public constant SECONDS_ONE_YEAR = 31536000;
 
     address public feeManagerRole = makeAddr("feeManagerRole");
@@ -77,7 +77,7 @@ contract FeeManagerTest is Test {
         feeManager.setTreasuryActionFee(action, fee);
     }
 
-    function _setManagementFee(address caller, ILeverageToken token, uint128 fee) internal {
+    function _setManagementFee(address caller, ILeverageToken token, uint256 fee) internal {
         vm.prank(caller);
         feeManager.setManagementFee(token, fee);
     }

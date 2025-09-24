@@ -24,7 +24,7 @@ contract GetLeverageTokenPriceInDebtTest is PricingAdapterTest {
         uint256 sharesToMint = 1e18;
         _mint(user, sharesToMint, type(uint256).max);
 
-        uint128 managementFee = 0.1e18; // 10%
+        uint256 managementFee = 10_00; // 10%
         leverageManager.setManagementFee(leverageToken, managementFee);
 
         uint256 resultA = pricingAdapter.getLeverageTokenPriceInDebt(leverageToken);

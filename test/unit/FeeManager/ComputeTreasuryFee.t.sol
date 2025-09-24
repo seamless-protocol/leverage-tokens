@@ -15,7 +15,7 @@ contract ComputeTreasuryFeeTest is FeeManagerTest {
         _setTreasuryActionFee(feeManagerRole, action, treasuryActionFee);
 
         uint256 treasuryFee = feeManager.exposed_computeTreasuryFee(action, shares);
-        assertEq(treasuryFee, Math.mulDiv(shares, treasuryActionFee, WAD, Math.Rounding.Ceil));
+        assertEq(treasuryFee, Math.mulDiv(shares, treasuryActionFee, MAX_BPS, Math.Rounding.Ceil));
         assertLe(treasuryFee, shares); // Treasury fee is less than or equal to the shares
     }
 }
