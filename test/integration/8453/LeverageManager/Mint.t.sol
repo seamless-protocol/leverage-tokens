@@ -25,13 +25,13 @@ contract LeverageManagerMintTest is LeverageManagerTest {
     }
 
     function testFork_mint_WithFees() public {
-        uint256 treasuryActionFee = 0.1e18; // 10%
+        uint256 treasuryActionFee = 10_00; // 10%
         leverageManager.setTreasuryActionFee(ExternalAction.Mint, treasuryActionFee);
 
-        uint256 tokenActionFee = 0.1e18; // 10%
+        uint256 tokenActionFee = 10_00; // 10%
         leverageToken = _createNewLeverageToken(BASE_RATIO, 2 * BASE_RATIO, 3 * BASE_RATIO, tokenActionFee, 0);
 
-        uint128 managementFee = 0.1e18; // 10%
+        uint256 managementFee = 10_00; // 10%
         leverageManager.setManagementFee(leverageToken, managementFee);
 
         morphoLendingAdapter =

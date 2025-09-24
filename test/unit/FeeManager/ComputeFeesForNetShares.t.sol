@@ -12,10 +12,10 @@ import {FeeManagerTest} from "test/unit/FeeManager/FeeManager.t.sol";
 contract ComputeTokenFeeForNetSharesTest is FeeManagerTest {
     function test_computeTokenFeeForNetShares() public {
         uint256 shares = 1 ether;
-        uint256 mintTokenFee = 0.02e18;
-        uint256 mintTreasuryFee = 0.04e18;
-        uint256 redeemTokenFee = 0.06e18;
-        uint256 redeemTreasuryFee = 0.08e18;
+        uint256 mintTokenFee = 200;
+        uint256 mintTreasuryFee = 400;
+        uint256 redeemTokenFee = 600;
+        uint256 redeemTreasuryFee = 800;
 
         _setLeverageTokenActionFees(mintTokenFee, redeemTokenFee);
         _setTreasuryActionFee(feeManagerRole, ExternalAction.Mint, mintTreasuryFee);
@@ -25,18 +25,18 @@ contract ComputeTokenFeeForNetSharesTest is FeeManagerTest {
             feeManager.exposed_computeFeesForNetShares(leverageToken, shares, ExternalAction.Mint);
 
         uint256 expectedGrossShares = Math.mulDiv(
-            Math.mulDiv(shares, WAD, (WAD - mintTokenFee), Math.Rounding.Ceil),
-            WAD,
-            WAD - mintTreasuryFee,
+            Math.mulDiv(shares, MAX_BPS, (MAX_BPS - mintTokenFee), Math.Rounding.Ceil),
+            MAX_BPS,
+            MAX_BPS - mintTreasuryFee,
             Math.Rounding.Ceil
         );
         assertEq(grossShares, expectedGrossShares);
-        // 1 ether * 1e18 / (1e18 - 0.02e18) * 1e18 / (1e18 - 0.04e18), with rounding up for the divisions
+        // 1 ether * 1e4 / (1e4 - 200) * 1e4 / (1e4 - 400), with rounding up for the divisions
         assertEq(grossShares, 1.062925170068027212 ether);
 
-        uint256 expectedTokenFee = Math.mulDiv(grossShares, mintTokenFee, WAD, Math.Rounding.Ceil);
+        uint256 expectedTokenFee = Math.mulDiv(grossShares, mintTokenFee, MAX_BPS, Math.Rounding.Ceil);
         assertEq(tokenFee, expectedTokenFee);
-        assertEq(tokenFee, 0.021258503401360545 ether); // 1.062925170068027212 ether * 0.02e18 / 1e18, rounded up
+        assertEq(tokenFee, 0.021258503401360545 ether); // 1.062925170068027212 ether * 200 / 1e4, rounded up
 
         uint256 expectedTreasuryFee = grossShares - tokenFee - shares;
         assertEq(treasuryFee, expectedTreasuryFee);
@@ -46,18 +46,18 @@ contract ComputeTokenFeeForNetSharesTest is FeeManagerTest {
             feeManager.exposed_computeFeesForNetShares(leverageToken, shares, ExternalAction.Redeem);
 
         expectedGrossShares = Math.mulDiv(
-            Math.mulDiv(shares, WAD, (WAD - redeemTokenFee), Math.Rounding.Ceil),
-            WAD,
-            WAD - redeemTreasuryFee,
+            Math.mulDiv(shares, MAX_BPS, (MAX_BPS - redeemTokenFee), Math.Rounding.Ceil),
+            MAX_BPS,
+            MAX_BPS - redeemTreasuryFee,
             Math.Rounding.Ceil
         );
         assertEq(grossShares, expectedGrossShares);
-        // 1 ether * 1e18 / (1e18 - 0.06e18) * 1e18 / (1e18 - 0.08e18), with rounding up for the divisions
+        // 1 ether * 1e4 / (1e4 - 600) * 1e4 / (1e4 - 800), with rounding up for the divisions
         assertEq(grossShares, 1.156336725254394081 ether);
 
-        expectedTokenFee = Math.mulDiv(grossShares, redeemTokenFee, WAD, Math.Rounding.Ceil);
+        expectedTokenFee = Math.mulDiv(grossShares, redeemTokenFee, MAX_BPS, Math.Rounding.Ceil);
         assertEq(tokenFee, expectedTokenFee);
-        assertEq(tokenFee, 0.069380203515263645 ether); // 1.156336725254394081 ether * 0.06e18 / 1e18, rounded up
+        assertEq(tokenFee, 0.069380203515263645 ether); // 1.156336725254394081 ether * 600 / 1e4, rounded up
 
         expectedTreasuryFee = grossShares - tokenFee - shares;
         assertEq(treasuryFee, expectedTreasuryFee);
@@ -71,7 +71,7 @@ contract ComputeTokenFeeForNetSharesTest is FeeManagerTest {
         uint256 redeemTokenFee,
         uint256 redeemTreasuryFee
     ) public {
-        shares = bound(shares, 0, type(uint256).max / WAD_SQUARED);
+        shares = bound(shares, 0, type(uint256).max / MAX_BPS_SQUARED);
         mintTokenFee = bound(mintTokenFee, 0, MAX_ACTION_FEE);
         mintTreasuryFee = bound(mintTreasuryFee, 0, MAX_ACTION_FEE);
         redeemTokenFee = bound(redeemTokenFee, 0, MAX_ACTION_FEE);
@@ -85,15 +85,15 @@ contract ComputeTokenFeeForNetSharesTest is FeeManagerTest {
             feeManager.exposed_computeFeesForNetShares(leverageToken, shares, ExternalAction.Mint);
 
         uint256 expectedGrossShares = Math.mulDiv(
-            Math.mulDiv(shares, WAD, (WAD - mintTokenFee), Math.Rounding.Ceil),
-            WAD,
-            WAD - mintTreasuryFee,
+            Math.mulDiv(shares, MAX_BPS, (MAX_BPS - mintTokenFee), Math.Rounding.Ceil),
+            MAX_BPS,
+            MAX_BPS - mintTreasuryFee,
             Math.Rounding.Ceil
         );
         assertEq(grossShares, expectedGrossShares);
 
         uint256 expectedTokenFee =
-            Math.min(Math.mulDiv(grossShares, mintTokenFee, WAD, Math.Rounding.Ceil), grossShares - shares);
+            Math.min(Math.mulDiv(grossShares, mintTokenFee, MAX_BPS, Math.Rounding.Ceil), grossShares - shares);
         assertEq(tokenFee, expectedTokenFee);
 
         uint256 expectedTreasuryFee = grossShares - tokenFee - shares;
@@ -103,15 +103,15 @@ contract ComputeTokenFeeForNetSharesTest is FeeManagerTest {
             feeManager.exposed_computeFeesForNetShares(leverageToken, shares, ExternalAction.Redeem);
 
         expectedGrossShares = Math.mulDiv(
-            Math.mulDiv(shares, WAD, (WAD - redeemTokenFee), Math.Rounding.Ceil),
-            WAD,
-            WAD - redeemTreasuryFee,
+            Math.mulDiv(shares, MAX_BPS, (MAX_BPS - redeemTokenFee), Math.Rounding.Ceil),
+            MAX_BPS,
+            MAX_BPS - redeemTreasuryFee,
             Math.Rounding.Ceil
         );
         assertEq(grossShares, expectedGrossShares);
 
         expectedTokenFee =
-            Math.min(Math.mulDiv(grossShares, redeemTokenFee, WAD, Math.Rounding.Ceil), grossShares - shares);
+            Math.min(Math.mulDiv(grossShares, redeemTokenFee, MAX_BPS, Math.Rounding.Ceil), grossShares - shares);
         assertEq(tokenFee, expectedTokenFee);
 
         expectedTreasuryFee = grossShares - tokenFee - shares;

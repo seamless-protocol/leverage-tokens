@@ -16,8 +16,8 @@ contract PreviewRedeemTest is LeverageManagerTest {
         uint128 initialDebt;
         uint128 initialSharesTotalSupply;
         uint128 shares;
-        uint128 fee;
-        uint128 managementFee;
+        uint16 fee;
+        uint16 managementFee;
         uint256 collateralRatioTarget;
     }
 
@@ -45,12 +45,12 @@ contract PreviewRedeemTest is LeverageManagerTest {
     }
 
     function test_previewRedeem_WithFee() public {
-        _setManagementFee(feeManagerRole, leverageToken, 0.1e18); // 10% management fee
+        _setManagementFee(feeManagerRole, leverageToken, 0.1e4); // 10% management fee
         feeManager.chargeManagementFee(leverageToken);
 
-        leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Redeem, 0.05e18); // 5% fee
+        leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Redeem, 0.05e4); // 5% fee
 
-        _setTreasuryActionFee(feeManagerRole, ExternalAction.Redeem, 0.1e18); // 10% fee
+        _setTreasuryActionFee(feeManagerRole, ExternalAction.Redeem, 0.1e4); // 10% fee
 
         // 1:2 exchange rate
         lendingAdapter.mockConvertCollateralToDebtAssetExchangeRate(2e8);
@@ -142,15 +142,15 @@ contract PreviewRedeemTest is LeverageManagerTest {
         uint128 initialCollateral,
         uint128 initialDebt,
         uint128 initialSharesTotalSupply,
-        uint128 tokenActionFee,
-        uint128 treasuryActionFee
+        uint16 tokenActionFee,
+        uint16 treasuryActionFee
     ) public {
         // 0% to 99.99% token action fee
-        tokenActionFee = uint128(bound(tokenActionFee, 0, MAX_ACTION_FEE));
+        tokenActionFee = uint16(bound(tokenActionFee, 0, MAX_ACTION_FEE));
         leverageManager.exposed_setLeverageTokenActionFee(leverageToken, ExternalAction.Redeem, tokenActionFee);
 
         // 0% to 100% management fee
-        treasuryActionFee = uint128(bound(treasuryActionFee, 0, MAX_ACTION_FEE));
+        treasuryActionFee = uint16(bound(treasuryActionFee, 0, MAX_ACTION_FEE));
         _setTreasuryActionFee(feeManagerRole, ExternalAction.Redeem, treasuryActionFee);
 
         MockLeverageManagerStateForAction memory beforeState = MockLeverageManagerStateForAction({
@@ -242,7 +242,7 @@ contract PreviewRedeemTest is LeverageManagerTest {
             uint256(bound(params.collateralRatioTarget, _BASE_RATIO() + 1, 10 * _BASE_RATIO()));
 
         // 0% to 99.99% token action fee
-        params.fee = uint128(bound(params.fee, 0, MAX_ACTION_FEE));
+        params.fee = uint16(bound(params.fee, 0, MAX_ACTION_FEE));
 
         _createNewLeverageToken(
             manager,
@@ -260,7 +260,7 @@ contract PreviewRedeemTest is LeverageManagerTest {
         );
 
         // 0% to 100% management fee
-        params.managementFee = uint128(bound(params.managementFee, 0, MAX_MANAGEMENT_FEE));
+        params.managementFee = uint16(bound(params.managementFee, 0, MAX_MANAGEMENT_FEE));
         _setManagementFee(feeManagerRole, leverageToken, params.managementFee);
 
         // Bound initial debt in collateral asset to be less than or equal to initial collateral (1:1 exchange rate)
