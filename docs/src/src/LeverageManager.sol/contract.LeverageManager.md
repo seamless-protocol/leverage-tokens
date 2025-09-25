@@ -1,5 +1,5 @@
 # LeverageManager
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/6fd46c53a22afa8918e99c47589c9bd10722b593/src/LeverageManager.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/2b21c8087d500fe0ba2ccbc6534d0a70d879e057/src/LeverageManager.sol)
 
 **Inherits:**
 [ILeverageManager](/src/interfaces/ILeverageManager.sol/interface.ILeverageManager.md), AccessControlUpgradeable, ReentrancyGuardTransientUpgradeable, [FeeManager](/src/FeeManager.sol/abstract.FeeManager.md), UUPSUpgradeable
@@ -123,7 +123,7 @@ collateral ratio of the LeverageToken
 
 ```solidity
 function convertCollateralToShares(ILeverageToken token, uint256 collateral, Math.Rounding rounding)
-    public
+    external
     view
     returns (uint256 shares);
 ```

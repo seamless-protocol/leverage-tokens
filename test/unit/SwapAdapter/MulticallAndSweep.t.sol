@@ -87,9 +87,10 @@ contract MulticallAndSweepTest is Test {
         deal(address(tokenA), address(this), totalInputAmount);
         tokenA.transfer(address(multicallExecutor), totalInputAmount);
 
-        IERC20[] memory tokens = new IERC20[](2);
+        IERC20[] memory tokens = new IERC20[](3);
         tokens[0] = tokenA;
         tokens[1] = tokenB;
+        tokens[2] = IERC20(address(0)); // Pass address 0 to sweep ETH
 
         vm.prank(alice);
         multicallExecutor.multicallAndSweep(calls, tokens);

@@ -1,5 +1,5 @@
 # IPricingAdapter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/6fd46c53a22afa8918e99c47589c9bd10722b593/src/interfaces/periphery/IPricingAdapter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/2b21c8087d500fe0ba2ccbc6534d0a70d879e057/src/interfaces/periphery/IPricingAdapter.sol)
 
 
 ## Functions
@@ -84,6 +84,6 @@ function getLeverageTokenPriceAdjusted(
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`int256`|price The price of one LeverageToken adjusted to the price on the Chainlink oracle, in the decimals of the oracle|
+|`<none>`|`int256`|price The price of one LeverageToken adjusted to the price on the Chainlink oracle, with decimal precision equal to the base asset decimals|
 
 

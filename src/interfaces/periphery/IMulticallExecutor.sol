@@ -14,6 +14,6 @@ interface IMulticallExecutor {
 
     /// @notice Executes a multicall and sweeps tokens afterwards
     /// @param calls The calls to execute
-    /// @param tokens The tokens to sweep to the sender after executing the calls. ETH is always swept to the sender.
+    /// @param tokens The tokens to sweep to the sender after executing the calls. To sweep ETH, include address(0).
     function multicallAndSweep(Call[] calldata calls, IERC20[] calldata tokens) external;
 }
