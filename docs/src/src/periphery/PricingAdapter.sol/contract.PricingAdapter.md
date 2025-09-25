@@ -1,8 +1,15 @@
 # PricingAdapter
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/6fd46c53a22afa8918e99c47589c9bd10722b593/src/periphery/PricingAdapter.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/2b21c8087d500fe0ba2ccbc6534d0a70d879e057/src/periphery/PricingAdapter.sol)
 
 **Inherits:**
 [IPricingAdapter](/src/interfaces/periphery/IPricingAdapter.sol/interface.IPricingAdapter.md)
+
+*This contract is used to get the price of a LeverageToken in the collateral asset of the LeverageToken, debt asset
+of the LeverageToken, or the price using a Chainlink oracle.
+The decimal precision of the price using a Chainlink oracle is equal to the decimals of the base asset of the Chainlink
+oracle.
+Integrators using this PricingAdapter should carefully evaluate and understand the risks of using this contract before
+using it. Some points to consider are the rounding direction and precision used by the logic in this contract.*
 
 **Note:**
 contact: security@seamlessprotocol.com
@@ -107,6 +114,6 @@ function getLeverageTokenPriceAdjusted(
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`int256`|price The price of one LeverageToken adjusted to the price on the Chainlink oracle, in the decimals of the oracle|
+|`<none>`|`int256`|price The price of one LeverageToken adjusted to the price on the Chainlink oracle, with decimal precision equal to the base asset decimals|
 
 

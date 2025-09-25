@@ -1,5 +1,5 @@
 # FeeManager
-[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/6fd46c53a22afa8918e99c47589c9bd10722b593/src/FeeManager.sol)
+[Git Source](https://github.com/seamless-protocol/ilm-v2/blob/2b21c8087d500fe0ba2ccbc6534d0a70d879e057/src/FeeManager.sol)
 
 **Inherits:**
 [IFeeManager](/src/interfaces/IFeeManager.sol/interface.IFeeManager.md), Initializable, AccessControlUpgradeable
@@ -13,7 +13,7 @@ shares minted for mints and shares burned for redeems
 - Management fees: Fees charged in shares that are transferred to the configured treasury address. The management fee
 accrues linearly over time and is minted to the treasury when the `chargeManagementFee` function is executed
 Note: This contract is abstract and meant to be inherited by LeverageManager
-The maximum fee that can be set for each action is 100_00 (100%).*
+The maximum fee that can be set for each action is 1e4 - 1 (99.99%). The maximum fee that can be set for management fees is 1e4 (100%).*
 
 **Note:**
 contact: security@seamlessprotocol.com
@@ -31,13 +31,6 @@ bytes32 public constant FEE_MANAGER_ROLE = keccak256("FEE_MANAGER_ROLE");
 
 ```solidity
 uint256 internal constant MAX_BPS = 100_00;
-```
-
-
-### MAX_BPS_SQUARED
-
-```solidity
-uint256 internal constant MAX_BPS_SQUARED = MAX_BPS * MAX_BPS;
 ```
 
 
