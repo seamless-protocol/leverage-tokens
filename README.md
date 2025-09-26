@@ -14,7 +14,7 @@ Build: `forge build`
 
 ## Architecture
 
-The protocol is composed of modular contracts that abstract away the complexities of managing leveraged positions. These components are designed to be flexible, composable, and upgradeable, making it easy to integrate new lending markets, rebalancing strategies, or token configurations.
+The protocol is composed of modular contracts that abstract away the complexities of managing leveraged positions. These components are designed to be flexible, composable, and upgradeable, making it easy to integrate new lending markets, rebalancing strategies, or token configurations. See the [DeepWiki](https://deepwiki.com/seamless-protocol/leverage-tokens) for more.
 
 ## Permissionless Creation
 Leverage Tokens within the Seamless Protocol are designed to be fully permissionless. This means:
