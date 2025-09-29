@@ -37,8 +37,7 @@ contract CoreDeploy is Script {
         address leverageManagerProxy = Upgrades.deployUUPSProxy(
             "LeverageManager.sol",
             abi.encodeCall(
-                LeverageManager.initialize,
-                (DeployConstants.DEPLOYER, DeployConstants.DEPLOYER, leverageTokenFactory)
+                LeverageManager.initialize, (DeployConstants.DEPLOYER, DeployConstants.DEPLOYER, leverageTokenFactory)
             )
         );
         console.log("LeverageManager proxy deployed at: ", address(leverageManagerProxy));
