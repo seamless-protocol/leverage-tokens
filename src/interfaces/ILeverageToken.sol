@@ -3,7 +3,6 @@ pragma solidity ^0.8.20;
 
 // Dependency imports
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {ILeverageManager} from "./ILeverageManager.sol";
 
 interface ILeverageToken is IERC20 {
     /// @notice Event emitted when the leverage token is initialized
