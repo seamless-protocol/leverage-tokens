@@ -3,7 +3,6 @@ pragma solidity ^0.8.26;
 
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
-import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 
 /// @dev Enum defining internal actions that a LendingAdapter can perform on a lending pool
 enum ActionType {
