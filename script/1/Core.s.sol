@@ -13,7 +13,7 @@ import {BeaconProxyFactory} from "src/BeaconProxyFactory.sol";
 import {MorphoLendingAdapter} from "src/lending/MorphoLendingAdapter.sol";
 import {MorphoLendingAdapterFactory} from "src/lending/MorphoLendingAdapterFactory.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {DeployConstants} from "script/DeployConstants.sol";
+import {DeployConstants} from "./DeployConstants.sol";
 
 contract CoreDeploy is Script {
     function run() public {
