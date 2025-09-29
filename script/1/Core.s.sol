@@ -38,7 +38,7 @@ contract CoreDeploy is Script {
             "LeverageManager.sol",
             abi.encodeCall(
                 LeverageManager.initialize,
-                (DeployConstants.DEPLOYER, DeployConstants.SEAMLESS_TREASURY, leverageTokenFactory)
+                (DeployConstants.DEPLOYER, DeployConstants.DEPLOYER, leverageTokenFactory)
             )
         );
         console.log("LeverageManager proxy deployed at: ", address(leverageManagerProxy));
