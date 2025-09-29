@@ -13,7 +13,7 @@ import {BeaconProxyFactory} from "src/BeaconProxyFactory.sol";
 import {MorphoLendingAdapter} from "src/lending/MorphoLendingAdapter.sol";
 import {MorphoLendingAdapterFactory} from "src/lending/MorphoLendingAdapterFactory.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
-import {DeployConstants} from "script/DeployConstants.sol";
+import {DeployConstants} from "./DeployConstants.sol";
 
 contract CoreDeploy is Script {
     function run() public {
@@ -31,14 +31,13 @@ contract CoreDeploy is Script {
         console.log("LeverageToken implementation deployed at: ", address(leverageTokenImplementation));
 
         BeaconProxyFactory leverageTokenFactory =
-            new BeaconProxyFactory(address(leverageTokenImplementation), DeployConstants.SEAMLESS_TIMELOCK_SHORT);
+            new BeaconProxyFactory(address(leverageTokenImplementation), DeployConstants.DEPLOYER);
         console.log("LeverageToken factory deployed at: ", address(leverageTokenFactory));
 
         address leverageManagerProxy = Upgrades.deployUUPSProxy(
             "LeverageManager.sol",
             abi.encodeCall(
-                LeverageManager.initialize,
-                (DeployConstants.SEAMLESS_TIMELOCK_SHORT, DeployConstants.SEAMLESS_TREASURY, leverageTokenFactory)
+                LeverageManager.initialize, (DeployConstants.DEPLOYER, DeployConstants.DEPLOYER, leverageTokenFactory)
             )
         );
         console.log("LeverageManager proxy deployed at: ", address(leverageManagerProxy));
