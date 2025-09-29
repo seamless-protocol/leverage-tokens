@@ -21,10 +21,12 @@ contract MintInvariants is InvariantTestBase {
     function invariant_mint() public view {
         LeverageManagerHandler.LeverageTokenStateData memory stateBefore =
             leverageManagerHandler.getLeverageTokenStateBefore();
-        if (stateBefore.actionType != LeverageManagerHandler.ActionType.Mint) {
+        if (
+            stateBefore.actionType != LeverageManagerHandler.ActionType.Mint
+                && stateBefore.actionType != LeverageManagerHandler.ActionType.Deposit
+        ) {
             return;
         }
-
         LeverageManagerHandler.MintActionData memory mintData =
             abi.decode(stateBefore.actionData, (LeverageManagerHandler.MintActionData));
         IRebalanceAdapterBase rebalanceAdapter =
@@ -76,7 +78,7 @@ contract MintInvariants is InvariantTestBase {
     ) internal view {
         if (stateBefore.totalSupply != 0) {
             assertGe(
-                _convertToAssets(stateBefore.leverageToken, stateBefore.totalSupply, Math.Rounding.Ceil),
+                leverageManager.convertToAssets(stateBefore.leverageToken, stateBefore.totalSupply),
                 stateBefore.equityInCollateralAsset,
                 _getMintInvariantDescriptionString(
                     "The value of the total supply of shares before the mint must be greater than or equal to their value before the mint.",
@@ -96,7 +98,7 @@ contract MintInvariants is InvariantTestBase {
         uint256 sharesMinted
     ) internal view {
         if (sharesMinted != 0) {
-            uint256 mintedSharesValue = _convertToAssets(mintData.leverageToken, sharesMinted, Math.Rounding.Floor);
+            uint256 mintedSharesValue = leverageManager.convertToAssets(mintData.leverageToken, sharesMinted);
 
             if (stateBefore.totalSupply != 0) {
                 uint256 deltaEquityInCollateralAsset =
@@ -135,27 +137,50 @@ contract MintInvariants is InvariantTestBase {
     ) internal view {
         bool isInitialStateEmpty = stateBefore.totalSupply == 0 && stateBefore.collateral == 0;
 
-        if (isInitialStateEmpty && mintData.equityInCollateralAsset != 0) {
-            if (mintData.equityInDebtAsset == 0) {
-                assertEq(
+        if (isInitialStateEmpty && mintData.shares != 0) {
+            uint256 initialCollateralRatio =
+                rebalanceAdapter.getLeverageTokenInitialCollateralRatio(mintData.leverageToken);
+
+            if (stateAfter.debt > 0) {
+                assertApproxEqRel(
                     stateAfter.collateralRatio,
-                    type(uint256).max,
+                    initialCollateralRatio,
+                    _getAllowedCollateralRatioSlippage(stateAfter.equity),
                     _getMintInvariantDescriptionString(
-                        "Minting into an empty LT for zero equity in debt asset must result in type(uint256).max collateral ratio.",
+                        "Collateral ratio after minting an LT with 0 collateral and 0 total supply must be equal to the specified initial collateral ratio, within the allowed slippage.",
                         stateBefore,
                         stateAfter,
                         mintData
                     )
                 );
             } else {
-                uint256 initialCollateralRatio =
-                    rebalanceAdapter.getLeverageTokenInitialCollateralRatio(mintData.leverageToken);
-                assertApproxEqRel(
+                if (stateBefore.debt == 0) {
+                    // Debt borrowed can be zero on an initial mint if the amount of collateral added * the base ratio is less
+                    // than the initial collateral ratio, calculated when determining the amount of debt to borrow in the
+                    // LeverageManager logic when the initial collateral and debt are both zero (debt = collateral * BASE_RATIO / initialCollateralRatio).
+                    // It may also be zero if that amount converted to debt using the underlying market oracle results in zero.
+                    ILendingAdapter lendingAdapter =
+                        leverageManager.getLeverageTokenLendingAdapter(mintData.leverageToken);
+                    uint256 collateralAdded = lendingAdapter.getCollateral();
+                    assertTrue(
+                        collateralAdded * BASE_RATIO < initialCollateralRatio
+                            || lendingAdapter.convertCollateralToDebtAsset(
+                                collateralAdded * BASE_RATIO / initialCollateralRatio
+                            ) == 0,
+                        _getMintInvariantDescriptionString(
+                            "The amount of collateral added multiplied by the base ratio must be less than the initial collateral ratio or the debt in collateral asset converted to debt using the underlying market oracle must result in zero if the debt borrowed for the mint is zero.",
+                            stateBefore,
+                            stateAfter,
+                            mintData
+                        )
+                    );
+                }
+
+                assertEq(
                     stateAfter.collateralRatio,
-                    initialCollateralRatio,
-                    _getAllowedCollateralRatioSlippage(mintData.equityInDebtAsset),
+                    type(uint256).max,
                     _getMintInvariantDescriptionString(
-                        "Collateral ratio after mint into an empty LT with no collateral must be equal to the specified initial collateral ratio, within the allowed slippage.",
+                        "Collateral ratio after minting an LT with 0 collateral and 0 total supply must be equal to type(uint256).max if the debt borrowed for the mint is zero.",
                         stateBefore,
                         stateAfter,
                         mintData
@@ -180,27 +205,32 @@ contract MintInvariants is InvariantTestBase {
             uint256 allowedSlippage =
                 _getAllowedCollateralRatioSlippage(Math.min(stateBefore.collateral, stateBefore.debt));
 
-            bool isCollateralRatioWithinAllowedSlippage = stdMath.percentDelta(
-                stateAfter.collateralRatio, stateBefore.collateralRatio
-            ) <= allowedSlippage
-                || stdMath.percentDelta(collateralRatioUsingDebtNormalized, stateBefore.collateralRatioUsingDebtNormalized)
-                    <= allowedSlippage;
+            // Due to oracle price, it's possible for the collateral ratio to be 0 in these tests. In those cases,
+            // the % difference will be 100%. Also, stdMath.percentDelta will overflow due to division by zero.
+            if (stateBefore.collateralRatio != 0 && stateBefore.collateralRatioUsingDebtNormalized != 0) {
+                bool isCollateralRatioWithinAllowedSlippage = stdMath.percentDelta(
+                    stateAfter.collateralRatio, stateBefore.collateralRatio
+                ) <= allowedSlippage
+                    || stdMath.percentDelta(
+                        collateralRatioUsingDebtNormalized, stateBefore.collateralRatioUsingDebtNormalized
+                    ) <= allowedSlippage;
 
-            assertTrue(
-                isCollateralRatioWithinAllowedSlippage,
-                _getMintInvariantDescriptionString(
-                    "Collateral ratio after mint must be equal to the collateral ratio before the mint, within the allowed slippage.",
-                    stateBefore,
-                    stateAfter,
-                    mintData
-                )
-            );
+                assertTrue(
+                    isCollateralRatioWithinAllowedSlippage,
+                    _getMintInvariantDescriptionString(
+                        "Collateral ratio after mint must be equal to the collateral ratio before the mint, within the allowed slippage.",
+                        stateBefore,
+                        stateAfter,
+                        mintData
+                    )
+                );
+            }
 
-            bool isCollateralRatioGe = collateralRatioUsingDebtNormalized
+            bool isCollateralRatioGeBefore = collateralRatioUsingDebtNormalized
                 >= stateBefore.collateralRatioUsingDebtNormalized
                 || stateAfter.collateralRatio >= stateBefore.collateralRatio;
             assertTrue(
-                isCollateralRatioGe,
+                isCollateralRatioGeBefore,
                 _getMintInvariantDescriptionString(
                     string.concat(
                         "Collateral ratio after mint must be greater than or equal to the collateral ratio before the mint.",
@@ -240,10 +270,8 @@ contract MintInvariants is InvariantTestBase {
         return string.concat(
             " mintData.leverageToken: ",
             Strings.toHexString(address(mintData.leverageToken)),
-            " mintData.equityInCollateralAsset: ",
-            Strings.toString(mintData.equityInCollateralAsset),
-            " mintData.equityInDebtAsset: ",
-            Strings.toString(mintData.equityInDebtAsset)
+            " mintData.shares: ",
+            Strings.toString(mintData.shares)
         );
     }
 }

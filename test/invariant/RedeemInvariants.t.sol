@@ -12,7 +12,6 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
-import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
 import {ExternalAction, LeverageTokenState} from "src/types/DataTypes.sol";
 import {LeverageManagerHandler} from "test/invariant/handlers/LeverageManagerHandler.t.sol";
 import {InvariantTestBase} from "test/invariant/InvariantTestBase.t.sol";
@@ -21,7 +20,10 @@ contract RedeemInvariants is InvariantTestBase {
     function invariant_redeem() public view {
         LeverageManagerHandler.LeverageTokenStateData memory stateBefore =
             leverageManagerHandler.getLeverageTokenStateBefore();
-        if (stateBefore.actionType != LeverageManagerHandler.ActionType.Redeem) {
+        if (
+            stateBefore.actionType != LeverageManagerHandler.ActionType.Redeem
+                && stateBefore.actionType != LeverageManagerHandler.ActionType.Withdraw
+        ) {
             return;
         }
 
@@ -51,7 +53,7 @@ contract RedeemInvariants is InvariantTestBase {
         LeverageTokenState memory stateAfter
     ) internal view {
         _assertRemainingSharesValue(stateBefore, redeemData, stateAfter);
-        _assertTotalSupplyRedeemedEqualsTotalEquity(lendingAdapter, redeemData, stateBefore, stateAfter);
+        _assertTotalSupplyRedeemedInvariants(lendingAdapter, redeemData, stateBefore, stateAfter);
     }
 
     function _assertRemainingSharesValue(
@@ -66,7 +68,7 @@ contract RedeemInvariants is InvariantTestBase {
                 totalSupplyAfter, stateBefore.equityInCollateralAsset, stateBefore.totalSupply, Math.Rounding.Floor
             );
             uint256 totalSupplyAfterValueAfterRedeem =
-                _convertToAssets(redeemData.leverageToken, totalSupplyAfter, Math.Rounding.Floor);
+                leverageManager.convertToAssets(redeemData.leverageToken, totalSupplyAfter);
 
             assertGe(
                 totalSupplyAfterValueAfterRedeem,
@@ -94,26 +96,52 @@ contract RedeemInvariants is InvariantTestBase {
         }
     }
 
-    function _assertTotalSupplyRedeemedEqualsTotalEquity(
+    function _assertTotalSupplyRedeemedInvariants(
         ILendingAdapter lendingAdapter,
         LeverageManagerHandler.RedeemActionData memory redeemData,
         LeverageManagerHandler.LeverageTokenStateData memory stateBefore,
         LeverageTokenState memory stateAfter
     ) internal view {
         uint256 totalSupplyAfter = redeemData.leverageToken.totalSupply();
-        uint256 sharesRedeemed = stateBefore.totalSupply - totalSupplyAfter;
 
-        if (totalSupplyAfter == 0 && sharesRedeemed != 0) {
+        if (totalSupplyAfter == 0 && redeemData.shares != 0) {
             assertEq(
-                lendingAdapter.getEquityInCollateralAsset(),
+                lendingAdapter.getDebt(),
                 0,
                 _getRedeemInvariantDescriptionString(
-                    "When there are no shares remaining after the redeem, all equity must have been redeemed and thus there must be no equity remaining in the LT.",
+                    "Debt remaining must be zero when all shares have been redeemed.",
                     stateBefore,
                     stateAfter,
                     redeemData
                 )
             );
+
+            uint256 totalCollateralAfter = lendingAdapter.getCollateral();
+            if (leverageManager.getLeverageTokenActionFee(redeemData.leverageToken, ExternalAction.Redeem) > 0) {
+                uint256 sharesRedeemedCollateralValue =
+                    Math.mulDiv(redeemData.shares, stateBefore.collateral, stateBefore.totalSupply, Math.Rounding.Floor);
+                assertGt(
+                    totalCollateralAfter,
+                    stateBefore.collateral - sharesRedeemedCollateralValue,
+                    _getRedeemInvariantDescriptionString(
+                        "Remaining collateral after all shares are redeemed must be greater than the difference of the total collateral and the value of the shares redeemed due to the redeem token action fee.",
+                        stateBefore,
+                        stateAfter,
+                        redeemData
+                    )
+                );
+            } else {
+                assertEq(
+                    totalCollateralAfter,
+                    0,
+                    _getRedeemInvariantDescriptionString(
+                        "Remaining collateral must be zero when all shares have been redeemed and the redeem token action fee is zero.",
+                        stateBefore,
+                        stateAfter,
+                        redeemData
+                    )
+                );
+            }
         }
     }
 
@@ -123,14 +151,11 @@ contract RedeemInvariants is InvariantTestBase {
         LeverageManagerHandler.LeverageTokenStateData memory stateBefore,
         LeverageTokenState memory stateAfter
     ) internal view {
-        uint256 totalSupplyAfter = redeemData.leverageToken.totalSupply();
-
-        // If zero shares were burned, or zero equity was passed to the redeem function, strategy collateral ratio should not change
-        if (stateBefore.totalSupply == totalSupplyAfter || redeemData.equityInCollateralAsset == 0) {
+        if (redeemData.shares == 0) {
             assertEq(
                 stateBefore.collateralRatio,
                 stateAfter.collateralRatio,
-                "Invariant Violated: Collateral ratio should not change if zero shares were burnt or zero equity was passed to the redeem function."
+                "Invariant Violated: Collateral ratio should not change if zero shares passed to the redeem function."
             );
         } else {
             uint256 collateralAfter = lendingAdapter.getCollateral();
@@ -196,21 +221,25 @@ contract RedeemInvariants is InvariantTestBase {
 
         uint256 allowedSlippage = _getAllowedCollateralRatioSlippage(Math.min(minDebt, minCollateral));
 
-        bool isCollateralRatioWithinAllowedSlippage = stdMath.percentDelta(
-            stateAfter.collateralRatio, stateBefore.collateralRatio
-        ) <= allowedSlippage
-            || stdMath.percentDelta(collateralRatioUsingDebtNormalized, stateBefore.collateralRatioUsingDebtNormalized)
-                <= allowedSlippage;
+        // Due to oracle price, it's possible for the collateral ratio to be 0 in these tests. In those cases,
+        // the % difference will be 100%. Also, stdMath.percentDelta will overflow due to division by zero.
+        if (stateBefore.collateralRatioUsingDebtNormalized != 0 && stateBefore.collateralRatio != 0) {
+            bool isCollateralRatioWithinAllowedSlippage = stdMath.percentDelta(
+                stateAfter.collateralRatio, stateBefore.collateralRatio
+            ) <= allowedSlippage
+                || stdMath.percentDelta(collateralRatioUsingDebtNormalized, stateBefore.collateralRatioUsingDebtNormalized)
+                    <= allowedSlippage;
 
-        assertTrue(
-            isCollateralRatioWithinAllowedSlippage,
-            _getRedeemInvariantDescriptionString(
-                "Collateral ratio after a redeem must be equal to the collateral ratio before the redeem, within the allowed slippage.",
-                stateBefore,
-                stateAfter,
-                redeemData
-            )
-        );
+            assertTrue(
+                isCollateralRatioWithinAllowedSlippage,
+                _getRedeemInvariantDescriptionString(
+                    "Collateral ratio after a redeem must be equal to the collateral ratio before the redeem, within the allowed slippage.",
+                    stateBefore,
+                    stateAfter,
+                    redeemData
+                )
+            );
+        }
     }
 
     function _getRedeemInvariantDescriptionString(
@@ -236,10 +265,8 @@ contract RedeemInvariants is InvariantTestBase {
         return string.concat(
             " redeemData.leverageToken: ",
             Strings.toHexString(address(redeemData.leverageToken)),
-            " redeemData.equityInCollateralAsset: ",
-            Strings.toString(redeemData.equityInCollateralAsset),
-            " redeemData.equityInDebtAsset: ",
-            Strings.toString(redeemData.equityInDebtAsset)
+            " redeemData.shares: ",
+            Strings.toString(redeemData.shares)
         );
     }
 }
