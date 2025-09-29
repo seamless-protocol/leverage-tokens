@@ -8,12 +8,13 @@ import {Test} from "forge-std/Test.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 // Internal imports
 import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
-import {ActionData, LeverageTokenState} from "src/types/DataTypes.sol";
+import {ActionData, ExternalAction, LeverageTokenState} from "src/types/DataTypes.sol";
 import {LeverageManagerHarness} from "test/unit/harness/LeverageManagerHarness.t.sol";
 import {MockMorphoOracle} from "test/unit/mock/MockMorphoOracle.sol";
 
@@ -21,10 +22,14 @@ contract LeverageManagerHandler is Test {
     enum ActionType {
         // Invariants are checked before any calls are made as well, so we need a specific identifer for it for filtering
         Initial,
+        Deposit,
         Mint,
         AddCollateral,
         RepayDebt,
         Redeem,
+        Withdraw,
+        SetTokenActionFee,
+        SetTreasuryActionFee,
         UpdateOraclePrice
     }
 
@@ -34,8 +39,7 @@ contract LeverageManagerHandler is Test {
 
     struct MintActionData {
         ILeverageToken leverageToken;
-        uint256 equityInCollateralAsset;
-        uint256 equityInDebtAsset;
+        uint256 shares;
         ActionData preview;
     }
 
@@ -45,8 +49,7 @@ contract LeverageManagerHandler is Test {
 
     struct RedeemActionData {
         ILeverageToken leverageToken;
-        uint256 equityInCollateralAsset;
-        uint256 equityInDebtAsset;
+        uint256 shares;
         ActionData preview;
     }
 
@@ -66,9 +69,12 @@ contract LeverageManagerHandler is Test {
 
     uint256 public BASE_RATIO;
 
+    uint256 public constant MAX_ACTION_FEE = 1e4 - 1;
+
     LeverageManagerHarness public leverageManager;
     ILeverageToken[] public leverageTokens;
     address[] public actors;
+    address public feeManagerRole;
 
     address public currentActor;
     ILeverageToken public currentLeverageToken;
@@ -90,11 +96,13 @@ contract LeverageManagerHandler is Test {
     constructor(
         LeverageManagerHarness _leverageManager,
         ILeverageToken[] memory _leverageTokens,
-        address[] memory _actors
+        address[] memory _actors,
+        address _feeManagerRole
     ) {
         leverageManager = _leverageManager;
         leverageTokens = _leverageTokens;
         actors = _actors;
+        feeManagerRole = _feeManagerRole;
 
         BASE_RATIO = leverageManager.BASE_RATIO();
 
@@ -108,29 +116,40 @@ contract LeverageManagerHandler is Test {
         }
     }
 
-    function mint(uint256 seed) public useLeverageToken useActor {
-        uint256 equityForMint = _boundEquityForMint(currentLeverageToken, seed);
+    function deposit(uint256 seed) public useLeverageToken useActor {
+        uint256 sharesToMint = _boundSharesForMint(currentLeverageToken, seed);
 
-        ActionData memory preview = leverageManager.previewMint(currentLeverageToken, equityForMint);
-        ILendingAdapter lendingAdapter = leverageManager.getLeverageTokenLendingAdapter(currentLeverageToken);
+        ActionData memory preview = leverageManager.previewMint(currentLeverageToken, sharesToMint);
+
+        _saveLeverageTokenState(
+            currentLeverageToken,
+            ActionType.Deposit,
+            abi.encode(MintActionData({leverageToken: currentLeverageToken, shares: sharesToMint, preview: preview}))
+        );
+
+        IERC20 collateralAsset = leverageManager.getLeverageTokenCollateralAsset(currentLeverageToken);
+        deal(address(collateralAsset), currentActor, preview.collateral);
+        collateralAsset.approve(address(leverageManager), preview.collateral);
+
+        leverageManager.deposit(currentLeverageToken, preview.collateral, sharesToMint);
+    }
+
+    function mint(uint256 seed) public useLeverageToken useActor {
+        uint256 sharesToMint = _boundSharesForMint(currentLeverageToken, seed);
+
+        ActionData memory preview = leverageManager.previewMint(currentLeverageToken, sharesToMint);
 
         _saveLeverageTokenState(
             currentLeverageToken,
             ActionType.Mint,
-            abi.encode(
-                MintActionData({
-                    leverageToken: currentLeverageToken,
-                    equityInCollateralAsset: equityForMint,
-                    equityInDebtAsset: lendingAdapter.convertCollateralToDebtAsset(equityForMint),
-                    preview: preview
-                })
-            )
+            abi.encode(MintActionData({leverageToken: currentLeverageToken, shares: sharesToMint, preview: preview}))
         );
 
         IERC20 collateralAsset = leverageManager.getLeverageTokenCollateralAsset(currentLeverageToken);
-        deal(address(collateralAsset), currentActor, type(uint256).max);
-        collateralAsset.approve(address(leverageManager), type(uint256).max);
-        leverageManager.mint(currentLeverageToken, equityForMint, 0);
+        deal(address(collateralAsset), currentActor, preview.collateral);
+        collateralAsset.approve(address(leverageManager), preview.collateral);
+
+        leverageManager.mint(currentLeverageToken, sharesToMint, preview.collateral);
     }
 
     /// @dev Simulates someone adding collateral to the position held by the leverage token directly, not through the LeverageManager.
@@ -138,10 +157,10 @@ contract LeverageManagerHandler is Test {
         IMorphoLendingAdapter lendingAdapter =
             IMorphoLendingAdapter(address(leverageManager.getLeverageTokenLendingAdapter(currentLeverageToken)));
 
-        uint256 collateral = lendingAdapter.getCollateral();
+        uint256 totalCollateral = lendingAdapter.getCollateral();
         (, address collateralAsset,,,) = lendingAdapter.marketParams();
 
-        uint256 collateralToAdd = bound(seed, 0, type(uint128).max - collateral);
+        uint256 collateralToAdd = bound(seed, 0, type(uint128).max - totalCollateral);
 
         _saveLeverageTokenState(
             currentLeverageToken,
@@ -149,6 +168,7 @@ contract LeverageManagerHandler is Test {
             abi.encode(AddCollateralActionData({collateral: collateralToAdd}))
         );
 
+        deal(address(collateralAsset), address(this), collateralToAdd);
         deal(address(collateralAsset), address(this), collateralToAdd);
         IERC20(collateralAsset).approve(address(lendingAdapter), collateralToAdd);
         lendingAdapter.addCollateral(collateralToAdd);
@@ -174,28 +194,61 @@ contract LeverageManagerHandler is Test {
     }
 
     function redeem(uint256 seed) public useLeverageToken useActor {
-        uint256 equityForRedeem = _boundEquityForRedeem(currentLeverageToken, currentActor, seed);
+        uint256 sharesForRedeem = _boundSharesForRedeem(currentLeverageToken, currentActor, seed);
 
-        ActionData memory preview = leverageManager.previewRedeem(currentLeverageToken, equityForRedeem);
-        ILendingAdapter lendingAdapter = leverageManager.getLeverageTokenLendingAdapter(currentLeverageToken);
+        ActionData memory preview = leverageManager.previewRedeem(currentLeverageToken, sharesForRedeem);
 
         _saveLeverageTokenState(
             currentLeverageToken,
             ActionType.Redeem,
             abi.encode(
-                RedeemActionData({
-                    leverageToken: currentLeverageToken,
-                    equityInCollateralAsset: equityForRedeem,
-                    equityInDebtAsset: lendingAdapter.convertCollateralToDebtAsset(equityForRedeem),
-                    preview: preview
-                })
+                RedeemActionData({leverageToken: currentLeverageToken, shares: sharesForRedeem, preview: preview})
             )
         );
 
         IERC20 debtAsset = leverageManager.getLeverageTokenDebtAsset(currentLeverageToken);
-        deal(address(debtAsset), currentActor, type(uint256).max);
-        debtAsset.approve(address(leverageManager), type(uint256).max);
-        leverageManager.redeem(currentLeverageToken, equityForRedeem, currentLeverageToken.balanceOf(currentActor));
+        deal(address(debtAsset), currentActor, preview.debt);
+        debtAsset.approve(address(leverageManager), preview.debt);
+        leverageManager.redeem(currentLeverageToken, sharesForRedeem, preview.collateral);
+    }
+
+    function withdraw(uint256 seed) public useLeverageToken useActor {
+        uint256 sharesForRedeem = _boundSharesForRedeem(currentLeverageToken, currentActor, seed);
+
+        ActionData memory preview = leverageManager.previewRedeem(currentLeverageToken, sharesForRedeem);
+
+        _saveLeverageTokenState(
+            currentLeverageToken,
+            ActionType.Withdraw,
+            abi.encode(
+                RedeemActionData({leverageToken: currentLeverageToken, shares: sharesForRedeem, preview: preview})
+            )
+        );
+
+        IERC20 debtAsset = leverageManager.getLeverageTokenDebtAsset(currentLeverageToken);
+        deal(address(debtAsset), currentActor, preview.debt);
+        debtAsset.approve(address(leverageManager), preview.debt);
+        leverageManager.withdraw(currentLeverageToken, preview.collateral, sharesForRedeem);
+    }
+
+    function setTokenActionFee(uint256 seed) public useLeverageToken {
+        uint256 fee = bound(seed, 0, MAX_ACTION_FEE);
+        ExternalAction action = ExternalAction(bound(seed, 0, uint256(type(ExternalAction).max)));
+
+        _saveLeverageTokenState(currentLeverageToken, ActionType.SetTokenActionFee, "");
+
+        vm.prank(feeManagerRole);
+        leverageManager.exposed_setLeverageTokenActionFee(currentLeverageToken, action, fee);
+    }
+
+    function setTreasuryActionFee(uint256 seed) public useLeverageToken {
+        uint256 fee = bound(seed, 0, MAX_ACTION_FEE);
+        ExternalAction action = ExternalAction(bound(seed, 0, uint256(type(ExternalAction).max)));
+
+        _saveLeverageTokenState(currentLeverageToken, ActionType.SetTreasuryActionFee, "");
+
+        vm.prank(feeManagerRole);
+        leverageManager.setTreasuryActionFee(action, fee);
     }
 
     /// @dev Simulates updates to the oracle used by the lending adapter of a leverage token
@@ -234,40 +287,75 @@ contract LeverageManagerHandler is Test {
         return leverageTokens[bound(vm.randomUint(), 0, leverageTokens.length - 1)];
     }
 
-    /// @dev Bounds the amount of equity to deposit based on the maximum collateral and debt that can be added to a leverage token
+    /// @dev Bounds the amount of shares to mint based on the maximum collateral that can be added to a leverage token
     ///      due to overflow limits
-    function _boundEquityForMint(ILeverageToken leverageToken, uint256 seed) internal view returns (uint256) {
-        LeverageTokenState memory stateBefore = leverageManager.getLeverageTokenState(leverageToken);
+    function _boundSharesForMint(ILeverageToken leverageToken, uint256 seed) internal view returns (uint256) {
+        uint256 totalCollateral = leverageManager.getLeverageTokenLendingAdapter(leverageToken).getCollateral();
+        uint256 totalDebt = leverageManager.getLeverageTokenLendingAdapter(leverageToken).getDebt();
 
-        uint256 maxCollateralAmount = type(uint128).max
-            - leverageManager.getLeverageTokenLendingAdapter(leverageToken).convertDebtToCollateralAsset(
-                stateBefore.collateralInDebtAsset
-            );
         // Bound the amount of equity to deposit based on the maximum collateral that can be added to avoid overflow
-        bool shouldFollowInitialRatio = leverageToken.totalSupply() == 0 || stateBefore.debt == 0;
-        uint256 collateralRatioForMint = shouldFollowInitialRatio
-            ? leverageManager.getLeverageTokenInitialCollateralRatio(leverageToken)
-            : stateBefore.collateralRatio;
+        bool shouldFollowInitialRatio = leverageToken.totalSupply() == 0;
 
-        // Divide first to avoid overflow
-        uint256 maxEquity = (maxCollateralAmount / collateralRatioForMint) * (collateralRatioForMint - BASE_RATIO);
+        // To calculate the amount of collateral required for a given number of shares to mint, the LeverageManager
+        // calculates shares * totalCollateral / totalSupply. We need to make sure that this calculate does not overflow.
+        // Calculate the maximum shares that can be minted without causing overflow in shares * totalCollateral
+        uint256 maxShares;
+        if (shouldFollowInitialRatio) {
+            uint256 leverageTokenDecimals = IERC20Metadata(address(leverageToken)).decimals();
+            uint256 collateralDecimals = IERC20Metadata(
+                address(leverageManager.getLeverageTokenLendingAdapter(leverageToken).getCollateralAsset())
+            ).decimals();
+            uint256 initialCollateralRatio = leverageManager.getLeverageTokenInitialCollateralRatio(leverageToken);
 
-        // Divide max equity by a random number between 2 and 100000 to split deposits up more among calls
-        uint256 equityDivisor = bound(seed, 2, 100000);
-        return bound(seed, 0, maxEquity / equityDivisor);
+            if (collateralDecimals > leverageTokenDecimals) {
+                uint256 scalingFactor = 10 ** (collateralDecimals - leverageTokenDecimals);
+                // Prevent overflow in: shares * scalingFactor * initialCollateralRatio, in LeverageManager.convertSharesToCollateral
+                maxShares = type(uint128).max / (scalingFactor * initialCollateralRatio);
+            } else {
+                // In this case, shares is multiplied directly by initialCollateralRatio, in LeverageManager.convertSharesToCollateral
+                maxShares = type(uint128).max / initialCollateralRatio;
+            }
+
+            uint256 collateralForMaxShares = leverageManager.previewMint(leverageToken, maxShares).collateral;
+            uint256 allowedCollateral = type(uint128).max - totalCollateral;
+
+            // Morpho uses uint128 for collateral, the max shares should be scaled down
+            // so that the collateral added does not result in overflows.
+            // There can be collateral without shares already if someone adds collateral directly on the LendingAdapter when total supply is 0.
+            if (collateralForMaxShares > allowedCollateral) {
+                if (collateralForMaxShares > allowedCollateral) {
+                    maxShares = Math.mulDiv(maxShares, allowedCollateral, collateralForMaxShares, Math.Rounding.Floor);
+                }
+            }
+        } else {
+            if (totalDebt == 0) {
+                maxShares = type(uint128).max / totalCollateral;
+            } else {
+                // Debt for the mint is calculated as collateral * totalDebt / totalCollateral.
+                // We need to make sure that this calculation does not overflow.
+                uint256 maxCollateral = type(uint128).max / totalDebt;
+
+                // Collateral for the mint is calculated as shares * totalCollateral / totalSupply.
+                // We need to make sure that this calculation does not overflow.
+                maxShares = maxCollateral / totalCollateral;
+            }
+        }
+
+        // Divide max shares by a random number between 2 and 100000 to split mints up more among calls
+        uint256 sharesDivisor = bound(seed, 2, 100000);
+        return bound(seed, 0, maxShares / sharesDivisor);
     }
 
-    function _boundEquityForRedeem(ILeverageToken leverageToken, address actor, uint256 seed)
+    function _boundSharesForRedeem(ILeverageToken leverageToken, address actor, uint256 seed)
         internal
         view
         returns (uint256)
     {
         uint256 shares = leverageToken.balanceOf(actor);
-        uint256 maxEquity = convertToAssets(leverageToken, shares);
 
-        // Divide max equity by a random number between 1 and 10 to split withdrawals up more among calls
-        uint256 equityDivisor = bound(seed, 1, 10);
-        return bound(seed, 0, maxEquity / equityDivisor);
+        // Divide max shares by a random number between 1 and 10 to split redemptions up more among calls
+        uint256 sharesDivisor = bound(seed, 1, 10);
+        return bound(seed, 0, shares / sharesDivisor);
     }
 
     function _saveLeverageTokenState(ILeverageToken leverageToken, ActionType actionType, bytes memory actionData)

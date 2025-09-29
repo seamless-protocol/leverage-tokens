@@ -116,13 +116,17 @@ abstract contract InvariantTestBase is Test {
     }
 
     function _fuzzedSelectors() internal pure returns (bytes4[] memory) {
-        bytes4[] memory selectors = new bytes4[](5);
+        bytes4[] memory selectors = new bytes4[](9);
         selectors[0] = LeverageManagerHandler.mint.selector;
         selectors[1] = LeverageManagerHandler.redeem.selector;
         selectors[2] = LeverageManagerHandler.addCollateral.selector;
         selectors[3] = LeverageManagerHandler.repayDebt.selector;
         selectors[4] = LeverageManagerHandler.updateOraclePrice.selector;
-        // TODO: Add selectors for fuzzing over fees (token action, treasury action, and management fees)
+        selectors[5] = LeverageManagerHandler.setTreasuryActionFee.selector;
+        selectors[6] = LeverageManagerHandler.setTokenActionFee.selector;
+        selectors[7] = LeverageManagerHandler.deposit.selector;
+        selectors[8] = LeverageManagerHandler.withdraw.selector;
+        // TODO: Add selectors for fuzzing over management fee and skipping time
         return selectors;
     }
 
@@ -168,7 +172,7 @@ abstract contract InvariantTestBase is Test {
 
         address[] memory actors = _createActors(10);
 
-        leverageManagerHandler = new LeverageManagerHandler(_leverageManager, leverageTokens, actors);
+        leverageManagerHandler = new LeverageManagerHandler(_leverageManager, leverageTokens, actors, feeManagerRole);
 
         vm.label(address(leverageManagerHandler), "leverageManagerHandler");
     }
@@ -268,19 +272,6 @@ abstract contract InvariantTestBase is Test {
         _morpho.setOwner(defaultAdmin);
 
         return _morpho;
-    }
-
-    function _convertToAssets(ILeverageToken leverageToken, uint256 shares, Math.Rounding rounding)
-        public
-        view
-        returns (uint256)
-    {
-        return Math.mulDiv(
-            shares,
-            leverageManager.getLeverageTokenLendingAdapter(leverageToken).getEquityInCollateralAsset(),
-            leverageToken.totalSupply(),
-            rounding
-        );
     }
 
     function _getInvariantDescriptionString(
