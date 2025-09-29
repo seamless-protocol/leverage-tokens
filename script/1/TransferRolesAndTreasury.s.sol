@@ -9,25 +9,30 @@ import {BeaconProxyFactory} from "src/BeaconProxyFactory.sol";
 import {LeverageManager} from "src/LeverageManager.sol";
 import {DeployConstants} from "./DeployConstants.sol";
 
-/// @notice This script transfers admin and fee manager roles to new addresses, and updates the treasury. It does the following:
+/// @notice This script transfers admin, fee manager, and upgrader roles to new addresses, and updates the treasury. It does the following:
 ///   - Updates the treasury for the LeverageManager
 ///   - Revokes the `FEE_MANAGER_ROLE` role from the sender
 ///   - Grants the `FEE_MANAGER_ROLE` to an address
 ///   - Grants the `DEFAULT_ADMIN_ROLE` to an address
 ///   - Revokes the `DEFAULT_ADMIN_ROLE` role from the sender
+///   - Grants the `UPGRADER_ROLE` to an address
+///   - Revokes `UPGRADER_ROLE` from the sender, if the sender currently has the role
 ///   - Transfers the ownership of the LeverageTokenFactory to an address
 /// @dev This script must be executed by an address holding the `DEFAULT_ADMIN_ROLE` for the LeverageManager. This address must
 /// also be the current owner of the LeverageTokenFactory.
-/// @dev The `newAdmin`, `newFeeManager`, and `newTreasury` addresses must be set in the script to the addresses to transfer the roles to.
-contract TransferAdminAndFeeManagerRoles is Script {
+/// @dev The `newAdmin`, `newFeeManager`, `newTreasury`, and `newUpgrader` addresses must be set in the script to the addresses to transfer the roles to.
+contract TransferRolesAndTreasury is Script {
     /// @dev Address to grant the admin role to for the LeverageManager and the owner of the LeverageTokenFactory
-    address public newAdmin = address(0xBEEF);
+    address public newAdmin = address(0x0000000000000000000000000000000000000000);
 
     /// @dev Address to grant the fee manager role to for the LeverageManager
-    address public newFeeManager = address(0xBEEF);
+    address public newFeeManager = address(0x0000000000000000000000000000000000000000);
 
     /// @dev Address to set the treasury to for the LeverageManager
-    address public newTreasury = address(0xBEEF);
+    address public newTreasury = address(0x0000000000000000000000000000000000000000);
+
+    /// @dev Address to grant the upgrader role to for the LeverageManager
+    address public newUpgrader = address(0x0000000000000000000000000000000000000000);
 
     function run() public {
         console.log("BlockNumber: ", block.number);
@@ -68,6 +73,24 @@ contract TransferAdminAndFeeManagerRoles is Script {
             "LeverageManager fee manager role not granted to new fee manager"
         );
         console.log("LeverageManager fee manager role granted to: ", newFeeManager);
+
+        // Grant upgrader role to the new upgrader
+        leverageManager.grantRole(leverageManager.UPGRADER_ROLE(), newUpgrader);
+        require(
+            leverageManager.hasRole(leverageManager.UPGRADER_ROLE(), newUpgrader),
+            "LeverageManager upgrader role not granted to new upgrader"
+        );
+        console.log("LeverageManager upgrader role granted to: ", newUpgrader);
+
+        // Revoke upgrader role from the sender for the LeverageManager, if the sender currently has the role
+        if (leverageManager.hasRole(leverageManager.UPGRADER_ROLE(), msg.sender)) {
+            leverageManager.revokeRole(leverageManager.UPGRADER_ROLE(), msg.sender);
+            require(
+                !leverageManager.hasRole(leverageManager.UPGRADER_ROLE(), msg.sender),
+                "LeverageManager upgrader role not revoked from sender"
+            );
+            console.log("LeverageManager upgrader role revoked from: ", msg.sender);
+        }
 
         // Grant admin role to the new admin for the LeverageManager
         leverageManager.grantRole(leverageManager.DEFAULT_ADMIN_ROLE(), newAdmin);
