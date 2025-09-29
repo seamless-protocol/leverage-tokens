@@ -21,16 +21,15 @@ contract MulticallExecutor is IMulticallExecutor {
         // Sweep any remaining tokens to the sender
         uint256 balance;
         for (uint256 i = 0; i < tokens.length; i++) {
-            balance = tokens[i].balanceOf(address(this));
-            if (balance > 0) {
-                SafeERC20.safeTransfer(tokens[i], msg.sender, balance);
+            if (address(tokens[i]) == address(0) && address(this).balance > 0) {
+                // slither-disable-next-line arbitrary-send-eth
+                payable(msg.sender).transfer(address(this).balance);
+            } else {
+                balance = tokens[i].balanceOf(address(this));
+                if (balance > 0) {
+                    SafeERC20.safeTransfer(tokens[i], msg.sender, balance);
+                }
             }
-        }
-
-        // Sweep any remaining ETH to the sender
-        if (address(this).balance > 0) {
-            // slither-disable-next-line arbitrary-send-eth
-            payable(msg.sender).transfer(address(this).balance);
         }
     }
 
