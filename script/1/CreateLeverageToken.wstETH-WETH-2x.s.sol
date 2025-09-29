@@ -159,7 +159,8 @@ contract CreateLeverageToken is Script {
         );
 
         IERC20(COLLATERAL_TOKEN_ADDRESS).approve(address(leverageManager), INITIAL_COLLATERAL_DEPOSIT);
-        ActionData memory depositData = leverageManager.deposit(leverageToken, INITIAL_COLLATERAL_DEPOSIT, 0);
+        ActionData memory depositData =
+            leverageManager.deposit(leverageToken, INITIAL_COLLATERAL_DEPOSIT, INITIAL_COLLATERAL_DEPOSIT / 2);
 
         console.log("Performed initial deposit to leverage token");
         console.log("  Collateral: ", depositData.collateral);
