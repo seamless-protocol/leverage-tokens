@@ -6,6 +6,8 @@ library DeployConstants {
     address public constant SEAMLESS_TIMELOCK_SHORT = 0x639d2dD24304aC2e6A691d8c1cFf4a2665925fee;
     address public constant SEAMLESS_TREASURY = 0x639d2dD24304aC2e6A691d8c1cFf4a2665925fee;
 
+    address public constant DEPLOYER = 0x0d715d2895A331C49771599a2B46AFf9FA8b2De9;
+
     address public constant ETHERFI_DEPOSIT_ADAPTER = 0xcfC6d9Bd7411962Bfe7145451A7EF71A24b6A7A2;
 
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;

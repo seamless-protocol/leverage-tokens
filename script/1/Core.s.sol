@@ -31,14 +31,14 @@ contract CoreDeploy is Script {
         console.log("LeverageToken implementation deployed at: ", address(leverageTokenImplementation));
 
         BeaconProxyFactory leverageTokenFactory =
-            new BeaconProxyFactory(address(leverageTokenImplementation), DeployConstants.SEAMLESS_TIMELOCK_SHORT);
+            new BeaconProxyFactory(address(leverageTokenImplementation), DeployConstants.DEPLOYER);
         console.log("LeverageToken factory deployed at: ", address(leverageTokenFactory));
 
         address leverageManagerProxy = Upgrades.deployUUPSProxy(
             "LeverageManager.sol",
             abi.encodeCall(
                 LeverageManager.initialize,
-                (DeployConstants.SEAMLESS_TIMELOCK_SHORT, DeployConstants.SEAMLESS_TREASURY, leverageTokenFactory)
+                (DeployConstants.DEPLOYER, DeployConstants.SEAMLESS_TREASURY, leverageTokenFactory)
             )
         );
         console.log("LeverageManager proxy deployed at: ", address(leverageManagerProxy));

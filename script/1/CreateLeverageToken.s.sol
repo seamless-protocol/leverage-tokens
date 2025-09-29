@@ -92,7 +92,7 @@ contract CreateLeverageToken is Script {
                 RebalanceAdapter.initialize,
                 (
                     RebalanceAdapter.RebalanceAdapterInitParams({
-                        owner: DeployConstants.SEAMLESS_TIMELOCK_SHORT,
+                        owner: DeployConstants.DEPLOYER,
                         authorizedCreator: deployerAddress,
                         leverageManager: leverageManager,
                         minCollateralRatio: MIN_COLLATERAL_RATIO,
