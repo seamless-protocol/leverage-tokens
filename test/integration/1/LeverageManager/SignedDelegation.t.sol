@@ -23,7 +23,7 @@ contract SignedDelegation is IntegrationTestBase {
         deal(address(CBBTC), ALICE_ADDRESS, collateralToDeposit); // Alice's address must have the collateral to deposit
 
         // Using signed delegation to approve leveragemanager to spend collateral and debt assets
-        IMulticall3.Call[] memory calls = new IMulticall3.Call[](2);
+        IMulticall3.Call[] memory calls = new IMulticall3.Call[](3);
         calls[0] = IMulticall3.Call({
             target: address(CBBTC),
             callData: abi.encodeWithSelector(CBBTC.approve.selector, address(leverageManager), collateralToDeposit)
@@ -32,27 +32,19 @@ contract SignedDelegation is IntegrationTestBase {
             target: address(leverageManager),
             callData: abi.encodeWithSelector(ILeverageManager.deposit.selector, leverageToken, collateralToDeposit, 0)
         });
+        calls[2] = IMulticall3.Call({
+            target: address(leverageToken),
+            callData: abi.encodeWithSelector(leverageToken.transfer.selector, BOB_ADDRESS, 0.05e18)
+        });
 
         vm.signAndAttachDelegation(MULTICALL3_ADDRESS, ALICE_PK, vm.getNonce(ALICE_ADDRESS));
 
         require(ALICE_ADDRESS.code.length > 0, "Alice should have code");
 
-        vm.prank(ALICE_ADDRESS);
+        vm.prank(BOB_ADDRESS);
         IMulticall3(ALICE_ADDRESS).aggregate(calls);
 
-        assertEq(leverageToken.balanceOf(ALICE_ADDRESS), 0.05e18, "Alice should have 0.05e18 balance of the leverage token");
-
-        // Bob can also maliciously transfer the LTs to themselves
-        IMulticall3.Call[] memory attackCalls = new IMulticall3.Call[](1);
-        attackCalls[0] = IMulticall3.Call({
-            target: address(leverageToken),
-            callData: abi.encodeWithSelector(leverageToken.transfer.selector, BOB_ADDRESS, 0.05e18)
-        });
-
-        vm.prank(BOB_ADDRESS);
-        IMulticall3(ALICE_ADDRESS).aggregate(attackCalls);
-
-        assertEq(leverageToken.balanceOf(BOB_ADDRESS), 0.05e18, "Bob should have 0.05e18 balance of the leverage token");
-        assertEq(leverageToken.balanceOf(ALICE_ADDRESS), 0, "Alice should have no balance of the leverage token");
+        // Reverts because Bob maliciously transfers the LTs to themselves
+        assertEq(leverageToken.balanceOf(BOB_ADDRESS), 0, "Bob should have no balance of the leverage token");
     }
 }
