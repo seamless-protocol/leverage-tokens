@@ -78,13 +78,30 @@ Audits reports can be found in the [audits](./audits/) folder.
 
 To report any issues, please contact security@seamlessprotocol.com.
 
-## Deployed Contracts (Base)
+## Deployed Contracts - Ethereum Mainnet
+
+### Core
+
+- LeverageToken implementation: `0xfE9101349354E278970489F935a54905DE2E1856`
+- LeverageToken factory proxy: `0x603Da735780e6bC7D04f3FB85C26dccCd4Ff0a82`
+- LeverageManager implementation: `0x9D04f65b58cED1fddef50AEc8b0b3d64fE64220E`
+- LeverageManager proxy: `0x5C37EB148D4a261ACD101e2B997A0F163Fb3E351`
+- MorphoLendingAdapterFactory: `0xce05FbEd9260810Bdded179ADfdaf737BE7ded71`
+- MorphoLendingAdapter implementation: `0x00c66934EBCa0F2A845812bC368B230F6da11A5C`
+
+### Periphery
+
+- MulticallExecutor: `0x16D02Ebd89988cAd1Ce945807b963aB7A9Fd22E1`
+- VeloraAdapter: `0xc4E5812976279cBcec943A6a148C95eAAC7Db6BA`
+- LeverageRouter: `0xb0764dE7eeF0aC69855C431334B7BC51A96E6DbA`
+- PricingAdapter: `0x44CCEBEA0dAc17105e91a59E182f65f8D176c88f`
+
+## Deployed Contracts - Base Mainnet
 
 ### Core
 
 - LeverageToken implementation: `0x057A2a1CC13A9Af430976af912A27A05DE537673`
 - LeverageToken factory proxy: `0xE0b2e40EDeb53B96C923381509a25a615c1Abe57`
-- LeverageToken factory implementation: `0x057a2a1cc13a9af430976af912a27a05de537673`
 - LeverageManager implementation: `0xeb0221bf6cdaa74c94129771d5b0c9a994bb2b7c`
 - LeverageManager proxy: `0x38Ba21C6Bf31dF1b1798FCEd07B4e9b07C5ec3a8`
 - MorphoLendingAdapterFactory: `0xDd33419F0c01879a23051edbcdA997A0f9E68e61`
