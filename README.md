@@ -84,7 +84,7 @@ To report any issues, please contact security@seamlessprotocol.com.
 
 - LeverageToken implementation: `0xfE9101349354E278970489F935a54905DE2E1856`
 - LeverageToken factory proxy: `0x603Da735780e6bC7D04f3FB85C26dccCd4Ff0a82`
-- LeverageManager implementation: ``
+- LeverageManager implementation: `0x9D04f65b58cED1fddef50AEc8b0b3d64fE64220E`
 - LeverageManager proxy: `0x5C37EB148D4a261ACD101e2B997A0F163Fb3E351`
 - MorphoLendingAdapterFactory: `0xce05FbEd9260810Bdded179ADfdaf737BE7ded71`
 - MorphoLendingAdapter implementation: `0x00c66934EBCa0F2A845812bC368B230F6da11A5C`
