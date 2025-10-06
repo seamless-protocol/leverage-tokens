@@ -5,11 +5,11 @@
 
 import { AssetConfig, PricePoint, TimeRange } from '../../types/data-sources';
 
-export interface PriceDataAdapter {
+export interface IDataAdapter {
   /**
    * Name of the data source (e.g., 'binance', 'defillama')
    */
-  readonly name: string;
+  readonly name: DataAdapter;
 
   /**
    * Fetch price data for an asset within a time range
@@ -21,4 +21,15 @@ export interface PriceDataAdapter {
    * Validate if this adapter can handle the given asset configuration
    */
   canHandle(asset: AssetConfig): boolean;
+}
+
+/**
+ * Data adapter enum
+ */
+export enum DataAdapter {
+  BINANCE = 'binance',
+  DEFILLAMA = 'defillama',
+  MORPHO = 'morpho',
+  // AAVE = 'aave',
+  // COMPOUND = 'compound',
 }

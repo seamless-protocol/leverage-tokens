@@ -23,7 +23,7 @@ async function main() {
   console.log(`   To:   ${new Date(strategy.timeRangeData.to * 1000).toISOString()}`);
 
   // Create extractor
-  const extractor = new StrategyExtractor('./data');
+  const extractor = new StrategyExtractor(strategy, './data');
 
   try {
     // Extract data
@@ -31,8 +31,9 @@ async function main() {
 
     console.log('✅ All data extracted successfully!\n');
     console.log('📁 Data saved to: ./data/');
-    console.log('   - ETH.json (base asset)');
-    console.log('   - weETH.json (collateral asset)');
+    console.log('   - ETH.json (debt token prices)');
+    console.log('   - weETH.json (collateral token prices)');
+    console.log(`   - ${strategy.lendingMarket.adapter.toUpperCase()}-${strategy.lendingMarket.marketId.substring(0, 10)}.json (borrow APY)`);
   } catch (error) {
     console.error('❌ Error during extraction:', error);
     process.exit(1);

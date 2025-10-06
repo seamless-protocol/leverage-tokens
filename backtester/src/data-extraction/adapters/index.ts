@@ -1,12 +1,15 @@
-/**
- * Export all adapters
- */
+import { DataAdapter, IDataAdapter } from './base';
+import { BinanceAdapter } from './binance';
+import { DeFiLlamaAdapter } from './defillama';
+import { MorphoAdapter } from './morpho';
 
-export { PriceDataAdapter } from './base';
-export { BinanceAdapter } from './binance';
-export { DeFiLlamaAdapter } from './defillama';
-
-export enum AdapterName {
-  BINANCE = 'binance',
-  DEFILLAMA = 'defillama',
+export function getAdapter(adapterName: DataAdapter): IDataAdapter {
+  switch (adapterName) {
+    case DataAdapter.BINANCE:
+      return new BinanceAdapter();
+    case DataAdapter.DEFILLAMA:
+      return new DeFiLlamaAdapter();
+    case DataAdapter.MORPHO:
+      return new MorphoAdapter();
+  }
 }

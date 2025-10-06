@@ -2,9 +2,8 @@
  * DeFiLlama adapter for fetching on-chain asset prices
  */
 
-import { PriceDataAdapter } from './base';
+import { DataAdapter, IDataAdapter } from './base';
 import { AssetConfig, PricePoint, TimeRange } from '../../types/data-sources';
-import { AdapterName } from '.';
 
 interface DeFiLlamaHistoricalResponse {
   coins: {
@@ -18,8 +17,8 @@ interface DeFiLlamaHistoricalResponse {
   };
 }
 
-export class DeFiLlamaAdapter implements PriceDataAdapter {
-  readonly name = AdapterName.DEFILLAMA;
+export class DeFiLlamaAdapter implements IDataAdapter {
+  readonly name = DataAdapter.DEFILLAMA;
   private readonly baseUrl = 'https://coins.llama.fi';
 
   canHandle(asset: AssetConfig): boolean {

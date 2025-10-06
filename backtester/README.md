@@ -18,9 +18,10 @@ Fetch and store price data for leverage token strategies with intelligent cachin
 
 ```
 data/
-├─ ETH.json          # Base asset (Binance, 5min)
-├─ weETH.json        # Collateral asset (DeFiLlama, daily interpolated to 1hr)
-└─ stETH.json        # Future strategies
+├─ ETH.json                  # Debt token prices (Binance, 5min)
+├─ weETH.json                # Collateral token prices (DeFiLlama, daily interpolated to 1hr)
+├─ MORPHO-0xfd0895ba.json    # Borrow APY from Morpho Blue (daily)
+└─ stETH.json                # Future strategies
 ```
 
 **File Format:**
@@ -49,7 +50,7 @@ This will:
 1. Load strategy config (`WEETH-WETH-17x`)
 2. Check existing data files
 3. Fetch only missing gaps
-4. Save to `data/ETH.json` and `data/weETH.json`
+4. Save to `data/ETH.json`, `data/weETH.json`, and `data/MORPHO-*.json`
 
 **Example output:**
 ```
@@ -70,6 +71,11 @@ This will:
 ✅ [DeFiLlama] Fetched 273 daily points, interpolated to 6552 hourly points
 💾 [Save] weETH.json (6552 price points)
 
+📦 Processing MORPHO-0xfd0895ba...
+📥 [Morpho] Fetching borrow APY for market 0xfd0895ba...
+✅ [Morpho] Fetched 141 daily APY points
+💾 [Save] MORPHO-0xfd0895ba.json (141 price points)
+
 ✅ Data extraction complete for WEETH-WETH-17x
 ```
 
@@ -88,15 +94,22 @@ export const STRATEGIES = {
       symbol: 'stETH',
       chain: 'ethereum',
       address: '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84',
+      adapter: DataAdapterName.DEFILLAMA,
     },
     debt: {
       symbol: 'WETH',
+      adapter: DataAdapterName.BINANCE,
     },
     leverage: 5,
     collateralRatios: { min: 1.2, target: 1.25, max: 1.3 },
     timeRangeData: {
       from: Math.floor(new Date('2025-01-01').getTime() / 1000),
       to: Math.floor(new Date('2025-09-30').getTime() / 1000),
+    },
+    lendingMarket: {
+      marketId: '0x...', // Market ID from lending protocol
+      adapter: DataAdapterName.MORPHO, // or AAVE, COMPOUND
+      chainId: 1, // Ethereum mainnet
     },
   },
 }
@@ -121,13 +134,15 @@ backtester/
 │   ├── data-extraction/
 │   │   ├── adapters/
 │   │   │   ├── base.ts           # Adapter interface
-│   │   │   ├── binance.ts        # Binance API (CEX)
-│   │   │   └── defillama.ts      # DeFiLlama API (DEX)
+│   │   │   ├── binance.ts        # Price adapter: Binance (CEX)
+│   │   │   ├── defillama.ts      # Price adapter: DeFiLlama (on-chain)
+│   │   │   ├── morpho.ts         # Lending adapter: Morpho Blue
+│   │   │   └── index.ts          # Adapter exports and enums
 │   │   ├── data-manager.ts       # Storage + gap detection
 │   │   ├── strategy-extractor.ts # Strategy-based extraction
 │   │   └── extract.ts            # CLI entry point
 │   └── types/
-│       ├── data-sources.ts       # PricePoint, AssetData
+│       ├── data-sources.ts       # PricePoint, AssetData, AdapterNames
 │       └── strategy.ts           # StrategyConfig, STRATEGIES
 ├── data/                         # Extracted price data (gitignored)
 └── package.json
@@ -146,6 +161,13 @@ backtester/
 - **Derived data**: Calculated as `weETH_USD / ETH_USD`
 - **Flexibility**: Can change ratio calculation in simulation
 - **No redundancy**: Don't store what you can compute
+
+### Why separate Price and Lending adapters?
+
+- **Abstraction**: Support multiple lending protocols (Morpho, Aave, Compound)
+- **Explicit**: Each token declares its price adapter
+- **Extensible**: Easy to add new data sources without coupling
+- **Reusable**: Same price data works across different lending markets
 
 ### Why gap detection?
 

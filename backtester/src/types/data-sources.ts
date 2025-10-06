@@ -2,7 +2,7 @@
  * Common types for data extraction from multiple sources
  */
 
-import { AdapterName } from "../data-extraction/adapters";
+import { DataAdapter } from "../data-extraction/adapters/base";
 
 export type Timeframe = '1m' | '3m' | '5m' | '15m' | '30m' | '1h' | '4h' | '1d' | '1w';
 
@@ -32,7 +32,7 @@ export interface PricePoint {
  */
 export interface AssetData {
   symbol: string;
-  source: AdapterName;
+  source: DataAdapter;
   timeframe: Timeframe;
   data: PricePoint[];
 }
@@ -44,7 +44,7 @@ export interface AssetConfig {
   /** Asset symbol (e.g., 'ETH', 'weETH') */
   symbol: string;
 
-  /** Blockchain chain (optional, required for DeFiLlama) */
+  /** Blockchain chain (optional, required for DeFiLlama and Morpho) */
   chain?: Chain | null;
 
   /** Contract address (optional, required for DeFiLlama) */
@@ -52,4 +52,13 @@ export interface AssetConfig {
 
   /** Timeframe for prices */
   timeframe: Timeframe;
+
+  /** Lending market ID (optional, required for lending adapters like Morpho/Aave) */
+  lendingMarketId?: string | null;
+
+  /** Lending adapter name (optional, required when fetching lending data) */
+  lendingAdapter?: DataAdapter | null;
+
+  /** Chain ID (optional, required for lending adapters) */
+  chainId?: number | null;
 }

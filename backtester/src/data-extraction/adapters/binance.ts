@@ -4,12 +4,11 @@
  */
 
 import Binance, { CandleChartInterval } from 'binance-api-node';
-import { PriceDataAdapter } from './base';
+import { DataAdapter, IDataAdapter } from './base';
 import { AssetConfig, PricePoint, TimeRange, Timeframe } from '../../types/data-sources';
-import { AdapterName } from '.';
 
-export class BinanceAdapter implements PriceDataAdapter {
-  readonly name = AdapterName.BINANCE;
+export class BinanceAdapter implements IDataAdapter {
+  readonly name = DataAdapter.BINANCE;
   private client: ReturnType<typeof Binance>;
 
   constructor() {

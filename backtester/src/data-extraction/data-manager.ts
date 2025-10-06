@@ -6,7 +6,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { AssetData, PricePoint, TimeRange, Timeframe } from '../types/data-sources';
-import { AdapterName } from './adapters';
+import { DataAdapter } from './adapters/base';
 
 export class DataManager {
   private dataDir: string;
@@ -21,7 +21,7 @@ export class DataManager {
    */
   async ensureData(
     symbol: string,
-    source: AdapterName,
+    source: DataAdapter,
     timeframe: Timeframe,
     timeRange: TimeRange,
     fetcher: (gap: TimeRange) => Promise<PricePoint[]>
@@ -112,7 +112,7 @@ export class DataManager {
       // TODO: should we throw an error here?
       return {
         symbol,
-        source: AdapterName.BINANCE,
+        source: DataAdapter.BINANCE,
         timeframe: '5m',
         data: [],
       };

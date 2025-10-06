@@ -3,20 +3,25 @@
  * Fetches and stores price data for leverage token strategies
  */
 
-import { AdapterName, BinanceAdapter, DeFiLlamaAdapter } from './adapters';
 import { DataManager } from './data-manager';
 import { StrategyConfig } from '../types/strategy';
 import { TimeRange, AssetConfig } from '../types/data-sources';
+import { DataAdapter, IDataAdapter } from './adapters/base';
+import { getAdapter } from './adapters';
 
 export class StrategyExtractor {
   private dataManager: DataManager;
-  private binanceAdapter: BinanceAdapter;
-  private defiLlamaAdapter: DeFiLlamaAdapter;
 
-  constructor(dataDir: string = './data') {
+  private debtAdapter: IDataAdapter;
+  private collateralAdapter: IDataAdapter;
+  private lendingAdapter: IDataAdapter;
+
+  constructor(strategy: StrategyConfig, dataDir: string = './data') {
     this.dataManager = new DataManager(dataDir);
-    this.binanceAdapter = new BinanceAdapter();
-    this.defiLlamaAdapter = new DeFiLlamaAdapter();
+
+    this.debtAdapter = getAdapter(strategy.debt.adapter);
+    this.collateralAdapter = getAdapter(strategy.collateral.adapter);
+    this.lendingAdapter = getAdapter(strategy.lendingMarket.adapter);
   }
 
   /**
@@ -34,6 +39,7 @@ export class StrategyExtractor {
         address: strategy.debt.address || null,
         timeframe: '5m', // High frequency for base asset
       },
+      this.debtAdapter,
       timeRange
     );
 
@@ -46,6 +52,21 @@ export class StrategyExtractor {
         address: strategy.collateral.address || null,
         timeframe: '1h', // Lower frequency for LST
       },
+      this.collateralAdapter,
+      timeRange
+    );
+
+    // Extract lending market borrow APY
+    await this.extractAsset(
+      `${strategy.lendingMarket.adapter.toUpperCase()}-${strategy.lendingMarket.marketId.substring(0, 10)}`,
+      {
+        symbol: `borrow-apy`,
+        timeframe: '1d',
+        lendingMarketId: strategy.lendingMarket.marketId,
+        lendingAdapter: strategy.lendingMarket.adapter,
+        chainId: strategy.lendingMarket.chainId,
+      },
+      this.lendingAdapter,
       timeRange
     );
 
@@ -58,21 +79,14 @@ export class StrategyExtractor {
   private async extractAsset(
     symbol: string,
     config: AssetConfig,
+    adapter: IDataAdapter,
     timeRange: TimeRange
   ): Promise<void> {
     console.log(`\n📦 Processing ${symbol}...`);
-
-    // Determine adapter and source
-    const adapter = config.chain && config.address
-      ? this.defiLlamaAdapter
-      : this.binanceAdapter;
-
-    const source = adapter.name;
-
     // Use DataManager to ensure data (with gap detection)
     await this.dataManager.ensureData(
       symbol,
-      source,
+      adapter.name,
       config.timeframe,
       timeRange,
       async (gap) => {
