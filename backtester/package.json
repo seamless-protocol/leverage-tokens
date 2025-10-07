@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "ts-node src/index.ts",
     "extract": "ts-node src/data-extraction/extract.ts",
+    "backtest": "ts-node src/simulation/run-backtest.ts",
     "build": "tsc",
     "start": "node dist/index.js"
   },
