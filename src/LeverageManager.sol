@@ -104,6 +104,10 @@ contract LeverageManager is
         }
     }
 
+    constructor() {
+        _disableInitializers();
+    }
+
     function initialize(address initialAdmin, address treasury, IBeaconProxyFactory leverageTokenFactory)
         external
         initializer

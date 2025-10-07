@@ -41,4 +41,21 @@ contract LeverageTokenTest is Test {
         vm.expectRevert(abi.encodeWithSelector(Initializable.InvalidInitialization.selector));
         leverageToken.initialize(leverageManager, "Test name", "Test symbol");
     }
+
+    function test_initialize_RevertsIfImplementation() public {
+        LeverageToken leverageTokenImplementation = new LeverageToken();
+        vm.expectRevert(Initializable.InvalidInitialization.selector);
+        LeverageToken(leverageTokenImplementation).initialize(leverageManager, "Test name", "Test symbol");
+
+        // Proxy does not revert
+        LeverageToken leverageTokenProxy = LeverageToken(
+            UnsafeUpgrades.deployUUPSProxy(
+                address(leverageTokenImplementation),
+                abi.encodeWithSelector(LeverageToken.initialize.selector, leverageManager, "Test name", "Test symbol")
+            )
+        );
+        assertEq(leverageTokenProxy.name(), "Test name");
+        assertEq(leverageTokenProxy.symbol(), "Test symbol");
+        assertEq(leverageTokenProxy.owner(), leverageManager);
+    }
 }

@@ -25,6 +25,10 @@ contract LeverageToken is
     OwnableUpgradeable,
     ILeverageToken
 {
+    constructor() {
+        _disableInitializers();
+    }
+
     function initialize(address _leverageManager, string memory _name, string memory _symbol) external initializer {
         __ERC20_init(_name, _symbol);
         __ERC20Permit_init(_name);

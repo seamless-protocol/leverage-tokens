@@ -5,6 +5,7 @@ pragma solidity ^0.8.26;
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {UnsafeUpgrades} from "@foundry-upgrades/Upgrades.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 // Internal imports
 import {IBeaconProxyFactory} from "src/interfaces/IBeaconProxyFactory.sol";
@@ -75,6 +76,24 @@ contract LeverageManagerTest is FeeManagerTest {
         assertTrue(leverageManager.hasRole(leverageManager.DEFAULT_ADMIN_ROLE(), defaultAdmin));
         assertEq(leverageManager.exposed_getLeverageManagerStorageSlot(), expectedSlot);
         assertEq(address(leverageManager.getLeverageTokenFactory()), address(leverageTokenFactory));
+    }
+
+    function test_initialize_RevertsIfImplementation() public {
+        LeverageManager leverageManagerImplementation = new LeverageManager();
+        vm.expectRevert(Initializable.InvalidInitialization.selector);
+        LeverageManager(leverageManagerImplementation).initialize(defaultAdmin, treasury, leverageTokenFactory);
+
+        // Proxy does not revert
+        LeverageManager leverageManagerProxy = LeverageManager(
+            UnsafeUpgrades.deployUUPSProxy(
+                address(leverageManagerImplementation),
+                abi.encodeWithSelector(
+                    LeverageManager.initialize.selector, defaultAdmin, treasury, leverageTokenFactory
+                )
+            )
+        );
+        assertEq(leverageManagerProxy.getTreasury(), treasury);
+        assertEq(address(leverageManagerProxy.getLeverageTokenFactory()), address(leverageTokenFactory));
     }
 
     function _BASE_RATIO() internal view returns (uint256) {
