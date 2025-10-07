@@ -70,6 +70,7 @@ contract CreateLeverageToken is Script {
 
     /// @dev Initial collateral deposit for the LT
     uint256 public INITIAL_COLLATERAL_DEPOSIT = 0.001 * 1e18;
+    uint256 public INITIAL_COLLATERAL_DEPOSIT_MIN_SHARES = INITIAL_COLLATERAL_DEPOSIT / 2;
 
     address public COLLATERAL_TOKEN_ADDRESS = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
     address public DEBT_TOKEN_ADDRESS = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
@@ -89,30 +90,6 @@ contract CreateLeverageToken is Script {
         address deployerAddress = msg.sender;
         console.log("DeployerAddress: ", deployerAddress);
 
-        address rebalanceAdapterProxy = Upgrades.deployUUPSProxy(
-            "RebalanceAdapter.sol",
-            abi.encodeCall(
-                RebalanceAdapter.initialize,
-                (
-                    RebalanceAdapter.RebalanceAdapterInitParams({
-                        owner: DeployConstants.DEPLOYER,
-                        authorizedCreator: address(leverageTokenDeploymentBatcher), // The LeverageTokenDeploymentBatcher must be allowed to use the rebalance adapter
-                        leverageManager: leverageManager,
-                        minCollateralRatio: MIN_COLLATERAL_RATIO,
-                        targetCollateralRatio: TARGET_COLLATERAL_RATIO,
-                        maxCollateralRatio: MAX_COLLATERAL_RATIO,
-                        auctionDuration: AUCTION_DURATION,
-                        initialPriceMultiplier: INITIAL_PRICE_MULTIPLIER,
-                        minPriceMultiplier: MIN_PRICE_MULTIPLIER,
-                        preLiquidationCollateralRatioThreshold: PRE_LIQUIDATION_COLLATERAL_RATIO_THRESHOLD,
-                        rebalanceReward: REBALANCE_REWARD
-                    })
-                )
-            )
-        );
-
-        console.log("RebalanceAdapter proxy deployed at: ", address(rebalanceAdapterProxy));
-
         ILeverageTokenDeploymentBatcher.LeverageTokenDeploymentParams memory leverageTokenDeploymentParams =
         ILeverageTokenDeploymentBatcher.LeverageTokenDeploymentParams({
             leverageTokenName: LT_NAME,
@@ -127,18 +104,38 @@ contract CreateLeverageToken is Script {
             baseSalt: BASE_SALT
         });
 
+        ILeverageTokenDeploymentBatcher.RebalanceAdapterDeploymentParams memory rebalanceAdapterDeploymentParams =
+        ILeverageTokenDeploymentBatcher.RebalanceAdapterDeploymentParams({
+            implementation: DeployConstants.REBALANCE_ADAPTER_IMPLEMENTATION,
+            owner: DeployConstants.DEPLOYER,
+            minCollateralRatio: MIN_COLLATERAL_RATIO,
+            targetCollateralRatio: TARGET_COLLATERAL_RATIO,
+            maxCollateralRatio: MAX_COLLATERAL_RATIO,
+            auctionDuration: AUCTION_DURATION,
+            initialPriceMultiplier: INITIAL_PRICE_MULTIPLIER,
+            minPriceMultiplier: MIN_PRICE_MULTIPLIER,
+            preLiquidationCollateralRatioThreshold: PRE_LIQUIDATION_COLLATERAL_RATIO_THRESHOLD,
+            rebalanceReward: REBALANCE_REWARD
+        });
+
         IERC20(COLLATERAL_TOKEN_ADDRESS).approve(address(leverageTokenDeploymentBatcher), INITIAL_COLLATERAL_DEPOSIT);
-        (ILeverageToken leverageToken, IMorphoLendingAdapter lendingAdapter, ActionData memory depositData) =
-        leverageTokenDeploymentBatcher.deployLeverageTokenAndDeposit(
+        (ILeverageToken leverageToken, ActionData memory depositData) = leverageTokenDeploymentBatcher
+            .deployLeverageTokenAndDeposit(
             leverageTokenDeploymentParams,
             lendingAdapterDeploymentParams,
-            IRebalanceAdapterBase(address(rebalanceAdapterProxy)),
+            rebalanceAdapterDeploymentParams,
             INITIAL_COLLATERAL_DEPOSIT,
-            INITIAL_COLLATERAL_DEPOSIT / 2
+            INITIAL_COLLATERAL_DEPOSIT_MIN_SHARES
         );
 
         console.log("LeverageToken deployed at: ", address(leverageToken));
+
+        IMorphoLendingAdapter lendingAdapter =
+            IMorphoLendingAdapter(address(leverageManager.getLeverageTokenLendingAdapter(leverageToken)));
         console.log("LendingAdapter deployed at: ", address(lendingAdapter));
+
+        address rebalanceAdapterProxy = address(leverageManager.getLeverageTokenRebalanceAdapter(leverageToken));
+        console.log("RebalanceAdapter proxy deployed at: ", rebalanceAdapterProxy);
 
         require(Id.unwrap(lendingAdapter.morphoMarketId()) == Id.unwrap(MORPHO_MARKET_ID), "Invalid market");
 

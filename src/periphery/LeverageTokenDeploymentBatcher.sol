@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 // Dependency imports
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {UnsafeUpgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 
 // Internal imports
 import {ILeverageManager} from "../interfaces/ILeverageManager.sol";
@@ -11,7 +12,8 @@ import {ILeverageToken} from "../interfaces/ILeverageToken.sol";
 import {ILeverageTokenDeploymentBatcher} from "../interfaces/periphery/ILeverageTokenDeploymentBatcher.sol";
 import {IMorphoLendingAdapter} from "../interfaces/IMorphoLendingAdapter.sol";
 import {IMorphoLendingAdapterFactory} from "../interfaces/IMorphoLendingAdapterFactory.sol";
-import {IRebalanceAdapterBase} from "../interfaces/IRebalanceAdapterBase.sol";
+import {IRebalanceAdapter} from "../interfaces/IRebalanceAdapter.sol";
+import {RebalanceAdapter} from "../rebalance/RebalanceAdapter.sol";
 import {ActionData, LeverageTokenConfig} from "../types/DataTypes.sol";
 
 /**
@@ -22,8 +24,10 @@ import {ActionData, LeverageTokenConfig} from "../types/DataTypes.sol";
  * @custom:contact security@seamlessprotocol.com
  */
 contract LeverageTokenDeploymentBatcher is ILeverageTokenDeploymentBatcher {
+    /// @inheritdoc ILeverageTokenDeploymentBatcher
     ILeverageManager public immutable leverageManager;
 
+    /// @inheritdoc ILeverageTokenDeploymentBatcher
     IMorphoLendingAdapterFactory public immutable morphoLendingAdapterFactory;
 
     /// @notice Constructor
@@ -37,19 +41,41 @@ contract LeverageTokenDeploymentBatcher is ILeverageTokenDeploymentBatcher {
     function deployLeverageTokenAndDeposit(
         LeverageTokenDeploymentParams memory leverageTokenDeploymentParams,
         MorphoLendingAdapterDeploymentParams memory lendingAdapterDeploymentParams,
-        IRebalanceAdapterBase rebalanceAdapter,
+        RebalanceAdapterDeploymentParams memory rebalanceAdapterDeploymentParams,
         uint256 collateral,
         uint256 minShares
-    ) public returns (ILeverageToken, IMorphoLendingAdapter, ActionData memory) {
+    ) public returns (ILeverageToken, ActionData memory) {
         IMorphoLendingAdapter lendingAdapter = morphoLendingAdapterFactory.deployAdapter(
             lendingAdapterDeploymentParams.morphoMarketId,
             address(this),
             salt(msg.sender, lendingAdapterDeploymentParams.baseSalt)
         );
 
+        RebalanceAdapter.RebalanceAdapterInitParams memory rebalanceAdapterInitParams = RebalanceAdapter
+            .RebalanceAdapterInitParams({
+            owner: rebalanceAdapterDeploymentParams.owner,
+            authorizedCreator: address(this),
+            leverageManager: leverageManager,
+            minCollateralRatio: rebalanceAdapterDeploymentParams.minCollateralRatio,
+            targetCollateralRatio: rebalanceAdapterDeploymentParams.targetCollateralRatio,
+            maxCollateralRatio: rebalanceAdapterDeploymentParams.maxCollateralRatio,
+            auctionDuration: rebalanceAdapterDeploymentParams.auctionDuration,
+            initialPriceMultiplier: rebalanceAdapterDeploymentParams.initialPriceMultiplier,
+            minPriceMultiplier: rebalanceAdapterDeploymentParams.minPriceMultiplier,
+            preLiquidationCollateralRatioThreshold: rebalanceAdapterDeploymentParams.preLiquidationCollateralRatioThreshold,
+            rebalanceReward: rebalanceAdapterDeploymentParams.rebalanceReward
+        });
+
+        IRebalanceAdapter rebalanceAdapter = IRebalanceAdapter(
+            UnsafeUpgrades.deployUUPSProxy(
+                rebalanceAdapterDeploymentParams.implementation,
+                abi.encodeCall(RebalanceAdapter.initialize, (rebalanceAdapterInitParams))
+            )
+        );
+
         LeverageTokenConfig memory leverageTokenConfig = LeverageTokenConfig({
             lendingAdapter: lendingAdapter,
-            rebalanceAdapter: IRebalanceAdapterBase(rebalanceAdapter),
+            rebalanceAdapter: IRebalanceAdapter(rebalanceAdapter),
             mintTokenFee: leverageTokenDeploymentParams.mintTokenFee,
             redeemTokenFee: leverageTokenDeploymentParams.redeemTokenFee
         });
@@ -70,7 +96,7 @@ contract LeverageTokenDeploymentBatcher is ILeverageTokenDeploymentBatcher {
         SafeERC20.safeTransfer(leverageToken, msg.sender, depositData.shares);
         SafeERC20.safeTransfer(leverageTokenConfig.lendingAdapter.getDebtAsset(), msg.sender, depositData.debt);
 
-        return (leverageToken, lendingAdapter, depositData);
+        return (leverageToken, depositData);
     }
 
     /// @notice Given the `sender` and `baseSalt`, return the salt that will be used for deployment.
