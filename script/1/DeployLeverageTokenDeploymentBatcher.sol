@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
+// Forge imports
 import {Script, console} from "forge-std/Script.sol";
 
+/// Internal imports
 import {LeverageTokenDeploymentBatcher} from "src/periphery/LeverageTokenDeploymentBatcher.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IMorphoLendingAdapterFactory} from "src/interfaces/IMorphoLendingAdapterFactory.sol";

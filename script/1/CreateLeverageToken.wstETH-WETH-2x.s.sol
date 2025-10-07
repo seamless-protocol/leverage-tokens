@@ -3,7 +3,6 @@ pragma solidity ^0.8.26;
 
 import {Script, console} from "forge-std/Script.sol";
 
-import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 import {Id, MarketParams} from "@morpho-blue/interfaces/IMorpho.sol";
 import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -12,14 +11,11 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {IPreLiquidationRebalanceAdapter} from "src/interfaces/IPreLiquidationRebalanceAdapter.sol";
 import {ICollateralRatiosRebalanceAdapter} from "src/interfaces/ICollateralRatiosRebalanceAdapter.sol";
-import {RebalanceAdapter} from "src/rebalance/RebalanceAdapter.sol";
-import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IMorphoLendingAdapterFactory} from "src/interfaces/IMorphoLendingAdapterFactory.sol";
-import {ActionData, LeverageTokenConfig} from "src/types/DataTypes.sol";
+import {ActionData} from "src/types/DataTypes.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
-import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
 import {DeployConstants} from "./DeployConstants.sol";
 import {ILeverageTokenDeploymentBatcher} from "src/interfaces/periphery/ILeverageTokenDeploymentBatcher.sol";
 

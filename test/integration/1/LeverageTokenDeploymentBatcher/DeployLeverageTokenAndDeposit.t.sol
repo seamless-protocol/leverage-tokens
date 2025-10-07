@@ -2,7 +2,6 @@
 pragma solidity ^0.8.26;
 
 // Dependency imports
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 // Internal imports
@@ -11,7 +10,6 @@ import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {IRebalanceAdapter} from "src/interfaces/IRebalanceAdapter.sol";
 import {ILeverageTokenDeploymentBatcher} from "src/interfaces/periphery/ILeverageTokenDeploymentBatcher.sol";
-import {MorphoLendingAdapter} from "src/lending/MorphoLendingAdapter.sol";
 import {RebalanceAdapter} from "src/rebalance/RebalanceAdapter.sol";
 import {LeverageTokenDeploymentBatcherTest} from "./LeverageTokenDeploymentBatcher.t.sol";
 
