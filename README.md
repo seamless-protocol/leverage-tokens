@@ -100,9 +100,9 @@ To report any issues, please contact security@seamlessprotocol.com.
 
 ### Core
 
-- LeverageToken implementation: `0x057A2a1CC13A9Af430976af912A27A05DE537673`
+- LeverageToken implementation: `0x603Da735780e6bC7D04f3FB85C26dccCd4Ff0a82`
 - LeverageToken factory proxy: `0xE0b2e40EDeb53B96C923381509a25a615c1Abe57`
-- LeverageManager implementation: `0xeb0221bf6cdaa74c94129771d5b0c9a994bb2b7c`
+- LeverageManager implementation: `0xfE9101349354E278970489F935a54905DE2E1856`
 - LeverageManager proxy: `0x38Ba21C6Bf31dF1b1798FCEd07B4e9b07C5ec3a8`
 - MorphoLendingAdapterFactory: `0xDd33419F0c01879a23051edbcdA997A0f9E68e61`
 - MorphoLendingAdapter implementation: `0x585cc1c8AF5C8aD79C64ac66D264590A3Ff65C51`
@@ -110,6 +110,7 @@ To report any issues, please contact security@seamlessprotocol.com.
 
 ### Periphery
 
-- SwapAdapter: `0xfdF71E2c2B34cD1f8bb852e7c55E8b926Fe38942`
-- LeverageRouter: `0xDbA92fC3dc10a17b96b6E807a908155C389A887C`
-- PricingAdapter: `0x94E337608d6F3AFD4E5e1dE9Aaa0804e3ab92C4c`
+- MulticallExecutor: `0x9D04f65b58cED1fddef50AEc8b0b3d64fE64220E`
+- VeloraAdapter: `0x5C37EB148D4a261ACD101e2B997A0F163Fb3E351`
+- LeverageRouter: `0x00c66934EBCa0F2A845812bC368B230F6da11A5C`
+- PricingAdapter: `0xce05FbEd9260810Bdded179ADfdaf737BE7ded71`
