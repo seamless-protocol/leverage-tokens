@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+// Dependency imports
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {UnsafeUpgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 
+// Internal imports
 import {ILeverageManager} from "../interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "../interfaces/ILeverageToken.sol";
 import {ILeverageTokenDeploymentBatcher} from "../interfaces/periphery/ILeverageTokenDeploymentBatcher.sol";
@@ -12,7 +13,6 @@ import {IMorphoLendingAdapter} from "../interfaces/IMorphoLendingAdapter.sol";
 import {IMorphoLendingAdapterFactory} from "../interfaces/IMorphoLendingAdapterFactory.sol";
 import {IRebalanceAdapterBase} from "../interfaces/IRebalanceAdapterBase.sol";
 import {ActionData, LeverageTokenConfig} from "../types/DataTypes.sol";
-import {RebalanceAdapter} from "../rebalance/RebalanceAdapter.sol";
 
 /**
  * @dev The LeverageTokenDeploymentBatcher is a periphery contract that can be used to batch deployment of a LeverageToken
@@ -33,37 +33,18 @@ contract LeverageTokenDeploymentBatcher is ILeverageTokenDeploymentBatcher {
         morphoLendingAdapterFactory = _morphoLendingAdapterFactory;
     }
 
+    /// @inheritdoc ILeverageTokenDeploymentBatcher
     function deployLeverageTokenAndDeposit(
         LeverageTokenDeploymentParams memory leverageTokenDeploymentParams,
         MorphoLendingAdapterDeploymentParams memory lendingAdapterDeploymentParams,
-        RebalanceAdapterDeploymentParams memory rebalanceAdapterDeploymentParams,
+        IRebalanceAdapterBase rebalanceAdapter,
         uint256 collateral,
         uint256 minShares
-    ) public returns (ILeverageToken, ActionData memory) {
+    ) public returns (ILeverageToken, IMorphoLendingAdapter, ActionData memory) {
         IMorphoLendingAdapter lendingAdapter = morphoLendingAdapterFactory.deployAdapter(
             lendingAdapterDeploymentParams.morphoMarketId,
             address(this),
             salt(msg.sender, lendingAdapterDeploymentParams.baseSalt)
-        );
-
-        RebalanceAdapter.RebalanceAdapterInitParams memory rebalanceAdapterInitParams = RebalanceAdapter
-            .RebalanceAdapterInitParams({
-            owner: rebalanceAdapterDeploymentParams.owner,
-            authorizedCreator: address(this),
-            leverageManager: leverageManager,
-            minCollateralRatio: rebalanceAdapterDeploymentParams.minCollateralRatio,
-            targetCollateralRatio: rebalanceAdapterDeploymentParams.targetCollateralRatio,
-            maxCollateralRatio: rebalanceAdapterDeploymentParams.maxCollateralRatio,
-            auctionDuration: rebalanceAdapterDeploymentParams.auctionDuration,
-            initialPriceMultiplier: rebalanceAdapterDeploymentParams.initialPriceMultiplier,
-            minPriceMultiplier: rebalanceAdapterDeploymentParams.minPriceMultiplier,
-            preLiquidationCollateralRatioThreshold: rebalanceAdapterDeploymentParams.preLiquidationCollateralRatioThreshold,
-            rebalanceReward: rebalanceAdapterDeploymentParams.rebalanceReward
-        });
-
-        address rebalanceAdapter = UnsafeUpgrades.deployUUPSProxy(
-            rebalanceAdapterDeploymentParams.implementation,
-            abi.encodeCall(RebalanceAdapter.initialize, (rebalanceAdapterInitParams))
         );
 
         LeverageTokenConfig memory leverageTokenConfig = LeverageTokenConfig({
@@ -89,11 +70,11 @@ contract LeverageTokenDeploymentBatcher is ILeverageTokenDeploymentBatcher {
         SafeERC20.safeTransfer(leverageToken, msg.sender, depositData.shares);
         SafeERC20.safeTransfer(leverageTokenConfig.lendingAdapter.getDebtAsset(), msg.sender, depositData.debt);
 
-        return (leverageToken, depositData);
+        return (leverageToken, lendingAdapter, depositData);
     }
 
     /// @notice Given the `sender` and `baseSalt`, return the salt that will be used for deployment.
-    /// @param sender The address of the sender of the `deployAdapter` call.
+    /// @param sender The address of the sender.
     /// @param baseSalt The user-provided base salt.
     function salt(address sender, bytes32 baseSalt) internal pure returns (bytes32) {
         return keccak256(abi.encode(sender, baseSalt));

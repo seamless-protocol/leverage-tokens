@@ -21,6 +21,7 @@ import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
 import {DeployConstants} from "./DeployConstants.sol";
+import {ILeverageTokenDeploymentBatcher} from "src/interfaces/periphery/ILeverageTokenDeploymentBatcher.sol";
 
 contract CreateLeverageToken is Script {
     uint256 public constant WAD = 1e18;
@@ -28,6 +29,9 @@ contract CreateLeverageToken is Script {
     ILeverageManager public leverageManager = ILeverageManager(DeployConstants.LEVERAGE_MANAGER);
     IMorphoLendingAdapterFactory public lendingAdapterFactory =
         IMorphoLendingAdapterFactory(DeployConstants.LENDING_ADAPTER_FACTORY);
+
+    ILeverageTokenDeploymentBatcher public leverageTokenDeploymentBatcher =
+        ILeverageTokenDeploymentBatcher(DeployConstants.LEVERAGE_TOKEN_DEPLOYMENT_BATCHER);
 
     /// @dev Market ID for Morpho market that LT will be created on top of
     Id public MORPHO_MARKET_ID = Id.wrap(0xb8fc70e82bc5bb53e773626fcc6a23f7eefa036918d7ef216ecfb1950a94a85e);
@@ -92,7 +96,7 @@ contract CreateLeverageToken is Script {
                 (
                     RebalanceAdapter.RebalanceAdapterInitParams({
                         owner: DeployConstants.DEPLOYER,
-                        authorizedCreator: deployerAddress,
+                        authorizedCreator: address(leverageTokenDeploymentBatcher), // The LeverageTokenDeploymentBatcher must be allowed to use the rebalance adapter
                         leverageManager: leverageManager,
                         minCollateralRatio: MIN_COLLATERAL_RATIO,
                         targetCollateralRatio: TARGET_COLLATERAL_RATIO,
@@ -109,22 +113,32 @@ contract CreateLeverageToken is Script {
 
         console.log("RebalanceAdapter proxy deployed at: ", address(rebalanceAdapterProxy));
 
-        IMorphoLendingAdapter lendingAdapter =
-            lendingAdapterFactory.deployAdapter(MORPHO_MARKET_ID, deployerAddress, BASE_SALT);
-        console.log("LendingAdapter deployed at: ", address(lendingAdapter));
+        ILeverageTokenDeploymentBatcher.LeverageTokenDeploymentParams memory leverageTokenDeploymentParams =
+        ILeverageTokenDeploymentBatcher.LeverageTokenDeploymentParams({
+            leverageTokenName: LT_NAME,
+            leverageTokenSymbol: LT_SYMBOL,
+            mintTokenFee: MINT_TOKEN_FEE,
+            redeemTokenFee: REDEEM_TOKEN_FEE
+        });
 
-        ILeverageToken leverageToken = leverageManager.createNewLeverageToken(
-            LeverageTokenConfig({
-                lendingAdapter: ILendingAdapter(address(lendingAdapter)),
-                rebalanceAdapter: IRebalanceAdapterBase(address(rebalanceAdapterProxy)),
-                mintTokenFee: MINT_TOKEN_FEE,
-                redeemTokenFee: REDEEM_TOKEN_FEE
-            }),
-            LT_NAME,
-            LT_SYMBOL
+        ILeverageTokenDeploymentBatcher.MorphoLendingAdapterDeploymentParams memory lendingAdapterDeploymentParams =
+        ILeverageTokenDeploymentBatcher.MorphoLendingAdapterDeploymentParams({
+            morphoMarketId: MORPHO_MARKET_ID,
+            baseSalt: BASE_SALT
+        });
+
+        IERC20(COLLATERAL_TOKEN_ADDRESS).approve(address(leverageTokenDeploymentBatcher), INITIAL_COLLATERAL_DEPOSIT);
+        (ILeverageToken leverageToken, IMorphoLendingAdapter lendingAdapter, ActionData memory depositData) =
+        leverageTokenDeploymentBatcher.deployLeverageTokenAndDeposit(
+            leverageTokenDeploymentParams,
+            lendingAdapterDeploymentParams,
+            IRebalanceAdapterBase(address(rebalanceAdapterProxy)),
+            INITIAL_COLLATERAL_DEPOSIT,
+            INITIAL_COLLATERAL_DEPOSIT / 2
         );
 
         console.log("LeverageToken deployed at: ", address(leverageToken));
+        console.log("LendingAdapter deployed at: ", address(lendingAdapter));
 
         require(Id.unwrap(lendingAdapter.morphoMarketId()) == Id.unwrap(MORPHO_MARKET_ID), "Invalid market");
 
@@ -157,10 +171,6 @@ contract CreateLeverageToken is Script {
             minCollateralRatio >= preLiquidationThreshold,
             "Min collateral ratio is less than pre-liquidation collateral ratio threshold"
         );
-
-        IERC20(COLLATERAL_TOKEN_ADDRESS).approve(address(leverageManager), INITIAL_COLLATERAL_DEPOSIT);
-        ActionData memory depositData =
-            leverageManager.deposit(leverageToken, INITIAL_COLLATERAL_DEPOSIT, INITIAL_COLLATERAL_DEPOSIT / 2);
 
         console.log("Performed initial deposit to leverage token");
         console.log("  Collateral: ", depositData.collateral);
