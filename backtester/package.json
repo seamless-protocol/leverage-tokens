@@ -7,6 +7,8 @@
     "dev": "ts-node src/index.ts",
     "extract": "ts-node src/data-extraction/extract.ts",
     "backtest": "ts-node src/simulation/run-backtest.ts",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
     "build": "tsc",
     "start": "node dist/index.js"
   },
@@ -16,8 +18,10 @@
   "packageManager": "pnpm@10.15.1",
   "devDependencies": {
     "@types/node": "^24.6.2",
+    "@vitest/ui": "^3.2.4",
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
   },
   "dependencies": {
     "binance-api-node": "^0.12.9"

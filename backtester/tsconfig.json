@@ -39,5 +39,10 @@
     "resolveJsonModule": true,
     "moduleDetection": "force",
     "skipLibCheck": true,
-  }
+  },
+  "exclude": [
+    "node_modules",
+    "dist",
+    "vitest.config.ts"
+  ]
 }
