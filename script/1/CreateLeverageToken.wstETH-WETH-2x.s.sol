@@ -102,7 +102,7 @@ contract CreateLeverageToken is Script {
 
         ILeverageTokenDeploymentBatcher.RebalanceAdapterDeploymentParams memory rebalanceAdapterDeploymentParams =
         ILeverageTokenDeploymentBatcher.RebalanceAdapterDeploymentParams({
-            implementation: DeployConstants.REBALANCE_ADAPTER_IMPLEMENTATION,
+            implementation: DeployConstants.DUTCH_AUCTION_PRE_LIQUIDATION_COLLATERAL_RATIOS_REBALANCE_ADAPTER_IMPLEMENTATION,
             owner: DeployConstants.DEPLOYER,
             minCollateralRatio: MIN_COLLATERAL_RATIO,
             targetCollateralRatio: TARGET_COLLATERAL_RATIO,
