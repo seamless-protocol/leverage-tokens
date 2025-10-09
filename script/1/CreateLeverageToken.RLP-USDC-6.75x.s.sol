@@ -30,29 +30,29 @@ contract CreateLeverageToken is Script {
         ILeverageTokenDeploymentBatcher(DeployConstants.LEVERAGE_TOKEN_DEPLOYMENT_BATCHER);
 
     /// @dev Market ID for Morpho market that LT will be created on top of
-    Id public MORPHO_MARKET_ID = Id.wrap(0xb8fc70e82bc5bb53e773626fcc6a23f7eefa036918d7ef216ecfb1950a94a85e);
+    Id public MORPHO_MARKET_ID = Id.wrap(0xe1b65304edd8ceaea9b629df4c3c926a37d1216e27900505c04f14b2ed279f33);
     /// @dev Salt that will be used to deploy the lending adapter. Should be unique for deployer. Update after each deployment.
     bytes32 public BASE_SALT = bytes32(vm.randomUint());
 
     /// @dev Minimum collateral ratio for the LT on 18 decimals
-    uint256 public MIN_COLLATERAL_RATIO = 1.99009901e18;
+    uint256 public MIN_COLLATERAL_RATIO = 1.170068027e18;
     /// @dev Target collateral ratio for the LT on 18 decimals
-    uint256 public TARGET_COLLATERAL_RATIO = 2e18;
+    uint256 public TARGET_COLLATERAL_RATIO = 1.173913043e18;
     /// @dev Maximum collateral ratio for the LT on 18 decimals
-    uint256 public MAX_COLLATERAL_RATIO = 2.00010001e18;
+    uint256 public MAX_COLLATERAL_RATIO = 1.17452007e18;
     /// @dev Duration of the dutch auction for the LT
-    uint120 public AUCTION_DURATION = 1 hours;
+    uint120 public AUCTION_DURATION = 6 hours;
     /// @dev Initial oracle price multiplier on Dutch auction on 18 decimals. In percentage.
     uint256 public INITIAL_PRICE_MULTIPLIER = 1.01e18;
     /// @dev Minimum oracle price multiplier on Dutch auction on 18 decimals. In percentage.
-    uint256 public MIN_PRICE_MULTIPLIER = 0.999e18;
+    uint256 public MIN_PRICE_MULTIPLIER = 0.99e18;
     /// @dev Collateral ratio threshold for the pre-liquidation rebalance adapter
     /// @dev When collateral ratio falls below this value, rebalance adapter will allow rebalance without Dutch auction for special premium
-    uint256 public PRE_LIQUIDATION_COLLATERAL_RATIO_THRESHOLD = 1.038461538e18;
+    uint256 public PRE_LIQUIDATION_COLLATERAL_RATIO_THRESHOLD = 1.166666667e18;
     /// @dev Rebalance reward for the rebalance adapter, 100% = 10000
     /// @dev Represents reward for pre liquidation rebalance, relative to the liquidation penalty. 50_00 means 50% of liquidation penalty
     /// @dev Liquidation penalty is relative to the lltv on Morpho market.
-    uint256 public REBALANCE_REWARD = 30_00;
+    uint256 public REBALANCE_REWARD = 50_00;
 
     /// @dev Token fee when minting. 100% = 10000
     uint256 public MINT_TOKEN_FEE = 0;
@@ -60,20 +60,20 @@ contract CreateLeverageToken is Script {
     uint256 public REDEEM_TOKEN_FEE = 10;
 
     /// @dev Name of the LT
-    string public LT_NAME = "wstETH / WETH 2x Leverage Token";
+    string public LT_NAME = "RLP / USDC 6.75x Leverage Token";
     /// @dev Symbol of the LT
-    string public LT_SYMBOL = "WSTETH-WETH-2x";
+    string public LT_SYMBOL = "RLP-USDC-6.75x";
 
     /// @dev Initial collateral deposit for the LT
-    uint256 public INITIAL_COLLATERAL_DEPOSIT = 0.001 * 1e18;
-    uint256 public INITIAL_COLLATERAL_DEPOSIT_MIN_SHARES = INITIAL_COLLATERAL_DEPOSIT / 2;
+    uint256 public INITIAL_COLLATERAL_DEPOSIT = 5e18;
+    uint256 public INITIAL_COLLATERAL_DEPOSIT_MIN_SHARES = 0.740740739005486967e18;
 
-    address public COLLATERAL_TOKEN_ADDRESS = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
-    address public DEBT_TOKEN_ADDRESS = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-    string public COLLATERAL_TOKEN_NAME = "Wrapped liquid staked Ether 2.0";
-    string public COLLATERAL_TOKEN_SYMBOL = "wstETH";
-    string public DEBT_TOKEN_NAME = "Wrapped Ether";
-    string public DEBT_TOKEN_SYMBOL = "WETH";
+    address public COLLATERAL_TOKEN_ADDRESS = 0x4956b52aE2fF65D74CA2d61207523288e4528f96;
+    address public DEBT_TOKEN_ADDRESS = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    string public COLLATERAL_TOKEN_NAME = "Resolv Liquidity Provider Token";
+    string public COLLATERAL_TOKEN_SYMBOL = "RLP";
+    string public DEBT_TOKEN_NAME = "USD Coin";
+    string public DEBT_TOKEN_SYMBOL = "USDC";
 
     function run() public {
         console.log("BlockNumber: ", block.number);
