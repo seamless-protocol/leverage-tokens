@@ -3,7 +3,6 @@ pragma solidity ^0.8.26;
 
 import {Script, console} from "forge-std/Script.sol";
 
-import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 import {Id, MarketParams} from "@morpho-blue/interfaces/IMorpho.sol";
 import {IMorpho} from "@morpho-blue/interfaces/IMorpho.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -12,15 +11,13 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {IPreLiquidationRebalanceAdapter} from "src/interfaces/IPreLiquidationRebalanceAdapter.sol";
 import {ICollateralRatiosRebalanceAdapter} from "src/interfaces/ICollateralRatiosRebalanceAdapter.sol";
-import {RebalanceAdapter} from "src/rebalance/RebalanceAdapter.sol";
-import {ILendingAdapter} from "src/interfaces/ILendingAdapter.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IMorphoLendingAdapterFactory} from "src/interfaces/IMorphoLendingAdapterFactory.sol";
-import {ActionData, LeverageTokenConfig} from "src/types/DataTypes.sol";
+import {ActionData} from "src/types/DataTypes.sol";
 import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
-import {IRebalanceAdapterBase} from "src/interfaces/IRebalanceAdapterBase.sol";
 import {DeployConstants} from "./DeployConstants.sol";
+import {ILeverageTokenDeploymentBatcher} from "src/interfaces/periphery/ILeverageTokenDeploymentBatcher.sol";
 
 contract CreateLeverageToken is Script {
     uint256 public constant WAD = 1e18;
@@ -28,6 +25,9 @@ contract CreateLeverageToken is Script {
     ILeverageManager public leverageManager = ILeverageManager(DeployConstants.LEVERAGE_MANAGER);
     IMorphoLendingAdapterFactory public lendingAdapterFactory =
         IMorphoLendingAdapterFactory(DeployConstants.LENDING_ADAPTER_FACTORY);
+
+    ILeverageTokenDeploymentBatcher public leverageTokenDeploymentBatcher =
+        ILeverageTokenDeploymentBatcher(DeployConstants.LEVERAGE_TOKEN_DEPLOYMENT_BATCHER);
 
     /// @dev Market ID for Morpho market that LT will be created on top of
     Id public MORPHO_MARKET_ID = Id.wrap(0xb8fc70e82bc5bb53e773626fcc6a23f7eefa036918d7ef216ecfb1950a94a85e);
@@ -66,6 +66,7 @@ contract CreateLeverageToken is Script {
 
     /// @dev Initial collateral deposit for the LT
     uint256 public INITIAL_COLLATERAL_DEPOSIT = 0.001 * 1e18;
+    uint256 public INITIAL_COLLATERAL_DEPOSIT_MIN_SHARES = INITIAL_COLLATERAL_DEPOSIT / 2;
 
     address public COLLATERAL_TOKEN_ADDRESS = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
     address public DEBT_TOKEN_ADDRESS = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
@@ -85,46 +86,52 @@ contract CreateLeverageToken is Script {
         address deployerAddress = msg.sender;
         console.log("DeployerAddress: ", deployerAddress);
 
-        address rebalanceAdapterProxy = Upgrades.deployUUPSProxy(
-            "RebalanceAdapter.sol",
-            abi.encodeCall(
-                RebalanceAdapter.initialize,
-                (
-                    RebalanceAdapter.RebalanceAdapterInitParams({
-                        owner: DeployConstants.DEPLOYER,
-                        authorizedCreator: deployerAddress,
-                        leverageManager: leverageManager,
-                        minCollateralRatio: MIN_COLLATERAL_RATIO,
-                        targetCollateralRatio: TARGET_COLLATERAL_RATIO,
-                        maxCollateralRatio: MAX_COLLATERAL_RATIO,
-                        auctionDuration: AUCTION_DURATION,
-                        initialPriceMultiplier: INITIAL_PRICE_MULTIPLIER,
-                        minPriceMultiplier: MIN_PRICE_MULTIPLIER,
-                        preLiquidationCollateralRatioThreshold: PRE_LIQUIDATION_COLLATERAL_RATIO_THRESHOLD,
-                        rebalanceReward: REBALANCE_REWARD
-                    })
-                )
-            )
-        );
+        ILeverageTokenDeploymentBatcher.LeverageTokenDeploymentParams memory leverageTokenDeploymentParams =
+        ILeverageTokenDeploymentBatcher.LeverageTokenDeploymentParams({
+            leverageTokenName: LT_NAME,
+            leverageTokenSymbol: LT_SYMBOL,
+            mintTokenFee: MINT_TOKEN_FEE,
+            redeemTokenFee: REDEEM_TOKEN_FEE
+        });
 
-        console.log("RebalanceAdapter proxy deployed at: ", address(rebalanceAdapterProxy));
+        ILeverageTokenDeploymentBatcher.MorphoLendingAdapterDeploymentParams memory lendingAdapterDeploymentParams =
+        ILeverageTokenDeploymentBatcher.MorphoLendingAdapterDeploymentParams({
+            morphoMarketId: MORPHO_MARKET_ID,
+            baseSalt: BASE_SALT
+        });
 
-        IMorphoLendingAdapter lendingAdapter =
-            lendingAdapterFactory.deployAdapter(MORPHO_MARKET_ID, deployerAddress, BASE_SALT);
-        console.log("LendingAdapter deployed at: ", address(lendingAdapter));
+        ILeverageTokenDeploymentBatcher.RebalanceAdapterDeploymentParams memory rebalanceAdapterDeploymentParams =
+        ILeverageTokenDeploymentBatcher.RebalanceAdapterDeploymentParams({
+            implementation: DeployConstants.DUTCH_AUCTION_PRE_LIQUIDATION_COLLATERAL_RATIOS_REBALANCE_ADAPTER_IMPLEMENTATION,
+            owner: DeployConstants.DEPLOYER,
+            minCollateralRatio: MIN_COLLATERAL_RATIO,
+            targetCollateralRatio: TARGET_COLLATERAL_RATIO,
+            maxCollateralRatio: MAX_COLLATERAL_RATIO,
+            auctionDuration: AUCTION_DURATION,
+            initialPriceMultiplier: INITIAL_PRICE_MULTIPLIER,
+            minPriceMultiplier: MIN_PRICE_MULTIPLIER,
+            preLiquidationCollateralRatioThreshold: PRE_LIQUIDATION_COLLATERAL_RATIO_THRESHOLD,
+            rebalanceReward: REBALANCE_REWARD
+        });
 
-        ILeverageToken leverageToken = leverageManager.createNewLeverageToken(
-            LeverageTokenConfig({
-                lendingAdapter: ILendingAdapter(address(lendingAdapter)),
-                rebalanceAdapter: IRebalanceAdapterBase(address(rebalanceAdapterProxy)),
-                mintTokenFee: MINT_TOKEN_FEE,
-                redeemTokenFee: REDEEM_TOKEN_FEE
-            }),
-            LT_NAME,
-            LT_SYMBOL
+        IERC20(COLLATERAL_TOKEN_ADDRESS).approve(address(leverageTokenDeploymentBatcher), INITIAL_COLLATERAL_DEPOSIT);
+        (ILeverageToken leverageToken, ActionData memory depositData) = leverageTokenDeploymentBatcher
+            .deployLeverageTokenAndDeposit(
+            leverageTokenDeploymentParams,
+            lendingAdapterDeploymentParams,
+            rebalanceAdapterDeploymentParams,
+            INITIAL_COLLATERAL_DEPOSIT,
+            INITIAL_COLLATERAL_DEPOSIT_MIN_SHARES
         );
 
         console.log("LeverageToken deployed at: ", address(leverageToken));
+
+        IMorphoLendingAdapter lendingAdapter =
+            IMorphoLendingAdapter(address(leverageManager.getLeverageTokenLendingAdapter(leverageToken)));
+        console.log("LendingAdapter deployed at: ", address(lendingAdapter));
+
+        address rebalanceAdapterProxy = address(leverageManager.getLeverageTokenRebalanceAdapter(leverageToken));
+        console.log("RebalanceAdapter proxy deployed at: ", rebalanceAdapterProxy);
 
         require(Id.unwrap(lendingAdapter.morphoMarketId()) == Id.unwrap(MORPHO_MARKET_ID), "Invalid market");
 
@@ -157,10 +164,6 @@ contract CreateLeverageToken is Script {
             minCollateralRatio >= preLiquidationThreshold,
             "Min collateral ratio is less than pre-liquidation collateral ratio threshold"
         );
-
-        IERC20(COLLATERAL_TOKEN_ADDRESS).approve(address(leverageManager), INITIAL_COLLATERAL_DEPOSIT);
-        ActionData memory depositData =
-            leverageManager.deposit(leverageToken, INITIAL_COLLATERAL_DEPOSIT, INITIAL_COLLATERAL_DEPOSIT / 2);
 
         console.log("Performed initial deposit to leverage token");
         console.log("  Collateral: ", depositData.collateral);
