@@ -35,17 +35,17 @@ contract CreateLeverageToken is Script {
     bytes32 public BASE_SALT = bytes32(vm.randomUint());
 
     /// @dev Minimum collateral ratio for the LT on 18 decimals
-    uint256 public MIN_COLLATERAL_RATIO = 1.99009901e18;
+    uint256 public MIN_COLLATERAL_RATIO = 1.041152263e18;
     /// @dev Target collateral ratio for the LT on 18 decimals
-    uint256 public TARGET_COLLATERAL_RATIO = 2e18;
+    uint256 public TARGET_COLLATERAL_RATIO = 1.041666667e18;
     /// @dev Maximum collateral ratio for the LT on 18 decimals
-    uint256 public MAX_COLLATERAL_RATIO = 2.00010001e18;
+    uint256 public MAX_COLLATERAL_RATIO = 1.041701418e18;
     /// @dev Duration of the dutch auction for the LT
-    uint120 public AUCTION_DURATION = 1 hours;
+    uint120 public AUCTION_DURATION = 6 hours;
     /// @dev Initial oracle price multiplier on Dutch auction on 18 decimals. In percentage.
     uint256 public INITIAL_PRICE_MULTIPLIER = 1.01e18;
     /// @dev Minimum oracle price multiplier on Dutch auction on 18 decimals. In percentage.
-    uint256 public MIN_PRICE_MULTIPLIER = 0.999e18;
+    uint256 public MIN_PRICE_MULTIPLIER = 0.998e18;
     /// @dev Collateral ratio threshold for the pre-liquidation rebalance adapter
     /// @dev When collateral ratio falls below this value, rebalance adapter will allow rebalance without Dutch auction for special premium
     uint256 public PRE_LIQUIDATION_COLLATERAL_RATIO_THRESHOLD = 1.038461538e18;
@@ -57,16 +57,16 @@ contract CreateLeverageToken is Script {
     /// @dev Token fee when minting. 100% = 10000
     uint256 public MINT_TOKEN_FEE = 0;
     /// @dev Token fee when redeeming. 100% = 10000
-    uint256 public REDEEM_TOKEN_FEE = 10;
+    uint256 public REDEEM_TOKEN_FEE = 0;
 
     /// @dev Name of the LT
-    string public LT_NAME = "wstETH / WETH 2x Leverage Token";
+    string public LT_NAME = "wstETH / ETH 25x Leverage Token";
     /// @dev Symbol of the LT
-    string public LT_SYMBOL = "WSTETH-WETH-2x";
+    string public LT_SYMBOL = "WSTETH-ETH-25x";
 
     /// @dev Initial collateral deposit for the LT
     uint256 public INITIAL_COLLATERAL_DEPOSIT = 0.001 * 1e18;
-    uint256 public INITIAL_COLLATERAL_DEPOSIT_MIN_SHARES = INITIAL_COLLATERAL_DEPOSIT / 2;
+    uint256 public INITIAL_COLLATERAL_DEPOSIT_MIN_SHARES = 0.000040000000307199e18;
 
     address public COLLATERAL_TOKEN_ADDRESS = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
     address public DEBT_TOKEN_ADDRESS = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;

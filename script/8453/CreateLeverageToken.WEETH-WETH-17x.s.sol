@@ -38,7 +38,7 @@ contract CreateLeverageToken is Script {
     /// @dev Market ID for Morpho market that LT will be created on top of
     Id public MORPHO_MARKET_ID = Id.wrap(0xfd0895ba253889c243bf59bc4b96fd1e06d68631241383947b04d1c293a0cfea);
     /// @dev Salt that will be used to deploy the lending adapter. Should be unique for deployer. Update after each deployment.
-    bytes32 public BASE_SALT = bytes32(uint256(1));
+    bytes32 public BASE_SALT = bytes32(vm.randomUint());
 
     /// @dev Minimum collateral ratio for the LT on 18 decimals
     uint256 public MIN_COLLATERAL_RATIO = 1.06135e18;
