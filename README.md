@@ -88,6 +88,7 @@ To report any issues, please contact security@seamlessprotocol.com.
 - LeverageManager proxy: `0x5C37EB148D4a261ACD101e2B997A0F163Fb3E351`
 - MorphoLendingAdapterFactory: `0xce05FbEd9260810Bdded179ADfdaf737BE7ded71`
 - MorphoLendingAdapter implementation: `0x00c66934EBCa0F2A845812bC368B230F6da11A5C`
+- Guardian: `0x90E8C75e2917E3C2F284F6922Df6c16F7C03123c`
 
 ### Periphery
 
