@@ -95,6 +95,7 @@ To report any issues, please contact security@seamlessprotocol.com.
 - VeloraAdapter: `0xc4E5812976279cBcec943A6a148C95eAAC7Db6BA`
 - LeverageRouter: `0xb0764dE7eeF0aC69855C431334B7BC51A96E6DbA`
 - PricingAdapter: `0x44CCEBEA0dAc17105e91a59E182f65f8D176c88f`
+- LeverageTokenDeploymentBatcher: `0x4466D52b714Ef32657db89ec61FAB1b7E30A0352`
 
 ## Deployed Contracts - Base Mainnet
 
