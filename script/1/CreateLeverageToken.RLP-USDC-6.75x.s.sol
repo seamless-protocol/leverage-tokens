@@ -57,7 +57,7 @@ contract CreateLeverageToken is Script {
     /// @dev Token fee when minting. 100% = 10000
     uint256 public MINT_TOKEN_FEE = 0;
     /// @dev Token fee when redeeming. 100% = 10000
-    uint256 public REDEEM_TOKEN_FEE = 10;
+    uint256 public REDEEM_TOKEN_FEE = 0;
 
     /// @dev Name of the LT
     string public LT_NAME = "RLP / USDC 6.75x Leverage Token";
