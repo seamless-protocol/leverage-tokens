@@ -88,6 +88,7 @@ To report any issues, please contact security@seamlessprotocol.com.
 - LeverageManager proxy: `0x5C37EB148D4a261ACD101e2B997A0F163Fb3E351`
 - MorphoLendingAdapterFactory: `0xce05FbEd9260810Bdded179ADfdaf737BE7ded71`
 - MorphoLendingAdapter implementation: `0x00c66934EBCa0F2A845812bC368B230F6da11A5C`
+- Guardian: `0x90E8C75e2917E3C2F284F6922Df6c16F7C03123c`
 
 ### Periphery
 
@@ -95,6 +96,7 @@ To report any issues, please contact security@seamlessprotocol.com.
 - VeloraAdapter: `0xc4E5812976279cBcec943A6a148C95eAAC7Db6BA`
 - LeverageRouter: `0xb0764dE7eeF0aC69855C431334B7BC51A96E6DbA`
 - PricingAdapter: `0x44CCEBEA0dAc17105e91a59E182f65f8D176c88f`
+- LeverageTokenDeploymentBatcher: `0x4466D52b714Ef32657db89ec61FAB1b7E30A0352`
 
 ## Deployed Contracts - Base Mainnet
 
