@@ -8,6 +8,7 @@ import {Script, console} from "forge-std/Script.sol";
 import {BeaconProxyFactory} from "src/BeaconProxyFactory.sol";
 import {LeverageManager} from "src/LeverageManager.sol";
 import {DeployConstants} from "./DeployConstants.sol";
+import {RebalanceAdapter} from "src/rebalance/RebalanceAdapter.sol";
 
 /// @notice This script transfers admin, fee manager, and upgrader roles to new addresses, and updates the treasury. It does the following:
 ///   - Updates the treasury for the LeverageManager
@@ -23,16 +24,20 @@ import {DeployConstants} from "./DeployConstants.sol";
 /// @dev The `newAdmin`, `newFeeManager`, `newTreasury`, and `newUpgrader` addresses must be set in the script to the addresses to transfer the roles to.
 contract TransferRolesAndTreasury is Script {
     /// @dev Address to grant the admin role to for the LeverageManager and the owner of the LeverageTokenFactory
-    address public newAdmin = address(0x0000000000000000000000000000000000000000);
+    address public newAdmin = address(0x90E8C75e2917E3C2F284F6922Df6c16F7C03123c);
 
     /// @dev Address to grant the fee manager role to for the LeverageManager
-    address public newFeeManager = address(0x0000000000000000000000000000000000000000);
+    address public newFeeManager = address(0x90E8C75e2917E3C2F284F6922Df6c16F7C03123c);
 
     /// @dev Address to set the treasury to for the LeverageManager
-    address public newTreasury = address(0x0000000000000000000000000000000000000000);
+    address public newTreasury = address(0x90E8C75e2917E3C2F284F6922Df6c16F7C03123c);
 
     /// @dev Address to grant the upgrader role to for the LeverageManager
-    address public newUpgrader = address(0x0000000000000000000000000000000000000000);
+    address public newUpgrader = address(0x90E8C75e2917E3C2F284F6922Df6c16F7C03123c);
+
+    RebalanceAdapter wstEthEth2xRebalanceAdapter = RebalanceAdapter(0x0a4490233Fd6Ea02873af11c744d286DC3d6C127);
+    RebalanceAdapter wstEthEth25xRebalanceAdapter = RebalanceAdapter(0x42fc033435F4640AfFeD1d5cf6F3bbe240D081Af);
+    RebalanceAdapter rlpUSDCRebalanceAdapter = RebalanceAdapter(0x5E6b01ca7a604F0C7b5A97B7dE6D2D46d9C30110);
 
     function run() public {
         console.log("BlockNumber: ", block.number);
@@ -112,6 +117,21 @@ contract TransferRolesAndTreasury is Script {
         leverageTokenFactory.transferOwnership(newAdmin);
         require(leverageTokenFactory.owner() == newAdmin, "LeverageTokenFactory ownership not transferred to new admin");
         console.log("LeverageTokenFactory ownership transferred to: ", newAdmin);
+
+        // Transfer ownership of the wstETH-ETH 2x RebalanceAdapter to the new admin
+        wstEthEth2xRebalanceAdapter.transferOwnership(newAdmin);
+        require(wstEthEth2xRebalanceAdapter.owner() == newAdmin, "wstETH-ETH 2x RebalanceAdapter ownership not transferred to new admin");
+        console.log("wstETH-ETH 2x RebalanceAdapter ownership transferred to: ", newAdmin);
+
+        // Transfer ownership of the wstETH-ETH 25x RebalanceAdapter to the new admin
+        wstEthEth25xRebalanceAdapter.transferOwnership(newAdmin);
+        require(wstEthEth25xRebalanceAdapter.owner() == newAdmin, "wstETH-ETH 25x RebalanceAdapter ownership not transferred to new admin");
+        console.log("wstETH-ETH 25x RebalanceAdapter ownership transferred to: ", newAdmin);
+
+        // Transfer ownership of the rlp RebalanceAdapter to the new admin
+        rlpUSDCRebalanceAdapter.transferOwnership(newAdmin);
+        require(rlpUSDCRebalanceAdapter.owner() == newAdmin, "rlp-USDC-6.75x RebalanceAdapter ownership not transferred to new admin");
+        console.log("rlp-ETH-6.75x RebalanceAdapter ownership transferred to: ", newAdmin);
 
         vm.stopBroadcast();
     }
