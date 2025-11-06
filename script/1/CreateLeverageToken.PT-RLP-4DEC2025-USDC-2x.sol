@@ -86,9 +86,6 @@ contract CreateLeverageToken is Script {
         address deployerAddress = msg.sender;
         console.log("DeployerAddress: ", deployerAddress);
 
-        address guardianAddress = DeployConstants.GUARDIAN;
-        console.log("GuardianAddress: ", guardianAddress);
-
         ILeverageTokenDeploymentBatcher.LeverageTokenDeploymentParams memory leverageTokenDeploymentParams =
             ILeverageTokenDeploymentBatcher.LeverageTokenDeploymentParams({
                 leverageTokenName: LT_NAME,
@@ -105,7 +102,7 @@ contract CreateLeverageToken is Script {
         ILeverageTokenDeploymentBatcher.RebalanceAdapterDeploymentParams memory rebalanceAdapterDeploymentParams =
             ILeverageTokenDeploymentBatcher.RebalanceAdapterDeploymentParams({
                 implementation: DeployConstants.DUTCH_AUCTION_PRE_LIQUIDATION_COLLATERAL_RATIOS_REBALANCE_ADAPTER_IMPLEMENTATION,
-                owner: DeployConstants.GUARDIAN,
+                owner: DeployConstants.DEPLOYER,
                 minCollateralRatio: MIN_COLLATERAL_RATIO,
                 targetCollateralRatio: TARGET_COLLATERAL_RATIO,
                 maxCollateralRatio: MAX_COLLATERAL_RATIO,
