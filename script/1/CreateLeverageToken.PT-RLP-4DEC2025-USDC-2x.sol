@@ -45,7 +45,7 @@ contract CreateLeverageToken is Script {
     /// @dev Initial oracle price multiplier on Dutch auction on 18 decimals. In percentage.
     uint256 public INITIAL_PRICE_MULTIPLIER = 1.01e18;
     /// @dev Minimum oracle price multiplier on Dutch auction on 18 decimals. In percentage.
-    uint256 public MIN_PRICE_MULTIPLIER = 0.99e18;
+    uint256 public MIN_PRICE_MULTIPLIER = 0.96e18;
     /// @dev Collateral ratio threshold for the pre-liquidation rebalance adapter
     /// @dev When collateral ratio falls below this value, rebalance adapter will allow rebalance without Dutch auction for special premium
     uint256 public PRE_LIQUIDATION_COLLATERAL_RATIO_THRESHOLD = 1.166666667e18;
