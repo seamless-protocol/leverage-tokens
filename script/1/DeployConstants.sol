@@ -3,6 +3,7 @@ pragma solidity ^0.8.26;
 
 library DeployConstants {
     address public constant DEPLOYER = 0x3aA518Bd9ee447E3F71c01B69A0d5d49C534E05F;
+    address public constant GUARDIAN = 0x90E8C75e2917E3C2F284F6922Df6c16F7C03123c;
 
     address public constant MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
 
