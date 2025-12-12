@@ -39,7 +39,7 @@ contract CreateLeverageToken is Script {
     /// @dev Target collateral ratio for the LT on 18 decimals
     uint256 public TARGET_COLLATERAL_RATIO = 1.1e18;
     /// @dev Maximum collateral ratio for the LT on 18 decimals
-    uint256 public MAX_COLLATERAL_RATIO = 1.101010101e18;
+    uint256 public MAX_COLLATERAL_RATIO = 1.100502513e18;
     /// @dev Duration of the dutch auction for the LT
     uint120 public AUCTION_DURATION = 1 hours;
     /// @dev Initial oracle price multiplier on Dutch auction on 18 decimals. In percentage.
