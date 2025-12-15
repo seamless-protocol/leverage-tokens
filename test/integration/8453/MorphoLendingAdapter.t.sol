@@ -89,7 +89,8 @@ contract MorphoLendingAdapterTest is IntegrationTestBase, MorphoLendingAdapterTe
     }
 
     /// forge-config: default.fuzz.runs = 1
-    function testForkFuzz_addCollateral(address sender, uint128 amount) public {
+    function testForkFuzz_addCollateral(uint128 amount) public {
+        address sender = makeAddr("sender");
         amount = uint128(bound(amount, 1, type(uint128).max));
 
         Market memory marketBefore = MORPHO.market(MARKET_ID);
@@ -181,8 +182,8 @@ contract MorphoLendingAdapterTest is IntegrationTestBase, MorphoLendingAdapterTe
     }
 
     /// forge-config: default.fuzz.runs = 1
-    function testForkFuzz_repay(address caller, uint128 debtBefore, uint128 debtToRepay) public {
-        vm.assume(caller != address(0));
+    function testForkFuzz_repay(uint128 debtBefore, uint128 debtToRepay) public {
+        address caller = makeAddr("caller");
 
         uint256 totalSupplyAssetsBefore =
             MorphoBalancesLib.expectedTotalSupplyAssets(MORPHO, MORPHO.idToMarketParams(MARKET_ID));
