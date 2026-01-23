@@ -18,6 +18,7 @@ import {IMorphoLendingAdapter} from "src/interfaces/IMorphoLendingAdapter.sol";
 import {ILeverageToken} from "src/interfaces/ILeverageToken.sol";
 import {DeployConstants} from "./DeployConstants.sol";
 import {ILeverageTokenDeploymentBatcherCow} from "src/interfaces/periphery/ILeverageTokenDeploymentBatcherCow.sol";
+import {RebalanceAdapterCow} from "src/rebalance/RebalanceAdapterCow.sol";
 
 contract CreateLeverageToken is Script {
     uint256 public constant WAD = 1e18;
@@ -87,6 +88,9 @@ contract CreateLeverageToken is Script {
         address deployerAddress = msg.sender;
         console.log("DeployerAddress: ", deployerAddress);
 
+        RebalanceAdapterCow rebalanceAdapterImplementation = new RebalanceAdapterCow();
+        console.log("RebalanceAdapterCow implementation deployed at: ", address(rebalanceAdapterImplementation));
+
         ILeverageTokenDeploymentBatcherCow.LeverageTokenDeploymentParams memory leverageTokenDeploymentParams =
             ILeverageTokenDeploymentBatcherCow.LeverageTokenDeploymentParams({
                 leverageTokenName: LT_NAME,
@@ -102,7 +106,7 @@ contract CreateLeverageToken is Script {
 
         ILeverageTokenDeploymentBatcherCow.RebalanceAdapterDeploymentParams memory rebalanceAdapterDeploymentParams =
             ILeverageTokenDeploymentBatcherCow.RebalanceAdapterDeploymentParams({
-                implementation: DeployConstants.DUTCH_AUCTION_PRE_LIQUIDATION_COLLATERAL_RATIOS_REBALANCE_ADAPTER_IMPLEMENTATION,
+                implementation: address(rebalanceAdapterImplementation),
                 owner: DeployConstants.DEPLOYER,
                 minCollateralRatio: MIN_COLLATERAL_RATIO,
                 targetCollateralRatio: TARGET_COLLATERAL_RATIO,
