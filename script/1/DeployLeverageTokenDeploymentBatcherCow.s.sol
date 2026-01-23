@@ -1,0 +1,33 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.26;
+
+// Forge imports
+import {Script, console} from "forge-std/Script.sol";
+
+/// Internal imports
+import {LeverageTokenDeploymentBatcherCow} from "src/periphery/LeverageTokenDeploymentBatcherCow.sol";
+import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
+import {IMorphoLendingAdapterFactory} from "src/interfaces/IMorphoLendingAdapterFactory.sol";
+import {DeployConstants} from "./DeployConstants.sol";
+
+contract DeployLeverageTokenDeploymentBatcherCow is Script {
+    function run() public {
+        console.log("BlockNumber: ", block.number);
+        console.log("ChainId: ", block.chainid);
+
+        console.log("Deploying...");
+
+        vm.startBroadcast();
+
+        address deployerAddress = msg.sender;
+        console.log("DeployerAddress: ", deployerAddress);
+
+        LeverageTokenDeploymentBatcherCow leverageTokenDeploymentBatcherCow = new LeverageTokenDeploymentBatcherCow(
+            ILeverageManager(DeployConstants.LEVERAGE_MANAGER),
+            IMorphoLendingAdapterFactory(DeployConstants.LENDING_ADAPTER_FACTORY)
+        );
+        console.log("LeverageTokenDeploymentBatcherCow deployed at: ", address(leverageTokenDeploymentBatcherCow));
+
+        vm.stopBroadcast();
+    }
+}
