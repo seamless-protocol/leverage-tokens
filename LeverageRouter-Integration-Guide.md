@@ -28,23 +28,6 @@ The `LeverageRouter` is an immutable periphery contract that facilitates deposit
 | LeverageManager | `0x5C37EB148D4a261ACD101e2B997A0F163Fb3E351` |
 | MulticallExecutor | `0x16D02Ebd89988cAd1Ce945807b963aB7A9Fd22E1` |
 
-## Key Concepts
-
-### Collateral Ratio
-
-Each LeverageToken maintains a target collateral ratio. When minting or redeeming, the protocol ensures this ratio is preserved. The collateral ratio determines the leverage factor of the token.
-
-### Equity vs Collateral
-
-- **Equity**: The net value a user is depositing/receiving (collateral - debt)
-- **Collateral**: The total collateral added/removed from the position
-
-The `LeverageRouter.convertEquityToCollateral()` function converts equity amounts to the collateral needed for a deposit.
-
-### Flash Loans
-
-The router uses Morpho flash loans to facilitate atomic operations. For deposits, it flash loans debt assets to swap to collateral. For redemptions, it flash loans debt to repay the position and receive collateral.
-
 ---
 
 ## Minting (Deposit) Flow
