@@ -39,7 +39,7 @@ The `LeverageRouter` is an immutable periphery contract that facilitates deposit
 3. Router executes swap calls to convert debt → collateral via the `MulticallExecutor`
 4. Router deposits total collateral (user's + swapped) into the LeverageToken
 5. Router repays flash loan with debt received from deposit
-6. Router transfers LeverageToken shares to user
+6. Router transfers LeverageToken shares and any excess debt to user
 
 ### Function Signature
 
@@ -164,6 +164,7 @@ contract LeverageTokenMinter {
     function mintLeverageToken(
         ILeverageToken leverageToken,
         IERC20 collateralAsset,
+        IERC20 debtAsset,
         uint256 collateralAmount,
         uint256 flashLoanAmount,
         uint256 minShares,
@@ -188,6 +189,10 @@ contract LeverageTokenMinter {
         // Transfer received shares to user
         uint256 sharesReceived = leverageToken.balanceOf(address(this));
         leverageToken.transfer(msg.sender, sharesReceived);
+
+        // Transfer excess debt to user
+        uint256 debtReceived = debtAsset.balanceOf(address(this));
+        debtAsset.transfer(msg.sender, debtReceived);
     }
 }
 ```
@@ -203,7 +208,7 @@ contract LeverageTokenMinter {
 3. Router redeems shares from LeverageToken, receiving collateral
 4. Router executes swap calls to convert collateral → debt via `MulticallExecutor`
 5. Router repays flash loan with swapped debt
-6. Router transfers remaining collateral to user
+6. Router transfers remaining collateral and debt to user
 
 ### Function Signature
 
@@ -282,6 +287,61 @@ await writeLeverageRouterV2Redeem({
     calls,
   ],
 })
+```
+
+
+### Solidity Example
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.26;
+
+import {ILeverageRouter} from "./interfaces/periphery/ILeverageRouter.sol";
+import {ILeverageToken} from "./interfaces/ILeverageToken.sol";
+import {IMulticallExecutor} from "./interfaces/periphery/IMulticallExecutor.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+contract LeverageTokenRedeemer {
+    ILeverageRouter public immutable leverageRouter;
+    IMulticallExecutor public immutable multicallExecutor;
+    
+    constructor(ILeverageRouter _router, IMulticallExecutor _executor) {
+        leverageRouter = _router;
+        multicallExecutor = _executor;
+    }
+    
+    function mintLeverageToken(
+        ILeverageToken leverageToken,
+        IERC20 collateralAsset,
+        IERC20 debtAsset,
+        uint256 shares,
+        uint256 minCollateral,
+        IMulticallExecutor.Call[] calldata swapCalls
+    ) external {
+        // Transfer shares from user
+        leverageToken.transferFrom(msg.sender, address(this), shares);
+        
+        // Approve router to spend collateral
+        leverageToken.approve(address(leverageRouter), shares);
+        
+        // Execute redeem
+        leverageRouter.redeem(
+            leverageToken,
+            shares,
+            minCollateral,
+            multicallExecutor,
+            swapCalls
+        );
+        
+        // Transfer received collateral to user
+        uint256 collateralReceived = collateralAsset.balanceOf(address(this));
+        collateralAsset.transfer(msg.sender, collateralReceived);
+
+        // Transfer excess debt to user
+        uint256 debtReceived = debtAsset.balanceOf(address(this));
+        debtAsset.transfer(msg.sender, debtReceived);
+    }
+}
 ```
 
 ---
