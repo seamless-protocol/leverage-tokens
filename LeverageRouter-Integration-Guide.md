@@ -83,7 +83,7 @@ Returns:
 - `tokenFee`: Fee in shares for the LeverageToken
 - `treasuryFee`: Fee in shares for the treasury
 
-### TypeScript Example (from Seamless Frontend)
+### TypeScript Example
 
 ```typescript
 import { encodeFunctionData, erc20Abi } from 'viem'
@@ -94,8 +94,8 @@ const routerPreview = await readLeverageRouterV2PreviewDeposit(wagmiConfig, {
   chainId,
 })
 
-// 2. Calculate flash loan amount with slippage buffer
-const flashLoanAmount = applySlippageFloor(routerPreview.debt, slippageBps)
+// 2. Calculate flash loan amount by reducing it by the expected cost of swapQuote
+const flashLoanAmount = routerPreview.debt * expectedSwapCostPercent
 
 // 3. Get a quote for swapping debt to collateral
 // Using your preferred DEX aggregator (Uniswap, LiFi, etc.)
@@ -108,7 +108,7 @@ const swapQuote = await quoteDebtToCollateral({
 })
 
 // 4. Build the swap calls
-// First call: approve the DEX to spend debt tokens
+// First call: approve the quote DEX route to spend debt tokens
 const approvalCall = {
   target: debtAsset,
   data: encodeFunctionData({
@@ -122,7 +122,7 @@ const approvalCall = {
 // Additional calls from the quote (the actual swap)
 const calls = [approvalCall, ...swapQuote.calls]
 
-// 5. Approve the LeverageRouter to spend collateral
+// 5. Approve the LeverageRouter to spend collateral tokens
 await writeErc20Approve({
   address: collateralAsset,
   args: [leverageRouterAddress, collateralFromSender],
@@ -310,7 +310,7 @@ contract LeverageTokenRedeemer {
         multicallExecutor = _executor;
     }
     
-    function mintLeverageToken(
+    function redeemLeverageToken(
         ILeverageToken leverageToken,
         IERC20 collateralAsset,
         IERC20 debtAsset,
@@ -487,33 +487,6 @@ const hash = await walletClient.writeContract(request)
 
 ---
 
-## Frontend Reference Implementation
-
-The Seamless Protocol frontend provides a complete reference implementation:
-
-**Repository**: https://github.com/seamless-protocol/app
-
-### Key Files
-
-| File | Purpose |
-|------|---------|
-| `src/domain/mint/planner/plan.ts` | Mint planning logic |
-| `src/domain/redeem/planner/plan.ts` | Redeem planning logic |
-| `src/domain/shared/adapters/` | DEX adapter implementations |
-| `src/lib/contracts/addresses.ts` | Contract addresses by chain |
-| `src/lib/contracts/generated.ts` | Generated contract bindings |
-
-### Adapter Examples
-
-The frontend includes adapters for multiple DEXes:
-
-- `uniswapV3.ts` - Direct Uniswap V3 integration
-- `uniswapV2.ts` - Uniswap V2 style DEXes
-- `lifi.ts` - LiFi aggregator integration
-- `velora.ts` - Velora/ParaSwap integration
-
----
-
 ## Security Considerations
 
 1. **Approvals**: Only approve the exact amount needed, or use permit2 where available
@@ -524,18 +497,9 @@ The frontend includes adapters for multiple DEXes:
 
 ---
 
-## Gas Optimization Tips
-
-1. **Batch Operations**: If minting multiple times, consider batching approvals
-2. **Direct Pools**: For common pairs, direct DEX pool swaps are cheaper than aggregators
-3. **Gas Price**: Monitor gas prices and time transactions during lower activity periods
-
----
-
 ## Additional Resources
 
 - [Seamless Protocol Documentation](https://docs.seamlessprotocol.com)
-- [Morpho Blue Documentation](https://docs.morpho.org)
 - [LeverageToken Contract Source](./src/LeverageToken.sol)
 - [LeverageManager Contract Source](./src/LeverageManager.sol)
 - [LeverageRouter Contract Source](./src/periphery/LeverageRouter.sol)
