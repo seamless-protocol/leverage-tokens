@@ -243,18 +243,18 @@ const preview = await readLeverageManagerV2PreviewRedeem(wagmiConfig, {
   chainId,
 })
 
-// 2. Calculate minimum collateral with slippage
-const minCollateralForSender = applySlippageFloor(previewEquity, slippageBps)
+// 2. Calculate minimum collateral by reducing it by the expected cost of swapQuote
+const minCollateralForSender = previewEquity * expectedSwapCostPercent
 
 // 3. Calculate collateral to swap (total collateral minus what user keeps)
-const collateralToSpend = preview.collateral - minCollateralForSender
+const collateralToSwap = preview.collateral - minCollateralForSender
 
 // 4. Get a quote for swapping collateral to debt
 const swapQuote = await quoteCollateralToDebt({
   intent: 'exactIn',
   inToken: collateralAsset,
   outToken: debtAsset,
-  amountIn: collateralToSpend,
+  amountIn: collateralToSwap,
   slippageBps: quoteSlippageBps,
 })
 
@@ -264,7 +264,7 @@ const approvalCall = {
   data: encodeFunctionData({
     abi: erc20Abi,
     functionName: 'approve',
-    args: [swapQuote.approvalTarget, collateralToSpend],
+    args: [swapQuote.approvalTarget, collateralToSwap],
   }),
   value: 0n,
 }
