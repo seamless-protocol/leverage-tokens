@@ -7,12 +7,18 @@ library DeployConstants {
 
     address public constant MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
 
+    address public constant AAVE_POOL = 0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2;
+
     address public constant LEVERAGE_MANAGER = 0x5C37EB148D4a261ACD101e2B997A0F163Fb3E351;
-    address public constant LENDING_ADAPTER_FACTORY = 0xce05FbEd9260810Bdded179ADfdaf737BE7ded71;
+    address public constant MORPHO_LENDING_ADAPTER_FACTORY = 0xce05FbEd9260810Bdded179ADfdaf737BE7ded71;
+    address public constant AAVE_LENDING_ADAPTER_FACTORY = address(0); // TODO: Deploy and set address
     address public constant LEVERAGE_TOKEN_FACTORY = 0x603Da735780e6bC7D04f3FB85C26dccCd4Ff0a82;
     address public constant LEVERAGE_ROUTER = 0xb0764dE7eeF0aC69855C431334B7BC51A96E6DbA;
+    address public constant LEVERAGE_ROUTER_V2 = address(0); // TODO: Deploy and set address
     address public constant MULTICALL_EXECUTOR = 0x16D02Ebd89988cAd1Ce945807b963aB7A9Fd22E1;
     address public constant LEVERAGE_TOKEN_DEPLOYMENT_BATCHER = 0x4466D52b714Ef32657db89ec61FAB1b7E30A0352;
+    address public constant LEVERAGE_TOKEN_DEPLOYMENT_BATCHER_V2 = address(0); // TODO: Deploy and set address
+
 
     address public constant DUTCH_AUCTION_PRE_LIQUIDATION_COLLATERAL_RATIOS_REBALANCE_ADAPTER_IMPLEMENTATION =
         0x1d0c191a0fe2917e244826D3a8d0a64503efAec8;
