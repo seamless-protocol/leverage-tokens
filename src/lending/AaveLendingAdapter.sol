@@ -365,31 +365,6 @@ contract AaveLendingAdapter is IAaveLendingAdapter, Initializable {
         return true;
     }
 
-    /// @inheritdoc IAaveLendingAdapter
-    // TODO: should we have this method at all? If so, should we also have a rescue for all other assets?
-    // TODO: if we decide to keep this method it should be a permissioned function
-    function rescueForeignCollateral(address asset, address recipient) external returns (uint256 amount) {
-        // Cannot rescue the configured collateral asset - use removeCollateral instead
-        if (asset == collateralAsset) {
-            revert CannotRescueCollateralAsset();
-        }
-
-        // Get the aToken for the foreign asset
-        address foreignAToken = pool.getReserveAToken(asset);
-
-        // Get the balance of foreign aTokens held by this adapter
-        amount = IERC20(foreignAToken).balanceOf(address(this));
-
-        if (amount > 0) {
-            // Withdraw the foreign collateral from Aave and send to recipient
-            pool.withdraw(asset, amount, recipient);
-
-            emit ForeignCollateralRescued(asset, recipient, amount);
-        }
-
-        return amount;
-    }
-
     // ============ Internal Functions ============
 
     /// @dev Validates that an eMode category is valid for the adapter's collateral and debt assets

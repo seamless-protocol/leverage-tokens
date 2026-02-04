@@ -21,8 +21,6 @@ import {IPoolAddressesProvider} from "@aave-v3-origin/contracts/interfaces/IPool
 /// This design protects against manipulation via "foreign collateral donations" - where someone
 /// supplies a different asset on behalf of this adapter in Aave. Such donations would affect
 /// Aave's aggregated position calculations but do NOT affect this adapter's view of its position.
-///
-/// Foreign collateral can be rescued using the `rescueForeignCollateral()` function.
 interface IAaveLendingAdapter is IPreLiquidationLendingAdapter {
     /// @notice Event emitted when the AaveLendingAdapter is initialized
     /// @param collateralAsset The address of the collateral asset
@@ -40,17 +38,8 @@ interface IAaveLendingAdapter is IPreLiquidationLendingAdapter {
     /// @param newEModeCategory The new eMode category id
     event EModeUpdated(uint8 previousEModeCategory, uint8 newEModeCategory);
 
-    /// @notice Event emitted when foreign collateral is rescued from the adapter
-    /// @param asset The address of the rescued asset
-    /// @param recipient The address that received the rescued assets
-    /// @param amount The amount of assets rescued
-    event ForeignCollateralRescued(address indexed asset, address indexed recipient, uint256 amount);
-
     /// @notice Thrown when someone tries to create a LeverageToken with this AaveLendingAdapter but it is already in use
     error LendingAdapterAlreadyInUse();
-
-    /// @notice Thrown when trying to rescue the configured collateral asset (use removeCollateral instead)
-    error CannotRescueCollateralAsset();
 
     /// @notice The authorized creator of the AaveLendingAdapter
     /// @return _authorizedCreator The authorized creator of the AaveLendingAdapter
@@ -121,20 +110,4 @@ interface IAaveLendingAdapter is IPreLiquidationLendingAdapter {
     /// @param newEModeCategory The eMode category to validate (0 to disable eMode)
     /// @return isValid True if the new eMode is valid and beneficial
     function validateEMode(uint8 newEModeCategory) external view returns (bool isValid);
-
-    /// @notice Rescues foreign collateral that was supplied to this adapter in Aave
-    /// @dev In Aave, anyone can supply assets on behalf of any address. If someone supplies
-    ///      an asset other than the configured collateral asset, those assets become "trapped"
-    ///      since this adapter only manages the configured collateral asset.
-    ///
-    ///      This function allows rescuing such foreign collateral by withdrawing it from Aave
-    ///      and sending it to a specified recipient.
-    ///
-    ///      IMPORTANT: This function cannot be used to rescue the configured collateral asset.
-    ///      Use the normal `removeCollateral()` function for that.
-    ///
-    /// @param asset The address of the foreign asset to rescue
-    /// @param recipient The address to receive the rescued assets
-    /// @return amount The amount of assets rescued
-    function rescueForeignCollateral(address asset, address recipient) external returns (uint256 amount);
 }
