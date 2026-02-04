@@ -39,6 +39,10 @@ import {IMulticallExecutor} from "../interfaces/periphery/IMulticallExecutor.sol
  *
  * The high-level redeem flow is the same as the deposit flow, but in reverse.
  *
+ * NOTE: The flash loan source (Morpho or Aave) does not need to match the underlying lending adapter type
+ * of the LeverageToken. For example, you can use Aave flash loans to deposit/redeem from a LeverageToken
+ * that uses a MorphoLendingAdapter, and vice versa. The flash loan is simply a source of temporary liquidity.
+ *
  * @custom:contact security@seamlessprotocol.com
  */
 contract LeverageRouterV2 is ILeverageRouterV2, IFlashLoanSimpleReceiver, ReentrancyGuardTransient {
