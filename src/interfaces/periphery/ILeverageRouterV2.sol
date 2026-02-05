@@ -29,8 +29,10 @@ interface ILeverageRouterV2 {
 
     /// @notice Deposit related parameters to pass to flash loan callback handlers for deposits
     struct DepositParams {
-        // Address of the sender of the deposit
+        // Address of the sender of the deposit (collateral is pulled from this address)
         address sender;
+        // Address to receive the minted shares and any surplus debt
+        address receiver;
         // LeverageToken to deposit into
         ILeverageToken leverageToken;
         // Amount of collateral from the sender to deposit
@@ -51,14 +53,16 @@ interface ILeverageRouterV2 {
 
     /// @notice Redeem related parameters to pass to flash loan callback handlers for redeems
     struct RedeemParams {
-        // Address of the sender of the redeem
+        // Address of the sender of the redeem (shares are pulled from this address)
         address sender;
+        // Address to receive the collateral and any surplus debt
+        address receiver;
         // LeverageToken to redeem from
         ILeverageToken leverageToken;
         // Amount of shares to redeem
         uint256 shares;
-        // Minimum amount of collateral for the sender to receive
-        uint256 minCollateralForSender;
+        // Minimum amount of collateral for the receiver
+        uint256 minCollateralForReceiver;
         // multicall executor to use for the swap
         IMulticallExecutor multicallExecutor;
         // External calls to execute for the swap of flash loaned debt to collateral
@@ -67,14 +71,16 @@ interface ILeverageRouterV2 {
 
     /// @notice Redeem related parameters to pass to flash loan callback handlers for redeems using Velora
     struct RedeemWithVeloraParams {
-        // Address of the sender of the redeem, whose shares will be burned and the collateral asset will be transferred to
+        // Address of the sender of the redeem (shares are pulled from this address)
         address sender;
+        // Address to receive the collateral
+        address receiver;
         // LeverageToken to redeem from
         ILeverageToken leverageToken;
         // Amount of shares to redeem
         uint256 shares;
-        // Minimum amount of collateral for the sender to receive
-        uint256 minCollateralForSender;
+        // Minimum amount of collateral for the receiver
+        uint256 minCollateralForReceiver;
         // Velora adapter to use for the swap
         IVeloraAdapter veloraAdapter;
         // Velora Augustus contract to use for the swap
@@ -85,10 +91,10 @@ interface ILeverageRouterV2 {
         bytes swapData;
     }
 
-    /// @notice Error thrown when the remaining collateral is less than the minimum collateral for the sender to receive
+    /// @notice Error thrown when the remaining collateral is less than the minimum collateral for the receiver
     /// @param remainingCollateral The remaining collateral after the swap
-    /// @param minCollateralForSender The minimum collateral for the sender to receive
-    error CollateralSlippageTooHigh(uint256 remainingCollateral, uint256 minCollateralForSender);
+    /// @param minCollateralForReceiver The minimum collateral for the receiver
+    error CollateralSlippageTooHigh(uint256 remainingCollateral, uint256 minCollateralForReceiver);
 
     /// @notice Error thrown when the collateral from the swap + the collateral from the sender is less than the collateral required for the deposit
     /// @param available The collateral from the swap + the collateral from the sender, available for the deposit
@@ -135,12 +141,13 @@ interface ILeverageRouterV2 {
         view
         returns (ActionData memory);
 
-    /// @notice Deposits collateral into a LeverageToken and mints shares to the sender. Any surplus debt received from
-    /// the deposit of (collateralFromSender + debt swapped to collateral) is given to the sender.
+    /// @notice Deposits collateral into a LeverageToken and mints shares to the receiver. Any surplus debt received from
+    /// the deposit of (collateralFromSender + debt swapped to collateral) is given to the receiver.
     /// @param leverageToken LeverageToken to deposit into
     /// @param collateralFromSender Collateral asset amount from the sender to deposit
     /// @param flashLoanAmount Amount of debt to flash loan, which is swapped to collateral and used to deposit into the LeverageToken
-    /// @param minShares Minimum number of shares expected to be received by the sender
+    /// @param minShares Minimum number of shares expected to be received by the receiver
+    /// @param receiver Address to receive the minted shares and any surplus debt
     /// @param multicallExecutor multicall executor to use for the swap
     /// @param swapCalls External calls to execute for the swap of flash loaned debt to collateral for the LeverageToken deposit.
     /// The calls are executed by the `multicallExecutor` contract after receiving the flash loaned debt. Thus, for any encoded approvals and
@@ -153,17 +160,19 @@ interface ILeverageRouterV2 {
         uint256 collateralFromSender,
         uint256 flashLoanAmount,
         uint256 minShares,
+        address receiver,
         IMulticallExecutor multicallExecutor,
         IMulticallExecutor.Call[] calldata swapCalls,
         FlashLoanSource flashLoanSource
     ) external;
 
-    /// @notice Redeems an amount of shares of a LeverageToken and transfers collateral asset to the sender, using arbitrary
+    /// @notice Redeems an amount of shares of a LeverageToken and transfers collateral asset to the receiver, using arbitrary
     /// calldata for the swap of collateral from the redemption to debt to repay the flash loan. Any surplus debt assets
-    /// after repaying the flash loan are given to the sender along with the remaining collateral asset.
+    /// after repaying the flash loan are given to the receiver along with the remaining collateral asset.
     /// @param token LeverageToken to redeem from
     /// @param shares Amount of shares to redeem
-    /// @param minCollateralForSender Minimum amount of collateral for the sender to receive
+    /// @param minCollateralForReceiver Minimum amount of collateral for the receiver
+    /// @param receiver Address to receive the collateral and any surplus debt
     /// @param multicallExecutor multicall executor to use for the swap
     /// @param swapCalls External calls to execute for the swap of collateral from the redemption to debt to repay the flash loan.
     /// The calls are executed by the `multicallExecutor` contract after receiving the collateral from the redemption. Thus, for
@@ -174,17 +183,19 @@ interface ILeverageRouterV2 {
     function redeem(
         ILeverageToken token,
         uint256 shares,
-        uint256 minCollateralForSender,
+        uint256 minCollateralForReceiver,
+        address receiver,
         IMulticallExecutor multicallExecutor,
         IMulticallExecutor.Call[] calldata swapCalls,
         FlashLoanSource flashLoanSource
     ) external;
 
-    /// @notice Redeems an amount of shares of a LeverageToken and transfers collateral asset to the sender, using Velora
+    /// @notice Redeems an amount of shares of a LeverageToken and transfers collateral asset to the receiver, using Velora
     /// for the required swap of collateral from the redemption to debt to repay the flash loan
     /// @param token LeverageToken to redeem from
     /// @param shares Amount of shares to redeem
-    /// @param minCollateralForSender Minimum amount of collateral for the sender to receive
+    /// @param minCollateralForReceiver Minimum amount of collateral for the receiver
+    /// @param receiver Address to receive the collateral
     /// @param veloraAdapter Velora adapter to use for the swap
     /// @param augustus Velora Augustus address to use for the swap
     /// @param offsets Offsets to use for updating the Velora Augustus calldata
@@ -198,7 +209,8 @@ interface ILeverageRouterV2 {
     function redeemWithVelora(
         ILeverageToken token,
         uint256 shares,
-        uint256 minCollateralForSender,
+        uint256 minCollateralForReceiver,
+        address receiver,
         IVeloraAdapter veloraAdapter,
         address augustus,
         IVeloraAdapter.Offsets calldata offsets,

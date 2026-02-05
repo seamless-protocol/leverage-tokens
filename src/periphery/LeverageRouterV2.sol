@@ -35,11 +35,11 @@ import {IMulticallExecutor} from "../interfaces/periphery/IMulticallExecutor.sol
  *   3. The LeverageRouter will use the collateral from the swapped debt and the collateral from the sender for the deposit
  *      into the LeverageToken, receiving LeverageToken shares and debt in return
  *   4. The LeverageRouter will use the debt received from the deposit to repay the flash loan
- *   6. The LeverageRouter will transfer the LeverageToken shares and any surplus debt assets to the sender
+ *   5. The LeverageRouter will transfer the LeverageToken shares and any surplus debt assets to the receiver
  *
  * The high-level redeem flow is the same as the deposit flow, but in reverse.
  *
- * NOTE: The flash loan source (Morpho or Aave) does not need to match the underlying lending adapter type
+ * Note: The flash loan source (Morpho or Aave) does not need to match the underlying lending adapter type
  * of the LeverageToken. For example, you can use Aave flash loans to deposit/redeem from a LeverageToken
  * that uses a MorphoLendingAdapter, and vice versa. The flash loan is simply a source of temporary liquidity.
  *
@@ -114,6 +114,7 @@ contract LeverageRouterV2 is ILeverageRouterV2, IFlashLoanSimpleReceiver, Reentr
         uint256 collateralFromSender,
         uint256 flashLoanAmount,
         uint256 minShares,
+        address receiver,
         IMulticallExecutor multicallExecutor,
         IMulticallExecutor.Call[] calldata swapCalls,
         FlashLoanSource flashLoanSource
@@ -121,6 +122,7 @@ contract LeverageRouterV2 is ILeverageRouterV2, IFlashLoanSimpleReceiver, Reentr
         bytes memory depositData = abi.encode(
             DepositParams({
                 sender: msg.sender,
+                receiver: receiver,
                 leverageToken: leverageToken,
                 collateralFromSender: collateralFromSender,
                 minShares: minShares,
@@ -152,7 +154,8 @@ contract LeverageRouterV2 is ILeverageRouterV2, IFlashLoanSimpleReceiver, Reentr
     function redeem(
         ILeverageToken token,
         uint256 shares,
-        uint256 minCollateralForSender,
+        uint256 minCollateralForReceiver,
+        address receiver,
         IMulticallExecutor multicallExecutor,
         IMulticallExecutor.Call[] calldata swapCalls,
         FlashLoanSource flashLoanSource
@@ -162,9 +165,10 @@ contract LeverageRouterV2 is ILeverageRouterV2, IFlashLoanSimpleReceiver, Reentr
         bytes memory redeemData = abi.encode(
             RedeemParams({
                 sender: msg.sender,
+                receiver: receiver,
                 leverageToken: token,
                 shares: shares,
-                minCollateralForSender: minCollateralForSender,
+                minCollateralForReceiver: minCollateralForReceiver,
                 multicallExecutor: multicallExecutor,
                 swapCalls: swapCalls
             })
@@ -193,7 +197,8 @@ contract LeverageRouterV2 is ILeverageRouterV2, IFlashLoanSimpleReceiver, Reentr
     function redeemWithVelora(
         ILeverageToken token,
         uint256 shares,
-        uint256 minCollateralForSender,
+        uint256 minCollateralForReceiver,
+        address receiver,
         IVeloraAdapter veloraAdapter,
         address augustus,
         IVeloraAdapter.Offsets calldata offsets,
@@ -205,9 +210,10 @@ contract LeverageRouterV2 is ILeverageRouterV2, IFlashLoanSimpleReceiver, Reentr
         bytes memory redeemData = abi.encode(
             RedeemWithVeloraParams({
                 sender: msg.sender,
+                receiver: receiver,
                 leverageToken: token,
                 shares: shares,
-                minCollateralForSender: minCollateralForSender,
+                minCollateralForReceiver: minCollateralForReceiver,
                 veloraAdapter: veloraAdapter,
                 augustus: augustus,
                 offsets: offsets,
@@ -329,14 +335,14 @@ contract LeverageRouterV2 is ILeverageRouterV2, IFlashLoanSimpleReceiver, Reentr
 
         uint256 shares = leverageManager.deposit(params.leverageToken, totalCollateral, params.minShares).shares;
 
-        // Transfer any surplus debt assets to the sender (after accounting for flash loan repayment)
+        // Transfer any surplus debt assets to the receiver (after accounting for flash loan repayment)
         uint256 debtBalance = debtAsset.balanceOf(address(this));
         if (totalRepayAmount < debtBalance) {
-            SafeERC20.safeTransfer(debtAsset, params.sender, debtBalance - totalRepayAmount);
+            SafeERC20.safeTransfer(debtAsset, params.receiver, debtBalance - totalRepayAmount);
         }
 
-        // Transfer shares received from the deposit to the deposit sender
-        SafeERC20.safeTransfer(params.leverageToken, params.sender, shares);
+        // Transfer shares received from the deposit to the receiver
+        SafeERC20.safeTransfer(params.leverageToken, params.receiver, shares);
 
         // Approve flash loan provider to transfer debt assets to repay the flash loan
         SafeERC20.forceApprove(debtAsset, flashLoanProvider, totalRepayAmount);
@@ -364,7 +370,7 @@ contract LeverageRouterV2 is ILeverageRouterV2, IFlashLoanSimpleReceiver, Reentr
         SafeERC20.forceApprove(debtAsset, address(leverageManager), loanAmount);
         // slither-disable-next-line unused-return
         uint256 collateralWithdrawn =
-            leverageManager.redeem(params.leverageToken, params.shares, params.minCollateralForSender).collateral;
+            leverageManager.redeem(params.leverageToken, params.shares, params.minCollateralForReceiver).collateral;
 
         // Swap the collateral asset received from the redeem to the debt asset, used to repay the flash loan.
         SafeERC20.safeTransfer(collateralAsset, address(params.multicallExecutor), collateralWithdrawn);
@@ -374,27 +380,27 @@ contract LeverageRouterV2 is ILeverageRouterV2, IFlashLoanSimpleReceiver, Reentr
         tokens[1] = debtAsset;
         params.multicallExecutor.multicallAndSweep(params.swapCalls, tokens);
 
-        // The remaining collateral after the arbitrary swap calls is available for the sender
-        uint256 collateralForSender = collateralAsset.balanceOf(address(this));
+        // The remaining collateral after the arbitrary swap calls is available for the receiver
+        uint256 collateralForReceiver = collateralAsset.balanceOf(address(this));
 
-        // The remaining debt after the arbitrary swap calls is available for the sender, minus
+        // The remaining debt after the arbitrary swap calls is available for the receiver, minus
         // the amount of debt for repaying the flash loan (including premium if Aave)
         uint256 debtBalance = debtAsset.balanceOf(address(this));
-        uint256 debtForSender = debtBalance > totalRepayAmount ? debtBalance - totalRepayAmount : 0;
+        uint256 debtForReceiver = debtBalance > totalRepayAmount ? debtBalance - totalRepayAmount : 0;
 
-        // Check slippage on collateral the sender receives
-        if (collateralForSender < params.minCollateralForSender) {
-            revert CollateralSlippageTooHigh(collateralForSender, params.minCollateralForSender);
+        // Check slippage on collateral the receiver gets
+        if (collateralForReceiver < params.minCollateralForReceiver) {
+            revert CollateralSlippageTooHigh(collateralForReceiver, params.minCollateralForReceiver);
         }
 
-        // Transfer remaining collateral to the sender
-        if (collateralForSender > 0) {
-            SafeERC20.safeTransfer(collateralAsset, params.sender, collateralForSender);
+        // Transfer remaining collateral to the receiver
+        if (collateralForReceiver > 0) {
+            SafeERC20.safeTransfer(collateralAsset, params.receiver, collateralForReceiver);
         }
 
-        // Transfer any remaining debt assets to the sender
-        if (debtForSender > 0) {
-            SafeERC20.safeTransfer(debtAsset, params.sender, debtForSender);
+        // Transfer any remaining debt assets to the receiver
+        if (debtForReceiver > 0) {
+            SafeERC20.safeTransfer(debtAsset, params.receiver, debtForReceiver);
         }
 
         // Approve flash loan provider to spend the debt asset to repay the flash loan
@@ -422,13 +428,13 @@ contract LeverageRouterV2 is ILeverageRouterV2, IFlashLoanSimpleReceiver, Reentr
         // Use the debt from the flash loan to redeem the shares from the sender
         SafeERC20.forceApprove(debtAsset, address(leverageManager), loanAmount);
         uint256 collateralWithdrawn =
-            leverageManager.redeem(params.leverageToken, params.shares, params.minCollateralForSender).collateral;
+            leverageManager.redeem(params.leverageToken, params.shares, params.minCollateralForReceiver).collateral;
 
         // Use the VeloraAdapter to swap the collateral asset received from the redeem to the debt asset.
         // For Aave, totalRepayAmount includes premium; for Morpho it equals loanAmount
         // slither-disable-next-line arbitrary-send-erc20
         SafeERC20.safeTransfer(collateralAsset, address(params.veloraAdapter), collateralWithdrawn);
-        uint256 collateralForSender = params.veloraAdapter.buy(
+        uint256 collateralForReceiver = params.veloraAdapter.buy(
             params.augustus,
             params.swapData,
             address(collateralAsset),
@@ -439,13 +445,13 @@ contract LeverageRouterV2 is ILeverageRouterV2, IFlashLoanSimpleReceiver, Reentr
         );
 
         // Check slippage
-        if (collateralForSender < params.minCollateralForSender) {
-            revert CollateralSlippageTooHigh(collateralForSender, params.minCollateralForSender);
+        if (collateralForReceiver < params.minCollateralForReceiver) {
+            revert CollateralSlippageTooHigh(collateralForReceiver, params.minCollateralForReceiver);
         }
 
-        // Transfer remaining collateral to the sender
-        if (collateralForSender > 0) {
-            SafeERC20.safeTransfer(collateralAsset, params.sender, collateralForSender);
+        // Transfer remaining collateral to the receiver
+        if (collateralForReceiver > 0) {
+            SafeERC20.safeTransfer(collateralAsset, params.receiver, collateralForReceiver);
         }
 
         // Approve flash loan provider to spend the debt asset to repay the flash loan
