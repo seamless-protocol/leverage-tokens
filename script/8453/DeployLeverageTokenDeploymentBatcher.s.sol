@@ -5,9 +5,10 @@ pragma solidity ^0.8.26;
 import {Script, console} from "forge-std/Script.sol";
 
 /// Internal imports
-import {LeverageTokenDeploymentBatcher} from "src/periphery/LeverageTokenDeploymentBatcher.sol";
+import {LeverageTokenDeploymentBatcherV2} from "src/periphery/LeverageTokenDeploymentBatcherV2.sol";
 import {ILeverageManager} from "src/interfaces/ILeverageManager.sol";
 import {IMorphoLendingAdapterFactory} from "src/interfaces/IMorphoLendingAdapterFactory.sol";
+import {IAaveLendingAdapterFactory} from "src/interfaces/IAaveLendingAdapterFactory.sol";
 import {DeployConstants} from "./DeployConstants.sol";
 
 contract DeployLeverageTokenDeploymentBatcher is Script {
@@ -22,11 +23,12 @@ contract DeployLeverageTokenDeploymentBatcher is Script {
         address deployerAddress = msg.sender;
         console.log("DeployerAddress: ", deployerAddress);
 
-        LeverageTokenDeploymentBatcher leverageTokenDeploymentBatcher = new LeverageTokenDeploymentBatcher(
+        LeverageTokenDeploymentBatcherV2 leverageTokenDeploymentBatcherV2 = new LeverageTokenDeploymentBatcherV2(
             ILeverageManager(DeployConstants.LEVERAGE_MANAGER),
-            IMorphoLendingAdapterFactory(DeployConstants.LENDING_ADAPTER_FACTORY)
+            IMorphoLendingAdapterFactory(DeployConstants.MORPHO_LENDING_ADAPTER_FACTORY),
+            IAaveLendingAdapterFactory(DeployConstants.AAVE_LENDING_ADAPTER_FACTORY)
         );
-        console.log("LeverageTokenDeploymentBatcher deployed at: ", address(leverageTokenDeploymentBatcher));
+        console.log("LeverageTokenDeploymentBatcherV2 deployed at: ", address(leverageTokenDeploymentBatcherV2));
 
         vm.stopBroadcast();
     }

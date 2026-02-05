@@ -31,7 +31,7 @@ contract CreateLeverageToken is Script {
 
     ILeverageManager public leverageManager = ILeverageManager(DeployConstants.LEVERAGE_MANAGER);
     IMorphoLendingAdapterFactory public lendingAdapterFactory =
-        IMorphoLendingAdapterFactory(DeployConstants.LENDING_ADAPTER_FACTORY);
+        IMorphoLendingAdapterFactory(DeployConstants.MORPHO_LENDING_ADAPTER_FACTORY);
     ILeverageRouter public leverageRouter = ILeverageRouter(DeployConstants.LEVERAGE_ROUTER);
     IMulticallExecutor public multicallExecutor = IMulticallExecutor(DeployConstants.MULTICALL_EXECUTOR);
 

@@ -28,7 +28,7 @@ contract CreateLeverageToken is Script {
 
     ILeverageManager public leverageManager = ILeverageManager(DeployConstants.LEVERAGE_MANAGER);
     IMorphoLendingAdapterFactory public lendingAdapterFactory =
-        IMorphoLendingAdapterFactory(DeployConstants.LENDING_ADAPTER_FACTORY);
+        IMorphoLendingAdapterFactory(DeployConstants.MORPHO_LENDING_ADAPTER_FACTORY);
 
     /// @dev Market ID for Morpho market that LT will be created on top of
     Id public MORPHO_MARKET_ID = Id.wrap(0x8793cf302b8ffd655ab97bd1c695dbd967807e8367a65cb2f4edaf1380ba1bda);

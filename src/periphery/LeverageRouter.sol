@@ -10,12 +10,11 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 
 // Internal imports
 import {ILendingAdapter} from "../interfaces/ILendingAdapter.sol";
-import {ILeverageManager} from "../interfaces/ILeverageManager.sol";
+import {ILeverageManager, ActionData} from "../interfaces/ILeverageManager.sol";
 import {ILeverageToken} from "../interfaces/ILeverageToken.sol";
 import {ILeverageRouter} from "../interfaces/periphery/ILeverageRouter.sol";
 import {IVeloraAdapter} from "../interfaces/periphery/IVeloraAdapter.sol";
 import {IMulticallExecutor} from "../interfaces/periphery/IMulticallExecutor.sol";
-import {ActionData} from "../types/DataTypes.sol";
 
 /**
  * @dev The LeverageRouter contract is an immutable periphery contract that facilitates the use of flash loans and swaps
